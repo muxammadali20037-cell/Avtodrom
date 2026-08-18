@@ -5,6 +5,56 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="./supabase-client.js"></script>
 
+<script>
+(async function () {
+  const tg = window.Telegram?.WebApp;
+
+  if (!tg) {
+    console.error("Telegram WebApp topilmadi");
+    return;
+  }
+
+  tg.ready();
+  tg.expand();
+
+  const initData = tg.initData;
+
+  if (!initData) {
+    console.error("Telegram initData topilmadi");
+    return;
+  }
+
+  try {
+    const response = await fetch(
+      "https://izmonnkzyolaqwjwjvzj.supabase.co/functions/v1/telegram-auth",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          initData: initData
+        })
+      }
+    );
+
+    const result = await response.json();
+
+    if (!response.ok || !result.ok) {
+      console.error("Kirish rad etildi:", result.error);
+      return;
+    }
+
+    window.AvtodromTelegramUser = result.user;
+
+    console.log("Telegram foydalanuvchi tasdiqlandi:", result.user);
+
+  } catch (error) {
+    console.error("Auth xatosi:", error);
+  }
+})();
+</script>
+
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <meta name="theme-color" content="#F8FAFC" />
