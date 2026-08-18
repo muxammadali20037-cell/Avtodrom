@@ -1,0 +1,4 @@
+project_id = "izmonnkzyolaqwjwjvzj"
+
+[functions.telegram-auth]
+verify_jwt = false
