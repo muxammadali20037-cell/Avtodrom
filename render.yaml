@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: avtodrom-index-api
+    runtime: node
+    rootDir: backend
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    autoDeploy: true
+    envVars:
+      - key: NODE_VERSION
+        value: 20.18.0
+      - key: CUSTOMER_BOT_TOKEN
+        sync: false
+      - key: MINI_APP_URL
+        value: https://muxammadali20037-cell.github.io/Avtodrom/frontend/
+      - key: FRONTEND_ORIGIN
+        value: https://muxammadali20037-cell.github.io
