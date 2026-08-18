@@ -1032,8 +1032,21 @@ function customerOnboarding(){
     '<h2 style="font-size:1.2rem">'+t("welcome")+'</h2>'+
     '<p style="color:var(--secondary);font-size:.85rem;margin:.2rem 0 1.2rem">'+t("brand")+'</p>'+
     '<div style="text-align:left">'+
-      '<div class="field"><label>'+t("enterName")+'</label><input class="input" id="onbName" placeholder="Aziz Valiyev"></div>'+
-      '<div class="field"><label>'+t("enterPhone")+'</label><input class="input" id="onbPhone" type="tel" placeholder="+998 90 123 45 67"></div>'+
+      '<div class="field"><label>'+t("enterName")+'</label><input
+  class="input"
+  id="onbName"
+  type="text"
+  autocomplete="name"
+  maxlength="50"
+  placeholder="Aziz Valiyev"></div>'+
+      '<div class="field"><label>'+t("enterPhone")+'</label><input
+  class="input"
+  id="onbPhone"
+  type="tel"
+  inputmode="tel"
+  autocomplete="tel"
+  maxlength="17"
+  placeholder="+998 90 123 45 67"></div>'+
       '<div id="onbErr" style="color:var(--red);font-size:.78rem;margin-bottom:.6rem"></div>'+
       '<button class="btn btn-lg" data-act="onboard">'+t("continue")+'</button>'+
     '</div>'+
@@ -2123,16 +2136,148 @@ document.addEventListener("click", function(ev){
   if(act==="bk-tab"){ cState.bkTab=v; render(); return; }
   if(act==="c-logout"){ authService.logoutCustomer(); return; }
 
-  if(act==="onboard"){
-    var n=document.getElementById("onbName").value.trim();
-    var p=document.getElementById("onbPhone").value.trim();
-    if(!n||!p){ document.getElementById("onbErr").textContent=t("fillFields"); return; }
-    var ex = customerService.byPhone(p);
-    if(ex){ authService.loginCustomer(ex.id); return; }
-    var c = customerService.create({name:n, phone:p});
-    authService.loginCustomer(c.id);
+if(act==="onboard"){
+  var nameInput = document.getElementById("onbName");
+  var phoneInput = document.getElementById("onbPhone");
+  var errorBox = document.getElementById("onbErr");
+
+  var n = nameInput.value.trim();
+  var p = phoneInput.value.trim();
+
+  errorBox.textContent = "";
+
+  /* =========================
+     ISM VALIDATSIYASI
+  ========================= */
+
+  if(!n){
+    errorBox.textContent = "Ismingizni kiriting.";
+    nameInput.focus();
     return;
   }
+
+  if(n.length < 2 || n.length > 50){
+    errorBox.textContent = "Ism 2–50 ta belgidan iborat bo‘lishi kerak.";
+    nameInput.focus();
+    return;
+  }
+
+  /*
+    Faqat:
+    - harflar
+    - bo‘sh joy
+    - apostrof
+    - tire
+  */
+  var nameRegex = /^[\p{L}][\p{L}'’\- ]{1,48}$/u;
+
+  if(!nameRegex.test(n)){
+    errorBox.textContent = "Iltimos, haqiqiy ism va familiyangizni kiriting.";
+    nameInput.focus();
+    return;
+  }
+
+  var letterCount = (n.match(/\p{L}/gu) || []).length;
+
+  if(letterCount < 2){
+    errorBox.textContent = "Iltimos, haqiqiy ism kiriting.";
+    nameInput.focus();
+    return;
+  }
+
+  /* =========================
+     TELEFON VALIDATSIYASI
+  ========================= */
+
+  /*
+    Bo‘sh joy, tire va qavslarni olib tashlaymiz.
+    Masalan:
+    +998 90 123 45 67
+    ->
+    +998901234567
+  */
+  var phone = p.replace(/[\s\-\(\)]/g,"");
+
+  if(!phone){
+    errorBox.textContent = "Telefon raqamingizni kiriting.";
+    phoneInput.focus();
+    return;
+  }
+
+  /*
+    Faqat O‘zbekiston:
+    +998 + 9 ta raqam
+  */
+  if(!/^\+998\d{9}$/.test(phone)){
+    errorBox.textContent =
+      "Faqat O‘zbekiston telefon raqami kiriting: +998 90 123 45 67";
+    phoneInput.focus();
+    return;
+  }
+
+  /*
+    O‘zbekiston mobil operator kodlari.
+  */
+  var operatorCode = phone.substring(4,6);
+
+  var allowedOperators = [
+    "90",
+    "91",
+    "93",
+    "94",
+    "95",
+    "97",
+    "98",
+    "99",
+    "88",
+    "33",
+    "50",
+    "55",
+    "77"
+  ];
+
+  if(allowedOperators.indexOf(operatorCode) === -1){
+    errorBox.textContent = "Telefon raqami noto‘g‘ri.";
+    phoneInput.focus();
+    return;
+  }
+
+  /* =========================
+     MAVJUD ACCOUNT
+  ========================= */
+
+  var ex = customerService.byPhone(phone);
+
+  if(ex){
+    authService.loginCustomer(ex.id);
+    return;
+  }
+
+  /* =========================
+     YANGI ACCOUNT
+  ========================= */
+
+  var telegramId = "";
+
+  if(
+    TG &&
+    TG.initDataUnsafe &&
+    TG.initDataUnsafe.user &&
+    TG.initDataUnsafe.user.id
+  ){
+    telegramId = String(TG.initDataUnsafe.user.id);
+  }
+
+  var c = customerService.create({
+    name: n,
+    phone: phone,
+    telegram: telegramId
+  });
+
+  authService.loginCustomer(c.id);
+
+  return;
+}
   if(act==="pf-save"){
     var me = authService.customer();
     me.name = document.getElementById("pfName").value.trim() || me.name;
