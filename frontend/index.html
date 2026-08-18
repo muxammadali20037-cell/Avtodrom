@@ -2125,8 +2125,26 @@ document.addEventListener("click", function(ev){
   if(act==="modal-back"){ if(ev.target===el){ closeModal(); cState.bookingOpen=false; } return; }
 
   /* ---- customer nav ---- */
-  if(act==="c-tab"){ cState.tab=v; render(); return; }
-  if(act==="bk-tab"){ cState.bkTab=v; render(); return; }
+  if(act==="c-tab"){
+  ev.preventDefault();
+  ev.stopPropagation();
+
+  if(!["home","bookings","instructors","profile"].includes(v)){
+    console.error("Noto'g'ri tab:", v);
+    return;
+  }
+
+  cState.tab = v;
+  render();
+  return;
+}
+  if(act==="bk-tab"){
+  ev.preventDefault();
+  ev.stopPropagation();
+  cState.bkTab = v;
+  render();
+  return;
+}
   if(act==="c-logout"){ authService.logoutCustomer(); return; }
 
 if(act==="onboard"){
