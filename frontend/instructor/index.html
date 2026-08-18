@@ -822,7 +822,7 @@ var bookingService = {
   setStatus:function(id, status, extra){
     var b = this.get(id); if(!b) return;
     if(PRODUCTION_INSTRUCTOR_MODE && route()==="instructor") {
-      var me = authService.currentInstructor && authService.currentInstructor();
+      var me = authService.instructor && authService.instructor();
       if(["confirmed","rejected"].indexOf(status)>=0) return;
       if(me && b.instructorId !== me.id) return;
       if(["completed","no_show"].indexOf(status)>=0 && ["confirmed","customer_confirmed","in_progress"].indexOf(b.status)<0) return;
@@ -927,14 +927,14 @@ var scheduleService = {
 
 var UZ_MOBILE_PREFIXES = ["33","50","77","88","90","91","93","94","95","97","98","99"];
 function normalizeUzPhone(v){
-  var digits=String(v||"").replace(/\\D/g,"");
+  var digits=String(v||"").replace(/\D/g,"");
   if(digits.indexOf("998")===0) digits=digits.slice(3);
   if(digits.indexOf("0")===0) digits=digits.slice(1);
   return digits;
 }
 function isValidUzPhone(v){
   var d=normalizeUzPhone(v);
-  return /^\\d{9}$/.test(d) && UZ_MOBILE_PREFIXES.indexOf(d.slice(0,2))>=0;
+  return /^\d{9}$/.test(d) && UZ_MOBILE_PREFIXES.indexOf(d.slice(0,2))>=0;
 }
 function fullUzPhone(v){ return "+998"+normalizeUzPhone(v); }
 
@@ -1960,6 +1960,7 @@ function aSettings(){
    9. INSTRUCTOR PANEL
 ============================================================ */
 var iState = { section:"dashboard", bkFilter:"today" };
+var iAuthState = { mode:"login" };
 
 function instructorView(){
   var me = authService.instructor();
@@ -2652,7 +2653,7 @@ document.addEventListener("click", function(ev){
 document.addEventListener("input", function(ev){
   var target=ev.target;
   if(target && (target.id==="insPhone" || target.id==="regPhone")){
-    target.value=target.value.replace(/\\D/g,"").slice(0,9);
+    target.value=target.value.replace(/\D/g,"").slice(0,9);
   }
   var el = ev.target.closest("[data-act]");
   if(!el) return;
@@ -2699,7 +2700,7 @@ document.addEventListener("keydown", function(e){
     if(!i.permissions) i.permissions=defaultPerms();
     if(!i.adminBounds) i.adminBounds=weekBounds();
     if(!i.account){
-      i.account={username:(i.firstName||"instructor").toLowerCase().replace(/[^a-z0-9]+/g,"")+"."+(i.lastName||"user").toLowerCase().replace(/[^a-z0-9]+/g,""), passwordHash:null, salt:null, failedAttempts:0, lockedUntil:0, passwordChangedAt:null, lastLoginAt:null};
+      i.account={phone:i.phone, passwordHash:null, salt:null, failedAttempts:0, lockedUntil:0, passwordChangedAt:null, lastLoginAt:null, phoneVerified:false, pendingApproval:false};
     }
   });
   render();
