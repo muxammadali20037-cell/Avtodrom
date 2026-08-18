@@ -1,33 +1,49 @@
-/* AVTODROM INDEX — Supabase client foundation
- * Keep the Supabase publishable/anon key here only.
- * NEVER put service_role/secret keys in this file.
+/* AVTODROM INDEX — Supabase client
+ * Public/publishable key only. NEVER put service_role/secret keys here.
  */
 (function () {
+  'use strict';
+
   const SUPABASE_URL = 'https://izmonnkzyolaqwjwjvzj.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_REVq-3nTJ-SDUEJQmDP7Bw_Xxg5Uqrx';
 
-  const load = (src) => new Promise((resolve, reject) => {
-    const s = document.createElement('script');
-    s.src = src;
-    s.onload = resolve;
-    s.onerror = reject;
-    document.head.appendChild(s);
-  });
-
-  window.AvtodromSupabase = {
+  const state = {
     url: SUPABASE_URL,
     key: SUPABASE_PUBLISHABLE_KEY,
     client: null,
     ready: null
   };
 
-  window.AvtodromSupabase.ready = load('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2')
-    .then(() => {
-      if (SUPABASE_PUBLISHABLE_KEY.includes('PASTE_YOUR_')) {
-        console.warn('Supabase publishable key hali kiritilmagan.');
-        return null;
+  // Expose the namespace immediately so the page can safely detect it.
+  window.AvtodromSupabase = state;
+
+  function loadSupabase() {
+    return new Promise((resolve, reject) => {
+      if (window.supabase && typeof window.supabase.createClient === 'function') {
+        resolve();
+        return;
       }
-      window.AvtodromSupabase.client = window.supabase.createClient(
+
+      const script = document.createElement('script');
+      script.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js';
+      script.async = false;
+      script.onload = () => resolve();
+      script.onerror = () => reject(new Error('Supabase JS kutubxonasi yuklanmadi.'));
+      document.head.appendChild(script);
+    });
+  }
+
+  state.ready = loadSupabase()
+    .then(() => {
+      if (!window.supabase || typeof window.supabase.createClient !== 'function') {
+        throw new Error('Supabase client kutubxonasi mavjud emas.');
+      }
+
+      if (!SUPABASE_PUBLISHABLE_KEY || SUPABASE_PUBLISHABLE_KEY.includes('PASTE_YOUR_')) {
+        throw new Error('Supabase publishable key kiritilmagan.');
+      }
+
+      state.client = window.supabase.createClient(
         SUPABASE_URL,
         SUPABASE_PUBLISHABLE_KEY,
         {
@@ -38,6 +54,12 @@
           }
         }
       );
-      return window.AvtodromSupabase.client;
+
+      console.info('[AVTODROM] Supabase client tayyor.');
+      return state.client;
+    })
+    .catch((error) => {
+      console.error('[AVTODROM] Supabase ulanish xatosi:', error);
+      throw error;
     });
 })();
