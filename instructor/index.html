@@ -1,261 +1,64 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="uz">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<meta name="theme-color" content="#101713">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#f3faf6">
 <title>Avtodrom — Instruktor</title>
 <style>
-:root{
-  --bg:#f5f6f4;--surface:#fff;--surface2:#eef1ed;--text:#121814;--muted:#6d766f;
-  --line:#dfe4df;--green:#16734a;--green2:#0e5436;--mint:#dceee4;--amber:#b66a12;
-  --red:#bd3e3e;--blue:#3b658c;--shadow:0 12px 35px rgba(18,24,20,.07);
-}
-body.dark{
-  --bg:#0d1210;--surface:#151b17;--surface2:#1b241f;--text:#f2f5f2;--muted:#9ca69f;
-  --line:#29332d;--green:#4cc987;--green2:#77dca6;--mint:#173a2a;--amber:#e5a052;
-  --red:#ef7777;--blue:#78a8d0;--shadow:0 15px 40px rgba(0,0,0,.25);
-}
-*{box-sizing:border-box}html,body{margin:0;min-height:100%;font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;background:var(--bg);color:var(--text)}
-button,input,select{font:inherit}button{cursor:pointer}.hidden{display:none!important}
-.auth{min-height:100vh;display:grid;place-items:center;padding:20px;background:radial-gradient(circle at 90% 0,#d8ecdf 0,transparent 34%),var(--bg)}
-.dark .auth{background:radial-gradient(circle at 90% 0,#173b2a 0,transparent 34%),var(--bg)}
-.authbox{width:min(440px,100%);background:var(--surface);border:1px solid var(--line);padding:34px;border-radius:28px;box-shadow:var(--shadow)}
-.mark{width:58px;height:58px;border-radius:17px;background:var(--green2);color:#fff;display:grid;place-items:center;font-size:25px;margin-bottom:24px}
-.eyebrow{font-size:11px;letter-spacing:1.3px;font-weight:900;color:var(--green);text-transform:uppercase}
-h1{font-size:29px;letter-spacing:-.7px;margin:7px 0 8px}h2{font-size:27px;letter-spacing:-.7px;margin:0}
-.sub{color:var(--muted);line-height:1.55;margin:0 0 25px;font-size:14px}
-.field{margin:14px 0}.field label{font-size:12px;font-weight:800;display:block;margin:0 0 7px}
-input{width:100%;height:50px;border:1px solid var(--line);border-radius:13px;background:var(--surface);color:var(--text);padding:0 14px;outline:0}
-input:focus{border-color:var(--green);box-shadow:0 0 0 3px color-mix(in srgb,var(--green) 15%,transparent)}
-.primary{width:100%;height:51px;border:0;border-radius:13px;background:var(--green2);color:white;font-weight:850;margin-top:8px}.primary:hover{filter:brightness(1.08)}
-.switch{text-align:center;color:var(--muted);font-size:13px;margin-top:18px}.link{border:0;background:none;color:var(--green);font-weight:850}
-.msg{padding:11px 13px;border-radius:12px;font-size:13px;margin:12px 0}.error{background:#fee5e5;color:#9f2525}.success{background:var(--mint);color:var(--green2)}
-.app{min-height:100vh}.top{height:72px;border-bottom:1px solid var(--line);background:color-mix(in srgb,var(--surface) 92%,transparent);backdrop-filter:blur(16px);position:sticky;top:0;z-index:20}
-.topin{height:100%;max-width:1180px;margin:auto;padding:0 18px;display:flex;align-items:center;justify-content:space-between}
-.brand{display:flex;align-items:center;gap:10px}.brandmark{width:38px;height:38px;border-radius:11px;background:var(--green2);color:#fff;display:grid;place-items:center}.brand strong{font-size:14px;letter-spacing:.4px}.brand small{display:block;color:var(--muted);font-size:9px;letter-spacing:1px;margin-top:2px}
-.actions{display:flex;gap:8px;align-items:center}.icon{width:40px;height:40px;border:1px solid var(--line);border-radius:11px;background:var(--surface);color:var(--text);display:grid;place-items:center}
-.profileMini{display:flex;gap:8px;align-items:center;padding-left:8px}.avatar{width:34px;height:34px;border-radius:10px;background:var(--mint);color:var(--green2);display:grid;place-items:center;font-weight:900;font-size:13px}
-.shell{max-width:1180px;margin:auto;padding:25px 18px 100px;display:grid;grid-template-columns:205px 1fr;gap:25px}
-.side{height:max-content;position:sticky;top:97px}.nav{display:flex;flex-direction:column;gap:4px}.nav button{border:0;background:transparent;color:var(--muted);height:45px;border-radius:11px;text-align:left;padding:0 13px;font-weight:750}.nav button.active,.nav button:hover{background:var(--surface);color:var(--green2);box-shadow:var(--shadow)}.logout{margin-top:20px!important;color:var(--red)!important}
-.page{display:none}.page.active{display:block}.heading{display:flex;justify-content:space-between;gap:20px;align-items:flex-end;margin-bottom:22px}.heading p{margin:5px 0 0;color:var(--muted);font-size:13px}
-.hero{display:grid;grid-template-columns:1.25fr .75fr;gap:14px;margin-bottom:14px}.heroMain,.next{border:1px solid var(--line);border-radius:20px;background:var(--surface);box-shadow:var(--shadow);padding:22px}.heroMain{background:linear-gradient(135deg,var(--surface),var(--mint))}
-.greeting{font-size:12px;color:var(--muted);margin-bottom:7px}.heroMain h3{font-size:24px;margin:0 0 7px;letter-spacing:-.5px}.heroMain p{color:var(--muted);font-size:13px;max-width:520px;line-height:1.55}.next{display:flex;flex-direction:column;justify-content:space-between}.next .label{font-size:10px;letter-spacing:1px;color:var(--muted);font-weight:900}.time{font-size:31px;font-weight:900;margin-top:5px}.nextmeta{font-size:12px;color:var(--muted)}
-.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}.stat{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:16px}.stat b{font-size:24px}.stat span{display:block;color:var(--muted);font-size:11px;margin-top:5px}
-.panel{background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:19px;margin-bottom:14px;box-shadow:var(--shadow)}.panelhead{display:flex;justify-content:space-between;align-items:center;margin-bottom:15px}.panelhead strong{font-size:15px}.panelhead span{font-size:11px;color:var(--muted)}
-.timeline{display:flex;flex-direction:column}.slot{display:grid;grid-template-columns:60px 10px 1fr;gap:11px;min-height:75px}.slot time{font-size:12px;color:var(--muted);padding-top:2px}.dot{width:8px;height:8px;border-radius:50%;background:var(--green);margin-top:5px;box-shadow:0 0 0 4px var(--mint)}.slotline{border-left:1px solid var(--line);margin-left:3px;padding:0 0 17px 16px}.slot:last-child .slotline{border:0}.lesson{border:1px solid var(--line);border-radius:13px;padding:11px 13px;background:var(--surface2)}.lesson strong{font-size:13px}.lesson small{display:block;color:var(--muted);margin-top:4px;font-size:11px}
-.badge{display:inline-flex;align-items:center;border-radius:99px;padding:5px 8px;font-size:10px;font-weight:850}.ok{background:var(--mint);color:var(--green2)}.wait{background:#fff0dc;color:var(--amber)}.busy{background:#e4edf5;color:var(--blue)}
-.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}.person{display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--line);padding:13px 0}.person:last-child{border:0}.personleft{display:flex;gap:11px;align-items:center}.pic{width:39px;height:39px;border-radius:11px;background:var(--surface2);display:grid;place-items:center;font-weight:850}.person small{display:block;color:var(--muted);margin-top:3px}
-.search{height:43px;max-width:300px}.empty{text-align:center;padding:35px 15px;color:var(--muted);font-size:13px}
-.settings{display:grid;grid-template-columns:1fr 1fr;gap:12px}.setting{border:1px solid var(--line);border-radius:14px;padding:15px}.setting b{font-size:13px}.setting p{color:var(--muted);font-size:12px;margin:6px 0 0;line-height:1.5}
-.bottom{display:none}
-@media(max-width:850px){.shell{display:block}.side{display:none}.hero{grid-template-columns:1fr}.stats{grid-template-columns:1fr 1fr}.bottom{display:grid;grid-template-columns:repeat(4,1fr);position:fixed;bottom:0;left:0;right:0;height:67px;background:var(--surface);border-top:1px solid var(--line);z-index:30;padding-bottom:env(safe-area-inset-bottom)}.bottom button{border:0;background:none;color:var(--muted);font-size:10px;font-weight:800}.bottom button.active{color:var(--green)}.bottom i{display:block;font-style:normal;font-size:19px;margin-bottom:2px}.grid2{grid-template-columns:1fr}}
-@media(max-width:560px){.top{height:64px}.brand small{display:none}.profileMini .name{display:none}.shell{padding:18px 12px 90px}.heading{align-items:flex-start}.heading h2{font-size:24px}.heroMain,.next{padding:18px}.heroMain h3{font-size:21px}.stats{gap:8px}.stat{padding:13px}.stat b{font-size:21px}.settings{grid-template-columns:1fr}.panel{padding:15px;border-radius:17px}}
+:root{--bg:#f3faf6;--card:#fff;--soft:#eaf6ef;--text:#173328;--muted:#71857b;--line:#dcece3;--green:#198754;--green2:#126b43;--danger:#bd3e3e;--amber:#b66a12;--shadow:0 3px 12px rgba(25,135,84,.055)}
+*{box-sizing:border-box}html,body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif}button,input,textarea{font:inherit}button{cursor:pointer}.hidden{display:none!important}
+.wrap{max-width:1050px;margin:auto;padding:18px 16px 100px}.top{height:64px;background:#fff;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;padding:0 16px;position:sticky;top:0;z-index:10}.brand{display:flex;align-items:center;gap:10px}.logo{width:38px;height:38px;border-radius:11px;background:var(--green2);color:#fff;display:grid;place-items:center}.brand b{font-size:14px}.brand small{display:block;color:var(--muted);font-size:9px;letter-spacing:1px}.user{display:flex;align-items:center;gap:8px}.avatar{width:34px;height:34px;border-radius:10px;background:var(--soft);color:var(--green2);display:grid;place-items:center;font-weight:900}
+.auth{min-height:calc(100vh - 64px);display:grid;place-items:center;padding:20px}.box{width:min(470px,100%);background:var(--card);border:1px solid var(--line);border-radius:24px;padding:26px;box-shadow:var(--shadow)}.eyebrow{font-size:10px;letter-spacing:1.4px;text-transform:uppercase;color:var(--green);font-weight:900}.box h1{font-size:27px;margin:7px 0}.sub{font-size:13px;color:var(--muted);line-height:1.55}.field{margin:13px 0}.field label{display:block;font-size:12px;font-weight:800;margin-bottom:6px}.field input,.field textarea{width:100%;border:1px solid var(--line);border-radius:12px;background:#fff;color:var(--text);padding:12px 13px;outline:0}.field input{height:48px}.field textarea{min-height:90px;resize:vertical}.field input:focus,.field textarea:focus{border-color:var(--green)}.primary{width:100%;height:49px;border:0;border-radius:12px;background:var(--green2);color:#fff;font-weight:850;margin-top:6px}.msg{padding:11px 13px;border-radius:11px;font-size:12px;margin:12px 0}.err{background:#fff0f0;color:var(--danger)}.ok{background:var(--soft);color:var(--green2)}.warn{background:#fff5e8;color:var(--amber)}
+.appgrid{display:grid;grid-template-columns:190px 1fr;gap:22px}.nav{position:sticky;top:82px;height:max-content}.nav button{display:block;width:100%;border:0;background:transparent;color:var(--muted);text-align:left;padding:12px;border-radius:11px;font-weight:750;margin-bottom:3px}.nav button.active,.nav button:hover{background:#fff;color:var(--green2)}.page{display:none}.page.active{display:block}.head{display:flex;justify-content:space-between;align-items:end;margin-bottom:16px}.head h2{font-size:25px;margin:0}.head p{font-size:12px;color:var(--muted);margin:5px 0 0}.hero{display:grid;grid-template-columns:1.2fr .8fr;gap:12px}.card{background:#fff;border:1px solid var(--line);border-radius:18px;padding:17px;box-shadow:var(--shadow)}.hero .card:first-child{background:linear-gradient(135deg,#fff,#eaf6ef)}.hero h3{margin:5px 0;font-size:22px}.hero p{font-size:12px;color:var(--muted);line-height:1.5}.metric{font-size:30px;font-weight:900}.label{font-size:10px;color:var(--muted);font-weight:900;letter-spacing:1px}.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:12px 0}.metriccard{background:#fff;border:1px solid var(--line);border-radius:15px;padding:14px}.metriccard b{font-size:22px}.metriccard span{display:block;font-size:10px;color:var(--muted);margin-top:4px}.section{margin-top:12px}.section h3{font-size:14px;margin:0 0 10px}.row{display:flex;align-items:center;justify-content:space-between;padding:13px 0;border-bottom:1px solid var(--line);gap:10px}.row:last-child{border:0}.row strong{font-size:13px}.row small{display:block;color:var(--muted);font-size:11px;margin-top:3px}.badge{display:inline-flex;border-radius:99px;padding:5px 8px;font-size:10px;font-weight:850;white-space:nowrap}.approved{background:var(--soft);color:var(--green2)}.pending{background:#fff5e8;color:var(--amber)}.rejected{background:#fff0f0;color:var(--danger)}.actions{display:flex;gap:7px;flex-wrap:wrap}.btn{border:1px solid var(--line);background:#fff;color:var(--green2);border-radius:10px;padding:9px 12px;font-size:11px;font-weight:800}.btn.primary{width:auto;height:auto;margin:0}.btn.danger{color:var(--danger)}.empty{padding:30px;text-align:center;color:var(--muted);font-size:12px}.bottom{display:none}
+@media(max-width:760px){.appgrid{display:block}.nav{display:none}.hero{grid-template-columns:1fr}.grid{grid-template-columns:1fr 1fr}.bottom{display:grid;grid-template-columns:repeat(4,1fr);position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid var(--line);z-index:20;padding-bottom:env(safe-area-inset-bottom)}.bottom button{border:0;background:none;color:var(--muted);padding:9px 2px;font-size:10px;font-weight:800}.bottom button.active{color:var(--green2)}}
+@media(max-width:430px){.wrap{padding:14px 12px 90px}.box{padding:21px}.grid{grid-template-columns:1fr 1fr}.metric{font-size:25px}}
 </style>
 </head>
 <body>
+<header class="top"><div class="brand"><div class="logo">🚘</div><div><b>AVTODROM</b><small>INSTRUKTOR MINI APP</small></div></div><div id="userBox" class="user hidden"><div class="avatar" id="avatar">I</div><span id="userName" style="font-size:12px;font-weight:800"></span></div></header>
 
-<section id="auth" class="auth">
-  <div id="loginBox" class="authbox">
-    <div class="mark">🚘</div>
-    <div class="eyebrow">Instructor workspace</div>
-    <h1>Instruktor kirishi</h1>
-    <p class="sub">Shaxsiy jadval, o‘quvchilar va mashg‘ulotlarni bitta joydan boshqaring.</p>
-    <div id="loginMsg"></div>
-    <form id="loginForm">
-      <div class="field"><label>Login</label><input id="loginUser" required autocomplete="username" placeholder="Login"></div>
-      <div class="field"><label>Parol</label><input id="loginPass" type="password" required autocomplete="current-password" placeholder="Parol"></div>
-      <button class="primary">Kirish</button>
-    </form>
-    <div class="switch">Yangi instruktor? <button class="link" onclick="showReg()">Ro‘yxatdan o‘tish</button></div>
-  </div>
+<section id="auth" class="auth"><div class="box">
+<div class="eyebrow">Telegram Mini App</div><h1>Instruktor bo‘lish</h1><p class="sub">Telegram akkauntingiz orqali ro‘yxatdan o‘ting. Admin tasdiqlagandan keyin jadval va bronlarni boshqarishingiz mumkin.</p>
+<div id="authMsg"></div>
+<form id="regForm">
+<div class="field"><label>Telefon raqami</label><input id="phone" type="tel" required placeholder="+998 90 000 00 00"></div>
+<div class="field"><label>Tajriba (yil)</label><input id="experience" type="number" min="0" max="60" value="1" required></div>
+<div class="field"><label>O‘zingiz haqingizda</label><textarea id="bio" placeholder="Tajriba, sertifikatlar va qisqacha ma’lumot..."></textarea></div>
+<button class="primary">Instruktor sifatida ro‘yxatdan o‘tish</button>
+</form></div></section>
 
-  <div id="regBox" class="authbox hidden">
-    <div class="mark">✦</div>
-    <div class="eyebrow">Instructor onboarding</div>
-    <h1>Instruktor profili</h1>
-    <p class="sub">Avval akkaunt yarating. Tizimga kirgandan keyin profilni to‘liq to‘ldirish talab qilinadi.</p>
-    <div id="regMsg"></div>
-    <form id="regForm">
-      <div class="field"><label>To‘liq ism</label><input id="rName" required placeholder="Ism Familiya"></div>
-      <div class="field"><label>Telefon</label><input id="rPhone" type="tel" required placeholder="+998 90 000 00 00"></div>
-      <div class="field"><label>Login</label><input id="rUser" required placeholder="instruktor"></div>
-      <div class="field"><label>Parol</label><input id="rPass" type="password" minlength="6" required placeholder="Kamida 6 belgi"></div>
-      <div class="field"><label>Parolni tasdiqlang</label><input id="rPass2" type="password" minlength="6" required placeholder="Parolni qayta kiriting"></div>
-      <button class="primary">Akkaunt yaratish</button>
-    </form>
-    <div class="switch">Akkauntingiz bormi? <button class="link" onclick="showLogin()">Kirish</button></div>
-  </div>
-</section>
-
-<section id="app" class="app hidden">
-  <header class="top">
-    <div class="topin">
-      <div class="brand">
-        <div class="brandmark">🚘</div>
-        <div><strong>AVTODROM</strong><small>INSTRUCTOR WORKSPACE</small></div>
-      </div>
-      <div class="actions">
-        <button class="icon" onclick="toggleTheme()" id="theme">☾</button>
-        <div class="profileMini"><div class="avatar" id="avatar">I</div><span class="name" id="miniName">Instruktor</span></div>
-      </div>
-    </div>
-  </header>
-
-  <div class="shell">
-    <aside class="side">
-      <nav class="nav">
-        <button class="active" onclick="page('home',this)">⌂ &nbsp; Bosh sahifa</button>
-        <button onclick="page('schedule',this)">▦ &nbsp; Jadval</button>
-        <button onclick="page('students',this)">◉ &nbsp; O‘quvchilar</button>
-        <button onclick="page('bookings',this)">◇ &nbsp; Bronlar</button>
-        <button onclick="page('profile',this)">○ &nbsp; Profil</button>
-        <button class="logout" onclick="logout()">↪ &nbsp; Chiqish</button>
-      </nav>
-    </aside>
-
-    <main>
-      <section id="home" class="page active">
-        <div class="heading"><div><h2 id="hello">Xush kelibsiz</h2><p>Bugungi ish kuningizni nazorat qiling.</p></div></div>
-
-        <div class="hero">
-          <div class="heroMain">
-            <div class="greeting">BUGUN · <span id="today"></span></div>
-            <h3>Bugun rejangiz aniq.</h3>
-            <p>Keyingi mashg‘ulot, o‘quvchilar va kunlik jadval shu yerda. Har bir bronning holatini tezda ko‘rib chiqing.</p>
-          </div>
-          <div class="next">
-            <div><div class="label">KEYINGI MASHG‘ULOT</div><div class="time">10:30</div></div>
-            <div><span class="badge ok">Tasdiqlangan</span><div class="nextmeta" style="margin-top:8px">Muhammad Ali · Cobalt</div></div>
-          </div>
-        </div>
-
-        <div class="stats">
-          <div class="stat"><b>5</b><span>Bugungi mashg‘ulot</span></div>
-          <div class="stat"><b>3</b><span>Faol o‘quvchi</span></div>
-          <div class="stat"><b>2</b><span>Kutilayotgan bron</span></div>
-          <div class="stat"><b>4.9</b><span>O‘rtacha baho</span></div>
-        </div>
-
-        <div class="panel">
-          <div class="panelhead"><strong>Bugungi jadval</strong><span>5 ta mashg‘ulot</span></div>
-          <div class="timeline">
-            <div class="slot"><time>08:00</time><div class="dot"></div><div class="slotline"><div class="lesson"><strong>Azizbek Karimov</strong><small>Chevrolet Cobalt · 01 A 245 BC · 60 daqiqa</small></div></div></div>
-            <div class="slot"><time>09:15</time><div class="dot"></div><div class="slotline"><div class="lesson"><strong>Madina T.</strong><small>Chevrolet Nexia · 01 B 718 DA · 60 daqiqa</small></div></div></div>
-            <div class="slot"><time>10:30</time><div class="dot"></div><div class="slotline"><div class="lesson"><strong>Muhammad Ali</strong><small>Chevrolet Cobalt · 01 A 904 AA · 60 daqiqa</small></div></div></div>
-          </div>
-        </div>
-      </section>
-
-      <section id="schedule" class="page">
-        <div class="heading"><div><h2>Jadval</h2><p>Bugungi va kelgusi mashg‘ulotlar.</p></div></div>
-        <div class="panel">
-          <div class="panelhead"><strong>Bugun</strong><span>20 avgust 2026</span></div>
-          <div class="timeline">
-            <div class="slot"><time>08:00</time><div class="dot"></div><div class="slotline"><div class="lesson"><strong>Azizbek Karimov</strong><small>60 daqiqa · Cobalt · 01 A 245 BC</small><span class="badge ok" style="margin-top:8px">Tasdiqlangan</span></div></div></div>
-            <div class="slot"><time>09:15</time><div class="dot"></div><div class="slotline"><div class="lesson"><strong>Madina T.</strong><small>60 daqiqa · Nexia · 01 B 718 DA</small><span class="badge busy" style="margin-top:8px">Jarayonda</span></div></div></div>
-            <div class="slot"><time>10:30</time><div class="dot"></div><div class="slotline"><div class="lesson"><strong>Muhammad Ali</strong><small>60 daqiqa · Cobalt · 01 A 904 AA</small><span class="badge ok" style="margin-top:8px">Tasdiqlangan</span></div></div></div>
-            <div class="slot"><time>12:00</time><div class="dot"></div><div class="slotline"><div class="lesson"><strong>Sardor R.</strong><small>60 daqiqa · Gentra · 01 C 331 CA</small><span class="badge wait" style="margin-top:8px">Kutilmoqda</span></div></div></div>
-          </div>
-        </div>
-      </section>
-
-      <section id="students" class="page">
-        <div class="heading"><div><h2>O‘quvchilar</h2><p>Siz bilan mashg‘ulot qilayotgan o‘quvchilar.</p></div><input class="search" placeholder="Qidirish..." oninput="filterStudents(this.value)"></div>
-        <div class="grid2" id="studentsList">
-          <div class="panel person"><div class="personleft"><div class="pic">AK</div><div><b>Azizbek Karimov</b><small>12 ta mashg‘ulot</small></div></div><span class="badge ok">Faol</span></div>
-          <div class="panel person"><div class="personleft"><div class="pic">MT</div><div><b>Madina T.</b><small>7 ta mashg‘ulot</small></div></div><span class="badge ok">Faol</span></div>
-          <div class="panel person"><div class="personleft"><div class="pic">MA</div><div><b>Muhammad Ali</b><small>4 ta mashg‘ulot</small></div></div><span class="badge ok">Faol</span></div>
-          <div class="panel person"><div class="personleft"><div class="pic">SR</div><div><b>Sardor R.</b><small>3 ta mashg‘ulot</small></div></div><span class="badge wait">Yangi</span></div>
-        </div>
-      </section>
-
-      <section id="bookings" class="page">
-        <div class="heading"><div><h2>Bronlar</h2><p>Foydalanuvchilar yuborgan mashg‘ulot so‘rovlari.</p></div></div>
-        <div class="panel">
-          <div class="panelhead"><strong>Yangi so‘rovlar</strong><span>2 ta</span></div>
-          <div class="person"><div><b>Sardor R.</b><small>Bugun · 12:00 · Gentra</small></div><span class="badge wait">Kutilmoqda</span></div>
-          <div class="person"><div><b>Malika S.</b><small>Ertaga · 09:00 · Cobalt</small></div><span class="badge wait">Kutilmoqda</span></div>
-        </div>
-        <div class="panel">
-          <div class="panelhead"><strong>Bron qoidasi</strong></div>
-          <div class="setting"><b>Depozitsiz bron</b><p>Foydalanuvchi oldindan depozit to‘lamaydi. Bron tasdiqlangach Telegram orqali eslatmalar yuboriladi.</p></div>
-        </div>
-      </section>
-
-      <section id="profile" class="page">
-        <div class="heading"><div><h2>Profil</h2><p>Instruktor ma’lumotlari.</p></div></div>
-        <div class="panel">
-          <div class="settings">
-            <div class="setting"><b>To‘liq ism</b><p id="pName">—</p></div>
-            <div class="setting"><b>Telefon</b><p id="pPhone">—</p></div>
-            <div class="setting"><b>Login</b><p id="pUser">—</p></div>
-            <div class="setting"><b>Rol</b><p>Instruktor</p></div>
-          </div>
-        </div>
-        <div class="panel">
-          <div class="panelhead"><strong>Profil holati</strong><span class="badge ok">To‘ldirilgan</span></div>
-          <div class="setting"><b>Keyingi bosqich</b><p>Admin tizimi bilan bog‘langandan so‘ng jadval, o‘quvchilar va bronlar real ma’lumotlar bilan ishlaydi.</p></div>
-          <button class="primary" style="max-width:220px;margin-top:15px" onclick="logout()">Chiqish</button>
-        </div>
-      </section>
-    </main>
-  </div>
-
-  <nav class="bottom">
-    <button class="active" onclick="page('home',this)"> <i>⌂</i>Bosh sahifa</button>
-    <button onclick="page('schedule',this)"><i>▦</i>Jadval</button>
-    <button onclick="page('students',this)"><i>◉</i>O‘quvchilar</button>
-    <button onclick="page('profile',this)"><i>○</i>Profil</button>
-  </nav>
-</section>
+<section id="app" class="hidden"><div class="wrap"><div class="appgrid"><aside class="nav"><button class="active" onclick="go('home',this)">⌂ &nbsp; Bosh sahifa</button><button onclick="go('bookings',this)">◇ &nbsp; Bronlar</button><button onclick="go('students',this)">◉ &nbsp; O‘quvchilar</button><button onclick="go('profile',this)">○ &nbsp; Profil</button></aside><main>
+<section id="home" class="page active"><div class="head"><div><h2 id="hello">Xush kelibsiz</h2><p>Instruktor ish paneli</p></div><span id="statusBadge" class="badge pending">Tekshirilmoqda</span></div><div class="hero"><div class="card"><div class="label">BUGUN</div><h3 id="heroTitle">Jadvalingizni boshqaring.</h3><p>Bronlarni ko‘ring, mashg‘ulotlarni boshlang va tugating. Ma’lumotlar umumiy Avtodrom bazasidan olinadi.</p></div><div class="card"><div class="label">KEYINGI MASHG‘ULOT</div><div id="nextTime" class="metric">—</div><p id="nextMeta">Hozircha bron yo‘q</p></div></div><div class="grid"><div class="metriccard"><b id="todayCount">0</b><span>Bugungi bron</span></div><div class="metriccard"><b id="pendingCount">0</b><span>Kutilayotgan</span></div><div class="metriccard"><b id="completedCount">0</b><span>Tugallangan</span></div></div><div class="section card"><h3>Bugungi jadval</h3><div id="todayList" class="empty">Yuklanmoqda...</div></div></section>
+<section id="bookings" class="page"><div class="head"><div><h2>Bronlar</h2><p>Sizga biriktirilgan real bronlar.</p></div><button class="btn" onclick="loadAll()">Yangilash</button></div><div class="card"><div id="bookingList" class="empty">Yuklanmoqda...</div></div></section>
+<section id="students" class="page"><div class="head"><div><h2>O‘quvchilar</h2><p>Bronlar asosida avtomatik shakllanadi.</p></div></div><div class="card"><div id="studentList" class="empty">Yuklanmoqda...</div></div></section>
+<section id="profile" class="page"><div class="head"><div><h2>Profil</h2><p>Shaxsiy ma’lumotlaringiz.</p></div></div><div class="card"><div class="field"><label>Telefon</label><input id="pPhone"></div><div class="field"><label>Tajriba</label><input id="pExperience" type="number" min="0"></div><div class="field"><label>Bio</label><textarea id="pBio"></textarea></div><button class="primary" onclick="saveProfile()">Profilni saqlash</button><div id="profileMsg"></div></div></section>
+</main></div></div><nav class="bottom"><button class="active" onclick="go('home',this)">⌂<br>Asosiy</button><button onclick="go('bookings',this)">◇<br>Bronlar</button><button onclick="go('students',this)">◉<br>O‘quvchilar</button><button onclick="go('profile',this)">○<br>Profil</button></nav></section>
 
 <script>
-const KEY="avtodrom_instructor_v1",SESSION="avtodrom_instructor_session",THEME="avtodrom_instructor_theme";
+const API_BASE=window.AVTODROM_API_BASE||'https://YOUR-BACKEND-DOMAIN';
+const tg=window.Telegram?.WebApp;
 const $=id=>document.getElementById(id);
-function data(){try{return JSON.parse(localStorage.getItem(KEY))}catch{return null}}
-function msg(id,text,type){$(id).innerHTML=`<div class="msg ${type}">${text}</div>`}
-function showLogin(){$("loginBox").classList.remove("hidden");$("regBox").classList.add("hidden")}
-function showReg(){$("loginBox").classList.add("hidden");$("regBox").classList.remove("hidden")}
-$("regForm").onsubmit=e=>{
- e.preventDefault(); if(data())return msg("regMsg","Akkaunt allaqachon mavjud. Kirish oynasidan foydalaning.","error");
- let n=$("rName").value.trim(),ph=$("rPhone").value.trim(),u=$("rUser").value.trim().toLowerCase(),p=$("rPass").value,p2=$("rPass2").value;
- if(n.length<3||ph.length<7||u.length<3)return msg("regMsg","Ma’lumotlarni to‘liq va to‘g‘ri kiriting.","error");
- if(p.length<6)return msg("regMsg","Parol kamida 6 ta belgidan iborat bo‘lishi kerak.","error");
- if(p!==p2)return msg("regMsg","Parollar mos kelmaydi.","error");
- localStorage.setItem(KEY,JSON.stringify({name:n,phone:ph,user:u,pass:p,createdAt:new Date().toISOString()}));
- localStorage.setItem(SESSION,"1"); openApp();
-};
-$("loginForm").onsubmit=e=>{
- e.preventDefault();let a=data();if(!a)return msg("loginMsg","Akkaunt topilmadi. Avval ro‘yxatdan o‘ting.","error");
- if($("loginUser").value.trim().toLowerCase()!==a.user||$("loginPass").value!==a.pass)return msg("loginMsg","Login yoki parol noto‘g‘ri.","error");
- localStorage.setItem(SESSION,"1");openApp();
-};
-function openApp(){
- let a=data();if(!a)return showReg();
- $("auth").classList.add("hidden");$("app").classList.remove("hidden");
- $("hello").textContent=`Xush kelibsiz, ${a.name.split(" ")[0]}`;
- $("miniName").textContent=a.name;$("avatar").textContent=a.name[0].toUpperCase();
- $("pName").textContent=a.name;$("pPhone").textContent=a.phone;$("pUser").textContent=a.user;
- $("today").textContent=new Date().toLocaleDateString("uz-UZ",{day:"2-digit",month:"long",year:"numeric"});
-}
-function logout(){localStorage.removeItem(SESSION);$("app").classList.add("hidden");$("auth").classList.remove("hidden");showLogin()}
-function page(id,btn){
- document.querySelectorAll(".page").forEach(x=>x.classList.remove("active"));$(id).classList.add("active");
- document.querySelectorAll(".nav button,.bottom button").forEach(x=>x.classList.remove("active"));if(btn)btn.classList.add("active");
- window.scrollTo({top:0,behavior:"smooth"});
-}
-function toggleTheme(){
- let dark=!document.body.classList.contains("dark");document.body.classList.toggle("dark",dark);
- localStorage.setItem(THEME,dark?"dark":"light");$("theme").textContent=dark?"☀":"☾";
-}
-function filterStudents(q){
- q=q.toLowerCase();document.querySelectorAll("#studentsList .person").forEach(x=>x.style.display=x.innerText.toLowerCase().includes(q)?"flex":"none");
-}
-(function init(){
- let t=localStorage.getItem(THEME);if(t==="dark"){document.body.classList.add("dark");$("theme").textContent="☀"}
- if(data()&&localStorage.getItem(SESSION)==="1")openApp();else if(data())showLogin();else showReg();
-})();
+let profile=null,instructor=null,bookings=[];
+function say(text,type='ok'){ $('authMsg').innerHTML=`<div class="msg ${type==='err'?'err':type==='warn'?'warn':'ok'}">${text}</div>`; }
+function profileMsg(text,type='ok'){ $('profileMsg').innerHTML=`<div class="msg ${type==='err'?'err':'ok'}">${text}</div>`; }
+function headers(){const h={'Content-Type':'application/json'};if(tg?.initData)h['X-Telegram-Init-Data']=tg.initData;return h}
+async function api(path,opt={}){if(!tg?.initData)throw new Error('Bu sahifa Telegram Mini App ichida ochilishi kerak.');const r=await fetch(API_BASE+path,{...opt,headers:{...headers(),...(opt.headers||{})}});const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error(j.error||'Server xatosi');return j}
+function esc(v){return String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
+async function boot(){try{tg?.ready();tg?.expand();const me=await api('/api/me');profile=me.profile;const ins=await api('/api/instructor/profile').catch(()=>null);if(!ins){$('auth').classList.remove('hidden');return}instructor=ins.instructor;profile=ins.profile;if(profile.role!=='instructor'){say('Instruktor roli hali berilmagan. Ro‘yxatdan o‘ting.','warn');return}if(instructor.approval_status!=='approved'){showApp();setStatus();return}showApp();await loadAll();}catch(e){if(String(e.message).includes('ro‘yxatdan'))say(e.message,'warn');else say(e.message,'err')}}
+function showApp(){$('auth').classList.add('hidden');$('app').classList.remove('hidden');$('userBox').classList.remove('hidden');$('userName').textContent=[profile?.first_name,profile?.last_name].filter(Boolean).join(' ')||'Instruktor';$('avatar').textContent=($('userName').textContent[0]||'I').toUpperCase();setStatus()}
+function setStatus(){const b=$('statusBadge');if(!instructor){b.textContent='Ro‘yxatdan o‘tmagan';b.className='badge pending';return}const m={approved:['Tasdiqlangan','approved'],pending:['Admin tasdig‘i kutilmoqda','pending'],rejected:['Rad etilgan','rejected'],blocked:['Bloklangan','rejected']};const x=m[instructor.approval_status]||m.pending;b.textContent=x[0];b.className='badge '+x[1]}
+$('regForm').onsubmit=async e=>{e.preventDefault();try{const j=await api('/api/instructor/register',{method:'POST',body:JSON.stringify({phone:$('phone').value.trim(),experience_years:Number($('experience').value),bio:$('bio').value.trim()})});profile=j.profile;instructor=j.instructor;showApp();setStatus();await loadAll();}catch(e){say(e.message,'err')}};
+async function loadAll(){if(!instructor)return;try{const j=await api('/api/bookings');bookings=j.bookings||[];render();}catch(e){$('todayList').textContent=e.message;$('bookingList').textContent=e.message}}
+function render(){const now=new Date();const today=bookings.filter(b=>new Date(b.start_at).toDateString()===now.toDateString());$('todayCount').textContent=today.length;$('pendingCount').textContent=bookings.filter(b=>b.status==='pending').length;$('completedCount').textContent=bookings.filter(b=>b.status==='completed').length;const next=bookings.filter(b=>new Date(b.start_at)>=now&&['pending','confirmed'].includes(b.status)).sort((a,b)=>new Date(a.start_at)-new Date(b.start_at))[0];if(next){$('nextTime').textContent=new Date(next.start_at).toLocaleTimeString('uz-UZ',{hour:'2-digit',minute:'2-digit'});$('nextMeta').textContent=`${customerName(next)} · ${next.car?.model||'Avtomobil'}`}else{$('nextTime').textContent='—';$('nextMeta').textContent='Hozircha bron yo‘q'}
+$('todayList').innerHTML=today.length?today.map(row).join(''):'<div class="empty">Bugun bron yo‘q.</div>';$('bookingList').innerHTML=bookings.length?bookings.map(row).join(''):'<div class="empty">Bronlar topilmadi.</div>';const unique=new Map();bookings.forEach(b=>unique.set(b.customer_id,b));$('studentList').innerHTML=unique.size?[...unique.values()].map(b=>`<div class="row"><div><strong>${esc(customerName(b))}</strong><small>${bookings.filter(x=>x.customer_id===b.customer_id).length} ta mashg‘ulot</small></div><span class="badge approved">Faol</span></div>`).join(''):'<div class="empty">O‘quvchilar hali yo‘q.</div>';}
+function customerName(b){return [b.customer?.first_name,b.customer?.last_name].filter(Boolean).join(' ')||'Foydalanuvchi'}
+function row(b){const d=new Date(b.start_at),status={pending:'Kutilmoqda',confirmed:'Tasdiqlangan',in_progress:'Jarayonda',completed:'Tugallangan',cancelled:'Bekor qilingan',no_show:'Kelmagan'}[b.status]||b.status;const cls=['completed','cancelled','no_show'].includes(b.status)?'rejected':b.status==='pending'?'pending':'approved';let actions='';if(b.status==='pending')actions=`<div class="actions"><button class="btn primary" onclick="setBooking('${b.id}','confirmed')">Tasdiqlash</button><button class="btn danger" onclick="setBooking('${b.id}','cancelled')">Rad etish</button></div>`;if(b.status==='confirmed')actions=`<div class="actions"><button class="btn primary" onclick="setBooking('${b.id}','in_progress')">Boshlash</button></div>`;if(b.status==='in_progress')actions=`<div class="actions"><button class="btn primary" onclick="setBooking('${b.id}','completed')">Tugatish</button></div>`;return `<div class="row"><div><strong>${esc(customerName(b))}</strong><small>${d.toLocaleDateString('uz-UZ')} · ${d.toLocaleTimeString('uz-UZ',{hour:'2-digit',minute:'2-digit'})} · ${esc(b.car?.model||'Avtomobil')} ${esc(b.car?.plate_number||'')}</small></div><div>${actions}<span class="badge ${cls}">${status}</span></div></div>`}
+async function setBooking(id,status){try{await api('/api/bookings/'+id+'/status',{method:'PATCH',body:JSON.stringify({status})});await loadAll()}catch(e){alert(e.message)}}
+async function saveProfile(){try{const j=await api('/api/instructor/profile',{method:'PATCH',body:JSON.stringify({phone:$('pPhone').value,experience_years:Number($('pExperience').value),bio:$('pBio').value})});profile=j.profile;instructor=j.instructor;profileMsg('Profil saqlandi.');setStatus()}catch(e){profileMsg(e.message,'err')}}
+function fillProfile(){$('pPhone').value=profile?.phone||'';$('pExperience').value=instructor?.experience_years||0;$('pBio').value=instructor?.bio||''}
+function go(id,btn){document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));$(id).classList.add('active');document.querySelectorAll('.nav button,.bottom button').forEach(x=>x.classList.remove('active'));if(btn)btn.classList.add('active');if(id==='profile')fillProfile();window.scrollTo(0,0)}
+boot();
 </script>
-</body>
-</html>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+</body></html>
