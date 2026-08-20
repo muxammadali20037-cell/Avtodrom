@@ -5,7 +5,6 @@ import rateLimit from '@fastify/rate-limit';
 import { sendCustomerStart, validateTelegramInitData, type TelegramWebAppUser } from './telegram.js';
 import { registerBookingRoutes } from './booking-routes.js';
 import { registerInstructorRoutes } from './instructor-routes.js';
-import { registerAdminRoutes } from './admin-routes.js';
 import { registerAdminPasswordRoutes } from './admin-password-routes.js';
 
 const app = Fastify({ logger: true });
@@ -36,7 +35,9 @@ export async function authenticate(request: any): Promise<TelegramWebAppUser> {
 
 await registerBookingRoutes(app, authenticate);
 await registerInstructorRoutes(app, authenticate);
-await registerAdminRoutes(app, authenticate);
+
+// Admin API has one source of truth. Do not register the legacy admin-routes module
+// together with admin-password-routes because both declare the same Fastify routes.
 await registerAdminPasswordRoutes(app);
 
 app.post<{ Body: { chatId?: number } }>('/api/telegram/customer/start', async (request, reply) => {
