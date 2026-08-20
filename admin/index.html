@@ -1,4823 +1,2204 @@
-```html
 <!DOCTYPE html>
 <html lang="uz">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AVTODROM INDEX — Admin Panel</title>
-
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
-<style>
-*{
-  box-sizing:border-box;
-  margin:0;
-  padding:0;
-}
-
-:root{
-  --bg:#f5f7fb;
-  --card:#ffffff;
-  --text:#172033;
-  --muted:#718096;
-  --line:#e8edf4;
-  --primary:#2563eb;
-  --primary2:#1d4ed8;
-  --green:#16a34a;
-  --red:#dc2626;
-  --orange:#ea580c;
-  --purple:#7c3aed;
-  --shadow:0 10px 30px rgba(15,23,42,.07);
-  --radius:18px;
-}
-
-body{
-  font-family:Inter,Arial,sans-serif;
-  background:var(--bg);
-  color:var(--text);
-}
-
-button,
-input,
-select,
-textarea{
-  font:inherit;
-}
-
-button{
-  cursor:pointer;
-}
-
-.hidden{
-  display:none!important;
-}
-
-/* LOGIN */
-
-.auth-screen{
-  min-height:100vh;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  padding:24px;
-  background:
-    radial-gradient(circle at top right,#dbeafe,transparent 35%),
-    radial-gradient(circle at bottom left,#ede9fe,transparent 35%),
-    var(--bg);
-}
-
-.auth-card{
-  width:100%;
-  max-width:460px;
-  background:#fff;
-  border:1px solid var(--line);
-  border-radius:26px;
-  padding:34px;
-  box-shadow:0 25px 70px rgba(15,23,42,.12);
-}
-
-.logo{
-  width:58px;
-  height:58px;
-  border-radius:17px;
-  background:linear-gradient(135deg,#2563eb,#7c3aed);
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  color:#fff;
-  font-size:28px;
-  margin-bottom:20px;
-}
-
-.auth-card h1{
-  font-size:25px;
-  margin-bottom:8px;
-}
-
-.auth-card p{
-  color:var(--muted);
-  margin-bottom:25px;
-  line-height:1.5;
-}
-
-.field{
-  margin-bottom:16px;
-}
-
-.field label{
-  display:block;
-  font-size:13px;
-  font-weight:700;
-  margin-bottom:7px;
-}
-
-.input,
-.select,
-.textarea{
-  width:100%;
-  border:1px solid #dce3ec;
-  background:#fff;
-  border-radius:12px;
-  padding:12px 14px;
-  outline:none;
-  transition:.2s;
-}
-
-.input:focus,
-.select:focus,
-.textarea:focus{
-  border-color:var(--primary);
-  box-shadow:0 0 0 3px rgba(37,99,235,.1);
-}
-
-.textarea{
-  min-height:110px;
-  resize:vertical;
-}
-
-.btn{
-  border:0;
-  border-radius:12px;
-  padding:12px 17px;
-  font-weight:700;
-  transition:.2s;
-}
-
-.btn:hover{
-  transform:translateY(-1px);
-}
-
-.btn-primary{
-  color:#fff;
-  background:var(--primary);
-}
-
-.btn-primary:hover{
-  background:var(--primary2);
-}
-
-.btn-secondary{
-  background:#eef2f7;
-  color:#273449;
-}
-
-.btn-danger{
-  color:#fff;
-  background:var(--red);
-}
-
-.btn-success{
-  color:#fff;
-  background:var(--green);
-}
-
-.btn-warning{
-  color:#fff;
-  background:var(--orange);
-}
-
-.auth-tabs{
-  display:flex;
-  gap:8px;
-  background:#f3f5f8;
-  padding:5px;
-  border-radius:13px;
-  margin-bottom:22px;
-}
-
-.auth-tab{
-  flex:1;
-  border:0;
-  padding:10px;
-  border-radius:9px;
-  background:transparent;
-  font-weight:700;
-  color:var(--muted);
-}
-
-.auth-tab.active{
-  background:#fff;
-  color:var(--primary);
-  box-shadow:0 2px 8px rgba(0,0,0,.05);
-}
-
-.auth-error{
-  background:#fef2f2;
-  color:#b91c1c;
-  padding:11px 13px;
-  border-radius:10px;
-  margin-bottom:15px;
-  font-size:13px;
-}
-
-/* APP */
-
-.app{
-  min-height:100vh;
-  display:flex;
-}
-
-.sidebar{
-  width:270px;
-  background:#101827;
-  color:#fff;
-  position:fixed;
-  left:0;
-  top:0;
-  bottom:0;
-  z-index:30;
-  display:flex;
-  flex-direction:column;
-}
-
-.brand{
-  height:78px;
-  padding:20px;
-  display:flex;
-  align-items:center;
-  gap:12px;
-  border-bottom:1px solid rgba(255,255,255,.08);
-}
-
-.brand-icon{
-  width:39px;
-  height:39px;
-  border-radius:12px;
-  background:linear-gradient(135deg,#2563eb,#7c3aed);
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  font-size:20px;
-}
-
-.brand strong{
-  font-size:15px;
-}
-
-.brand small{
-  display:block;
-  color:#94a3b8;
-  margin-top:2px;
-}
-
-.nav{
-  padding:16px 12px;
-  overflow:auto;
-}
-
-.nav-title{
-  color:#64748b;
-  font-size:10px;
-  text-transform:uppercase;
-  letter-spacing:1px;
-  padding:13px 11px 7px;
-}
-
-.nav button{
-  width:100%;
-  border:0;
-  background:transparent;
-  color:#cbd5e1;
-  padding:11px 13px;
-  border-radius:11px;
-  display:flex;
-  align-items:center;
-  gap:12px;
-  text-align:left;
-  margin:2px 0;
-}
-
-.nav button:hover{
-  background:#172235;
-  color:#fff;
-}
-
-.nav button.active{
-  background:#2563eb;
-  color:#fff;
-}
-
-.nav-icon{
-  width:21px;
-  text-align:center;
-}
-
-.sidebar-bottom{
-  margin-top:auto;
-  padding:15px;
-  border-top:1px solid rgba(255,255,255,.08);
-}
-
-.user-mini{
-  display:flex;
-  align-items:center;
-  gap:10px;
-  padding:10px;
-  margin-bottom:8px;
-}
-
-.avatar{
-  width:38px;
-  height:38px;
-  border-radius:50%;
-  background:#2563eb;
-  color:#fff;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  font-weight:800;
-}
-
-.user-mini small{
-  color:#94a3b8;
-}
-
-.logout{
-  width:100%;
-  background:#172235;
-  color:#cbd5e1;
-  border:0;
-  padding:11px;
-  border-radius:10px;
-}
-
-/* MAIN */
-
-.main{
-  margin-left:270px;
-  width:calc(100% - 270px);
-}
-
-.topbar{
-  height:78px;
-  background:#fff;
-  border-bottom:1px solid var(--line);
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  padding:0 28px;
-  position:sticky;
-  top:0;
-  z-index:20;
-}
-
-.topbar-left{
-  display:flex;
-  align-items:center;
-  gap:12px;
-}
-
-.menu-mobile{
-  display:none;
-  border:0;
-  background:#f1f5f9;
-  border-radius:10px;
-  padding:9px;
-}
-
-.topbar h2{
-  font-size:19px;
-}
-
-.topbar-right{
-  display:flex;
-  align-items:center;
-  gap:10px;
-}
-
-.notification{
-  width:40px;
-  height:40px;
-  border:1px solid var(--line);
-  border-radius:11px;
-  background:#fff;
-  position:relative;
-}
-
-.dot{
-  position:absolute;
-  right:8px;
-  top:7px;
-  width:7px;
-  height:7px;
-  background:#ef4444;
-  border-radius:50%;
-}
-
-.content{
-  padding:28px;
-}
-
-.page{
-  display:none;
-}
-
-.page.active{
-  display:block;
-}
-
-.page-head{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:15px;
-  margin-bottom:22px;
-}
-
-.page-head h1{
-  font-size:26px;
-}
-
-.page-head p{
-  color:var(--muted);
-  margin-top:5px;
-}
-
-.actions{
-  display:flex;
-  gap:8px;
-  flex-wrap:wrap;
-}
-
-/* CARDS */
-
-.stats{
-  display:grid;
-  grid-template-columns:repeat(4,1fr);
-  gap:16px;
-  margin-bottom:20px;
-}
-
-.stat{
-  background:#fff;
-  border:1px solid var(--line);
-  border-radius:17px;
-  padding:19px;
-  box-shadow:var(--shadow);
-}
-
-.stat-top{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-}
-
-.stat-icon{
-  width:42px;
-  height:42px;
-  border-radius:12px;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  background:#eff6ff;
-  font-size:20px;
-}
-
-.stat-value{
-  font-size:27px;
-  font-weight:800;
-  margin-top:13px;
-}
-
-.stat-label{
-  color:var(--muted);
-  font-size:13px;
-  margin-top:4px;
-}
-
-.grid-2{
-  display:grid;
-  grid-template-columns:1fr 1fr;
-  gap:18px;
-}
-
-.card{
-  background:#fff;
-  border:1px solid var(--line);
-  border-radius:17px;
-  box-shadow:var(--shadow);
-  overflow:hidden;
-}
-
-.card-head{
-  padding:18px 20px;
-  border-bottom:1px solid var(--line);
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:10px;
-}
-
-.card-head h3{
-  font-size:16px;
-}
-
-.card-body{
-  padding:20px;
-}
-
-/* TABLE */
-
-.table-wrap{
-  overflow:auto;
-}
-
-table{
-  width:100%;
-  border-collapse:collapse;
-  min-width:760px;
-}
-
-th,
-td{
-  padding:14px 16px;
-  border-bottom:1px solid var(--line);
-  text-align:left;
-  font-size:13px;
-}
-
-th{
-  background:#f8fafc;
-  color:#64748b;
-  font-size:11px;
-  text-transform:uppercase;
-  letter-spacing:.4px;
-}
-
-tr:hover td{
-  background:#fafcff;
-}
-
-.status{
-  display:inline-flex;
-  align-items:center;
-  padding:5px 9px;
-  border-radius:999px;
-  font-size:11px;
-  font-weight:800;
-}
-
-.pending{
-  background:#fff7ed;
-  color:#c2410c;
-}
-
-.confirmed{
-  background:#ecfdf5;
-  color:#15803d;
-}
-
-.cancelled{
-  background:#fef2f2;
-  color:#b91c1c;
-}
-
-.completed{
-  background:#eff6ff;
-  color:#1d4ed8;
-}
-
-.blocked{
-  background:#f1f5f9;
-  color:#475569;
-}
-
-.toolbar{
-  background:#fff;
-  border:1px solid var(--line);
-  border-radius:15px;
-  padding:13px;
-  display:flex;
-  align-items:center;
-  gap:9px;
-  flex-wrap:wrap;
-  margin-bottom:15px;
-}
-
-.search{
-  flex:1;
-  min-width:200px;
-}
-
-/* INSTRUCTOR */
-
-.people{
-  display:grid;
-  grid-template-columns:repeat(3,1fr);
-  gap:16px;
-}
-
-.person{
-  background:#fff;
-  border:1px solid var(--line);
-  border-radius:17px;
-  padding:19px;
-  box-shadow:var(--shadow);
-}
-
-.person-top{
-  display:flex;
-  gap:12px;
-  align-items:center;
-}
-
-.person-avatar{
-  width:52px;
-  height:52px;
-  border-radius:15px;
-  object-fit:cover;
-  background:#e0e7ff;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  font-size:20px;
-  font-weight:800;
-  color:#3730a3;
-}
-
-.person h3{
-  font-size:15px;
-}
-
-.person p{
-  color:var(--muted);
-  font-size:12px;
-  margin-top:3px;
-}
-
-.person-info{
-  display:grid;
-  grid-template-columns:1fr 1fr;
-  gap:8px;
-  margin:17px 0;
-}
-
-.info-box{
-  background:#f8fafc;
-  padding:10px;
-  border-radius:10px;
-}
-
-.info-box small{
-  color:var(--muted);
-  display:block;
-  font-size:10px;
-}
-
-.info-box strong{
-  font-size:13px;
-  display:block;
-  margin-top:3px;
-}
-
-/* SETTINGS */
-
-.settings-grid{
-  display:grid;
-  grid-template-columns:230px 1fr;
-  gap:18px;
-}
-
-.settings-menu{
-  background:#fff;
-  border:1px solid var(--line);
-  border-radius:16px;
-  padding:8px;
-  height:max-content;
-}
-
-.settings-menu button{
-  width:100%;
-  border:0;
-  background:transparent;
-  text-align:left;
-  padding:11px 13px;
-  border-radius:9px;
-}
-
-.settings-menu button.active{
-  background:#eff6ff;
-  color:#2563eb;
-  font-weight:700;
-}
-
-.setting-section{
-  display:none;
-}
-
-.setting-section.active{
-  display:block;
-}
-
-.form-grid{
-  display:grid;
-  grid-template-columns:1fr 1fr;
-  gap:15px;
-}
-
-.full{
-  grid-column:1/-1;
-}
-
-.switch-row{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  padding:14px 0;
-  border-bottom:1px solid var(--line);
-}
-
-.switch{
-  width:46px;
-  height:26px;
-  border-radius:20px;
-  background:#cbd5e1;
-  position:relative;
-  border:0;
-}
-
-.switch.on{
-  background:#2563eb;
-}
-
-.switch span{
-  position:absolute;
-  width:20px;
-  height:20px;
-  top:3px;
-  left:3px;
-  background:#fff;
-  border-radius:50%;
-  transition:.2s;
-}
-
-.switch.on span{
-  left:23px;
-}
-
-/* REVIEWS */
-
-.review{
-  border-bottom:1px solid var(--line);
-  padding:17px 0;
-}
-
-.review:last-child{
-  border-bottom:0;
-}
-
-.review-top{
-  display:flex;
-  justify-content:space-between;
-  gap:15px;
-}
-
-.stars{
-  color:#f59e0b;
-  letter-spacing:2px;
-}
-
-.review-text{
-  margin:9px 0;
-  line-height:1.5;
-}
-
-.review-meta{
-  color:var(--muted);
-  font-size:11px;
-}
-
-/* SCHEDULE */
-
-.schedule-grid{
-  display:grid;
-  grid-template-columns:repeat(2,1fr);
-  gap:18px;
-}
-
-.mode-card{
-  padding:22px;
-  border-radius:18px;
-  border:1px solid var(--line);
-  background:#fff;
-}
-
-.mode-icon{
-  font-size:30px;
-  margin-bottom:10px;
-}
-
-.mode-card h3{
-  margin-bottom:5px;
-}
-
-.mode-card p{
-  color:var(--muted);
-  font-size:13px;
-  margin-bottom:18px;
-}
-
-/* MODAL */
-
-.modal{
-  position:fixed;
-  inset:0;
-  background:rgba(15,23,42,.55);
-  display:none;
-  align-items:center;
-  justify-content:center;
-  z-index:100;
-  padding:20px;
-}
-
-.modal.show{
-  display:flex;
-}
-
-.modal-box{
-  width:100%;
-  max-width:650px;
-  max-height:90vh;
-  overflow:auto;
-  background:#fff;
-  border-radius:20px;
-  box-shadow:0 30px 80px rgba(0,0,0,.2);
-}
-
-.modal-head{
-  padding:18px 20px;
-  border-bottom:1px solid var(--line);
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-}
-
-.modal-close{
-  border:0;
-  background:#f1f5f9;
-  width:35px;
-  height:35px;
-  border-radius:9px;
-}
-
-.modal-body{
-  padding:20px;
-}
-
-.modal-foot{
-  padding:15px 20px;
-  border-top:1px solid var(--line);
-  display:flex;
-  justify-content:flex-end;
-  gap:8px;
-}
-
-/* TOAST */
-
-.toast{
-  position:fixed;
-  right:25px;
-  bottom:25px;
-  background:#111827;
-  color:#fff;
-  padding:13px 17px;
-  border-radius:12px;
-  box-shadow:0 15px 40px rgba(0,0,0,.2);
-  z-index:200;
-  display:none;
-  max-width:350px;
-}
-
-.toast.show{
-  display:block;
-  animation:toast .25s ease;
-}
-
-@keyframes toast{
-  from{
-    transform:translateY(10px);
-    opacity:0;
-  }
-  to{
-    transform:translateY(0);
-    opacity:1;
-  }
-}
-
-/* RESPONSIVE */
-
-@media(max-width:1100px){
-  .stats{
-    grid-template-columns:repeat(2,1fr);
-  }
-
-  .people{
-    grid-template-columns:repeat(2,1fr);
-  }
-}
-
-@media(max-width:800px){
-  .sidebar{
-    transform:translateX(-100%);
-    transition:.25s;
-  }
-
-  .sidebar.open{
-    transform:translateX(0);
-  }
-
-  .main{
-    margin-left:0;
-    width:100%;
-  }
-
-  .menu-mobile{
-    display:block;
-  }
-
-  .content{
-    padding:18px;
-  }
-
-  .grid-2,
-  .settings-grid,
-  .schedule-grid{
-    grid-template-columns:1fr;
-  }
-
-  .people{
-    grid-template-columns:1fr;
-  }
-
-  .stats{
-    grid-template-columns:1fr 1fr;
-  }
-
-  .topbar{
-    padding:0 16px;
-  }
-}
-
-@media(max-width:500px){
-  .stats{
-    grid-template-columns:1fr;
-  }
-
-  .form-grid{
-    grid-template-columns:1fr;
-  }
-
-  .auth-card{
-    padding:24px;
-  }
-
-  .page-head{
-    align-items:flex-start;
-    flex-direction:column;
-  }
-}
-</style>
+  <meta charset="UTF-8" />
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+  />
+
+  <title>Avtodrom Admin</title>
+
+  <style>
+    :root {
+      --green: #16a34a;
+      --green-dark: #15803d;
+      --green-light: #dcfce7;
+      --bg: #f4f7f5;
+      --card: #ffffff;
+      --text: #17201a;
+      --muted: #6b7280;
+      --border: #e5e7eb;
+      --danger: #dc2626;
+      --warning: #d97706;
+      --shadow: 0 10px 30px rgba(0, 0, 0, 0.07);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family:
+        Inter,
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        Arial,
+        sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      transition: background 0.25s ease, color 0.25s ease;
+    }
+
+    body.dark {
+      --bg: #0d1410;
+      --card: #151d18;
+      --text: #f3f7f4;
+      --muted: #9ca3af;
+      --border: #26332b;
+      --green-light: #123c23;
+      --shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+    }
+
+    button,
+    input,
+    select {
+      font: inherit;
+    }
+
+    button {
+      cursor: pointer;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    /* =========================
+       AUTH
+    ========================= */
+
+    #authScreen {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      background:
+        radial-gradient(
+          circle at top right,
+          rgba(22, 163, 74, 0.16),
+          transparent 35%
+        ),
+        var(--bg);
+    }
+
+    .auth-card {
+      width: 100%;
+      max-width: 440px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 26px;
+      padding: 32px;
+      box-shadow: var(--shadow);
+    }
+
+    .logo {
+      width: 68px;
+      height: 68px;
+      border-radius: 20px;
+      background: var(--green);
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 30px;
+      margin-bottom: 20px;
+      box-shadow: 0 10px 25px rgba(22, 163, 74, 0.25);
+    }
+
+    .auth-card h1 {
+      font-size: 28px;
+      margin-bottom: 8px;
+    }
+
+    .auth-card .subtitle {
+      color: var(--muted);
+      line-height: 1.5;
+      margin-bottom: 28px;
+    }
+
+    .mode-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 7px 11px;
+      background: var(--green-light);
+      color: var(--green-dark);
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+      margin-bottom: 20px;
+    }
+
+    .form-group {
+      margin-bottom: 16px;
+    }
+
+    .form-group label {
+      display: block;
+      font-size: 13px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .input-wrap {
+      position: relative;
+    }
+
+    .input-wrap input {
+      width: 100%;
+      height: 50px;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 0 15px;
+      outline: none;
+      background: var(--card);
+      color: var(--text);
+      transition: border 0.2s;
+    }
+
+    .input-wrap input:focus {
+      border-color: var(--green);
+      box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.1);
+    }
+
+    .primary-btn {
+      width: 100%;
+      min-height: 50px;
+      border: none;
+      border-radius: 14px;
+      background: var(--green);
+      color: white;
+      font-weight: 800;
+      transition: 0.2s;
+      margin-top: 8px;
+    }
+
+    .primary-btn:hover {
+      background: var(--green-dark);
+      transform: translateY(-1px);
+    }
+
+    .secondary-btn {
+      width: 100%;
+      min-height: 48px;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      background: transparent;
+      color: var(--text);
+      font-weight: 700;
+      margin-top: 10px;
+    }
+
+    .secondary-btn:hover {
+      background: var(--green-light);
+    }
+
+    .switch-text {
+      text-align: center;
+      color: var(--muted);
+      margin-top: 20px;
+      font-size: 14px;
+    }
+
+    .switch-btn {
+      border: none;
+      background: transparent;
+      color: var(--green);
+      font-weight: 800;
+      margin-left: 5px;
+    }
+
+    .message {
+      padding: 12px 14px;
+      border-radius: 12px;
+      font-size: 13px;
+      margin-bottom: 15px;
+      display: none;
+    }
+
+    .message.error {
+      display: block;
+      color: #991b1b;
+      background: #fee2e2;
+    }
+
+    .message.success {
+      display: block;
+      color: #166534;
+      background: #dcfce7;
+    }
+
+    /* =========================
+       APP
+    ========================= */
+
+    #app {
+      min-height: 100vh;
+    }
+
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      background: var(--card);
+      border-bottom: 1px solid var(--border);
+      backdrop-filter: blur(15px);
+    }
+
+    .topbar-inner {
+      max-width: 1400px;
+      margin: auto;
+      min-height: 72px;
+      padding: 0 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 15px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 11px;
+    }
+
+    .brand-icon {
+      width: 42px;
+      height: 42px;
+      border-radius: 13px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      background: var(--green);
+      font-size: 20px;
+    }
+
+    .brand-title {
+      font-weight: 900;
+    }
+
+    .brand-sub {
+      color: var(--muted);
+      font-size: 11px;
+      margin-top: 2px;
+    }
+
+    .top-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .icon-btn {
+      width: 42px;
+      height: 42px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: var(--card);
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+    }
+
+    .icon-btn:hover {
+      background: var(--green-light);
+    }
+
+    .admin-pill {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border: 1px solid var(--border);
+      padding: 7px 10px;
+      border-radius: 13px;
+    }
+
+    .avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 10px;
+      background: var(--green-light);
+      color: var(--green-dark);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 900;
+    }
+
+    .admin-name {
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .layout {
+      max-width: 1400px;
+      margin: auto;
+      padding: 25px 20px 90px;
+      display: grid;
+      grid-template-columns: 230px 1fr;
+      gap: 25px;
+    }
+
+    .sidebar {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 12px;
+      height: fit-content;
+      position: sticky;
+      top: 97px;
+    }
+
+    .nav-btn {
+      width: 100%;
+      border: none;
+      background: transparent;
+      color: var(--muted);
+      padding: 13px 14px;
+      border-radius: 12px;
+      text-align: left;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 4px;
+    }
+
+    .nav-btn:hover,
+    .nav-btn.active {
+      background: var(--green-light);
+      color: var(--green-dark);
+    }
+
+    .logout-btn {
+      margin-top: 12px;
+      border-top: 1px solid var(--border);
+      padding-top: 16px;
+    }
+
+    .content h2 {
+      font-size: 29px;
+      margin-bottom: 6px;
+    }
+
+    .content-subtitle {
+      color: var(--muted);
+      margin-bottom: 25px;
+    }
+
+    .page {
+      display: none;
+    }
+
+    .page.active {
+      display: block;
+    }
+
+    /* =========================
+       CARDS
+    ========================= */
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+
+    .stat-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 20px;
+      box-shadow: var(--shadow);
+    }
+
+    .stat-top {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .stat-icon {
+      width: 42px;
+      height: 42px;
+      background: var(--green-light);
+      color: var(--green-dark);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .stat-value {
+      font-size: 28px;
+      font-weight: 900;
+      margin-top: 15px;
+    }
+
+    .stat-label {
+      color: var(--muted);
+      font-size: 13px;
+      margin-top: 3px;
+    }
+
+    .panel {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: var(--shadow);
+    }
+
+    .panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 15px;
+      margin-bottom: 18px;
+    }
+
+    .panel-title {
+      font-size: 18px;
+      font-weight: 900;
+    }
+
+    .small-muted {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    /* =========================
+       TABLE
+    ========================= */
+
+    .table-wrap {
+      width: 100%;
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 650px;
+    }
+
+    th,
+    td {
+      padding: 13px 10px;
+      border-bottom: 1px solid var(--border);
+      text-align: left;
+      font-size: 13px;
+    }
+
+    th {
+      color: var(--muted);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .status {
+      display: inline-flex;
+      padding: 6px 9px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 800;
+    }
+
+    .status.active {
+      color: #166534;
+      background: #dcfce7;
+    }
+
+    .status.waiting {
+      color: #92400e;
+      background: #fef3c7;
+    }
+
+    .status.done {
+      color: #374151;
+      background: #e5e7eb;
+    }
+
+    /* =========================
+       FORMS / SETTINGS
+    ========================= */
+
+    .settings-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 15px;
+    }
+
+    .setting-item {
+      padding: 17px;
+      border: 1px solid var(--border);
+      border-radius: 15px;
+    }
+
+    .setting-item h4 {
+      margin-bottom: 5px;
+    }
+
+    .setting-item p {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .danger-btn {
+      border: none;
+      background: #fee2e2;
+      color: var(--danger);
+      padding: 11px 15px;
+      border-radius: 12px;
+      font-weight: 800;
+      margin-top: 15px;
+    }
+
+    /* =========================
+       MOBILE
+    ========================= */
+
+    @media (max-width: 1000px) {
+      .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .layout {
+        grid-template-columns: 1fr;
+      }
+
+      .sidebar {
+        position: static;
+        display: flex;
+        overflow-x: auto;
+        gap: 5px;
+      }
+
+      .nav-btn {
+        width: auto;
+        white-space: nowrap;
+        margin: 0;
+      }
+
+      .logout-btn {
+        border-top: none;
+        padding-top: 13px;
+        margin-top: 0;
+      }
+    }
+
+    @media (max-width: 650px) {
+      .auth-card {
+        padding: 24px 18px;
+        border-radius: 20px;
+      }
+
+      .topbar-inner {
+        padding: 0 12px;
+      }
+
+      .admin-name {
+        display: none;
+      }
+
+      .layout {
+        padding: 18px 12px 80px;
+      }
+
+      .content h2 {
+        font-size: 24px;
+      }
+
+      .stats-grid {
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+      }
+
+      .stat-card {
+        padding: 15px;
+      }
+
+      .stat-value {
+        font-size: 23px;
+      }
+
+      .settings-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .brand-sub {
+        display: none;
+      }
+    }
+  </style>
 </head>
 
 <body>
 
-<!-- =====================================================
-     AUTH
-===================================================== -->
+  <!-- =========================================================
+       AUTH SCREEN
+  ========================================================== -->
 
-<div id="authScreen" class="auth-screen">
-
-  <div class="auth-card">
-
-    <div class="logo">🚗</div>
-
-    <h1>AVTODROM INDEX</h1>
-
-    <p>
-      Professional boshqaruv paneli.
-      Faqat vakolatli administratorlar uchun.
-    </p>
-
-    <div class="auth-tabs">
-
-      <button
-        id="loginTab"
-        class="auth-tab active"
-        onclick="showAuth('login')">
-        Kirish
-      </button>
-
-      <button
-        id="registerTab"
-        class="auth-tab"
-        onclick="showAuth('register')">
-        Ro‘yxatdan o‘tish
-      </button>
-
-    </div>
-
-    <div
-      id="authError"
-      class="auth-error hidden">
-    </div>
+  <section id="authScreen">
 
     <!-- LOGIN -->
+    <div id="loginBox" class="auth-card">
 
-    <form
-      id="loginForm"
-      onsubmit="login(event)">
+      <div class="logo">🚗</div>
 
-      <div class="field">
-        <label>Email</label>
-        <input
-          id="loginEmail"
-          class="input"
-          type="email"
-          required
-          autocomplete="email"
-          placeholder="admin@example.com">
+      <div class="mode-badge">
+        🛡️ ADMIN PANEL
       </div>
 
-      <div class="field">
-        <label>Parol</label>
-        <input
-          id="loginPassword"
-          class="input"
-          type="password"
-          required
-          autocomplete="current-password"
-          placeholder="••••••••">
+      <h1>Admin tizimiga kirish</h1>
+
+      <p class="subtitle">
+        Avtodrom boshqaruv paneliga kirish uchun
+        administrator akkauntingizdan foydalaning.
+      </p>
+
+      <div id="loginMessage" class="message"></div>
+
+      <form id="loginForm">
+
+        <div class="form-group">
+          <label for="loginUsername">Login</label>
+
+          <div class="input-wrap">
+            <input
+              id="loginUsername"
+              type="text"
+              placeholder="Admin login"
+              autocomplete="username"
+              required
+            />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="loginPassword">Parol</label>
+
+          <div class="input-wrap">
+            <input
+              id="loginPassword"
+              type="password"
+              placeholder="Parolingiz"
+              autocomplete="current-password"
+              required
+            />
+          </div>
+        </div>
+
+        <button class="primary-btn" type="submit">
+          Kirish
+        </button>
+
+      </form>
+
+      <div class="switch-text">
+        Hali admin akkauntingiz yo‘qmi?
+
+        <button
+          class="switch-btn"
+          type="button"
+          onclick="showRegister()"
+        >
+          Akkaunt yaratish
+        </button>
       </div>
 
-      <button
-        class="btn btn-primary"
-        style="width:100%"
-        type="submit">
-        🔐 Kirish
-      </button>
+    </div>
 
-    </form>
 
     <!-- REGISTER -->
+    <div id="registerBox" class="auth-card hidden">
 
-    <form
-      id="registerForm"
-      class="hidden"
-      onsubmit="registerAdmin(event)">
+      <div class="logo">🚗</div>
 
-      <div class="field">
-        <label>Ism</label>
-        <input
-          id="regName"
-          class="input"
-          required
-          maxlength="60"
-          placeholder="Admin">
+      <div class="mode-badge">
+        ✨ BIRINCHI SOZLASH
       </div>
 
-      <div class="field">
-        <label>Email</label>
-        <input
-          id="regEmail"
-          class="input"
-          type="email"
-          required
-          autocomplete="email"
-          placeholder="admin@example.com">
-      </div>
+      <h1>Admin akkaunti</h1>
 
-      <div class="field">
-        <label>Parol</label>
-        <input
-          id="regPassword"
-          class="input"
-          type="password"
-          minlength="8"
-          required
-          autocomplete="new-password"
-          placeholder="Kamida 8 ta belgi">
-      </div>
+      <p class="subtitle">
+        Tizimda hali admin akkaunti mavjud emas.
+        Birinchi administrator akkauntini o‘zingiz yarating.
+      </p>
 
-      <div class="field">
-        <label>Admin maxsus kodi</label>
-        <input
-          id="regCode"
-          class="input"
-          type="password"
-          required
-          placeholder="Maxsus kod">
-      </div>
+      <div id="registerMessage" class="message"></div>
 
-      <button
-        class="btn btn-primary"
-        style="width:100%"
-        type="submit">
-        🛡 Admin hisobini yaratish
-      </button>
+      <form id="registerForm">
 
-    </form>
+        <div class="form-group">
+          <label for="registerName">To‘liq ism</label>
 
-  </div>
-</div>
+          <div class="input-wrap">
+            <input
+              id="registerName"
+              type="text"
+              placeholder="Masalan: Muhammadali"
+              required
+            />
+          </div>
+        </div>
 
+        <div class="form-group">
+          <label for="registerPhone">Telefon</label>
 
-<!-- =====================================================
-     APP
-===================================================== -->
+          <div class="input-wrap">
+            <input
+              id="registerPhone"
+              type="tel"
+              placeholder="+998 90 123 45 67"
+              required
+            />
+          </div>
+        </div>
 
-<div id="app" class="app hidden">
+        <div class="form-group">
+          <label for="registerUsername">Login</label>
 
-  <!-- SIDEBAR -->
+          <div class="input-wrap">
+            <input
+              id="registerUsername"
+              type="text"
+              placeholder="admin"
+              autocomplete="username"
+              required
+            />
+          </div>
+        </div>
 
-  <aside id="sidebar" class="sidebar">
+        <div class="form-group">
+          <label for="registerPassword">Yangi parol</label>
 
-    <div class="brand">
+          <div class="input-wrap">
+            <input
+              id="registerPassword"
+              type="password"
+              placeholder="Kamida 6 ta belgi"
+              autocomplete="new-password"
+              minlength="6"
+              required
+            />
+          </div>
+        </div>
 
-      <div class="brand-icon">
-        🚗
-      </div>
+        <div class="form-group">
+          <label for="registerPassword2">
+            Parolni tasdiqlang
+          </label>
 
-      <div>
-        <strong>AVTODROM INDEX</strong>
-        <small>Admin Control Center</small>
+          <div class="input-wrap">
+            <input
+              id="registerPassword2"
+              type="password"
+              placeholder="Parolni qayta kiriting"
+              autocomplete="new-password"
+              minlength="6"
+              required
+            />
+          </div>
+        </div>
+
+        <button class="primary-btn" type="submit">
+          Admin akkauntini yaratish
+        </button>
+
+      </form>
+
+      <div class="switch-text">
+        Akkauntingiz bormi?
+
+        <button
+          class="switch-btn"
+          type="button"
+          onclick="showLogin()"
+        >
+          Kirish
+        </button>
       </div>
 
     </div>
 
-    <nav class="nav">
-
-      <div class="nav-title">
-        Boshqaruv
-      </div>
-
-      <button
-        class="active"
-        data-page="dashboard">
-        <span class="nav-icon">📊</span>
-        Dashboard
-      </button>
-
-      <button data-page="bookings">
-        <span class="nav-icon">📅</span>
-        Bronlar
-      </button>
-
-      <button data-page="customers">
-        <span class="nav-icon">👥</span>
-        Customerlar
-      </button>
-
-      <button data-page="instructors">
-        <span class="nav-icon">👨‍🏫</span>
-        Instruktorlar
-      </button>
-
-      <div class="nav-title">
-        Boshqarish
-      </div>
-
-      <button data-page="prices">
-        <span class="nav-icon">💰</span>
-        Narxlar
-      </button>
-
-      <button data-page="schedule">
-        <span class="nav-icon">🕐</span>
-        Jadvallar
-      </button>
-
-      <button data-page="reviews">
-        <span class="nav-icon">⭐</span>
-        Sharhlar
-      </button>
-
-      <button data-page="notifications">
-        <span class="nav-icon">🔔</span>
-        Bildirishnomalar
-      </button>
-
-      <div class="nav-title">
-        Tizim
-      </div>
-
-      <button data-page="statistics">
-        <span class="nav-icon">📈</span>
-        Statistika
-      </button>
-
-      <button data-page="settings">
-        <span class="nav-icon">⚙️</span>
-        Sozlamalar
-      </button>
-
-      <button data-page="security">
-        <span class="nav-icon">🔐</span>
-        Xavfsizlik
-      </button>
-
-    </nav>
-
-    <div class="sidebar-bottom">
-
-      <div class="user-mini">
-
-        <div
-          id="adminAvatar"
-          class="avatar">
-          A
-        </div>
-
-        <div>
-          <strong id="adminName">
-            Admin
-          </strong>
-
-          <small>
-            Administrator
-          </small>
-        </div>
-
-      </div>
-
-      <button
-        class="logout"
-        onclick="logout()">
-        🚪 Chiqish
-      </button>
-
-    </div>
-
-  </aside>
+  </section>
 
 
-  <!-- MAIN -->
+  <!-- =========================================================
+       MAIN APP
+  ========================================================== -->
 
-  <main class="main">
+  <section id="app" class="hidden">
+
+    <!-- TOP BAR -->
 
     <header class="topbar">
 
-      <div class="topbar-left">
+      <div class="topbar-inner">
 
-        <button
-          class="menu-mobile"
-          onclick="toggleSidebar()">
-          ☰
-        </button>
+        <div class="brand">
 
-        <div>
-          <h2 id="pageTitle">
-            Dashboard
-          </h2>
+          <div class="brand-icon">
+            🚗
+          </div>
+
+          <div>
+            <div class="brand-title">
+              AVTODROM
+            </div>
+
+            <div class="brand-sub">
+              ADMIN MANAGEMENT SYSTEM
+            </div>
+          </div>
+
         </div>
 
-      </div>
 
-      <div class="topbar-right">
+        <div class="top-actions">
 
-        <button
-          class="notification"
-          onclick="goPage('notifications')">
-          🔔
-          <span class="dot"></span>
-        </button>
+          <button
+            id="themeButton"
+            class="icon-btn"
+            title="Rejimni almashtirish"
+            onclick="toggleTheme()"
+          >
+            🌙
+          </button>
+
+          <div class="admin-pill">
+
+            <div id="adminAvatar" class="avatar">
+              A
+            </div>
+
+            <div id="adminName" class="admin-name">
+              Admin
+            </div>
+
+          </div>
+
+        </div>
 
       </div>
 
     </header>
 
 
-    <section class="content">
+    <!-- MAIN LAYOUT -->
 
-      <!-- DASHBOARD -->
+    <div class="layout">
 
-      <div
-        id="page-dashboard"
-        class="page active">
+      <!-- SIDEBAR -->
 
-        <div class="page-head">
+      <aside class="sidebar">
 
-          <div>
-            <h1>Dashboard</h1>
-            <p>
-              AVTODROM INDEX tizimining umumiy holati.
-            </p>
-          </div>
-
-          <div class="actions">
-
-            <button
-              class="btn btn-secondary"
-              onclick="loadDashboard()">
-              🔄 Yangilash
-            </button>
-
-          </div>
-
-        </div>
-
-        <div class="stats">
-
-          <div class="stat">
-            <div class="stat-top">
-              <span class="stat-icon">📅</span>
-            </div>
-            <div
-              id="statBookings"
-              class="stat-value">0</div>
-            <div class="stat-label">
-              Bugungi bronlar
-            </div>
-          </div>
-
-          <div class="stat">
-            <div class="stat-top">
-              <span class="stat-icon">⏳</span>
-            </div>
-            <div
-              id="statPending"
-              class="stat-value">0</div>
-            <div class="stat-label">
-              Kutilayotgan bronlar
-            </div>
-          </div>
-
-          <div class="stat">
-            <div class="stat-top">
-              <span class="stat-icon">👨‍🏫</span>
-            </div>
-            <div
-              id="statInstructors"
-              class="stat-value">0</div>
-            <div class="stat-label">
-              Faol instruktorlar
-            </div>
-          </div>
-
-          <div class="stat">
-            <div class="stat-top">
-              <span class="stat-icon">👥</span>
-            </div>
-            <div
-              id="statCustomers"
-              class="stat-value">0</div>
-            <div class="stat-label">
-              Customerlar
-            </div>
-          </div>
-
-        </div>
-
-
-        <div class="grid-2">
-
-          <div class="card">
-
-            <div class="card-head">
-
-              <h3>Bugungi bronlar</h3>
-
-              <button
-                class="btn btn-secondary"
-                onclick="goPage('bookings')">
-                Barchasi
-              </button>
-
-            </div>
-
-            <div
-              id="dashboardBookings"
-              class="card-body">
-              Yuklanmoqda...
-            </div>
-
-          </div>
-
-
-          <div class="card">
-
-            <div class="card-head">
-
-              <h3>Yangi sharhlar</h3>
-
-              <button
-                class="btn btn-secondary"
-                onclick="goPage('reviews')">
-                Ko‘rish
-              </button>
-
-            </div>
-
-            <div
-              id="dashboardReviews"
-              class="card-body">
-              Yuklanmoqda...
-            </div>
-
-          </div>
-
-        </div>
-
-      </div>
-
-
-      <!-- BOOKINGS -->
-
-      <div
-        id="page-bookings"
-        class="page">
-
-        <div class="page-head">
-
-          <div>
-            <h1>Bronlar</h1>
-            <p>
-              Barcha dars bronlarini boshqaring.
-            </p>
-          </div>
-
-          <button
-            class="btn btn-secondary"
-            onclick="loadBookings()">
-            🔄 Yangilash
-          </button>
-
-        </div>
-
-        <div class="toolbar">
-
-          <input
-            id="bookingSearch"
-            class="input search"
-            placeholder="Customer, telefon yoki instruktor bo‘yicha qidirish..."
-            oninput="filterBookings()">
-
-          <select
-            id="bookingStatusFilter"
-            class="select"
-            onchange="filterBookings()">
-
-            <option value="">
-              Barcha statuslar
-            </option>
-
-            <option value="pending">
-              Kutilmoqda
-            </option>
-
-            <option value="confirmed">
-              Tasdiqlangan
-            </option>
-
-            <option value="completed">
-              Yakunlangan
-            </option>
-
-            <option value="cancelled">
-              Bekor qilingan
-            </option>
-
-          </select>
-
-        </div>
-
-        <div class="card">
-
-          <div class="table-wrap">
-
-            <table>
-
-              <thead>
-
-                <tr>
-                  <th>Customer</th>
-                  <th>Instruktor</th>
-                  <th>Sana</th>
-                  <th>Vaqt</th>
-                  <th>Narx</th>
-                  <th>Status</th>
-                  <th>Amal</th>
-                </tr>
-
-              </thead>
-
-              <tbody id="bookingsTable">
-              </tbody>
-
-            </table>
-
-          </div>
-
-        </div>
-
-      </div>
-
-
-      <!-- CUSTOMERS -->
-
-      <div
-        id="page-customers"
-        class="page">
-
-        <div class="page-head">
-
-          <div>
-            <h1>Customerlar</h1>
-            <p>
-              Foydalanuvchilar va ularning bronlarini boshqaring.
-            </p>
-          </div>
-
-          <button
-            class="btn btn-secondary"
-            onclick="loadCustomers()">
-            🔄 Yangilash
-          </button>
-
-        </div>
-
-        <div class="toolbar">
-
-          <input
-            id="customerSearch"
-            class="input search"
-            placeholder="Ism, telefon yoki Telegram username..."
-            oninput="filterCustomers()">
-
-        </div>
-
-        <div class="card">
-
-          <div class="table-wrap">
-
-            <table>
-
-              <thead>
-                <tr>
-                  <th>Foydalanuvchi</th>
-                  <th>Telefon</th>
-                  <th>Telegram</th>
-                  <th>Bronlar</th>
-                  <th>Holat</th>
-                  <th>Amal</th>
-                </tr>
-              </thead>
-
-              <tbody id="customersTable">
-              </tbody>
-
-            </table>
-
-          </div>
-
-        </div>
-
-      </div>
-
-
-      <!-- INSTRUCTORS -->
-
-      <div
-        id="page-instructors"
-        class="page">
-
-        <div class="page-head">
-
-          <div>
-            <h1>Instruktorlar</h1>
-            <p>
-              Instruktorlar, narxlar, jadval va reytinglarni boshqaring.
-            </p>
-          </div>
-
-          <div class="actions">
-
-            <button
-              class="btn btn-primary"
-              onclick="openInstructorModal()">
-              + Instruktor qo‘shish
-            </button>
-
-            <button
-              class="btn btn-secondary"
-              onclick="loadInstructors()">
-              🔄
-            </button>
-
-          </div>
-
-        </div>
-
-        <div
-          id="instructorsGrid"
-          class="people">
-        </div>
-
-      </div>
-
-
-      <!-- PRICES -->
-
-      <div
-        id="page-prices"
-        class="page">
-
-        <div class="page-head">
-
-          <div>
-            <h1>Narxlar</h1>
-            <p>
-              Customer panelida ko‘rinadigan narxlarni boshqaring.
-            </p>
-          </div>
-
-          <button
-            class="btn btn-primary"
-            onclick="openPriceModal()">
-            + Narx qo‘shish
-          </button>
-
-        </div>
-
-        <div class="card">
-
-          <div class="table-wrap">
-
-            <table>
-
-              <thead>
-                <tr>
-                  <th>Xizmat</th>
-                  <th>Davomiyligi</th>
-                  <th>Narx</th>
-                  <th>Holat</th>
-                  <th>Amal</th>
-                </tr>
-              </thead>
-
-              <tbody id="pricesTable">
-              </tbody>
-
-            </table>
-
-          </div>
-
-        </div>
-
-      </div>
-
-
-      <!-- SCHEDULE -->
-
-      <div
-        id="page-schedule"
-        class="page">
-
-        <div class="page-head">
-
-          <div>
-            <h1>Jadvallar</h1>
-            <p>
-              Kunduzgi va tungi ish rejimlarini boshqaring.
-            </p>
-          </div>
-
-          <button
-            class="btn btn-primary"
-            onclick="saveSchedule()">
-            💾 Saqlash
-          </button>
-
-        </div>
-
-        <div class="schedule-grid">
-
-          <div class="mode-card">
-
-            <div class="mode-icon">🌞</div>
-
-            <h3>Kunduzgi rejim</h3>
-
-            <p>
-              Kunduzgi darslar uchun ish vaqti.
-            </p>
-
-            <div class="form-grid">
-
-              <div class="field">
-                <label>Boshlanish</label>
-                <input
-                  id="dayStart"
-                  class="input"
-                  type="time"
-                  value="08:00">
-              </div>
-
-              <div class="field">
-                <label>Tugash</label>
-                <input
-                  id="dayEnd"
-                  class="input"
-                  type="time"
-                  value="18:00">
-              </div>
-
-            </div>
-
-            <div class="switch-row">
-
-              <div>
-                <strong>Kunduzgi rejim</strong>
-                <small>
-                  Customerlarga ko‘rsatish
-                </small>
-              </div>
-
-              <button
-                id="daySwitch"
-                class="switch on"
-                onclick="toggleSwitch(this)">
-                <span></span>
-              </button>
-
-            </div>
-
-          </div>
-
-
-          <div class="mode-card">
-
-            <div class="mode-icon">🌙</div>
-
-            <h3>Tungi rejim</h3>
-
-            <p>
-              Tungi darslar uchun alohida ish vaqti.
-            </p>
-
-            <div class="form-grid">
-
-              <div class="field">
-                <label>Boshlanish</label>
-                <input
-                  id="nightStart"
-                  class="input"
-                  type="time"
-                  value="19:00">
-              </div>
-
-              <div class="field">
-                <label>Tugash</label>
-                <input
-                  id="nightEnd"
-                  class="input"
-                  type="time"
-                  value="23:00">
-              </div>
-
-            </div>
-
-            <div class="switch-row">
-
-              <div>
-                <strong>Tungi rejim</strong>
-                <small>
-                  Customerlarga ko‘rsatish
-                </small>
-              </div>
-
-              <button
-                id="nightSwitch"
-                class="switch on"
-                onclick="toggleSwitch(this)">
-                <span></span>
-              </button>
-
-            </div>
-
-          </div>
-
-        </div>
-
-      </div>
-
-
-      <!-- REVIEWS -->
-
-      <div
-        id="page-reviews"
-        class="page">
-
-        <div class="page-head">
-
-          <div>
-            <h1>Instruktor sharhlari</h1>
-            <p>
-              Barcha sharhlar faqat Admin uchun ko‘rinadi.
-            </p>
-          </div>
-
-          <button
-            class="btn btn-secondary"
-            onclick="loadReviews()">
-            🔄 Yangilash
-          </button>
-
-        </div>
-
-        <div class="card">
-
-          <div
-            id="reviewsList"
-            class="card-body">
-            Yuklanmoqda...
-          </div>
-
-        </div>
-
-      </div>
-
-
-      <!-- NOTIFICATIONS -->
-
-      <div
-        id="page-notifications"
-        class="page">
-
-        <div class="page-head">
-
-          <div>
-            <h1>Bildirishnomalar</h1>
-            <p>
-              Telegram xabarlari va avtomatik eslatmalar.
-            </p>
-          </div>
-
-        </div>
-
-        <div class="card">
-
-          <div class="card-body">
-
-            <div class="switch-row">
-
-              <div>
-                <strong>Bron kelganda Admin xabari</strong>
-                <small>
-                  Yangi bron tushganda Telegramga yuborish
-                </small>
-              </div>
-
-              <button
-                class="switch on"
-                onclick="toggleSwitch(this)">
-                <span></span>
-              </button>
-
-            </div>
-
-            <div class="switch-row">
-
-              <div>
-                <strong>Bron tasdiqlanganda Customer xabari</strong>
-                <small>
-                  Tasdiqlangan bron haqida xabar
-                </small>
-              </div>
-
-              <button
-                class="switch on"
-                onclick="toggleSwitch(this)">
-                <span></span>
-              </button>
-
-            </div>
-
-            <div class="switch-row">
-
-              <div>
-                <strong>Instruktorga yangi bron xabari</strong>
-                <small>
-                  Instruktorga yangi dars biriktirilganda
-                </small>
-              </div>
-
-              <button
-                class="switch on"
-                onclick="toggleSwitch(this)">
-                <span></span>
-              </button>
-
-            </div>
-
-            <div class="switch-row">
-
-              <div>
-                <strong>2 soatlik eslatma</strong>
-                <small>
-                  Darsga 2 soat qolganda
-                </small>
-              </div>
-
-              <button
-                class="switch on"
-                onclick="toggleSwitch(this)">
-                <span></span>
-              </button>
-
-            </div>
-
-          </div>
-
-        </div>
-
-      </div>
-
-
-      <!-- STATISTICS -->
-
-      <div
-        id="page-statistics"
-        class="page">
-
-        <div class="page-head">
-
-          <div>
-            <h1>Statistika</h1>
-            <p>
-              Tizim faoliyati va daromad ko‘rsatkichlari.
-            </p>
-          </div>
-
-        </div>
-
-        <div class="stats">
-
-          <div class="stat">
-            <div class="stat-icon">💰</div>
-            <div
-              id="totalRevenue"
-              class="stat-value">
-              0
-            </div>
-            <div class="stat-label">
-              Umumiy tushum
-            </div>
-          </div>
-
-          <div class="stat">
-            <div class="stat-icon">📚</div>
-            <div
-              id="totalLessons"
-              class="stat-value">
-              0
-            </div>
-            <div class="stat-label">
-              Yakunlangan darslar
-            </div>
-          </div>
-
-          <div class="stat">
-            <div class="stat-icon">⭐</div>
-            <div
-              id="averageRating"
-              class="stat-value">
-              0
-            </div>
-            <div class="stat-label">
-              O‘rtacha reyting
-            </div>
-          </div>
-
-          <div class="stat">
-            <div class="stat-icon">📅</div>
-            <div
-              id="totalBookings"
-              class="stat-value">
-              0
-            </div>
-            <div class="stat-label">
-              Umumiy bronlar
-            </div>
-          </div>
-
-        </div>
-
-        <div class="card">
-
-          <div class="card-head">
-            <h3>Statistika haqida</h3>
-          </div>
-
-          <div class="card-body">
-
-            <p style="color:var(--muted);line-height:1.7">
-              Bu bo‘lim Supabase'dagi bronlar, to‘lovlar,
-              instruktorlar va sharhlar ma’lumotlari bilan
-              bog‘langanda real-time statistikani ko‘rsatadi.
-            </p>
-
-          </div>
-
-        </div>
-
-      </div>
-
-
-      <!-- SETTINGS -->
-
-      <div
-        id="page-settings"
-        class="page">
-
-        <div class="page-head">
-
-          <div>
-            <h1>Sozlamalar</h1>
-            <p>
-              Tizimning asosiy sozlamalarini boshqaring.
-            </p>
-          </div>
-
-          <button
-            class="btn btn-primary"
-            onclick="saveSettings()">
-            💾 Saqlash
-          </button>
-
-        </div>
-
-        <div class="settings-grid">
-
-          <div class="settings-menu">
-
-            <button
-              class="active"
-              onclick="settingsTab('general',this)">
-              ⚙️ Umumiy
-            </button>
-
-            <button
-              onclick="settingsTab('booking',this)">
-              📅 Bron
-            </button>
-
-            <button
-              onclick="settingsTab('telegram',this)">
-              📱 Telegram
-            </button>
-
-            <button
-              onclick="settingsTab('appearance',this)">
-              🎨 Ko‘rinish
-            </button>
-
-          </div>
-
-
-          <div>
-
-            <div
-              id="setting-general"
-              class="setting-section active">
-
-              <div class="card">
-
-                <div class="card-head">
-                  <h3>Umumiy sozlamalar</h3>
-                </div>
-
-                <div class="card-body">
-
-                  <div class="form-grid">
-
-                    <div class="field">
-                      <label>Ilova nomi</label>
-                      <input
-                        id="appName"
-                        class="input"
-                        value="AVTODROM INDEX">
-                    </div>
-
-                    <div class="field">
-                      <label>Telefon</label>
-                      <input
-                        id="appPhone"
-                        class="input"
-                        placeholder="+998...">
-                    </div>
-
-                    <div class="field full">
-                      <label>Manzil</label>
-                      <input
-                        id="appAddress"
-                        class="input"
-                        placeholder="Avtodrom manzili">
-                    </div>
-
-                  </div>
-
-                </div>
-
-              </div>
-
-            </div>
-
-
-            <div
-              id="setting-booking"
-              class="setting-section">
-
-              <div class="card">
-
-                <div class="card-head">
-                  <h3>Bron sozlamalari</h3>
-                </div>
-
-                <div class="card-body">
-
-                  <div class="field">
-                    <label>
-                      Minimal bron oldindan necha soat?
-                    </label>
-
-                    <input
-                      id="minBookingHours"
-                      class="input"
-                      type="number"
-                      min="0"
-                      value="2">
-                  </div>
-
-                  <div class="switch-row">
-
-                    <div>
-                      <strong>Admin tasdig‘i kerak</strong>
-                      <small>
-                        Customer bron qilganda avval Admin tasdiqlaydi
-                      </small>
-                    </div>
-
-                    <button
-                      class="switch on"
-                      onclick="toggleSwitch(this)">
-                      <span></span>
-                    </button>
-
-                  </div>
-
-                </div>
-
-              </div>
-
-            </div>
-
-
-            <div
-              id="setting-telegram"
-              class="setting-section">
-
-              <div class="card">
-
-                <div class="card-head">
-                  <h3>Telegram sozlamalari</h3>
-                </div>
-
-                <div class="card-body">
-
-                  <div class="field">
-                    <label>Telegram kanal</label>
-                    <input
-                      id="telegramChannel"
-                      class="input"
-                      value="https://t.me/avtodromindex">
-                  </div>
-
-                  <div class="field">
-                    <label>Instagram</label>
-                    <input
-                      id="instagram"
-                      class="input"
-                      value="https://www.instagram.com/avtodrom_index_/">
-                  </div>
-
-                </div>
-
-              </div>
-
-            </div>
-
-
-            <div
-              id="setting-appearance"
-              class="setting-section">
-
-              <div class="card">
-
-                <div class="card-head">
-                  <h3>Ko‘rinish</h3>
-                </div>
-
-                <div class="card-body">
-
-                  <div class="switch-row">
-
-                    <div>
-                      <strong>Animatsiyalar</strong>
-                      <small>
-                        Interfeys animatsiyalarini yoqish
-                      </small>
-                    </div>
-
-                    <button
-                      class="switch on"
-                      onclick="toggleSwitch(this)">
-                      <span></span>
-                    </button>
-
-                  </div>
-
-                </div>
-
-              </div>
-
-            </div>
-
-          </div>
-
-        </div>
-
-      </div>
-
-
-      <!-- SECURITY -->
-
-      <div
-        id="page-security"
-        class="page">
-
-        <div class="page-head">
-
-          <div>
-            <h1>Xavfsizlik</h1>
-            <p>
-              Administrator akkaunti va tizim xavfsizligi.
-            </p>
-          </div>
-
-        </div>
-
-        <div class="grid-2">
-
-          <div class="card">
-
-            <div class="card-head">
-              <h3>Admin akkaunti</h3>
-            </div>
-
-            <div class="card-body">
-
-              <div class="field">
-                <label>Email</label>
-
-                <input
-                  id="securityEmail"
-                  class="input"
-                  disabled>
-              </div>
-
-              <button
-                class="btn btn-secondary"
-                onclick="sendPasswordReset()">
-                🔑 Parolni o‘zgartirish
-              </button>
-
-            </div>
-
-          </div>
-
-
-          <div class="card">
-
-            <div class="card-head">
-              <h3>Himoya</h3>
-            </div>
-
-            <div class="card-body">
-
-              <div class="switch-row">
-
-                <div>
-                  <strong>Session himoyasi</strong>
-                  <small>
-                    Faqat login qilingan admin panelga kira oladi
-                  </small>
-                </div>
-
-                <span class="status confirmed">
-                  FAOL
-                </span>
-
-              </div>
-
-              <div class="switch-row">
-
-                <div>
-                  <strong>Role tekshiruvi</strong>
-                  <small>
-                    Admin huquqi tekshiriladi
-                  </small>
-                </div>
-
-                <span class="status confirmed">
-                  FAOL
-                </span>
-
-              </div>
-
-              <div class="switch-row">
-
-                <div>
-                  <strong>Service Role key</strong>
-                  <small>
-                    Frontendga chiqarilmagan
-                  </small>
-                </div>
-
-                <span class="status confirmed">
-                  XAVFSIZ
-                </span>
-
-              </div>
-
-            </div>
-
-          </div>
-
-        </div>
-
-      </div>
-
-    </section>
-
-  </main>
-
-</div>
-
-
-<!-- =====================================================
-     INSTRUCTOR MODAL
-===================================================== -->
-
-<div
-  id="instructorModal"
-  class="modal">
-
-  <div class="modal-box">
-
-    <div class="modal-head">
-
-      <h3>Instruktor</h3>
-
-      <button
-        class="modal-close"
-        onclick="closeModal('instructorModal')">
-        ✕
-      </button>
-
-    </div>
-
-    <div class="modal-body">
-
-      <input
-        id="editInstructorId"
-        type="hidden">
-
-      <div class="form-grid">
-
-        <div class="field">
-          <label>Ism</label>
-          <input
-            id="instructorName"
-            class="input"
-            placeholder="Ism familiya">
-        </div>
-
-        <div class="field">
-          <label>Telefon</label>
-          <input
-            id="instructorPhone"
-            class="input"
-            placeholder="+998...">
-        </div>
-
-        <div class="field">
-          <label>Telegram ID</label>
-          <input
-            id="instructorTelegram"
-            class="input"
-            type="number">
-        </div>
-
-        <div class="field">
-          <label>Soatlik narx</label>
-          <input
-            id="instructorPrice"
-            class="input"
-            type="number"
-            min="0">
-        </div>
-
-        <div class="field full">
-          <label>Tajriba</label>
-          <input
-            id="instructorExperience"
-            class="input"
-            placeholder="Masalan: 7 yil">
-        </div>
-
-      </div>
-
-    </div>
-
-    <div class="modal-foot">
-
-      <button
-        class="btn btn-secondary"
-        onclick="closeModal('instructorModal')">
-        Bekor qilish
-      </button>
-
-      <button
-        class="btn btn-primary"
-        onclick="saveInstructor()">
-        💾 Saqlash
-      </button>
-
-    </div>
-
-  </div>
-
-</div>
-
-
-<!-- PRICE MODAL -->
-
-<div
-  id="priceModal"
-  class="modal">
-
-  <div class="modal-box">
-
-    <div class="modal-head">
-
-      <h3>Xizmat narxi</h3>
-
-      <button
-        class="modal-close"
-        onclick="closeModal('priceModal')">
-        ✕
-      </button>
-
-    </div>
-
-    <div class="modal-body">
-
-      <div class="field">
-        <label>Xizmat nomi</label>
-        <input
-          id="priceName"
-          class="input"
-          placeholder="Haydovchilik darsi">
-      </div>
-
-      <div class="field">
-        <label>Davomiyligi</label>
-        <input
-          id="priceDuration"
-          class="input"
-          placeholder="1 soat">
-      </div>
-
-      <div class="field">
-        <label>Narx</label>
-        <input
-          id="priceAmount"
-          class="input"
-          type="number"
-          min="0"
-          placeholder="100000">
-      </div>
-
-    </div>
-
-    <div class="modal-foot">
-
-      <button
-        class="btn btn-secondary"
-        onclick="closeModal('priceModal')">
-        Bekor qilish
-      </button>
-
-      <button
-        class="btn btn-primary"
-        onclick="savePrice()">
-        💾 Saqlash
-      </button>
-
-    </div>
-
-  </div>
-
-</div>
-
-
-<div
-  id="toast"
-  class="toast">
-</div>
-
-
-<script>
-/* =========================================================
-   SUPABASE
-   =========================================================
-
-   MUHIM:
-   Bu yerga faqat ANON/PUBLIC KEY qo'ying.
-   SERVICE_ROLE KEYNI BU YERGA QO'YMANG.
-========================================================= */
-
-const SUPABASE_URL =
-  "BU_YERGA_SUPABASE_URL";
-
-const SUPABASE_ANON_KEY =
-  "BU_YERGA_SUPABASE_ANON_KEY";
-
-
-const supabaseClient =
-  window.supabase.createClient(
-    SUPABASE_URL,
-    SUPABASE_ANON_KEY
-  );
-
-
-/* =========================================================
-   STATE
-========================================================= */
-
-let currentUser = null;
-let currentAdmin = null;
-
-let bookings = [];
-let customers = [];
-let instructors = [];
-let reviews = [];
-let prices = [];
-
-
-/* =========================================================
-   HELPERS
-========================================================= */
-
-function $(id){
-  return document.getElementById(id);
-}
-
-
-function toast(message){
-
-  const el =
-    $("toast");
-
-  el.textContent =
-    message;
-
-  el.classList.add("show");
-
-  setTimeout(()=>{
-    el.classList.remove("show");
-  },3000);
-}
-
-
-function escapeHTML(value){
-
-  return String(value ?? "")
-    .replaceAll("&","&amp;")
-    .replaceAll("<","&lt;")
-    .replaceAll(">","&gt;")
-    .replaceAll('"',"&quot;")
-    .replaceAll("'","&#039;");
-}
-
-
-function formatMoney(value){
-
-  const number =
-    Number(value || 0);
-
-  return number.toLocaleString(
-    "uz-UZ"
-  ) + " so'm";
-}
-
-
-function statusHTML(status){
-
-  const labels = {
-    pending:"Kutilmoqda",
-    confirmed:"Tasdiqlangan",
-    cancelled:"Bekor qilingan",
-    completed:"Yakunlangan"
-  };
-
-  return `
-    <span class="status ${escapeHTML(status)}">
-      ${escapeHTML(labels[status] || status)}
-    </span>
-  `;
-}
-
-
-/* =========================================================
-   AUTH UI
-========================================================= */
-
-function showAuth(type){
-
-  $("loginTab")
-    .classList.toggle(
-      "active",
-      type === "login"
-    );
-
-  $("registerTab")
-    .classList.toggle(
-      "active",
-      type === "register"
-    );
-
-  $("loginForm")
-    .classList.toggle(
-      "hidden",
-      type !== "login"
-    );
-
-  $("registerForm")
-    .classList.toggle(
-      "hidden",
-      type !== "register"
-    );
-
-  $("authError")
-    .classList.add("hidden");
-}
-
-
-function authError(message){
-
-  const el =
-    $("authError");
-
-  el.textContent =
-    message;
-
-  el.classList.remove(
-    "hidden"
-  );
-}
-
-
-/* =========================================================
-   LOGIN
-========================================================= */
-
-async function login(event){
-
-  event.preventDefault();
-
-  const email =
-    $("loginEmail").value.trim();
-
-  const password =
-    $("loginPassword").value;
-
-
-  const {
-    data,
-    error
-  } =
-    await supabaseClient.auth.signInWithPassword({
-      email,
-      password
-    });
-
-
-  if(error){
-
-    authError(
-      "Kirish xatosi: " +
-      error.message
-    );
-
-    return;
-  }
-
-
-  currentUser =
-    data.user;
-
-
-  const allowed =
-    await checkAdminRole(
-      currentUser.id
-    );
-
-
-  if(!allowed){
-
-    await supabaseClient.auth.signOut();
-
-    authError(
-      "Bu akkaunt Admin huquqiga ega emas."
-    );
-
-    return;
-  }
-
-
-  await startAdmin();
-}
-
-
-/* =========================================================
-   REGISTER
-========================================================= */
-
-async function registerAdmin(event){
-
-  event.preventDefault();
-
-  const name =
-    $("regName").value.trim();
-
-  const email =
-    $("regEmail").value.trim();
-
-  const password =
-    $("regPassword").value;
-
-  const code =
-    $("regCode").value.trim();
-
-
-  /*
-   * Maxsus kodni frontendda saqlash
-   * xavfsiz emas.
-   *
-   * Shu sabab real production'da
-   * bu tekshiruv Edge Function orqali
-   * qilinishi kerak.
-   *
-   * Hozir ro'yxatdan o'tish faqat
-   * mavjud auth tizimini yaratadi.
-   */
-
-
-  if(password.length < 8){
-
-    authError(
-      "Parol kamida 8 ta belgidan iborat bo‘lishi kerak."
-    );
-
-    return;
-  }
-
-
-  if(!code){
-
-    authError(
-      "Admin maxsus kodini kiriting."
-    );
-
-    return;
-  }
-
-
-  const {
-    data,
-    error
-  } =
-    await supabaseClient.auth.signUp({
-      email,
-      password,
-
-      options:{
-        data:{
-          full_name:name,
-          requested_role:"admin"
-        }
-      }
-    });
-
-
-  if(error){
-
-    authError(
-      "Ro‘yxatdan o‘tish xatosi: " +
-      error.message
-    );
-
-    return;
-  }
-
-
-  if(!data.user){
-
-    authError(
-      "Admin akkaunti yaratilmadi."
-    );
-
-    return;
-  }
-
-
-  toast(
-    "Akkaunt yaratildi. Email tasdiqlash kerak bo‘lishi mumkin."
-  );
-
-  showAuth("login");
-}
-
-
-/* =========================================================
-   ADMIN ROLE
-========================================================= */
-
-async function checkAdminRole(
-  userId
-){
-
-  try{
-
-    /*
-     * Sizning bazangizda profiles yoki
-     * user_roles jadvali bo‘lsa shu yerda
-     * role tekshiriladi.
-     *
-     * Agar hali jadval bo‘lmasa,
-     * vaqtincha metadata orqali tekshiriladi.
-     */
-
-    const {
-      data,
-      error
-    } =
-      await supabaseClient
-        .from("profiles")
-        .select("role")
-        .eq("id",userId)
-        .maybeSingle();
-
-
-    if(
-      !error &&
-      data &&
-      data.role === "admin"
-    ){
-
-      return true;
-    }
-
-
-    /*
-     * profiles jadvali hali tayyor bo'lmasa,
-     * user metadata orqali tekshirish.
-     */
-
-    const role =
-      currentUser
-        ?.user_metadata
-        ?.role;
-
-
-    return role === "admin";
-
-  }catch{
-
-    return false;
-  }
-}
-
-
-/* =========================================================
-   START ADMIN
-========================================================= */
-
-async function startAdmin(){
-
-  $("authScreen")
-    .classList.add("hidden");
-
-  $("app")
-    .classList.remove("hidden");
-
-
-  const email =
-    currentUser?.email ||
-    "Admin";
-
-
-  $("securityEmail")
-    .value =
-    email;
-
-
-  const name =
-    currentUser
-      ?.user_metadata
-      ?.full_name ||
-    email.split("@")[0] ||
-    "Admin";
-
-
-  $("adminName")
-    .textContent =
-    name;
-
-
-  $("adminAvatar")
-    .textContent =
-    name.charAt(0)
-      .toUpperCase();
-
-
-  await loadDashboard();
-
-  await loadBookings();
-
-  await loadCustomers();
-
-  await loadInstructors();
-
-  await loadReviews();
-
-  await loadPrices();
-}
-
-
-/* =========================================================
-   SESSION CHECK
-========================================================= */
-
-async function checkSession(){
-
-  const {
-    data
-  } =
-    await supabaseClient.auth.getSession();
-
-
-  if(!data.session){
-
-    return;
-  }
-
-
-  currentUser =
-    data.session.user;
-
-
-  const allowed =
-    await checkAdminRole(
-      currentUser.id
-    );
-
-
-  if(!allowed){
-
-    await supabaseClient.auth.signOut();
-
-    return;
-  }
-
-
-  await startAdmin();
-}
-
-
-/* =========================================================
-   LOGOUT
-========================================================= */
-
-async function logout(){
-
-  await supabaseClient.auth.signOut();
-
-  currentUser =
-    null;
-
-  currentAdmin =
-    null;
-
-  $("app")
-    .classList.add("hidden");
-
-  $("authScreen")
-    .classList.remove("hidden");
-
-  toast(
-    "Admin tizimdan chiqdi."
-  );
-}
-
-
-/* =========================================================
-   NAVIGATION
-========================================================= */
-
-const titles = {
-
-  dashboard:"Dashboard",
-
-  bookings:"Bronlar",
-
-  customers:"Customerlar",
-
-  instructors:"Instruktorlar",
-
-  prices:"Narxlar",
-
-  schedule:"Jadvallar",
-
-  reviews:"Sharhlar",
-
-  notifications:"Bildirishnomalar",
-
-  statistics:"Statistika",
-
-  settings:"Sozlamalar",
-
-  security:"Xavfsizlik"
-};
-
-
-document
-  .querySelectorAll(".nav button[data-page]")
-  .forEach(button=>{
-
-    button.addEventListener(
-      "click",
-      ()=>{
-
-        goPage(
-          button.dataset.page
-        );
-
-      }
-    );
-
-  });
-
-
-function goPage(page){
-
-  document
-    .querySelectorAll(".page")
-    .forEach(el=>{
-      el.classList.remove(
-        "active"
-      );
-    });
-
-
-  const target =
-    $("page-" + page);
-
-
-  if(target){
-
-    target.classList.add(
-      "active"
-    );
-  }
-
-
-  document
-    .querySelectorAll(".nav button")
-    .forEach(btn=>{
-      btn.classList.toggle(
-        "active",
-        btn.dataset.page === page
-      );
-    });
-
-
-  $("pageTitle")
-    .textContent =
-    titles[page] ||
-    page;
-
-
-  if(window.innerWidth <= 800){
-
-    $("sidebar")
-      .classList.remove(
-        "open"
-      );
-  }
-
-
-  if(page === "dashboard")
-    loadDashboard();
-
-  if(page === "bookings")
-    loadBookings();
-
-  if(page === "customers")
-    loadCustomers();
-
-  if(page === "instructors")
-    loadInstructors();
-
-  if(page === "reviews")
-    loadReviews();
-
-  if(page === "prices")
-    loadPrices();
-}
-
-
-function toggleSidebar(){
-
-  $("sidebar")
-    .classList.toggle(
-      "open"
-    );
-}
-
-
-/* =========================================================
-   DASHBOARD
-========================================================= */
-
-async function loadDashboard(){
-
-  try{
-
-    const today =
-      new Date()
-        .toISOString()
-        .slice(0,10);
-
-
-    const {
-      data:todayBookings
-    } =
-      await supabaseClient
-        .from("bookings")
-        .select("*")
-        .eq("date",today);
-
-
-    const {
-      data:pending
-    } =
-      await supabaseClient
-        .from("bookings")
-        .select("id")
-        .eq("status","pending");
-
-
-    const {
-      data:activeInstructors
-    } =
-      await supabaseClient
-        .from("instructors")
-        .select("id")
-        .eq("is_active",true);
-
-
-    const {
-      data:allCustomers
-    } =
-      await supabaseClient
-        .from("customers")
-        .select("id");
-
-
-    $("statBookings")
-      .textContent =
-      todayBookings?.length ||
-      0;
-
-
-    $("statPending")
-      .textContent =
-      pending?.length ||
-      0;
-
-
-    $("statInstructors")
-      .textContent =
-      activeInstructors?.length ||
-      0;
-
-
-    $("statCustomers")
-      .textContent =
-      allCustomers?.length ||
-      0;
-
-
-    renderDashboardBookings(
-      todayBookings || []
-    );
-
-
-    $("dashboardReviews")
-      .innerHTML =
-      "Yangi sharhlar bo‘limiga kiring.";
-
-  }catch(error){
-
-    console.error(error);
-
-    toast(
-      "Dashboard ma'lumotlarini yuklashda xato."
-    );
-  }
-}
-
-
-function renderDashboardBookings(
-  rows
-){
-
-  const el =
-    $("dashboardBookings");
-
-
-  if(!rows.length){
-
-    el.innerHTML =
-      `
-      <div style="color:var(--muted)">
-        Bugun bronlar mavjud emas.
-      </div>
-      `;
-
-    return;
-  }
-
-
-  el.innerHTML =
-    rows
-      .slice(0,7)
-      .map(row=>`
-
-        <div
-          style="
-          display:flex;
-          justify-content:space-between;
-          gap:10px;
-          padding:11px 0;
-          border-bottom:1px solid var(--line);
-          "
+        <button
+          class="nav-btn active"
+          data-page="dashboard"
+          onclick="openPage('dashboard', this)"
         >
+          📊
+          <span>Dashboard</span>
+        </button>
 
-          <div>
-            <strong>
-              ${escapeHTML(
-                row.customer_name ||
-                "Customer"
-              )}
-            </strong>
+        <button
+          class="nav-btn"
+          data-page="cars"
+          onclick="openPage('cars', this)"
+        >
+          🚘
+          <span>Avtomobillar</span>
+        </button>
 
-            <div
-              style="
-              color:var(--muted);
-              font-size:11px;
-              margin-top:3px;
-              "
-            >
-              ${escapeHTML(
-                row.start_time ||
-                ""
-              )}
+        <button
+          class="nav-btn"
+          data-page="instructors"
+          onclick="openPage('instructors', this)"
+        >
+          👨‍🏫
+          <span>Instruktorlar</span>
+        </button>
+
+        <button
+          class="nav-btn"
+          data-page="users"
+          onclick="openPage('users', this)"
+        >
+          👥
+          <span>Foydalanuvchilar</span>
+        </button>
+
+        <button
+          class="nav-btn"
+          data-page="bookings"
+          onclick="openPage('bookings', this)"
+        >
+          📅
+          <span>Bronlar</span>
+        </button>
+
+        <button
+          class="nav-btn"
+          data-page="notifications"
+          onclick="openPage('notifications', this)"
+        >
+          🔔
+          <span>Ogohlantirishlar</span>
+        </button>
+
+        <button
+          class="nav-btn"
+          data-page="settings"
+          onclick="openPage('settings', this)"
+        >
+          ⚙️
+          <span>Sozlamalar</span>
+        </button>
+
+        <button
+          class="nav-btn logout-btn"
+          onclick="logout()"
+        >
+          🚪
+          <span>Chiqish</span>
+        </button>
+
+      </aside>
+
+
+      <!-- CONTENT -->
+
+      <main class="content">
+
+
+        <!-- ================= DASHBOARD ================= -->
+
+        <section id="page-dashboard" class="page active">
+
+          <h2>Dashboard</h2>
+
+          <p class="content-subtitle">
+            Avtodromning umumiy holati va bugungi ko‘rsatkichlar.
+          </p>
+
+
+          <div class="stats-grid">
+
+            <div class="stat-card">
+
+              <div class="stat-top">
+                <div class="small-muted">
+                  Bugungi avtomobillar
+                </div>
+
+                <div class="stat-icon">
+                  🚘
+                </div>
+              </div>
+
+              <div id="statCars" class="stat-value">
+                0
+              </div>
+
+              <div class="stat-label">
+                Bugun ro‘yxatga olingan
+              </div>
+
             </div>
+
+
+            <div class="stat-card">
+
+              <div class="stat-top">
+                <div class="small-muted">
+                  Faol
+                </div>
+
+                <div class="stat-icon">
+                  🟢
+                </div>
+              </div>
+
+              <div id="statActive" class="stat-value">
+                0
+              </div>
+
+              <div class="stat-label">
+                Hozir mashg‘ulotda
+              </div>
+
+            </div>
+
+
+            <div class="stat-card">
+
+              <div class="stat-top">
+                <div class="small-muted">
+                  Instruktorlar
+                </div>
+
+                <div class="stat-icon">
+                  👨‍🏫
+                </div>
+              </div>
+
+              <div id="statInstructors" class="stat-value">
+                0
+              </div>
+
+              <div class="stat-label">
+                Tizimdagi instruktorlar
+              </div>
+
+            </div>
+
+
+            <div class="stat-card">
+
+              <div class="stat-top">
+                <div class="small-muted">
+                  Foydalanuvchilar
+                </div>
+
+                <div class="stat-icon">
+                  👥
+                </div>
+              </div>
+
+              <div id="statUsers" class="stat-value">
+                0
+              </div>
+
+              <div class="stat-label">
+                Ro‘yxatdan o‘tganlar
+              </div>
+
+            </div>
+
           </div>
 
-          ${statusHTML(
-            row.status
-          )}
 
-        </div>
+          <!-- RECENT -->
 
-      `)
-      .join("");
-}
+          <div class="panel">
 
+            <div class="panel-header">
 
-/* =========================================================
-   BOOKINGS
-========================================================= */
+              <div>
+                <div class="panel-title">
+                  So‘nggi faoliyat
+                </div>
 
-async function loadBookings(){
+                <div class="small-muted">
+                  Tizimdagi oxirgi operatsiyalar
+                </div>
+              </div>
 
-  try{
-
-    const {
-      data,
-      error
-    } =
-      await supabaseClient
-        .from("bookings")
-        .select("*")
-        .order(
-          "created_at",
-          {
-            ascending:false
-          }
-        );
+            </div>
 
 
-    if(error)
-      throw error;
+            <div class="table-wrap">
+
+              <table>
+
+                <thead>
+
+                  <tr>
+                    <th>Vaqt</th>
+                    <th>Foydalanuvchi</th>
+                    <th>Amal</th>
+                    <th>Holat</th>
+                  </tr>
+
+                </thead>
+
+                <tbody id="activityTable">
+
+                </tbody>
+
+              </table>
+
+            </div>
+
+          </div>
+
+        </section>
 
 
-    bookings =
-      data || [];
+        <!-- ================= CARS ================= -->
+
+        <section id="page-cars" class="page">
+
+          <h2>Avtomobillar</h2>
+
+          <p class="content-subtitle">
+            Avtodromga kirgan avtomobillarni nazorat qilish.
+          </p>
+
+          <div class="panel">
+
+            <div class="panel-header">
+
+              <div class="panel-title">
+                Avtomobillar ro‘yxati
+              </div>
+
+              <div class="small-muted">
+                Real-time baza ulanishi keyingi bosqichda
+              </div>
+
+            </div>
+
+            <div class="table-wrap">
+
+              <table>
+
+                <thead>
+                  <tr>
+                    <th>Raqam</th>
+                    <th>Rusum</th>
+                    <th>Kirish</th>
+                    <th>Chiqish</th>
+                    <th>Holat</th>
+                  </tr>
+                </thead>
+
+                <tbody>
+
+                  <tr>
+                    <td>01 A 123 AA</td>
+                    <td>Chevrolet Cobalt</td>
+                    <td>08:15</td>
+                    <td>09:10</td>
+                    <td>
+                      <span class="status done">
+                        Tugagan
+                      </span>
+                    </td>
+                  </tr>
+
+                  <tr>
+                    <td>01 B 456 BB</td>
+                    <td>Chevrolet Nexia</td>
+                    <td>09:20</td>
+                    <td>—</td>
+                    <td>
+                      <span class="status active">
+                        Faol
+                      </span>
+                    </td>
+                  </tr>
+
+                </tbody>
+
+              </table>
+
+            </div>
+
+          </div>
+
+        </section>
 
 
-    renderBookings(
-      bookings
-    );
+        <!-- ================= INSTRUCTORS ================= -->
 
-  }catch(error){
+        <section id="page-instructors" class="page">
 
-    console.error(error);
+          <h2>Instruktorlar</h2>
 
-    $("bookingsTable")
-      .innerHTML =
-      `
-      <tr>
-        <td colspan="7">
-          Bronlar jadvalini yuklab bo‘lmadi.
-          ${escapeHTML(
-            error.message
-          )}
-        </td>
-      </tr>
-      `;
-  }
-}
+          <p class="content-subtitle">
+            Instruktorlar akkauntlari va faoliyatini boshqarish.
+          </p>
 
+          <div class="panel">
 
-function renderBookings(
-  rows
-){
+            <div class="panel-title">
+              Instruktorlar tizimi
+            </div>
 
-  $("bookingsTable")
-    .innerHTML =
-    rows
-      .map(row=>`
-
-        <tr>
-
-          <td>
-            <strong>
-              ${escapeHTML(
-                row.customer_name ||
-                "Customer"
-              )}
-            </strong>
-
-            <div
-              style="
-              color:var(--muted);
-              font-size:11px;
-              "
+            <p
+              class="small-muted"
+              style="margin-top: 8px;"
             >
-              ${escapeHTML(
-                row.customer_phone ||
-                ""
-              )}
+              Instruktor Mini App backend bilan ulanganda
+              bu yerda real instruktorlar, ularning mashg‘ulotlari,
+              jadvali va holati ko‘rsatiladi.
+            </p>
+
+          </div>
+
+        </section>
+
+
+        <!-- ================= USERS ================= -->
+
+        <section id="page-users" class="page">
+
+          <h2>Foydalanuvchilar</h2>
+
+          <p class="content-subtitle">
+            Foydalanuvchilarni boshqarish.
+          </p>
+
+          <div class="panel">
+
+            <div class="panel-title">
+              Foydalanuvchilar
             </div>
-          </td>
 
-          <td>
-            ${escapeHTML(
-              row.instructor_name ||
-              "—"
-            )}
-          </td>
-
-          <td>
-            ${escapeHTML(
-              row.date ||
-              "—"
-            )}
-          </td>
-
-          <td>
-            ${escapeHTML(
-              row.start_time ||
-              "—"
-            )}
-          </td>
-
-          <td>
-            ${formatMoney(
-              row.price
-            )}
-          </td>
-
-          <td>
-            ${statusHTML(
-              row.status
-            )}
-          </td>
-
-          <td>
-
-            <div
-              style="
-              display:flex;
-              gap:5px;
-              flex-wrap:wrap;
-              "
+            <p
+              class="small-muted"
+              style="margin-top: 8px;"
             >
+              Foydalanuvchi Mini App ulangandan so‘ng
+              foydalanuvchilarning profili, bronlari va
+              mashg‘ulotlari shu yerda ko‘rinadi.
+            </p>
 
-              ${
-                row.status === "pending"
-                ? `
-                <button
-                  class="btn btn-success"
-                  onclick="updateBookingStatus('${row.id}','confirmed')">
-                  ✓
-                </button>
+          </div>
 
-                <button
-                  class="btn btn-danger"
-                  onclick="updateBookingStatus('${row.id}','cancelled')">
-                  ✕
-                </button>
-                `
-                : ""
-              }
+        </section>
 
-              ${
-                row.status === "confirmed"
-                ? `
-                <button
-                  class="btn btn-primary"
-                  onclick="updateBookingStatus('${row.id}','completed')">
-                  Yakunlash
-                </button>
-                `
-                : ""
-              }
+
+        <!-- ================= BOOKINGS ================= -->
+
+        <section id="page-bookings" class="page">
+
+          <h2>Bronlar</h2>
+
+          <p class="content-subtitle">
+            Mashg‘ulot bronlarini boshqarish.
+          </p>
+
+          <div class="panel">
+
+            <div class="panel-header">
+
+              <div>
+                <div class="panel-title">
+                  Bron qilish tizimi
+                </div>
+
+                <div class="small-muted">
+                  Depozitsiz bron qilish modeli
+                </div>
+              </div>
 
             </div>
 
-          </td>
-
-        </tr>
-
-      `)
-      .join("");
-}
-
-
-function filterBookings(){
-
-  const q =
-    $("bookingSearch")
-      .value
-      .toLowerCase();
-
-  const status =
-    $("bookingStatusFilter")
-      .value;
-
-
-  const filtered =
-    bookings.filter(row=>{
-
-      const text =
-        (
-          row.customer_name +
-          " " +
-          row.customer_phone +
-          " " +
-          row.instructor_name
-        )
-        .toLowerCase();
-
-
-      return (
-        text.includes(q) &&
-        (
-          !status ||
-          row.status === status
-        )
-      );
-
-    });
-
-
-  renderBookings(
-    filtered
-  );
-}
-
-
-async function updateBookingStatus(
-  id,
-  status
-){
-
-  const {
-    error
-  } =
-    await supabaseClient
-      .from("bookings")
-      .update({
-        status
-      })
-      .eq("id",id);
-
-
-  if(error){
-
-    toast(
-      "Bronni o‘zgartirib bo‘lmadi."
-    );
-
-    return;
-  }
-
-
-  toast(
-    "Bron statusi yangilandi."
-  );
-
-
-  await loadBookings();
-
-  await loadDashboard();
-}
-
-
-/* =========================================================
-   CUSTOMERS
-========================================================= */
-
-async function loadCustomers(){
-
-  try{
-
-    const {
-      data,
-      error
-    } =
-      await supabaseClient
-        .from("customers")
-        .select("*")
-        .order(
-          "created_at",
-          {
-            ascending:false
-          }
-        );
-
-
-    if(error)
-      throw error;
-
-
-    customers =
-      data || [];
-
-
-    renderCustomers(
-      customers
-    );
-
-  }catch(error){
-
-    console.error(error);
-
-    $("customersTable")
-      .innerHTML =
-      `
-      <tr>
-        <td colspan="6">
-          Customerlarni yuklab bo‘lmadi.
-        </td>
-      </tr>
-      `;
-  }
-}
-
-
-function renderCustomers(
-  rows
-){
-
-  $("customersTable")
-    .innerHTML =
-    rows
-      .map(row=>`
-
-        <tr>
-
-          <td>
-            <strong>
-              ${escapeHTML(
-                row.full_name ||
-                row.name ||
-                "Customer"
-              )}
-            </strong>
-          </td>
-
-          <td>
-            ${escapeHTML(
-              row.phone ||
-              "—"
-            )}
-          </td>
-
-          <td>
-            ${escapeHTML(
-              row.telegram_username ||
-              row.username ||
-              "—"
-            )}
-          </td>
-
-          <td>
-            ${escapeHTML(
-              row.bookings_count ??
-              "—"
-            )}
-          </td>
-
-          <td>
-            ${row.is_blocked
-              ? `
-                <span class="status blocked">
-                  Bloklangan
-                </span>
-              `
-              : `
-                <span class="status confirmed">
-                  Faol
-                </span>
-              `
-            }
-          </td>
-
-          <td>
-
-            <button
-              class="btn btn-secondary"
-              onclick="toggleCustomer('${row.id}',${!row.is_blocked})">
-
-              ${
-                row.is_blocked
-                ? "Ochish"
-                : "Bloklash"
-              }
-
-            </button>
-
-          </td>
-
-        </tr>
-
-      `)
-      .join("");
-}
-
-
-function filterCustomers(){
-
-  const q =
-    $("customerSearch")
-      .value
-      .toLowerCase();
-
-
-  renderCustomers(
-    customers.filter(row=>{
-
-      const text =
-        (
-          row.full_name ||
-          row.name ||
-          ""
-        ) +
-        " " +
-        (
-          row.phone ||
-          ""
-        ) +
-        " " +
-        (
-          row.telegram_username ||
-          row.username ||
-          ""
-        );
-
-
-      return text
-        .toLowerCase()
-        .includes(q);
-
-    })
-  );
-}
-
-
-async function toggleCustomer(
-  id,
-  blocked
-){
-
-  const {
-    error
-  } =
-    await supabaseClient
-      .from("customers")
-      .update({
-        is_blocked:
-          blocked
-      })
-      .eq("id",id);
-
-
-  if(error){
-
-    toast(
-      "Customer holatini o‘zgartirib bo‘lmadi."
-    );
-
-    return;
-  }
-
-
-  toast(
-    blocked
-    ? "Customer bloklandi."
-    : "Customer qayta faollashtirildi."
-  );
-
-
-  await loadCustomers();
-}
-
-
-/* =========================================================
-   INSTRUCTORS
-========================================================= */
-
-async function loadInstructors(){
-
-  try{
-
-    const {
-      data,
-      error
-    } =
-      await supabaseClient
-        .from("instructors")
-        .select("*")
-        .order(
-          "created_at",
-          {
-            ascending:false
-          }
-        );
-
-
-    if(error)
-      throw error;
-
-
-    instructors =
-      data || [];
-
-
-    renderInstructors(
-      instructors
-    );
-
-  }catch(error){
-
-    console.error(error);
-
-    $("instructorsGrid")
-      .innerHTML =
-      `
-      <div class="card">
-        <div class="card-body">
-          Instruktorlarni yuklab bo‘lmadi.
-        </div>
-      </div>
-      `;
-  }
-}
-
-
-function renderInstructors(
-  rows
-){
-
-  $("instructorsGrid")
-    .innerHTML =
-    rows
-      .map(row=>`
-
-        <div class="person">
-
-          <div class="person-top">
-
-            <div class="person-avatar">
-              ${escapeHTML(
-                (
-                  row.full_name ||
-                  row.name ||
-                  "I"
-                ).charAt(0)
-              )}
-            </div>
-
-            <div>
-
-              <h3>
-                ${escapeHTML(
-                  row.full_name ||
-                  row.name ||
-                  "Instruktor"
-                )}
-              </h3>
+            <div class="setting-item">
+
+              <h4>
+                💳 Depozit
+              </h4>
 
               <p>
-                ${escapeHTML(
-                  row.phone ||
-                  "Telefon yo‘q"
-                )}
+                Depozit yoki oldindan to‘lov talab qilinmaydi.
+              </p>
+
+            </div>
+
+            <br />
+
+            <div class="setting-item">
+
+              <h4>
+                🔔 Eslatmalar
+              </h4>
+
+              <p>
+                Foydalanuvchiga bron haqida muntazam
+                ogohlantirishlar yuborish tizimi backend
+                orqali ulanadi.
               </p>
 
             </div>
 
           </div>
 
+        </section>
 
-          <div class="person-info">
 
-            <div class="info-box">
+        <!-- ================= NOTIFICATIONS ================= -->
 
-              <small>
-                Narx
-              </small>
+        <section id="page-notifications" class="page">
 
-              <strong>
-                ${formatMoney(
-                  row.price_per_hour ||
-                  row.price ||
-                  0
-                )}
-              </strong>
+          <h2>Ogohlantirishlar</h2>
 
-            </div>
+          <p class="content-subtitle">
+            Foydalanuvchi va instruktorlarga yuboriladigan
+            bildirishnomalarni boshqarish.
+          </p>
 
-            <div class="info-box">
+          <div class="panel">
 
-              <small>
-                Reyting
-              </small>
+            <div class="panel-header">
 
-              <strong>
-                ⭐ ${
-                  row.rating ||
-                  "0"
-                }
-              </strong>
+              <div>
+                <div class="panel-title">
+                  Eslatma tizimi
+                </div>
 
-            </div>
-
-            <div class="info-box">
-
-              <small>
-                Tajriba
-              </small>
-
-              <strong>
-                ${escapeHTML(
-                  row.experience ||
-                  "—"
-                )}
-              </strong>
-
-            </div>
-
-            <div class="info-box">
-
-              <small>
-                Status
-              </small>
-
-              <strong>
-                ${
-                  row.is_active
-                  ? "Faol"
-                  : "Nofaol"
-                }
-              </strong>
-
-            </div>
-
-          </div>
-
-
-          <div
-            style="
-            display:flex;
-            gap:7px;
-            flex-wrap:wrap;
-            "
-          >
-
-            <button
-              class="btn btn-primary"
-              onclick="editInstructor('${row.id}')">
-              Tahrirlash
-            </button>
-
-            <button
-              class="btn btn-secondary"
-              onclick="toggleInstructor('${row.id}',${!row.is_active})">
-
-              ${
-                row.is_active
-                ? "Nofaol qilish"
-                : "Faollashtirish"
-              }
-
-            </button>
-
-          </div>
-
-        </div>
-
-      `)
-      .join("");
-}
-
-
-function openInstructorModal(){
-
-  $("editInstructorId")
-    .value = "";
-
-  $("instructorName")
-    .value = "";
-
-  $("instructorPhone")
-    .value = "";
-
-  $("instructorTelegram")
-    .value = "";
-
-  $("instructorPrice")
-    .value = "";
-
-  $("instructorExperience")
-    .value = "";
-
-  $("instructorModal")
-    .classList.add("show");
-}
-
-
-function editInstructor(id){
-
-  const row =
-    instructors.find(
-      x=>String(x.id) === String(id)
-    );
-
-
-  if(!row)
-    return;
-
-
-  $("editInstructorId")
-    .value =
-    row.id;
-
-  $("instructorName")
-    .value =
-    row.full_name ||
-    row.name ||
-    "";
-
-  $("instructorPhone")
-    .value =
-    row.phone ||
-    "";
-
-  $("instructorTelegram")
-    .value =
-    row.telegram_id ||
-    "";
-
-  $("instructorPrice")
-    .value =
-    row.price_per_hour ||
-    row.price ||
-    "";
-
-  $("instructorExperience")
-    .value =
-    row.experience ||
-    "";
-
-
-  $("instructorModal")
-    .classList.add("show");
-}
-
-
-async function saveInstructor(){
-
-  const id =
-    $("editInstructorId")
-      .value;
-
-
-  const payload = {
-
-    full_name:
-      $("instructorName")
-        .value
-        .trim(),
-
-    phone:
-      $("instructorPhone")
-        .value
-        .trim(),
-
-    telegram_id:
-      $("instructorTelegram")
-        .value
-        .trim(),
-
-    price_per_hour:
-      Number(
-        $("instructorPrice")
-          .value ||
-        0
-      ),
-
-    experience:
-      $("instructorExperience")
-        .value
-        .trim(),
-
-    is_active:
-      true
-  };
-
-
-  let result;
-
-
-  if(id){
-
-    result =
-      await supabaseClient
-        .from("instructors")
-        .update(payload)
-        .eq("id",id);
-
-  }else{
-
-    result =
-      await supabaseClient
-        .from("instructors")
-        .insert(payload);
-
-  }
-
-
-  if(result.error){
-
-    toast(
-      "Instruktorni saqlashda xato: " +
-      result.error.message
-    );
-
-    return;
-  }
-
-
-  closeModal(
-    "instructorModal"
-  );
-
-
-  toast(
-    "Instruktor saqlandi."
-  );
-
-
-  await loadInstructors();
-}
-
-
-async function toggleInstructor(
-  id,
-  active
-){
-
-  const {
-    error
-  } =
-    await supabaseClient
-      .from("instructors")
-      .update({
-        is_active:
-          active
-      })
-      .eq("id",id);
-
-
-  if(error){
-
-    toast(
-      "Instruktor holatini o‘zgartirib bo‘lmadi."
-    );
-
-    return;
-  }
-
-
-  toast(
-    active
-    ? "Instruktor faollashtirildi."
-    : "Instruktor nofaol qilindi."
-  );
-
-
-  await loadInstructors();
-}
-
-
-/* =========================================================
-   PRICES
-========================================================= */
-
-async function loadPrices(){
-
-  try{
-
-    const {
-      data,
-      error
-    } =
-      await supabaseClient
-        .from("prices")
-        .select("*")
-        .order(
-          "created_at",
-          {
-            ascending:false
-          }
-        );
-
-
-    if(error)
-      throw error;
-
-
-    prices =
-      data || [];
-
-
-    renderPrices(
-      prices
-    );
-
-  }catch(error){
-
-    console.error(error);
-
-    $("pricesTable")
-      .innerHTML =
-      `
-      <tr>
-        <td colspan="5">
-          Narxlarni yuklab bo‘lmadi.
-          Agar "prices" jadvali hali yaratilmagan bo‘lsa,
-          avval Supabase jadvalini yarating.
-        </td>
-      </tr>
-      `;
-  }
-}
-
-
-function renderPrices(
-  rows
-){
-
-  $("pricesTable")
-    .innerHTML =
-    rows
-      .map(row=>`
-
-        <tr>
-
-          <td>
-            <strong>
-              ${escapeHTML(
-                row.name ||
-                row.service_name ||
-                "Xizmat"
-              )}
-            </strong>
-          </td>
-
-          <td>
-            ${escapeHTML(
-              row.duration ||
-              "—"
-            )}
-          </td>
-
-          <td>
-            <strong>
-              ${formatMoney(
-                row.amount ||
-                row.price ||
-                0
-              )}
-            </strong>
-          </td>
-
-          <td>
-            ${
-              row.is_active
-              ? `
-              <span class="status confirmed">
-                Faol
-              </span>
-              `
-              : `
-              <span class="status blocked">
-                Nofaol
-              </span>
-              `
-            }
-          </td>
-
-          <td>
-
-            <button
-              class="btn btn-secondary"
-              onclick="togglePrice('${row.id}',${!row.is_active})">
-
-              ${
-                row.is_active
-                ? "O‘chirish"
-                : "Yoqish"
-              }
-
-            </button>
-
-          </td>
-
-        </tr>
-
-      `)
-      .join("");
-}
-
-
-function openPriceModal(){
-
-  $("priceName")
-    .value = "";
-
-  $("priceDuration")
-    .value = "";
-
-  $("priceAmount")
-    .value = "";
-
-  $("priceModal")
-    .classList.add("show");
-}
-
-
-async function savePrice(){
-
-  const payload = {
-
-    name:
-      $("priceName")
-        .value
-        .trim(),
-
-    duration:
-      $("priceDuration")
-        .value
-        .trim(),
-
-    amount:
-      Number(
-        $("priceAmount")
-          .value ||
-        0
-      ),
-
-    is_active:
-      true
-
-  };
-
-
-  const {
-    error
-  } =
-    await supabaseClient
-      .from("prices")
-      .insert(payload);
-
-
-  if(error){
-
-    toast(
-      "Narxni saqlashda xato: " +
-      error.message
-    );
-
-    return;
-  }
-
-
-  closeModal(
-    "priceModal"
-  );
-
-
-  toast(
-    "Narx qo‘shildi."
-  );
-
-
-  await loadPrices();
-}
-
-
-async function togglePrice(
-  id,
-  active
-){
-
-  const {
-    error
-  } =
-    await supabaseClient
-      .from("prices")
-      .update({
-        is_active:
-          active
-      })
-      .eq("id",id);
-
-
-  if(error){
-
-    toast(
-      "Narxni o‘zgartirib bo‘lmadi."
-    );
-
-    return;
-  }
-
-
-  await loadPrices();
-}
-
-
-/* =========================================================
-   REVIEWS
-========================================================= */
-
-async function loadReviews(){
-
-  try{
-
-    const {
-      data,
-      error
-    } =
-      await supabaseClient
-        .from("reviews")
-        .select("*")
-        .order(
-          "created_at",
-          {
-            ascending:false
-          }
-        );
-
-
-    if(error)
-      throw error;
-
-
-    reviews =
-      data || [];
-
-
-    renderReviews(
-      reviews
-    );
-
-  }catch(error){
-
-    console.error(error);
-
-    $("reviewsList")
-      .innerHTML =
-      `
-      <div style="color:var(--muted)">
-        Sharhlarni yuklash uchun Supabase'dagi
-        <strong>reviews</strong> jadvali mavjud bo‘lishi kerak.
-      </div>
-      `;
-  }
-}
-
-
-function renderReviews(
-  rows
-){
-
-  if(!rows.length){
-
-    $("reviewsList")
-      .innerHTML =
-      `
-      <div style="color:var(--muted)">
-        Hozircha sharhlar yo‘q.
-      </div>
-      `;
-
-    return;
-  }
-
-
-  $("reviewsList")
-    .innerHTML =
-    rows
-      .map(row=>`
-
-        <div class="review">
-
-          <div class="review-top">
-
-            <div>
-
-              <strong>
-                ${escapeHTML(
-                  row.customer_name ||
-                  row.user_name ||
-                  "Customer"
-                )}
-              </strong>
-
-              <div
-                style="
-                color:var(--muted);
-                font-size:11px;
-                margin-top:3px;
-                "
-              >
-                Instruktor:
-                ${escapeHTML(
-                  row.instructor_name ||
-                  "—"
-                )}
+                <div class="small-muted">
+                  Bronlar uchun avtomatik ogohlantirishlar
+                </div>
               </div>
 
             </div>
 
-            <div class="stars">
-              ${"★".repeat(
-                Math.min(
-                  5,
-                  Math.max(
-                    0,
-                    Number(
-                      row.rating ||
-                      0
-                    )
-                  )
-                )
-              )}
+            <div class="setting-item">
+
+              <h4>
+                ⏰ Har 2 soatda eslatma
+              </h4>
+
+              <p>
+                Bron mavjud bo‘lsa, foydalanuvchiga
+                Telegram bot orqali eslatma yuborish.
+                Bu funksiya backend + Telegram Bot API
+                bilan ishlaydi.
+              </p>
+
             </div>
 
           </div>
 
-          <div class="review-text">
-            ${escapeHTML(
-              row.comment ||
-              row.text ||
-              ""
-            )}
+        </section>
+
+
+        <!-- ================= SETTINGS ================= -->
+
+        <section id="page-settings" class="page">
+
+          <h2>Sozlamalar</h2>
+
+          <p class="content-subtitle">
+            Admin Mini App sozlamalari.
+          </p>
+
+
+          <div class="panel">
+
+            <div class="panel-header">
+
+              <div>
+                <div class="panel-title">
+                  Profil
+                </div>
+
+                <div class="small-muted">
+                  Admin akkaunt ma’lumotlari
+                </div>
+              </div>
+
+            </div>
+
+            <div class="settings-grid">
+
+              <div class="setting-item">
+
+                <h4>👤 Ism</h4>
+
+                <p id="settingsName">
+                  —
+                </p>
+
+              </div>
+
+              <div class="setting-item">
+
+                <h4>📱 Telefon</h4>
+
+                <p id="settingsPhone">
+                  —
+                </p>
+
+              </div>
+
+              <div class="setting-item">
+
+                <h4>🔑 Login</h4>
+
+                <p id="settingsUsername">
+                  —
+                </p>
+
+              </div>
+
+              <div class="setting-item">
+
+                <h4>🛡️ Rol</h4>
+
+                <p>
+                  Administrator
+                </p>
+
+              </div>
+
+            </div>
+
           </div>
 
-          <div class="review-meta">
-            ${escapeHTML(
-              row.created_at ||
-              ""
-            )}
+
+          <div class="panel">
+
+            <div class="panel-header">
+
+              <div>
+                <div class="panel-title">
+                  Tizim
+                </div>
+
+                <div class="small-muted">
+                  Admin boshqaruvi
+                </div>
+              </div>
+
+            </div>
+
+            <div class="setting-item">
+
+              <h4>
+                🌙 Ko‘rinish
+              </h4>
+
+              <p>
+                Kunduzgi va tungi rejimni yuqoridagi
+                tugma orqali almashtirishingiz mumkin.
+              </p>
+
+            </div>
+
+
+            <button
+              class="danger-btn"
+              onclick="deleteAdminAccount()"
+            >
+              Admin akkauntini o‘chirish
+            </button>
+
           </div>
 
-        </div>
+        </section>
 
-      `)
-      .join("");
-}
 
+      </main>
 
-/* =========================================================
-   SCHEDULE
-========================================================= */
+    </div>
 
-function toggleSwitch(
-  element
-){
+  </section>
 
-  element.classList.toggle(
-    "on"
-  );
-}
 
+  <script>
+    /* =========================================================
+       STORAGE KEYS
+    ========================================================== */
 
-async function saveSchedule(){
+    const ADMIN_KEY = "avtodrom_admin_account";
+    const SESSION_KEY = "avtodrom_admin_session";
+    const THEME_KEY = "avtodrom_admin_theme";
 
-  const payload = {
 
-    day_start:
-      $("dayStart").value,
+    /* =========================================================
+       HELPERS
+    ========================================================== */
 
-    day_end:
-      $("dayEnd").value,
+    function getAdmin() {
+      const data = localStorage.getItem(ADMIN_KEY);
 
-    night_start:
-      $("nightStart").value,
+      if (!data) {
+        return null;
+      }
 
-    night_end:
-      $("nightEnd").value,
+      try {
+        return JSON.parse(data);
+      } catch (error) {
+        return null;
+      }
+    }
 
-    day_enabled:
-      $("daySwitch")
-        .classList
-        .contains("on"),
 
-    night_enabled:
-      $("nightSwitch")
-        .classList
-        .contains("on")
+    function setMessage(elementId, text, type) {
 
-  };
+      const element = document.getElementById(elementId);
 
+      if (!element) return;
 
-  try{
+      element.textContent = text;
+      element.className = "message " + type;
+    }
 
-    const {
-      error
-    } =
-      await supabaseClient
-        .from("app_settings")
-        .upsert({
-          key:"schedule",
-          value:payload
-        });
 
+    function clearMessage(elementId) {
 
-    if(error)
-      throw error;
+      const element = document.getElementById(elementId);
 
+      if (!element) return;
 
-    toast(
-      "Jadval saqlandi."
-    );
+      element.textContent = "";
+      element.className = "message";
+    }
 
-  }catch(error){
 
-    toast(
-      "Jadvalni saqlash uchun app_settings jadvali kerak."
-    );
-  }
-}
+    /* =========================================================
+       AUTH SCREEN
+    ========================================================== */
 
+    function showLogin() {
 
-/* =========================================================
-   SETTINGS
-========================================================= */
+      document
+        .getElementById("loginBox")
+        .classList.remove("hidden");
 
-function settingsTab(
-  name,
-  button
-){
+      document
+        .getElementById("registerBox")
+        .classList.add("hidden");
 
-  document
-    .querySelectorAll(
-      ".setting-section"
-    )
-    .forEach(el=>{
-      el.classList.remove(
-        "active"
-      );
-    });
+      clearMessage("loginMessage");
+      clearMessage("registerMessage");
+    }
 
 
-  $("setting-" + name)
-    .classList.add(
-      "active"
-    );
+    function showRegister() {
 
+      document
+        .getElementById("loginBox")
+        .classList.add("hidden");
 
-  document
-    .querySelectorAll(
-      ".settings-menu button"
-    )
-    .forEach(el=>{
-      el.classList.remove(
-        "active"
-      );
-    });
+      document
+        .getElementById("registerBox")
+        .classList.remove("hidden");
 
+      clearMessage("loginMessage");
+      clearMessage("registerMessage");
+    }
 
-  button.classList.add(
-    "active"
-  );
-}
 
+    /* =========================================================
+       REGISTER
+    ========================================================== */
 
-async function saveSettings(){
+    document
+      .getElementById("registerForm")
+      .addEventListener("submit", function (event) {
 
-  const settings = {
+        event.preventDefault();
 
-    app_name:
-      $("appName").value,
+        const existingAdmin = getAdmin();
 
-    phone:
-      $("appPhone").value,
+        if (existingAdmin) {
 
-    address:
-      $("appAddress").value,
-
-    min_booking_hours:
-      Number(
-        $("minBookingHours").value
-      ),
-
-    telegram_channel:
-      $("telegramChannel").value,
-
-    instagram:
-      $("instagram").value
-
-  };
-
-
-  try{
-
-    const {
-      error
-    } =
-      await supabaseClient
-        .from("app_settings")
-        .upsert({
-          key:"general",
-          value:settings
-        });
-
-
-    if(error)
-      throw error;
-
-
-    toast(
-      "Sozlamalar saqlandi."
-    );
-
-  }catch(error){
-
-    toast(
-      "Sozlamalarni saqlash uchun app_settings jadvali kerak."
-    );
-  }
-}
-
-
-/* =========================================================
-   PASSWORD RESET
-========================================================= */
-
-async function sendPasswordReset(){
-
-  if(!currentUser?.email)
-    return;
-
-
-  const {
-    error
-  } =
-    await supabaseClient.auth
-      .resetPasswordForEmail(
-        currentUser.email,
-        {
-          redirectTo:
-            window.location.href
-        }
-      );
-
-
-  if(error){
-
-    toast(
-      "Parolni o‘zgartirish xatosi."
-    );
-
-    return;
-  }
-
-
-  toast(
-    "Parolni o‘zgartirish havolasi emailingizga yuborildi."
-  );
-}
-
-
-/* =========================================================
-   MODALS
-========================================================= */
-
-function closeModal(
-  id
-){
-
-  $(id)
-    .classList
-    .remove("show");
-}
-
-
-document
-  .querySelectorAll(".modal")
-  .forEach(modal=>{
-
-    modal.addEventListener(
-      "click",
-      event=>{
-
-        if(
-          event.target ===
-          modal
-        ){
-
-          modal.classList.remove(
-            "show"
+          setMessage(
+            "registerMessage",
+            "Admin akkaunti allaqachon mavjud. Kirish oynasidan foydalaning.",
+            "error"
           );
+
+          return;
         }
+
+
+        const name =
+          document
+            .getElementById("registerName")
+            .value
+            .trim();
+
+        const phone =
+          document
+            .getElementById("registerPhone")
+            .value
+            .trim();
+
+        const username =
+          document
+            .getElementById("registerUsername")
+            .value
+            .trim();
+
+        const password =
+          document
+            .getElementById("registerPassword")
+            .value;
+
+        const password2 =
+          document
+            .getElementById("registerPassword2")
+            .value;
+
+
+        if (name.length < 2) {
+
+          setMessage(
+            "registerMessage",
+            "Iltimos, to‘liq ismni kiriting.",
+            "error"
+          );
+
+          return;
+        }
+
+
+        if (phone.length < 7) {
+
+          setMessage(
+            "registerMessage",
+            "Telefon raqamni to‘g‘ri kiriting.",
+            "error"
+          );
+
+          return;
+        }
+
+
+        if (username.length < 3) {
+
+          setMessage(
+            "registerMessage",
+            "Login kamida 3 ta belgidan iborat bo‘lishi kerak.",
+            "error"
+          );
+
+          return;
+        }
+
+
+        if (password.length < 6) {
+
+          setMessage(
+            "registerMessage",
+            "Parol kamida 6 ta belgidan iborat bo‘lishi kerak.",
+            "error"
+          );
+
+          return;
+        }
+
+
+        if (password !== password2) {
+
+          setMessage(
+            "registerMessage",
+            "Parollar bir xil emas.",
+            "error"
+          );
+
+          return;
+        }
+
+
+        const admin = {
+
+          id:
+            "admin_" +
+            Date.now(),
+
+          name: name,
+
+          phone: phone,
+
+          username:
+            username.toLowerCase(),
+
+          password: password,
+
+          role: "admin",
+
+          createdAt:
+            new Date().toISOString()
+
+        };
+
+
+        localStorage.setItem(
+          ADMIN_KEY,
+          JSON.stringify(admin)
+        );
+
+
+        localStorage.setItem(
+          SESSION_KEY,
+          "true"
+        );
+
+
+        setMessage(
+          "registerMessage",
+          "Admin akkaunti muvaffaqiyatli yaratildi.",
+          "success"
+        );
+
+
+        setTimeout(function () {
+
+          openApp();
+
+        }, 500);
+
+      });
+
+
+    /* =========================================================
+       LOGIN
+    ========================================================== */
+
+    document
+      .getElementById("loginForm")
+      .addEventListener("submit", function (event) {
+
+        event.preventDefault();
+
+
+        const admin = getAdmin();
+
+
+        if (!admin) {
+
+          setMessage(
+            "loginMessage",
+            "Hali admin akkaunti yaratilmagan. Avval akkaunt yarating.",
+            "error"
+          );
+
+          return;
+        }
+
+
+        const username =
+          document
+            .getElementById("loginUsername")
+            .value
+            .trim()
+            .toLowerCase();
+
+        const password =
+          document
+            .getElementById("loginPassword")
+            .value;
+
+
+        if (
+          username !== admin.username ||
+          password !== admin.password
+        ) {
+
+          setMessage(
+            "loginMessage",
+            "Login yoki parol noto‘g‘ri.",
+            "error"
+          );
+
+          return;
+        }
+
+
+        localStorage.setItem(
+          SESSION_KEY,
+          "true"
+        );
+
+
+        openApp();
+
+      });
+
+
+    /* =========================================================
+       OPEN APP
+    ========================================================== */
+
+    function openApp() {
+
+      const admin = getAdmin();
+
+
+      if (!admin) {
+
+        document
+          .getElementById("authScreen")
+          .classList.remove("hidden");
+
+        document
+          .getElementById("app")
+          .classList.add("hidden");
+
+        showRegister();
+
+        return;
+      }
+
+
+      document
+        .getElementById("authScreen")
+        .classList.add("hidden");
+
+
+      document
+        .getElementById("app")
+        .classList.remove("hidden");
+
+
+      document
+        .getElementById("adminName")
+        .textContent = admin.name;
+
+
+      document
+        .getElementById("adminAvatar")
+        .textContent =
+          admin.name
+            .charAt(0)
+            .toUpperCase();
+
+
+      document
+        .getElementById("settingsName")
+        .textContent = admin.name;
+
+
+      document
+        .getElementById("settingsPhone")
+        .textContent = admin.phone;
+
+
+      document
+        .getElementById("settingsUsername")
+        .textContent = admin.username;
+
+
+      loadDashboard();
+
+    }
+
+
+    /* =========================================================
+       LOGOUT
+    ========================================================== */
+
+    function logout() {
+
+      localStorage.removeItem(SESSION_KEY);
+
+      document
+        .getElementById("app")
+        .classList.add("hidden");
+
+      document
+        .getElementById("authScreen")
+        .classList.remove("hidden");
+
+      document
+        .getElementById("loginForm")
+        .reset();
+
+      showLogin();
+
+    }
+
+
+    /* =========================================================
+       NAVIGATION
+    ========================================================== */
+
+    function openPage(pageName, button) {
+
+      document
+        .querySelectorAll(".page")
+        .forEach(function (page) {
+
+          page.classList.remove("active");
+
+        });
+
+
+      const target =
+        document.getElementById(
+          "page-" + pageName
+        );
+
+
+      if (target) {
+        target.classList.add("active");
+      }
+
+
+      document
+        .querySelectorAll(".nav-btn")
+        .forEach(function (btn) {
+
+          btn.classList.remove("active");
+
+        });
+
+
+      if (button) {
+        button.classList.add("active");
+      }
+
+    }
+
+
+    /* =========================================================
+       DASHBOARD
+    ========================================================== */
+
+    function loadDashboard() {
+
+      const activities = [
+
+        {
+          time: "09:20",
+          user: "01 B 456 BB",
+          action: "Avtodromga kirdi",
+          status: "active",
+          statusText: "Faol"
+        },
+
+        {
+          time: "09:10",
+          user: "01 A 123 AA",
+          action: "Mashg‘ulot yakunlandi",
+          status: "done",
+          statusText: "Tugagan"
+        },
+
+        {
+          time: "08:50",
+          user: "Foydalanuvchi",
+          action: "Bron yaratildi",
+          status: "waiting",
+          statusText: "Kutilmoqda"
+        }
+
+      ];
+
+
+      const table =
+        document.getElementById(
+          "activityTable"
+        );
+
+
+      table.innerHTML = "";
+
+
+      activities.forEach(function (item) {
+
+        const row =
+          document.createElement("tr");
+
+
+        row.innerHTML = `
+
+          <td>${item.time}</td>
+
+          <td>${item.user}</td>
+
+          <td>${item.action}</td>
+
+          <td>
+            <span class="status ${item.status}">
+              ${item.statusText}
+            </span>
+          </td>
+
+        `;
+
+
+        table.appendChild(row);
+
+      });
+
+
+      document.getElementById(
+        "statCars"
+      ).textContent = "2";
+
+
+      document.getElementById(
+        "statActive"
+      ).textContent = "1";
+
+
+      document.getElementById(
+        "statInstructors"
+      ).textContent = "0";
+
+
+      document.getElementById(
+        "statUsers"
+      ).textContent = "0";
+
+    }
+
+
+    /* =========================================================
+       THEME
+    ========================================================== */
+
+    function applyTheme(theme) {
+
+      if (theme === "dark") {
+
+        document.body.classList.add("dark");
+
+        document
+          .getElementById("themeButton")
+          .textContent = "☀️";
+
+      } else {
+
+        document.body.classList.remove("dark");
+
+        document
+          .getElementById("themeButton")
+          .textContent = "🌙";
 
       }
-    );
 
-  });
+    }
 
 
-/* =========================================================
-   START
-========================================================= */
+    function toggleTheme() {
 
-checkSession();
-</script>
+      const isDark =
+        document.body.classList.contains("dark");
+
+
+      const nextTheme =
+        isDark
+          ? "light"
+          : "dark";
+
+
+      localStorage.setItem(
+        THEME_KEY,
+        nextTheme
+      );
+
+
+      applyTheme(nextTheme);
+
+    }
+
+
+    /* =========================================================
+       DELETE ADMIN
+    ========================================================== */
+
+    function deleteAdminAccount() {
+
+      const confirmed =
+        confirm(
+          "Admin akkauntini o‘chirishni tasdiqlaysizmi?"
+        );
+
+
+      if (!confirmed) {
+        return;
+      }
+
+
+      localStorage.removeItem(ADMIN_KEY);
+
+      localStorage.removeItem(SESSION_KEY);
+
+
+      alert(
+        "Admin akkaunti o‘chirildi. Endi yangi admin akkaunti yaratishingiz mumkin."
+      );
+
+
+      location.reload();
+
+    }
+
+
+    /* =========================================================
+       INITIALIZATION
+    ========================================================== */
+
+    function init() {
+
+      const savedTheme =
+        localStorage.getItem(THEME_KEY);
+
+
+      applyTheme(
+        savedTheme || "light"
+      );
+
+
+      const admin = getAdmin();
+
+      const session =
+        localStorage.getItem(
+          SESSION_KEY
+        );
+
+
+      if (admin && session === "true") {
+
+        openApp();
+
+        return;
+      }
+
+
+      document
+        .getElementById("app")
+        .classList.add("hidden");
+
+
+      document
+        .getElementById("authScreen")
+        .classList.remove("hidden");
+
+
+      if (!admin) {
+
+        /*
+          Birinchi marta:
+          parol yo‘q,
+          admin akkaunti yo‘q,
+          ro‘yxatdan o‘tish oynasi ochiladi.
+        */
+
+        showRegister();
+
+      } else {
+
+        /*
+          Admin mavjud:
+          login oynasi ochiladi.
+        */
+
+        showLogin();
+
+      }
+
+    }
+
+
+    init();
+
+  </script>
 
 </body>
 </html>
-```
-
-
