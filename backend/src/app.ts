@@ -10,6 +10,7 @@ import { registerAdminPasswordRoutes } from './admin-password-routes.js';
 const app = Fastify({ logger: true });
 const CUSTOMER_BOT_TOKEN = process.env.CUSTOMER_BOT_TOKEN || '';
 const MINI_APP_URL = process.env.MINI_APP_URL || '';
+const TELEGRAM_WEBHOOK_SECRET = process.env.TELEGRAM_WEBHOOK_SECRET || '';
 
 await app.register(cors, {
   origin: process.env.FRONTEND_ORIGIN ? [process.env.FRONTEND_ORIGIN] : true,
@@ -35,10 +36,27 @@ export async function authenticate(request: any): Promise<TelegramWebAppUser> {
 
 await registerBookingRoutes(app, authenticate);
 await registerInstructorRoutes(app, authenticate);
-
-// Admin API has one source of truth. Do not register the legacy admin-routes module
-// together with admin-password-routes because both declare the same Fastify routes.
 await registerAdminPasswordRoutes(app);
+
+app.post('/api/telegram/webhook', async (request, reply) => {
+  const secret = String(request.headers['x-telegram-bot-api-secret-token'] || '');
+  if (TELEGRAM_WEBHOOK_SECRET && secret !== TELEGRAM_WEBHOOK_SECRET) {
+    return reply.code(401).send({ ok: false, error: 'Invalid webhook secret' });
+  }
+
+  const update = request.body as any;
+  const message = update?.message;
+  const text = typeof message?.text === 'string' ? message.text.trim() : '';
+  const chatId = Number(message?.chat?.id);
+
+  if (CUSTOMER_BOT_TOKEN && MINI_APP_URL && Number.isSafeInteger(chatId) && chatId > 0) {
+    if (/^\/start(?:@\w+)?(?:\s.*)?$/i.test(text)) {
+      await sendCustomerStart(CUSTOMER_BOT_TOKEN, chatId, MINI_APP_URL);
+    }
+  }
+
+  return { ok: true };
+});
 
 app.post<{ Body: { chatId?: number } }>('/api/telegram/customer/start', async (request, reply) => {
   if (!CUSTOMER_BOT_TOKEN || !MINI_APP_URL) {
