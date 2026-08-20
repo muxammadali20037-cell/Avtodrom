@@ -1,261 +1,94 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="uz">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<meta name="theme-color" content="#101713">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#f5f7f4">
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
 <title>Avtodrom — Instruktor</title>
 <style>
-:root{
-  --bg:#f5f6f4;--surface:#fff;--surface2:#eef1ed;--text:#121814;--muted:#6d766f;
-  --line:#dfe4df;--green:#16734a;--green2:#0e5436;--mint:#dceee4;--amber:#b66a12;
-  --red:#bd3e3e;--blue:#3b658c;--shadow:0 12px 35px rgba(18,24,20,.07);
-}
-body.dark{
-  --bg:#0d1210;--surface:#151b17;--surface2:#1b241f;--text:#f2f5f2;--muted:#9ca69f;
-  --line:#29332d;--green:#4cc987;--green2:#77dca6;--mint:#173a2a;--amber:#e5a052;
-  --red:#ef7777;--blue:#78a8d0;--shadow:0 15px 40px rgba(0,0,0,.25);
-}
-*{box-sizing:border-box}html,body{margin:0;min-height:100%;font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;background:var(--bg);color:var(--text)}
-button,input,select{font:inherit}button{cursor:pointer}.hidden{display:none!important}
-.auth{min-height:100vh;display:grid;place-items:center;padding:20px;background:radial-gradient(circle at 90% 0,#d8ecdf 0,transparent 34%),var(--bg)}
-.dark .auth{background:radial-gradient(circle at 90% 0,#173b2a 0,transparent 34%),var(--bg)}
-.authbox{width:min(440px,100%);background:var(--surface);border:1px solid var(--line);padding:34px;border-radius:28px;box-shadow:var(--shadow)}
-.mark{width:58px;height:58px;border-radius:17px;background:var(--green2);color:#fff;display:grid;place-items:center;font-size:25px;margin-bottom:24px}
-.eyebrow{font-size:11px;letter-spacing:1.3px;font-weight:900;color:var(--green);text-transform:uppercase}
-h1{font-size:29px;letter-spacing:-.7px;margin:7px 0 8px}h2{font-size:27px;letter-spacing:-.7px;margin:0}
-.sub{color:var(--muted);line-height:1.55;margin:0 0 25px;font-size:14px}
-.field{margin:14px 0}.field label{font-size:12px;font-weight:800;display:block;margin:0 0 7px}
-input{width:100%;height:50px;border:1px solid var(--line);border-radius:13px;background:var(--surface);color:var(--text);padding:0 14px;outline:0}
-input:focus{border-color:var(--green);box-shadow:0 0 0 3px color-mix(in srgb,var(--green) 15%,transparent)}
-.primary{width:100%;height:51px;border:0;border-radius:13px;background:var(--green2);color:white;font-weight:850;margin-top:8px}.primary:hover{filter:brightness(1.08)}
-.switch{text-align:center;color:var(--muted);font-size:13px;margin-top:18px}.link{border:0;background:none;color:var(--green);font-weight:850}
-.msg{padding:11px 13px;border-radius:12px;font-size:13px;margin:12px 0}.error{background:#fee5e5;color:#9f2525}.success{background:var(--mint);color:var(--green2)}
-.app{min-height:100vh}.top{height:72px;border-bottom:1px solid var(--line);background:color-mix(in srgb,var(--surface) 92%,transparent);backdrop-filter:blur(16px);position:sticky;top:0;z-index:20}
-.topin{height:100%;max-width:1180px;margin:auto;padding:0 18px;display:flex;align-items:center;justify-content:space-between}
-.brand{display:flex;align-items:center;gap:10px}.brandmark{width:38px;height:38px;border-radius:11px;background:var(--green2);color:#fff;display:grid;place-items:center}.brand strong{font-size:14px;letter-spacing:.4px}.brand small{display:block;color:var(--muted);font-size:9px;letter-spacing:1px;margin-top:2px}
-.actions{display:flex;gap:8px;align-items:center}.icon{width:40px;height:40px;border:1px solid var(--line);border-radius:11px;background:var(--surface);color:var(--text);display:grid;place-items:center}
-.profileMini{display:flex;gap:8px;align-items:center;padding-left:8px}.avatar{width:34px;height:34px;border-radius:10px;background:var(--mint);color:var(--green2);display:grid;place-items:center;font-weight:900;font-size:13px}
-.shell{max-width:1180px;margin:auto;padding:25px 18px 100px;display:grid;grid-template-columns:205px 1fr;gap:25px}
-.side{height:max-content;position:sticky;top:97px}.nav{display:flex;flex-direction:column;gap:4px}.nav button{border:0;background:transparent;color:var(--muted);height:45px;border-radius:11px;text-align:left;padding:0 13px;font-weight:750}.nav button.active,.nav button:hover{background:var(--surface);color:var(--green2);box-shadow:var(--shadow)}.logout{margin-top:20px!important;color:var(--red)!important}
-.page{display:none}.page.active{display:block}.heading{display:flex;justify-content:space-between;gap:20px;align-items:flex-end;margin-bottom:22px}.heading p{margin:5px 0 0;color:var(--muted);font-size:13px}
-.hero{display:grid;grid-template-columns:1.25fr .75fr;gap:14px;margin-bottom:14px}.heroMain,.next{border:1px solid var(--line);border-radius:20px;background:var(--surface);box-shadow:var(--shadow);padding:22px}.heroMain{background:linear-gradient(135deg,var(--surface),var(--mint))}
-.greeting{font-size:12px;color:var(--muted);margin-bottom:7px}.heroMain h3{font-size:24px;margin:0 0 7px;letter-spacing:-.5px}.heroMain p{color:var(--muted);font-size:13px;max-width:520px;line-height:1.55}.next{display:flex;flex-direction:column;justify-content:space-between}.next .label{font-size:10px;letter-spacing:1px;color:var(--muted);font-weight:900}.time{font-size:31px;font-weight:900;margin-top:5px}.nextmeta{font-size:12px;color:var(--muted)}
-.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}.stat{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:16px}.stat b{font-size:24px}.stat span{display:block;color:var(--muted);font-size:11px;margin-top:5px}
-.panel{background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:19px;margin-bottom:14px;box-shadow:var(--shadow)}.panelhead{display:flex;justify-content:space-between;align-items:center;margin-bottom:15px}.panelhead strong{font-size:15px}.panelhead span{font-size:11px;color:var(--muted)}
-.timeline{display:flex;flex-direction:column}.slot{display:grid;grid-template-columns:60px 10px 1fr;gap:11px;min-height:75px}.slot time{font-size:12px;color:var(--muted);padding-top:2px}.dot{width:8px;height:8px;border-radius:50%;background:var(--green);margin-top:5px;box-shadow:0 0 0 4px var(--mint)}.slotline{border-left:1px solid var(--line);margin-left:3px;padding:0 0 17px 16px}.slot:last-child .slotline{border:0}.lesson{border:1px solid var(--line);border-radius:13px;padding:11px 13px;background:var(--surface2)}.lesson strong{font-size:13px}.lesson small{display:block;color:var(--muted);margin-top:4px;font-size:11px}
-.badge{display:inline-flex;align-items:center;border-radius:99px;padding:5px 8px;font-size:10px;font-weight:850}.ok{background:var(--mint);color:var(--green2)}.wait{background:#fff0dc;color:var(--amber)}.busy{background:#e4edf5;color:var(--blue)}
-.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}.person{display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--line);padding:13px 0}.person:last-child{border:0}.personleft{display:flex;gap:11px;align-items:center}.pic{width:39px;height:39px;border-radius:11px;background:var(--surface2);display:grid;place-items:center;font-weight:850}.person small{display:block;color:var(--muted);margin-top:3px}
-.search{height:43px;max-width:300px}.empty{text-align:center;padding:35px 15px;color:var(--muted);font-size:13px}
-.settings{display:grid;grid-template-columns:1fr 1fr;gap:12px}.setting{border:1px solid var(--line);border-radius:14px;padding:15px}.setting b{font-size:13px}.setting p{color:var(--muted);font-size:12px;margin:6px 0 0;line-height:1.5}
+:root{--bg:#f5f7f4;--card:#fff;--soft:#eef4ef;--text:#142019;--muted:#6d7972;--line:#dde5df;--green:#137446;--green2:#0c5935;--danger:#c53f3f;--warn:#a96812;--blue:#2e668d;--r:18px}
+*{box-sizing:border-box}html,body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui,-apple-system,Segoe UI,sans-serif}button,input{font:inherit}button{cursor:pointer}.hidden{display:none!important}.wrap{max-width:1120px;margin:auto;padding:18px 16px 90px}
+.top{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--bg) 92%,transparent);backdrop-filter:blur(14px);border-bottom:1px solid var(--line)}.topin{max-width:1120px;margin:auto;height:68px;padding:0 16px;display:flex;justify-content:space-between;align-items:center}.brand{display:flex;gap:10px;align-items:center}.logo{width:40px;height:40px;border-radius:12px;background:var(--green2);color:#fff;display:grid;place-items:center;font-size:20px}.brand b{font-size:14px}.brand small{display:block;color:var(--muted);font-size:9px;letter-spacing:1px}.topright{display:flex;gap:8px;align-items:center}.icon{border:1px solid var(--line);background:var(--card);color:var(--text);width:40px;height:40px;border-radius:11px}.avatar{width:36px;height:36px;border-radius:11px;background:var(--soft);color:var(--green2);display:grid;place-items:center;font-weight:900}
+.auth{min-height:100vh;display:grid;place-items:center;padding:20px;background:radial-gradient(circle at 90% 0,#dceee3 0,transparent 35%),var(--bg)}.box{width:min(460px,100%);background:var(--card);border:1px solid var(--line);border-radius:26px;padding:28px}.mark{width:56px;height:56px;border-radius:16px;background:var(--green2);color:#fff;display:grid;place-items:center;font-size:24px;margin-bottom:18px}.eyebrow{font-size:11px;font-weight:900;letter-spacing:1.3px;color:var(--green);text-transform:uppercase}h1{font-size:29px;letter-spacing:-.7px;margin:6px 0 8px}h2{font-size:26px;margin:0;letter-spacing:-.5px}.sub{color:var(--muted);font-size:14px;line-height:1.55;margin:0 0 20px}.field{margin:13px 0}.field label{display:block;font-size:12px;font-weight:800;margin-bottom:7px}input{width:100%;height:48px;border:1px solid var(--line);border-radius:12px;background:var(--card);color:var(--text);padding:0 13px;outline:none}input:focus{border-color:var(--green)}.primary{width:100%;height:49px;border:0;border-radius:12px;background:var(--green2);color:#fff;font-weight:900;margin-top:7px}.secondary{height:42px;border:1px solid var(--line);background:var(--card);color:var(--text);border-radius:11px;padding:0 14px;font-weight:800}.msg{padding:11px 12px;border-radius:12px;font-size:13px;margin:12px 0}.error{background:#fee7e7;color:#9f2929}.success{background:var(--soft);color:var(--green2)}
+.heading{display:flex;justify-content:space-between;gap:16px;align-items:flex-end;margin:18px 0 18px}.heading p{margin:5px 0 0;color:var(--muted);font-size:13px}.hero{display:grid;grid-template-columns:1.25fr .75fr;gap:13px}.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:18px}.heroMain{background:linear-gradient(135deg,var(--card),var(--soft))}.heroMain .date{color:var(--muted);font-size:11px;font-weight:800}.heroMain h3{font-size:24px;margin:7px 0}.heroMain p{color:var(--muted);font-size:13px;line-height:1.5;margin:0}.next .label{color:var(--muted);font-size:10px;font-weight:900;letter-spacing:1px}.next .time{font-size:32px;font-weight:950;margin:6px 0}.next small{color:var(--muted)}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:13px 0}.stat b{font-size:24px}.stat span{display:block;color:var(--muted);font-size:11px;margin-top:5px}.panel{margin:13px 0}.panelhead{display:flex;justify-content:space-between;align-items:center;margin-bottom:13px}.panelhead strong{font-size:15px}.panelhead span{font-size:11px;color:var(--muted)}
+.nav{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin:10px 0 18px}.nav button{height:42px;border:1px solid transparent;background:transparent;border-radius:11px;color:var(--muted);font-weight:800}.nav button.active,.nav button:hover{background:var(--card);border-color:var(--line);color:var(--green2)}.page{display:none}.page.active{display:block}.row{display:flex;justify-content:space-between;gap:12px;align-items:center;border-bottom:1px solid var(--line);padding:13px 0}.row:last-child{border:0}.person{display:flex;gap:10px;align-items:center}.pic{width:40px;height:40px;border-radius:11px;background:var(--soft);display:grid;place-items:center;font-weight:900}.person small,.muted{display:block;color:var(--muted);font-size:11px;margin-top:3px}.badge{display:inline-flex;border-radius:99px;padding:5px 8px;font-size:10px;font-weight:900}.ok{background:var(--soft);color:var(--green2)}.wait{background:#fff0dc;color:var(--warn)}.busy{background:#e6eff6;color:var(--blue)}.danger{background:#fee7e7;color:var(--danger)}.actions{display:flex;gap:7px;flex-wrap:wrap}.smallbtn{height:35px;padding:0 10px;border:1px solid var(--line);background:var(--card);border-radius:9px;font-size:11px;font-weight:800}.smallbtn.green{background:var(--green2);color:#fff;border-color:var(--green2)}.timeline .row{align-items:flex-start}.timecol{width:55px;color:var(--muted);font-size:12px;padding-top:3px;flex:none}.content{flex:1}.empty{text-align:center;color:var(--muted);padding:32px 10px;font-size:13px}.profilegrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.setting{background:var(--soft);border-radius:13px;padding:14px}.setting b{font-size:12px}.setting p{margin:5px 0 0;font-size:13px}.search{max-width:280px;height:42px}
 .bottom{display:none}
-@media(max-width:850px){.shell{display:block}.side{display:none}.hero{grid-template-columns:1fr}.stats{grid-template-columns:1fr 1fr}.bottom{display:grid;grid-template-columns:repeat(4,1fr);position:fixed;bottom:0;left:0;right:0;height:67px;background:var(--surface);border-top:1px solid var(--line);z-index:30;padding-bottom:env(safe-area-inset-bottom)}.bottom button{border:0;background:none;color:var(--muted);font-size:10px;font-weight:800}.bottom button.active{color:var(--green)}.bottom i{display:block;font-style:normal;font-size:19px;margin-bottom:2px}.grid2{grid-template-columns:1fr}}
-@media(max-width:560px){.top{height:64px}.brand small{display:none}.profileMini .name{display:none}.shell{padding:18px 12px 90px}.heading{align-items:flex-start}.heading h2{font-size:24px}.heroMain,.next{padding:18px}.heroMain h3{font-size:21px}.stats{gap:8px}.stat{padding:13px}.stat b{font-size:21px}.settings{grid-template-columns:1fr}.panel{padding:15px;border-radius:17px}}
+@media(max-width:800px){.hero{grid-template-columns:1fr}.stats{grid-template-columns:1fr 1fr}.nav{position:fixed;bottom:0;left:0;right:0;z-index:30;background:var(--card);border-top:1px solid var(--line);margin:0;padding:7px 8px env(safe-area-inset-bottom);grid-template-columns:repeat(5,1fr)}.nav button{font-size:10px}.wrap{padding-bottom:85px}.top{position:sticky}.profilegrid{grid-template-columns:1fr}}
+@media(max-width:500px){.topin{height:62px;padding:0 12px}.brand small{display:none}.wrap{padding:13px 11px 86px}.box{padding:23px}.heading h2{font-size:23px}.heroMain,.card{padding:15px}.stats{gap:7px}.stat{padding:13px}.stat b{font-size:21px}.search{max-width:160px}}
 </style>
 </head>
 <body>
-
 <section id="auth" class="auth">
-  <div id="loginBox" class="authbox">
+  <div class="box">
     <div class="mark">🚘</div>
-    <div class="eyebrow">Instructor workspace</div>
-    <h1>Instruktor kirishi</h1>
-    <p class="sub">Shaxsiy jadval, o‘quvchilar va mashg‘ulotlarni bitta joydan boshqaring.</p>
-    <div id="loginMsg"></div>
-    <form id="loginForm">
-      <div class="field"><label>Login</label><input id="loginUser" required autocomplete="username" placeholder="Login"></div>
-      <div class="field"><label>Parol</label><input id="loginPass" type="password" required autocomplete="current-password" placeholder="Parol"></div>
-      <button class="primary">Kirish</button>
-    </form>
-    <div class="switch">Yangi instruktor? <button class="link" onclick="showReg()">Ro‘yxatdan o‘tish</button></div>
-  </div>
-
-  <div id="regBox" class="authbox hidden">
-    <div class="mark">✦</div>
-    <div class="eyebrow">Instructor onboarding</div>
+    <div class="eyebrow">Avtodrom · Instructor</div>
     <h1>Instruktor profili</h1>
-    <p class="sub">Avval akkaunt yarating. Tizimga kirgandan keyin profilni to‘liq to‘ldirish talab qilinadi.</p>
-    <div id="regMsg"></div>
-    <form id="regForm">
-      <div class="field"><label>To‘liq ism</label><input id="rName" required placeholder="Ism Familiya"></div>
-      <div class="field"><label>Telefon</label><input id="rPhone" type="tel" required placeholder="+998 90 000 00 00"></div>
-      <div class="field"><label>Login</label><input id="rUser" required placeholder="instruktor"></div>
-      <div class="field"><label>Parol</label><input id="rPass" type="password" minlength="6" required placeholder="Kamida 6 belgi"></div>
-      <div class="field"><label>Parolni tasdiqlang</label><input id="rPass2" type="password" minlength="6" required placeholder="Parolni qayta kiriting"></div>
-      <button class="primary">Akkaunt yaratish</button>
+    <p class="sub" id="authSub">Telegram akkauntingiz avtomatik aniqlanadi. Birinchi kirishda profil ma’lumotlarini to‘ldiring.</p>
+    <div id="authMsg"></div>
+    <div id="tgOnly" class="hidden"><button class="primary" onclick="location.reload()">Telegram ichida qayta ochish</button></div>
+    <form id="registerForm" class="hidden">
+      <div class="field"><label>Ism</label><input id="firstName" required></div>
+      <div class="field"><label>Familiya</label><input id="lastName"></div>
+      <div class="field"><label>Telefon</label><input id="phone" type="tel" required placeholder="+998 90 000 00 00"></div>
+      <button class="primary">Instruktor sifatida ro‘yxatdan o‘tish</button>
     </form>
-    <div class="switch">Akkauntingiz bormi? <button class="link" onclick="showLogin()">Kirish</button></div>
   </div>
 </section>
 
-<section id="app" class="app hidden">
-  <header class="top">
-    <div class="topin">
-      <div class="brand">
-        <div class="brandmark">🚘</div>
-        <div><strong>AVTODROM</strong><small>INSTRUCTOR WORKSPACE</small></div>
-      </div>
-      <div class="actions">
-        <button class="icon" onclick="toggleTheme()" id="theme">☾</button>
-        <div class="profileMini"><div class="avatar" id="avatar">I</div><span class="name" id="miniName">Instruktor</span></div>
-      </div>
-    </div>
-  </header>
-
-  <div class="shell">
-    <aside class="side">
-      <nav class="nav">
-        <button class="active" onclick="page('home',this)">⌂ &nbsp; Bosh sahifa</button>
-        <button onclick="page('schedule',this)">▦ &nbsp; Jadval</button>
-        <button onclick="page('students',this)">◉ &nbsp; O‘quvchilar</button>
-        <button onclick="page('bookings',this)">◇ &nbsp; Bronlar</button>
-        <button onclick="page('profile',this)">○ &nbsp; Profil</button>
-        <button class="logout" onclick="logout()">↪ &nbsp; Chiqish</button>
-      </nav>
-    </aside>
-
-    <main>
-      <section id="home" class="page active">
-        <div class="heading"><div><h2 id="hello">Xush kelibsiz</h2><p>Bugungi ish kuningizni nazorat qiling.</p></div></div>
-
-        <div class="hero">
-          <div class="heroMain">
-            <div class="greeting">BUGUN · <span id="today"></span></div>
-            <h3>Bugun rejangiz aniq.</h3>
-            <p>Keyingi mashg‘ulot, o‘quvchilar va kunlik jadval shu yerda. Har bir bronning holatini tezda ko‘rib chiqing.</p>
-          </div>
-          <div class="next">
-            <div><div class="label">KEYINGI MASHG‘ULOT</div><div class="time">10:30</div></div>
-            <div><span class="badge ok">Tasdiqlangan</span><div class="nextmeta" style="margin-top:8px">Muhammad Ali · Cobalt</div></div>
-          </div>
-        </div>
-
-        <div class="stats">
-          <div class="stat"><b>5</b><span>Bugungi mashg‘ulot</span></div>
-          <div class="stat"><b>3</b><span>Faol o‘quvchi</span></div>
-          <div class="stat"><b>2</b><span>Kutilayotgan bron</span></div>
-          <div class="stat"><b>4.9</b><span>O‘rtacha baho</span></div>
-        </div>
-
-        <div class="panel">
-          <div class="panelhead"><strong>Bugungi jadval</strong><span>5 ta mashg‘ulot</span></div>
-          <div class="timeline">
-            <div class="slot"><time>08:00</time><div class="dot"></div><div class="slotline"><div class="lesson"><strong>Azizbek Karimov</strong><small>Chevrolet Cobalt · 01 A 245 BC · 60 daqiqa</small></div></div></div>
-            <div class="slot"><time>09:15</time><div class="dot"></div><div class="slotline"><div class="lesson"><strong>Madina T.</strong><small>Chevrolet Nexia · 01 B 718 DA · 60 daqiqa</small></div></div></div>
-            <div class="slot"><time>10:30</time><div class="dot"></div><div class="slotline"><div class="lesson"><strong>Muhammad Ali</strong><small>Chevrolet Cobalt · 01 A 904 AA · 60 daqiqa</small></div></div></div>
-          </div>
-        </div>
-      </section>
-
-      <section id="schedule" class="page">
-        <div class="heading"><div><h2>Jadval</h2><p>Bugungi va kelgusi mashg‘ulotlar.</p></div></div>
-        <div class="panel">
-          <div class="panelhead"><strong>Bugun</strong><span>20 avgust 2026</span></div>
-          <div class="timeline">
-            <div class="slot"><time>08:00</time><div class="dot"></div><div class="slotline"><div class="lesson"><strong>Azizbek Karimov</strong><small>60 daqiqa · Cobalt · 01 A 245 BC</small><span class="badge ok" style="margin-top:8px">Tasdiqlangan</span></div></div></div>
-            <div class="slot"><time>09:15</time><div class="dot"></div><div class="slotline"><div class="lesson"><strong>Madina T.</strong><small>60 daqiqa · Nexia · 01 B 718 DA</small><span class="badge busy" style="margin-top:8px">Jarayonda</span></div></div></div>
-            <div class="slot"><time>10:30</time><div class="dot"></div><div class="slotline"><div class="lesson"><strong>Muhammad Ali</strong><small>60 daqiqa · Cobalt · 01 A 904 AA</small><span class="badge ok" style="margin-top:8px">Tasdiqlangan</span></div></div></div>
-            <div class="slot"><time>12:00</time><div class="dot"></div><div class="slotline"><div class="lesson"><strong>Sardor R.</strong><small>60 daqiqa · Gentra · 01 C 331 CA</small><span class="badge wait" style="margin-top:8px">Kutilmoqda</span></div></div></div>
-          </div>
-        </div>
-      </section>
-
-      <section id="students" class="page">
-        <div class="heading"><div><h2>O‘quvchilar</h2><p>Siz bilan mashg‘ulot qilayotgan o‘quvchilar.</p></div><input class="search" placeholder="Qidirish..." oninput="filterStudents(this.value)"></div>
-        <div class="grid2" id="studentsList">
-          <div class="panel person"><div class="personleft"><div class="pic">AK</div><div><b>Azizbek Karimov</b><small>12 ta mashg‘ulot</small></div></div><span class="badge ok">Faol</span></div>
-          <div class="panel person"><div class="personleft"><div class="pic">MT</div><div><b>Madina T.</b><small>7 ta mashg‘ulot</small></div></div><span class="badge ok">Faol</span></div>
-          <div class="panel person"><div class="personleft"><div class="pic">MA</div><div><b>Muhammad Ali</b><small>4 ta mashg‘ulot</small></div></div><span class="badge ok">Faol</span></div>
-          <div class="panel person"><div class="personleft"><div class="pic">SR</div><div><b>Sardor R.</b><small>3 ta mashg‘ulot</small></div></div><span class="badge wait">Yangi</span></div>
-        </div>
-      </section>
-
-      <section id="bookings" class="page">
-        <div class="heading"><div><h2>Bronlar</h2><p>Foydalanuvchilar yuborgan mashg‘ulot so‘rovlari.</p></div></div>
-        <div class="panel">
-          <div class="panelhead"><strong>Yangi so‘rovlar</strong><span>2 ta</span></div>
-          <div class="person"><div><b>Sardor R.</b><small>Bugun · 12:00 · Gentra</small></div><span class="badge wait">Kutilmoqda</span></div>
-          <div class="person"><div><b>Malika S.</b><small>Ertaga · 09:00 · Cobalt</small></div><span class="badge wait">Kutilmoqda</span></div>
-        </div>
-        <div class="panel">
-          <div class="panelhead"><strong>Bron qoidasi</strong></div>
-          <div class="setting"><b>Depozitsiz bron</b><p>Foydalanuvchi oldindan depozit to‘lamaydi. Bron tasdiqlangach Telegram orqali eslatmalar yuboriladi.</p></div>
-        </div>
-      </section>
-
-      <section id="profile" class="page">
-        <div class="heading"><div><h2>Profil</h2><p>Instruktor ma’lumotlari.</p></div></div>
-        <div class="panel">
-          <div class="settings">
-            <div class="setting"><b>To‘liq ism</b><p id="pName">—</p></div>
-            <div class="setting"><b>Telefon</b><p id="pPhone">—</p></div>
-            <div class="setting"><b>Login</b><p id="pUser">—</p></div>
-            <div class="setting"><b>Rol</b><p>Instruktor</p></div>
-          </div>
-        </div>
-        <div class="panel">
-          <div class="panelhead"><strong>Profil holati</strong><span class="badge ok">To‘ldirilgan</span></div>
-          <div class="setting"><b>Keyingi bosqich</b><p>Admin tizimi bilan bog‘langandan so‘ng jadval, o‘quvchilar va bronlar real ma’lumotlar bilan ishlaydi.</p></div>
-          <button class="primary" style="max-width:220px;margin-top:15px" onclick="logout()">Chiqish</button>
-        </div>
-      </section>
-    </main>
-  </div>
-
-  <nav class="bottom">
-    <button class="active" onclick="page('home',this)"> <i>⌂</i>Bosh sahifa</button>
-    <button onclick="page('schedule',this)"><i>▦</i>Jadval</button>
-    <button onclick="page('students',this)"><i>◉</i>O‘quvchilar</button>
-    <button onclick="page('profile',this)"><i>○</i>Profil</button>
-  </nav>
+<section id="app" class="hidden">
+<header class="top"><div class="topin"><div class="brand"><div class="logo">🚘</div><div><b>AVTODROM</b><small>INSTRUCTOR WORKSPACE</small></div></div><div class="topright"><button class="icon" onclick="toggleTheme()" id="theme">☾</button><div class="avatar" id="avatar">I</div></div></div></header>
+<div class="wrap">
+<nav class="nav">
+<button class="active" onclick="page('home',this)">⌂<br>Bosh</button>
+<button onclick="page('schedule',this)">▦<br>Jadval</button>
+<button onclick="page('students',this)">◉<br>O‘quvchilar</button>
+<button onclick="page('bookings',this)">◇<br>Bronlar</button>
+<button onclick="page('profile',this)">○<br>Profil</button>
+</nav>
+<main>
+<section id="home" class="page active">
+<div class="heading"><div><h2 id="hello">Xush kelibsiz</h2><p>Bugungi real ish jadvalingiz.</p></div></div>
+<div class="hero"><div class="card heroMain"><div class="date" id="today"></div><h3>Bugun rejangiz aniq.</h3><p>Bronlar, o‘quvchilar va mashg‘ulotlar endi Supabase'dan real vaqt ma’lumotlari bilan yuklanadi.</p></div><div class="card next"><div><div class="label">KEYINGI MASHG‘ULOT</div><div class="time" id="nextTime">—</div></div><div><span id="nextStatus" class="badge ok">—</span><small id="nextStudent">—</small></div></div></div>
+<div class="stats"><div class="card stat"><b id="sToday">0</b><span>Bugungi mashg‘ulot</span></div><div class="card stat"><b id="sStudents">0</b><span>Faol o‘quvchi</span></div><div class="card stat"><b id="sPending">0</b><span>Kutilayotgan bron</span></div><div class="card stat"><b id="sCompleted">0</b><span>Tugagan dars</span></div></div>
+<div class="card panel"><div class="panelhead"><strong>Bugungi jadval</strong><span id="scheduleCount">0 ta</span></div><div id="homeSchedule" class="timeline"></div></div>
 </section>
-
+<section id="schedule" class="page"><div class="heading"><div><h2>Jadval</h2><p>Bugungi va kelgusi mashg‘ulotlar.</p></div></div><div class="card"><div class="panelhead"><strong>Mashg‘ulotlar</strong><span id="scheduleDate"></span></div><div id="scheduleList" class="timeline"></div></div></section>
+<section id="students" class="page"><div class="heading"><div><h2>O‘quvchilar</h2><p>Sizga biriktirilgan o‘quvchilar.</p></div><input class="search" id="studentSearch" placeholder="Qidirish..."></div><div id="studentsList"></div></section>
+<section id="bookings" class="page"><div class="heading"><div><h2>Bronlar</h2><p>Foydalanuvchilar yuborgan so‘rovlar.</p></div></div><div class="card"><div class="panelhead"><strong>Bronlar</strong><span id="bookingCount">0 ta</span></div><div id="bookingsList"></div></div></section>
+<section id="profile" class="page"><div class="heading"><div><h2>Profil</h2><p>Telegram akkauntingizga bog‘langan instruktor profili.</p></div></div><div class="card"><div class="profilegrid"><div class="setting"><b>Ism</b><p id="pName">—</p></div><div class="setting"><b>Familiya</b><p id="pLast">—</p></div><div class="setting"><b>Telefon</b><p id="pPhone">—</p></div><div class="setting"><b>Telegram</b><p id="pUsername">—</p></div><div class="setting"><b>Rol</b><p>Instruktor</p></div><div class="setting"><b>Holat</b><p id="pActive">—</p></div></div></div><div class="card panel"><strong>Ulanish holati</strong><p class="muted">Akkaunt Telegram ID orqali serverda tekshiriladi. Login/parol brauzerda saqlanmaydi.</p><button class="secondary" onclick="loadAll()">↻ Ma’lumotlarni yangilash</button></div></section>
+</main></div>
+</section>
 <script>
-const KEY="avtodrom_instructor_v1",SESSION="avtodrom_instructor_session",THEME="avtodrom_instructor_theme";
+const API=location.origin+'/api';
+const tg=window.Telegram?.WebApp;
+const state={profile:null,instructor:null,bookings:[]};
 const $=id=>document.getElementById(id);
-function data(){try{return JSON.parse(localStorage.getItem(KEY))}catch{return null}}
-function msg(id,text,type){$(id).innerHTML=`<div class="msg ${type}">${text}</div>`}
-function showLogin(){$("loginBox").classList.remove("hidden");$("regBox").classList.add("hidden")}
-function showReg(){$("loginBox").classList.add("hidden");$("regBox").classList.remove("hidden")}
-$("regForm").onsubmit=e=>{
- e.preventDefault(); if(data())return msg("regMsg","Akkaunt allaqachon mavjud. Kirish oynasidan foydalaning.","error");
- let n=$("rName").value.trim(),ph=$("rPhone").value.trim(),u=$("rUser").value.trim().toLowerCase(),p=$("rPass").value,p2=$("rPass2").value;
- if(n.length<3||ph.length<7||u.length<3)return msg("regMsg","Ma’lumotlarni to‘liq va to‘g‘ri kiriting.","error");
- if(p.length<6)return msg("regMsg","Parol kamida 6 ta belgidan iborat bo‘lishi kerak.","error");
- if(p!==p2)return msg("regMsg","Parollar mos kelmaydi.","error");
- localStorage.setItem(KEY,JSON.stringify({name:n,phone:ph,user:u,pass:p,createdAt:new Date().toISOString()}));
- localStorage.setItem(SESSION,"1"); openApp();
-};
-$("loginForm").onsubmit=e=>{
- e.preventDefault();let a=data();if(!a)return msg("loginMsg","Akkaunt topilmadi. Avval ro‘yxatdan o‘ting.","error");
- if($("loginUser").value.trim().toLowerCase()!==a.user||$("loginPass").value!==a.pass)return msg("loginMsg","Login yoki parol noto‘g‘ri.","error");
- localStorage.setItem(SESSION,"1");openApp();
-};
-function openApp(){
- let a=data();if(!a)return showReg();
- $("auth").classList.add("hidden");$("app").classList.remove("hidden");
- $("hello").textContent=`Xush kelibsiz, ${a.name.split(" ")[0]}`;
- $("miniName").textContent=a.name;$("avatar").textContent=a.name[0].toUpperCase();
- $("pName").textContent=a.name;$("pPhone").textContent=a.phone;$("pUser").textContent=a.user;
- $("today").textContent=new Date().toLocaleDateString("uz-UZ",{day:"2-digit",month:"long",year:"numeric"});
-}
-function logout(){localStorage.removeItem(SESSION);$("app").classList.add("hidden");$("auth").classList.remove("hidden");showLogin()}
-function page(id,btn){
- document.querySelectorAll(".page").forEach(x=>x.classList.remove("active"));$(id).classList.add("active");
- document.querySelectorAll(".nav button,.bottom button").forEach(x=>x.classList.remove("active"));if(btn)btn.classList.add("active");
- window.scrollTo({top:0,behavior:"smooth"});
-}
-function toggleTheme(){
- let dark=!document.body.classList.contains("dark");document.body.classList.toggle("dark",dark);
- localStorage.setItem(THEME,dark?"dark":"light");$("theme").textContent=dark?"☀":"☾";
-}
-function filterStudents(q){
- q=q.toLowerCase();document.querySelectorAll("#studentsList .person").forEach(x=>x.style.display=x.innerText.toLowerCase().includes(q)?"flex":"none");
-}
-(function init(){
- let t=localStorage.getItem(THEME);if(t==="dark"){document.body.classList.add("dark");$("theme").textContent="☀"}
- if(data()&&localStorage.getItem(SESSION)==="1")openApp();else if(data())showLogin();else showReg();
-})();
+function setMsg(text,type='error'){ $('authMsg').innerHTML=text?`<div class="msg ${type}">${text}</div>`:''; }
+function initData(){return tg?.initData||''}
+async function api(path,options={}){const init=initData();if(!init)throw new Error('Telegram Mini App sessiyasi topilmadi');const res=await fetch(API+path,{...options,headers:{'content-type':'application/json','x-telegram-init-data':init,...(options.headers||{})}});let data={};try{data=await res.json()}catch{}if(!res.ok)throw new Error(data.error||`Server xatosi: ${res.status}`);return data}
+function statusLabel(s){return({pending:'Kutilmoqda',confirmed:'Tasdiqlangan',in_progress:'Jarayonda',completed:'Tugallangan',cancelled:'Bekor qilingan',no_show:'Kelmagan'})[s]||s}
+function badgeClass(s){return s==='confirmed'?'ok':s==='pending'?'wait':s==='in_progress'?'busy':s==='completed'?'ok':'danger'}
+function fmtTime(x){return new Date(x).toLocaleTimeString('uz-UZ',{hour:'2-digit',minute:'2-digit'})}
+function fmtDate(x){return new Date(x).toLocaleDateString('uz-UZ',{day:'2-digit',month:'long',year:'numeric'})}
+function studentName(b){const c=b.customer||{};return [c.first_name,c.last_name].filter(Boolean).join(' ')||c.username||'O‘quvchi'}
+function carName(b){return b.car?`${b.car.model} · ${b.car.plate_number}`:'Avtomobil biriktirilmagan'}
+function showApp(){ $('auth').classList.add('hidden');$('app').classList.remove('hidden');renderProfile();renderAll(); }
+function showRegister(profile){$('auth').classList.remove('hidden');$('app').classList.add('hidden');$('registerForm').classList.remove('hidden');$('firstName').value=profile?.first_name||tg?.initDataUnsafe?.user?.first_name||'';$('lastName').value=profile?.last_name||tg?.initDataUnsafe?.user?.last_name||'';}
+function renderProfile(){const p=state.profile||{};const full=[p.first_name,p.last_name].filter(Boolean).join(' ')||'Instruktor';$('hello').textContent=`Xush kelibsiz, ${p.first_name||'Instruktor'}`;$('avatar').textContent=full[0].toUpperCase();$('pName').textContent=p.first_name||'—';$('pLast').textContent=p.last_name||'—';$('pPhone').textContent=p.phone||'—';$('pUsername').textContent=p.username?`@${p.username}`:'Telegram';$('pActive').textContent=state.instructor?.active?'Faol':'Nofaol'}
+function renderAll(){const bs=[...state.bookings].sort((a,b)=>new Date(a.start_at)-new Date(b.start_at));const now=Date.now();const today=new Date();const ds=today.toISOString().slice(0,10);const todayBs=bs.filter(b=>b.start_at.slice(0,10)===ds);$('today').textContent=fmtDate(new Date());$('scheduleDate').textContent=fmtDate(new Date());$('sToday').textContent=todayBs.length;$('sPending').textContent=bs.filter(b=>b.status==='pending').length;$('sCompleted').textContent=todayBs.filter(b=>b.status==='completed').length;const students=new Map();bs.forEach(b=>{if(b.customer_id)students.set(b.customer_id,b.customer)});$('sStudents').textContent=students.size;$('scheduleCount').textContent=todayBs.length+' ta';$('bookingCount').textContent=bs.length+' ta';const next=bs.find(b=>new Date(b.start_at).getTime()>=now&&b.status!=='cancelled'&&b.status!=='completed');if(next){$('nextTime').textContent=fmtTime(next.start_at);$('nextStudent').textContent=studentName(next);$('nextStatus').textContent=statusLabel(next.status);$('nextStatus').className='badge '+badgeClass(next.status)}else{$('nextTime').textContent='—';$('nextStudent').textContent='Keyingi bron yo‘q';$('nextStatus').textContent='Bo‘sh';$('nextStatus').className='badge ok'}renderSchedule(todayBs,$('homeSchedule'),true);renderSchedule(bs,$('scheduleList'),false);renderStudents(Array.from(students.values()).filter(Boolean));renderBookings(bs)}
+function renderSchedule(list,el,compact){if(!list.length){el.innerHTML='<div class="empty">Hozircha mashg‘ulot yo‘q.</div>';return}el.innerHTML=list.map(b=>`<div class="row"><div class="timecol">${fmtTime(b.start_at)}</div><div class="content"><b>${studentName(b)}</b><small class="muted">${carName(b)} · ${Math.max(1,Math.round((new Date(b.end_at)-new Date(b.start_at))/60000))} daqiqa</small><div style="margin-top:7px"><span class="badge ${badgeClass(b.status)}">${statusLabel(b.status)}</span></div></div>${!compact?bookingActions(b):''}</div>`).join('')}
+function bookingActions(b){if(!['pending','confirmed','in_progress'].includes(b.status))return '';let buttons='';if(b.status==='pending')buttons+=`<button class="smallbtn green" onclick="changeStatus('${b.id}','confirmed')">Tasdiqlash</button>`;if(b.status==='confirmed')buttons+=`<button class="smallbtn green" onclick="changeStatus('${b.id}','in_progress')">Boshlash</button>`;if(b.status==='in_progress')buttons+=`<button class="smallbtn green" onclick="changeStatus('${b.id}','completed')">Tugatish</button>`;buttons+=`<button class="smallbtn" onclick="changeStatus('${b.id}','cancelled')">Bekor qilish</button>`;return `<div class="actions">${buttons}</div>`}
+function renderStudents(list){const q=($('studentSearch')?.value||'').toLowerCase();const filtered=list.filter(x=>JSON.stringify(x||{}).toLowerCase().includes(q));$('studentsList').innerHTML=filtered.length?filtered.map((s,i)=>{const name=[s.first_name,s.last_name].filter(Boolean).join(' ')||s.username||'O‘quvchi';return `<div class="card row"><div class="person"><div class="pic">${name[0].toUpperCase()}</div><div><b>${name}</b><small>${s.phone||'Telefon ko‘rsatilmagan'}</small></div></div><span class="badge ok">Faol</span></div>`}).join(''):'<div class="card empty">O‘quvchi topilmadi.</div>'}
+function renderBookings(list){$('bookingsList').innerHTML=list.length?list.map(b=>`<div class="row"><div><b>${studentName(b)}</b><small class="muted">${fmtDate(b.start_at)} · ${fmtTime(b.start_at)}–${fmtTime(b.end_at)} · ${carName(b)}</small><div style="margin-top:7px"><span class="badge ${badgeClass(b.status)}">${statusLabel(b.status)}</span></div></div>${bookingActions(b)}</div>`).join(''):'<div class="empty">Bronlar yo‘q.</div>'}
+async function loadAll(){try{const me=await api('/instructor/me');state.profile=me.profile;state.instructor=me.instructor;const from=new Date();from.setHours(0,0,0,0);const to=new Date(from);to.setDate(to.getDate()+31);const data=await api('/instructor/bookings?from='+encodeURIComponent(from.toISOString())+'&to='+encodeURIComponent(to.toISOString()));state.bookings=data.bookings||[];showApp()}catch(e){if(e.message.includes('Instructor registration required')){try{const me=await api('/me');showRegister(me.profile)}catch(err){setMsg(err.message)}}else setMsg(e.message)}}
+async function registerInstructor(e){e.preventDefault();setMsg('');const button=e.target.querySelector('button');button.disabled=true;try{const data=await api('/instructor/register',{method:'POST',body:JSON.stringify({first_name:$('firstName').value.trim(),last_name:$('lastName').value.trim(),phone:$('phone').value.trim()})});state.profile=data.profile;state.instructor=data.instructor;await loadAll()}catch(err){setMsg(err.message)}finally{button.disabled=false}}
+async function changeStatus(id,status){try{await api('/bookings/'+encodeURIComponent(id)+'/status',{method:'PATCH',body:JSON.stringify({status})});await loadAll()}catch(e){alert(e.message)}}
+function page(id,btn){document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));$(id).classList.add('active');document.querySelectorAll('.nav button').forEach(x=>x.classList.remove('active'));btn?.classList.add('active');scrollTo({top:0,behavior:'smooth'})}
+function toggleTheme(){const dark=document.body.dataset.theme==='dark';document.body.dataset.theme=dark?'light':'dark';document.documentElement.style.setProperty('--bg',dark?'#f5f7f4':'#0e1411');document.documentElement.style.setProperty('--card',dark?'#fff':'#151c18');document.documentElement.style.setProperty('--soft',dark?'#eef4ef':'#1d2a22');document.documentElement.style.setProperty('--text',dark?'#142019':'#f1f5f2');document.documentElement.style.setProperty('--muted',dark?'#6d7972':'#a0aaa4');document.documentElement.style.setProperty('--line',dark?'#dde5df':'#2a352e');$('theme').textContent=dark?'☀':'☾';localStorage.setItem('instructor_theme',dark?'dark':'light')}
+$('registerForm').addEventListener('submit',registerInstructor);$('studentSearch').addEventListener('input',()=>{const m=new Map();state.bookings.forEach(b=>{if(b.customer_id)m.set(b.customer_id,b.customer)});renderStudents(Array.from(m.values()).filter(Boolean))});
+(function boot(){if(localStorage.getItem('instructor_theme')==='dark')toggleTheme();if(!tg||!initData()){setMsg('Bu sahifa Telegram Mini App ichida ochilishi kerak.','error');$('tgOnly').classList.remove('hidden');return}try{tg.ready();tg.expand()}catch{}loadAll()})();
 </script>
 </body>
 </html>
