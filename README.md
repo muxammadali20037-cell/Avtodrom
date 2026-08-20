@@ -1,68 +1,79 @@
 # AVTODROM INDEX
 
-Production architecture for the AVTODROM INDEX Telegram Mini App.
+Production architecture for the AVTODROM Telegram Mini App system.
 
-## Current UI sources
+## Repository
 
-The project currently has three HTML UI files:
-- Customer/public app: `index.html`
-- Admin panel: `admin/index.html`
-- Instructor panel: `instructor/index.html`
+`muxammadali20037-cell/Avtodrom`
 
-The original UI is being migrated from the uploaded HTML prototypes into this repository without changing the visual design unnecessarily.
+## Three Mini Apps
 
-## Target architecture
+- Customer: `frontend/index.html`
+- Instructor: `instructor/index.html`
+- Admin: `admin/index.html`
 
-```text
-Telegram Mini App
-        |
-        v
-   Web frontend
-        |
-        v
- REST API / Auth
-        |
-  +-----+-----+----------------+
-  |           |                |
-PostgreSQL  Telegram Bot    Scheduler
-  |           |                |
-  +-----------+----------------+
-              |
-          Admin / Instructor
-```
+The three apps share one backend and one Supabase PostgreSQL database.
 
-## Roles
+## Backend
 
-- `customer`: own profile, own bookings, public instructor information, submit reviews.
-- `instructor`: own bookings/schedule only; cannot approve or reject bookings; cannot see private review data.
-- `admin`: full management, booking approval/rejection, private reviews, moderation, reliability/no-show controls, audit logs.
+- Node.js + TypeScript + Fastify
+- Telegram Mini App `initData` verification on the server
+- Supabase REST using the server-only service-role key
+- Rate limiting and CORS
+- Booking conflict protection
+- Telegram notification/reminder service
 
-## Booking lifecycle
+GitHub Pages is only for static frontend files. The API must run on a server host.
+
+## Database
+
+The project already contains a Supabase client and server integration. The shared schema migration is stored in:
+
+`supabase/migrations/20260820100000_avtodrom_core.sql`
+
+Core entities:
+
+`profiles`, `instructors`, `cars`, `bookings`, `lessons`, `notifications`, `reviews`, `audit_logs`
+
+Booking lifecycle:
 
 `pending -> confirmed -> customer_confirmed -> in_progress -> completed`
 
-Alternative terminal states: `rejected`, `cancelled`, `no_show`, `expired`.
+Terminal states: `rejected`, `cancelled`, `no_show`, `expired`.
 
-Only Admin can transition `pending -> confirmed/rejected`.
+Only Admin can approve or reject a pending booking. Instructors can manage only their assigned lessons/bookings.
 
 ## No-deposit policy
 
-Deposits are not required for booking creation. Instead the system uses:
-- customer confirmation;
-- automated reminders;
-- no-show tracking;
-- reliability score;
-- repeated no-show restrictions;
-- Admin approval for high-risk customers.
+Booking does not require payment or a deposit. Reliability is handled through customer confirmation, reminders, no-show tracking and admin moderation.
 
-## Review privacy
+## Notifications
 
-Individual review text, individual stars, reviewer identity, moderation notes and related private data are Admin-only. Public/instructor views receive only approved aggregate rating data where appropriate.
+Telegram reminders are generated server-side. The reminder service must never expose the bot token to frontend code.
 
-## Security
+## Secrets
 
-Frontend visibility is not authorization. Every protected operation must be checked server-side. Object ownership checks prevent IDOR/BOLA. Sensitive data is omitted from unauthorized API responses.
+Never commit:
 
-## Development
+- `SUPABASE_SERVICE_ROLE_KEY`
+- `CUSTOMER_BOT_TOKEN`
+- any private signing secret
 
-Frontend can be deployed as a static site. The API/database must run on a server platform; GitHub Pages is not the backend.
+These belong in the backend hosting provider's secret/environment settings.
+
+## Current rollout
+
+1. Repository structure: complete
+2. Shared database schema: added on feature branch
+3. Backend foundation: present, needs production credential configuration and final role/admin routes
+4. Customer UI: present, needs final API integration verification
+5. Instructor UI: present, needs real profile/approval/schedule integration
+6. Admin UI: present, needs real admin authentication and management routes
+7. Telegram bot: backend hooks present, bot token/webhook or polling configuration still required
+8. Reminder scheduler: present, needs production deployment and database credentials
+9. End-to-end testing: pending
+10. Production deployment: pending
+
+## Important security rule
+
+Frontend visibility is not authorization. Every protected operation must be checked server-side, with ownership checks for customer/instructor resources and Admin-only moderation endpoints.
