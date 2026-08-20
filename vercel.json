@@ -6,7 +6,7 @@
     }
   },
   "rewrites": [
-    { "source": "/api/health", "destination": "/api/health.ts" },
+    { "source": "/api/health", "destination": "/api/health.js" },
     { "source": "/api", "destination": "/api/index.ts" },
     { "source": "/api/(.*)", "destination": "/api/index.ts" }
   ]
