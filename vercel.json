@@ -9,10 +9,10 @@
     { "source": "/api/health", "destination": "/api/health.mjs" },
     { "source": "/api", "destination": "/api/index.ts" },
     { "source": "/api/(.*)", "destination": "/api/index.ts" },
-    { "source": "/admin", "destination": "/frontend/admin/login.html" },
-    { "source": "/admin/", "destination": "/frontend/admin/login.html" },
-    { "source": "/admin/login", "destination": "/frontend/admin/login.html" },
-    { "source": "/admin/login.html", "destination": "/frontend/admin/login.html" },
+    { "source": "/admin", "destination": "/frontend/admin-entry-v2.html" },
+    { "source": "/admin/", "destination": "/frontend/admin-entry-v2.html" },
+    { "source": "/admin/login", "destination": "/frontend/admin-entry-v2.html" },
+    { "source": "/admin/login.html", "destination": "/frontend/admin-entry-v2.html" },
     { "source": "/admin/dashboard", "destination": "/frontend/admin/index.html" },
     { "source": "/admin/dashboard/", "destination": "/frontend/admin/index.html" }
   ]
