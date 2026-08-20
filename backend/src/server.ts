@@ -4,6 +4,7 @@ import cors from '@fastify/cors';
 import rateLimit from '@fastify/rate-limit';
 import { sendCustomerStart, startCustomerPolling, validateTelegramInitData, type TelegramWebAppUser } from './telegram.js';
 import { registerBookingRoutes } from './booking-routes.js';
+import { registerAdminRoutes } from './admin-routes.js';
 
 const app = Fastify({ logger: true });
 const PORT = Number(process.env.PORT || 3000);
@@ -32,6 +33,7 @@ async function authenticate(request: any): Promise<TelegramWebAppUser> {
 }
 
 await registerBookingRoutes(app, authenticate);
+await registerAdminRoutes(app, authenticate);
 
 app.post<{ Body: { chatId?: number } }>('/api/telegram/customer/start', async (request, reply) => {
   if (!CUSTOMER_BOT_TOKEN || !MINI_APP_URL) return reply.code(503).send({ ok: false, error: 'Telegram bot is not configured' });
