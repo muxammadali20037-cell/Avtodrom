@@ -1,11 +1,12 @@
 {
   "functions": {
-    "api/index.ts": {
+    "api/*.ts": {
       "runtime": "@vercel/node@5.0.0",
       "maxDuration": 60
     }
   },
   "rewrites": [
+    { "source": "/api/health", "destination": "/api/health.ts" },
     { "source": "/api", "destination": "/api/index.ts" },
     { "source": "/api/(.*)", "destination": "/api/index.ts" }
   ]
