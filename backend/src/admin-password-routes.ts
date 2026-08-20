@@ -1,4 +1,5 @@
 import type { FastifyInstance } from 'fastify';
+import { createHmac, timingSafeEqual } from 'node:crypto';
 import { supabaseRest } from './supabase.js';
 
 function q(v: string) { return encodeURIComponent(v); }
@@ -10,16 +11,13 @@ function cookie(req: any) {
   const x = raw.split(';').map((v: string) => v.trim()).find((v: string) => v.startsWith(COOKIE + '='));
   return x ? decodeURIComponent(x.slice(COOKIE.length + 1)) : '';
 }
-
 function token(login: string) {
   const secret = String(process.env.ADMIN_SESSION_SECRET || process.env.ADMIN_PASSWORD || '').trim();
   if (!secret) throw Error('ADMIN_SESSION_SECRET yoki ADMIN_PASSWORD sozlanmagan');
   const p = `${login}:${Date.now()}`;
-  const { createHmac } = require('node:crypto');
   const sig = createHmac('sha256', secret).update(p).digest('hex');
   return Buffer.from(`${p}:${sig}`).toString('base64url');
 }
-
 function valid(t: string) {
   try {
     const secret = String(process.env.ADMIN_SESSION_SECRET || process.env.ADMIN_PASSWORD || '').trim();
@@ -27,61 +25,30 @@ function valid(t: string) {
     if (!secret || a.length < 3) return false;
     const login = a[0], ts = Number(a[1]), sig = a.slice(2).join(':');
     if (!login || !Number.isFinite(ts) || Date.now() - ts > TTL * 1000) return false;
-    const { createHmac, timingSafeEqual } = require('node:crypto');
     const expected = createHmac('sha256', secret).update(`${login}:${ts}`).digest('hex');
     const x = Buffer.from(sig), y = Buffer.from(expected);
     return x.length === y.length && timingSafeEqual(x, y);
   } catch { return false; }
 }
-
-async function guard(req: any) {
-  if (!valid(cookie(req))) throw Error('Admin login talab qilinadi');
-}
-
-function setCookie(reply: any, t: string) {
-  reply.header('Set-Cookie', `${COOKIE}=${encodeURIComponent(t)}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=${TTL}`);
-}
-function clearCookie(reply: any) {
-  reply.header('Set-Cookie', `${COOKIE}=; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=0`);
-}
-
-async function audit(action: string, entityType?: string, entityId?: string, oldData?: any, newData?: any) {
-  try {
-    await supabaseRest('admin_audit_logs', {
-      method: 'POST',
-      headers: { Prefer: 'return=minimal' },
-      body: JSON.stringify({ action, entity_type: entityType || null, entity_id: entityId || null, old_data: oldData || null, new_data: newData || null }),
-    });
-  } catch (e) { console.error('Audit log failed:', e); }
-}
-
-function err(reply: any, e: unknown, message: string, status = 500) {
-  return reply.code(status).send({ ok: false, error: e instanceof Error ? e.message : message });
-}
+async function guard(req: any) { if (!valid(cookie(req))) throw Error('Admin login talab qilinadi'); }
+function setCookie(reply: any, t: string) { reply.header('Set-Cookie', `${COOKIE}=${encodeURIComponent(t)}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=${TTL}`); }
+function clearCookie(reply: any) { reply.header('Set-Cookie', `${COOKIE}=; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=0`); }
+async function audit(action: string, entityType?: string, entityId?: string, oldData?: any, newData?: any) { try { await supabaseRest('admin_audit_logs', { method: 'POST', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ action, entity_type: entityType || null, entity_id: entityId || null, old_data: oldData || null, new_data: newData || null }) }); } catch (e) { console.error('Audit log failed:', e); } }
+function err(reply: any, e: unknown, message: string, status = 500) { return reply.code(status).send({ ok: false, error: e instanceof Error ? e.message : message }); }
 
 export async function registerAdminPasswordRoutes(app: FastifyInstance) {
-  // AUTH
   app.post('/api/admin/login', async (req: any, reply: any) => {
     try {
-      const b = req.body || {};
-      const login = String(b.login || '').trim();
-      const password = String(b.password || '');
-      const expectedLogin = String(process.env.ADMIN_LOGIN || '').trim();
-      const expectedPassword = String(process.env.ADMIN_PASSWORD || '');
+      const b = req.body || {}, login = String(b.login || '').trim(), password = String(b.password || '');
+      const expectedLogin = String(process.env.ADMIN_LOGIN || '').trim(), expectedPassword = String(process.env.ADMIN_PASSWORD || '');
       if (!expectedLogin || !expectedPassword) return err(reply, new Error('ADMIN_LOGIN yoki ADMIN_PASSWORD Vercelda sozlanmagan'), 'Admin auth environment sozlanmagan', 500);
       if (login !== expectedLogin || password !== expectedPassword) return reply.code(401).send({ ok: false, error: 'Login yoki parol noto‘g‘ri' });
-      setCookie(reply, token(login));
-      return { ok: true, login, redirect: '/admin/dashboard.html' };
+      setCookie(reply, token(login)); return { ok: true, login, redirect: '/admin/dashboard.html' };
     } catch (e) { return err(reply, e, 'Admin login failed'); }
   });
-
   app.post('/api/admin/logout', async (_: any, reply: any) => { clearCookie(reply); return { ok: true }; });
-  app.get('/api/admin/me', async (req: any, reply: any) => {
-    try { await guard(req); return { ok: true, login: process.env.ADMIN_LOGIN || 'admin' }; }
-    catch (e) { return err(reply, e, 'Unauthorized', 401); }
-  });
+  app.get('/api/admin/me', async (req: any, reply: any) => { try { await guard(req); return { ok: true, login: process.env.ADMIN_LOGIN || 'admin' }; } catch (e) { return err(reply, e, 'Unauthorized', 401); } });
 
-  // OVERVIEW
   app.get('/api/admin/stats', async (req: any, reply: any) => {
     try {
       await guard(req);
@@ -92,207 +59,41 @@ export async function registerAdminPasswordRoutes(app: FastifyInstance) {
         supabaseRest<any[]>('reviews', { query: '?select=id,status,rating' }),
         supabaseRest<any[]>('payments', { query: '?select=id,amount,status,created_at,paid_at' }),
       ]);
-      const now = new Date();
-      const start = new Date(now); start.setHours(0, 0, 0, 0);
-      const end = new Date(start); end.setDate(end.getDate() + 1);
-      const approved = reviews.filter(r => String(r.status) === 'approved');
-      const avg = approved.length ? approved.reduce((s, r) => s + Number(r.rating || 0), 0) / approved.length : 0;
-      const paidToday = payments.filter(p => String(p.status).toLowerCase() === 'paid' && new Date(p.paid_at || p.created_at) >= start && new Date(p.paid_at || p.created_at) < end).reduce((s, p) => s + Number(p.amount || 0), 0);
-      return { ok: true, stats: {
-        customers: users.filter(u => u.role === 'customer').length,
-        instructors: instructors.filter(i => i.is_available).length,
-        pendingBookings: bookings.filter(b => b.status === 'pending').length,
-        todayBookings: bookings.filter(b => new Date(b.booking_date) >= start && new Date(b.booking_date) < end).length,
-        completedBookings: bookings.filter(b => b.status === 'completed').length,
-        reviews: approved.length,
-        averageRating: Number(avg.toFixed(2)),
-        paidToday,
-      }};
-    } catch (e) { return err(reply, e, 'Stats failed'); }
+      const now = new Date(), start = new Date(now), end = new Date(now); start.setHours(0,0,0,0); end.setHours(24,0,0,0);
+      const approved = reviews.filter(r => String(r.status) === 'approved'), avg = approved.length ? approved.reduce((s,r)=>s+Number(r.rating||0),0)/approved.length : 0;
+      const paidToday = payments.filter(p=>String(p.status).toLowerCase()==='paid'&&new Date(p.paid_at||p.created_at)>=start&&new Date(p.paid_at||p.created_at)<end).reduce((s,p)=>s+Number(p.amount||0),0);
+      return { ok:true, stats:{ customers:users.filter(u=>u.role==='customer').length, instructors:instructors.filter(i=>i.is_available).length, pendingBookings:bookings.filter(b=>b.status==='pending').length, todayBookings:bookings.filter(b=>new Date(b.booking_date)>=start&&new Date(b.booking_date)<end).length, completedBookings:bookings.filter(b=>b.status==='completed').length, reviews:approved.length, averageRating:Number(avg.toFixed(2)), paidToday } };
+    } catch(e){return err(reply,e,'Stats failed');}
   });
 
-  // INSTRUCTORS
-  app.get('/api/admin/instructors', async (req: any, reply: any) => {
-    try {
-      await guard(req);
-      const [rows, users] = await Promise.all([
-        supabaseRest<any[]>('instructor_profiles', { query: '?select=*&order=created_at.desc' }),
-        supabaseRest<any[]>('users', { query: '?select=id,telegram_id,phone,full_name,role,is_active,is_blocked,created_at,updated_at' }),
-      ]);
-      const map = new Map(users.map(u => [u.id, u]));
-      return { ok: true, instructors: rows.map(x => ({ ...x, active: Boolean(x.is_available && map.get(x.user_id)?.is_active && !map.get(x.user_id)?.is_blocked), profile: map.get(x.user_id) || null })) };
-    } catch (e) { return err(reply, e, 'Failed to load instructors'); }
-  });
+  app.get('/api/admin/instructors', async(req:any,reply:any)=>{try{await guard(req);const[rows,users]=await Promise.all([supabaseRest<any[]>('instructor_profiles',{query:'?select=*&order=created_at.desc'}),supabaseRest<any[]>('users',{query:'?select=id,telegram_id,phone,full_name,role,is_active,is_blocked,created_at,updated_at'})]);const map=new Map(users.map(u=>[u.id,u]));return{ok:true,instructors:rows.map(x=>({...x,active:Boolean(x.is_available&&map.get(x.user_id)?.is_active&&!map.get(x.user_id)?.is_blocked),profile:map.get(x.user_id)||null}))}}catch(e){return err(reply,e,'Failed to load instructors')}});
 
-  app.post('/api/admin/instructors', async (req: any, reply: any) => {
-    try {
-      await guard(req);
-      const b = req.body || {};
-      const tgRaw = String(b.telegram_id ?? '').trim();
-      const tg = tgRaw ? Number(tgRaw) : null;
-      const first = String(b.first_name || '').trim();
-      const last = String(b.last_name || '').trim();
-      const phone = String(b.phone || '').trim();
-      const bio = String(b.bio || '').trim();
-      const experience = Number.isFinite(Number(b.experience_years)) ? Number(b.experience_years) : 0;
-      if (first.length < 2) return reply.code(400).send({ ok: false, error: 'Ism majburiy' });
-      if (tgRaw && (!Number.isSafeInteger(tg) || !tg)) return reply.code(400).send({ ok: false, error: 'Telegram ID noto‘g‘ri' });
-      const fullName = [first, last].filter(Boolean).join(' ');
-      let user: any;
-      if (tg) {
-        const old = await supabaseRest<any[]>('users', { query: `?telegram_id=eq.${q(String(tg))}&select=*` });
-        user = old[0];
-      }
-      if (user) {
-        const rows = await supabaseRest<any[]>('users', { method: 'PATCH', headers: { Prefer: 'return=representation' }, query: `?id=eq.${q(user.id)}`, body: JSON.stringify({ full_name: fullName, phone: phone || null, role: 'instructor', is_active: true, is_blocked: false, updated_at: new Date().toISOString() }) });
-        user = rows[0] || user;
-      } else {
-        const rows = await supabaseRest<any[]>('users', { method: 'POST', headers: { Prefer: 'return=representation' }, body: JSON.stringify({ telegram_id: tg, full_name: fullName, phone: phone || null, role: 'instructor', is_active: true, is_blocked: false }) });
-        user = rows[0];
-      }
-      if (!user) throw Error('Foydalanuvchi yaratilmadi');
-      let ip = (await supabaseRest<any[]>('instructor_profiles', { query: `?user_id=eq.${q(user.id)}&select=*` }))[0];
-      if (!ip) {
-        ip = (await supabaseRest<any[]>('instructor_profiles', { method: 'POST', headers: { Prefer: 'return=representation' }, body: JSON.stringify({ user_id: user.id, bio: bio || null, experience_years: experience, rating: 0, total_reviews: 0, is_available: true, is_verified: true }) }))[0];
-      } else {
-        ip = (await supabaseRest<any[]>('instructor_profiles', { method: 'PATCH', headers: { Prefer: 'return=representation' }, query: `?id=eq.${q(ip.id)}`, body: JSON.stringify({ bio: bio || null, experience_years: experience, is_available: true, is_verified: true, updated_at: new Date().toISOString() }) }))[0] || ip;
-      }
-      await audit('INSTRUCTOR_CREATED', 'instructor_profiles', ip?.id, null, { user_id: user.id });
-      return reply.code(201).send({ ok: true, instructor: { ...ip, profile: user, active: true } });
-    } catch (e) { return err(reply, e, 'Instructor creation failed', 400); }
-  });
+  app.post('/api/admin/instructors',async(req:any,reply:any)=>{try{await guard(req);const b=req.body||{},tgRaw=String(b.telegram_id??'').trim(),tg=tgRaw?Number(tgRaw):null,first=String(b.first_name||'').trim(),last=String(b.last_name||'').trim(),phone=String(b.phone||'').trim(),bio=String(b.bio||'').trim(),experience=Number.isFinite(Number(b.experience_years))?Number(b.experience_years):0;if(first.length<2)return reply.code(400).send({ok:false,error:'Ism majburiy'});if(tgRaw&&(!Number.isSafeInteger(tg)||!tg))return reply.code(400).send({ok:false,error:'Telegram ID noto‘g‘ri'});const fullName=[first,last].filter(Boolean).join(' ');let user:any;if(tg){user=(await supabaseRest<any[]>('users',{query:`?telegram_id=eq.${q(String(tg))}&select=*`}))[0]}if(user){user=(await supabaseRest<any[]>('users',{method:'PATCH',headers:{Prefer:'return=representation'},query:`?id=eq.${q(user.id)}`,body:JSON.stringify({full_name:fullName,phone:phone||null,role:'instructor',is_active:true,is_blocked:false,updated_at:new Date().toISOString()})}))[0]||user}else{user=(await supabaseRest<any[]>('users',{method:'POST',headers:{Prefer:'return=representation'},body:JSON.stringify({telegram_id:tg,full_name:fullName,phone:phone||null,role:'instructor',is_active:true,is_blocked:false})}))[0]}if(!user)throw Error('Foydalanuvchi yaratilmadi');let ip=(await supabaseRest<any[]>('instructor_profiles',{query:`?user_id=eq.${q(user.id)}&select=*`}))[0];if(!ip){ip=(await supabaseRest<any[]>('instructor_profiles',{method:'POST',headers:{Prefer:'return=representation'},body:JSON.stringify({user_id:user.id,bio:bio||null,experience_years:experience,rating:0,total_reviews:0,is_available:true,is_verified:true})}))[0]}else{ip=(await supabaseRest<any[]>('instructor_profiles',{method:'PATCH',headers:{Prefer:'return=representation'},query:`?id=eq.${q(ip.id)}`,body:JSON.stringify({bio:bio||null,experience_years:experience,is_available:true,is_verified:true,updated_at:new Date().toISOString()})}))[0]||ip}await audit('INSTRUCTOR_CREATED','instructor_profiles',ip?.id,null,{user_id:user.id});return reply.code(201).send({ok:true,instructor:{...ip,profile:user,active:true}})}catch(e){return err(reply,e,'Instructor creation failed',400)}});
 
-  app.patch('/api/admin/instructors/:id', async (req: any, reply: any) => {
-    try {
-      await guard(req);
-      const id = String(req.params.id);
-      const ip = (await supabaseRest<any[]>('instructor_profiles', { query: `?id=eq.${q(id)}&select=*` }))[0];
-      if (!ip) return reply.code(404).send({ ok: false, error: 'Instruktor topilmadi' });
-      const b = req.body || {};
-      if (typeof b.active === 'boolean') {
-        await supabaseRest('instructor_profiles', { method: 'PATCH', query: `?id=eq.${q(id)}`, body: JSON.stringify({ is_available: b.active, updated_at: new Date().toISOString() }) });
-        await supabaseRest('users', { method: 'PATCH', query: `?id=eq.${q(ip.user_id)}`, body: JSON.stringify({ is_active: b.active, is_blocked: !b.active, updated_at: new Date().toISOString() }) });
-      }
-      const patch: any = {};
-      if (b.bio !== undefined) patch.bio = String(b.bio || '').trim() || null;
-      if (b.experience_years !== undefined) patch.experience_years = Math.max(0, Number(b.experience_years) || 0);
-      if (b.is_verified !== undefined) patch.is_verified = Boolean(b.is_verified);
-      if (Object.keys(patch).length) { patch.updated_at = new Date().toISOString(); await supabaseRest('instructor_profiles', { method: 'PATCH', query: `?id=eq.${q(id)}`, body: JSON.stringify(patch) }); }
-      await audit('INSTRUCTOR_UPDATED', 'instructor_profiles', id, null, b);
-      return { ok: true };
-    } catch (e) { return err(reply, e, 'Instructor update failed', 400); }
-  });
+  app.patch('/api/admin/instructors/:id',async(req:any,reply:any)=>{try{await guard(req);const id=String(req.params.id),ip=(await supabaseRest<any[]>('instructor_profiles',{query:`?id=eq.${q(id)}&select=*`}))[0];if(!ip)return reply.code(404).send({ok:false,error:'Instruktor topilmadi'});const b=req.body||{};if(typeof b.active==='boolean'){await supabaseRest('instructor_profiles',{method:'PATCH',query:`?id=eq.${q(id)}`,body:JSON.stringify({is_available:b.active,updated_at:new Date().toISOString()})});await supabaseRest('users',{method:'PATCH',query:`?id=eq.${q(ip.user_id)}`,body:JSON.stringify({is_active:b.active,is_blocked:!b.active,updated_at:new Date().toISOString()})})}const patch:any={};if(b.bio!==undefined)patch.bio=String(b.bio||'').trim()||null;if(b.experience_years!==undefined)patch.experience_years=Math.max(0,Number(b.experience_years)||0);if(b.is_verified!==undefined)patch.is_verified=Boolean(b.is_verified);if(Object.keys(patch).length){patch.updated_at=new Date().toISOString();await supabaseRest('instructor_profiles',{method:'PATCH',query:`?id=eq.${q(id)}`,body:JSON.stringify(patch)})}await audit('INSTRUCTOR_UPDATED','instructor_profiles',id,null,b);return{ok:true}}catch(e){return err(reply,e,'Instructor update failed',400)}});
 
-  // BOOKINGS
-  app.get('/api/admin/bookings', async (req: any, reply: any) => {
-    try {
-      await guard(req);
-      const st = String((req.query || {}).status || '');
-      const filter = st ? `&status=eq.${q(st)}` : '';
-      const [bookings, users, instructors, courses] = await Promise.all([
-        supabaseRest<any[]>('bookings', { query: `?select=*&order=booking_date.desc${filter}` }),
-        supabaseRest<any[]>('users', { query: '?select=id,full_name,phone,telegram_id' }),
-        supabaseRest<any[]>('instructor_profiles', { query: '?select=id,user_id,rating' }),
-        supabaseRest<any[]>('courses', { query: '?select=id,name,duration_minutes,price,is_active' }),
-      ]);
-      const um = new Map(users.map(u => [u.id, u]));
-      const im = new Map(instructors.map(i => [i.id, i]));
-      const cm = new Map(courses.map(c => [c.id, c]));
-      return { ok: true, bookings: bookings.map(b => ({ ...b, customer: um.get(b.customer_id) || null, instructor: im.get(b.instructor_id) ? { ...im.get(b.instructor_id), profile: um.get(im.get(b.instructor_id).user_id) || null } : null, course: cm.get(b.course_id) || null })) };
-    } catch (e) { return err(reply, e, 'Failed to load bookings'); }
-  });
+  app.get('/api/admin/bookings',async(req:any,reply:any)=>{try{await guard(req);const st=String((req.query||{}).status||''),filter=st?`&status=eq.${q(st)}`:'';const[bookings,users,instructors,courses]=await Promise.all([supabaseRest<any[]>('bookings',{query:`?select=*&order=booking_date.desc${filter}`}),supabaseRest<any[]>('users',{query:'?select=id,full_name,phone,telegram_id'}),supabaseRest<any[]>('instructor_profiles',{query:'?select=id,user_id,rating'}),supabaseRest<any[]>('courses',{query:'?select=id,name,duration_minutes,price,is_active'})]);const um=new Map(users.map(u=>[u.id,u])),im=new Map(instructors.map(i=>[i.id,i])),cm=new Map(courses.map(c=>[c.id,c]));return{ok:true,bookings:bookings.map(b=>({...b,customer:um.get(b.customer_id)||null,instructor:im.get(b.instructor_id)?{...im.get(b.instructor_id),profile:um.get(im.get(b.instructor_id).user_id)||null}:null,course:cm.get(b.course_id)||null}))}}catch(e){return err(reply,e,'Failed to load bookings')}});
 
-  app.patch('/api/admin/bookings/:id/status', async (req: any, reply: any) => {
-    try {
-      await guard(req);
-      const id = String(req.params.id), status = String(req.body?.status || '');
-      const allowed = ['pending', 'confirmed', 'rejected', 'cancelled', 'completed', 'no_show'];
-      if (!allowed.includes(status)) return reply.code(400).send({ ok: false, error: 'Bron holati noto‘g‘ri' });
-      const old = (await supabaseRest<any[]>('bookings', { query: `?id=eq.${q(id)}&select=*` }))[0];
-      if (!old) return reply.code(404).send({ ok: false, error: 'Bron topilmadi' });
-      const body: any = { status, updated_at: new Date().toISOString() };
-      if (status === 'confirmed') body.confirmed_at = new Date().toISOString();
-      if (status === 'rejected' || status === 'cancelled') { body.cancellation_reason = String(req.body?.reason || '') || null; body.cancelled_at = new Date().toISOString(); }
-      const rows = await supabaseRest<any[]>('bookings', { method: 'PATCH', headers: { Prefer: 'return=representation' }, query: `?id=eq.${q(id)}`, body: JSON.stringify(body) });
-      await audit('BOOKING_STATUS_CHANGED', 'bookings', id, old, rows[0]);
-      return { ok: true, booking: rows[0] };
-    } catch (e) { return err(reply, e, 'Booking update failed', 400); }
-  });
+  app.patch('/api/admin/bookings/:id/status',async(req:any,reply:any)=>{try{await guard(req);const id=String(req.params.id),status=String(req.body?.status||''),allowed=['pending','confirmed','rejected','cancelled','completed','no_show'];if(!allowed.includes(status))return reply.code(400).send({ok:false,error:'Bron holati noto‘g‘ri'});const old=(await supabaseRest<any[]>('bookings',{query:`?id=eq.${q(id)}&select=*`}))[0];if(!old)return reply.code(404).send({ok:false,error:'Bron topilmadi'});const body:any={status,updated_at:new Date().toISOString()};if(status==='confirmed')body.confirmed_at=new Date().toISOString();if(status==='rejected'||status==='cancelled'){body.cancellation_reason=String(req.body?.reason||'')||null;body.cancelled_at=new Date().toISOString()}const rows=await supabaseRest<any[]>('bookings',{method:'PATCH',headers:{Prefer:'return=representation'},query:`?id=eq.${q(id)}`,body:JSON.stringify(body)});await audit('BOOKING_STATUS_CHANGED','bookings',id,old,rows[0]);return{ok:true,booking:rows[0]}}catch(e){return err(reply,e,'Booking update failed',400)}});
 
-  // CUSTOMERS
-  app.get('/api/admin/customers', async (req: any, reply: any) => {
-    try { await guard(req); return { ok: true, customers: await supabaseRest<any[]>('users', { query: '?role=eq.customer&select=id,telegram_id,full_name,phone,is_active,is_blocked,created_at,updated_at&order=created_at.desc' }) }; }
-    catch (e) { return err(reply, e, 'Failed to load customers'); }
-  });
-  app.patch('/api/admin/customers/:id', async (req: any, reply: any) => {
-    try {
-      await guard(req); const id = String(req.params.id); const old = (await supabaseRest<any[]>('users', { query: `?id=eq.${q(id)}&role=eq.customer&select=*` }))[0];
-      if (!old) return reply.code(404).send({ ok: false, error: 'Foydalanuvchi topilmadi' });
-      const b = req.body || {}, patch: any = { updated_at: new Date().toISOString() };
-      if (typeof b.active === 'boolean') { patch.is_active = b.active; patch.is_blocked = !b.active; }
-      if (b.full_name !== undefined) patch.full_name = String(b.full_name || '').trim();
-      if (b.phone !== undefined) patch.phone = String(b.phone || '').trim() || null;
-      const rows = await supabaseRest<any[]>('users', { method: 'PATCH', headers: { Prefer: 'return=representation' }, query: `?id=eq.${q(id)}&role=eq.customer`, body: JSON.stringify(patch) });
-      await audit('CUSTOMER_UPDATED', 'users', id, old, rows[0]); return { ok: true, customer: rows[0] };
-    } catch (e) { return err(reply, e, 'Customer update failed', 400); }
-  });
+  app.get('/api/admin/customers',async(req:any,reply:any)=>{try{await guard(req);return{ok:true,customers:await supabaseRest<any[]>('users',{query:'?role=eq.customer&select=id,telegram_id,full_name,phone,is_active,is_blocked,created_at,updated_at&order=created_at.desc'})}}catch(e){return err(reply,e,'Failed to load customers')}});
+  app.patch('/api/admin/customers/:id',async(req:any,reply:any)=>{try{await guard(req);const id=String(req.params.id),old=(await supabaseRest<any[]>('users',{query:`?id=eq.${q(id)}&role=eq.customer&select=*`}))[0];if(!old)return reply.code(404).send({ok:false,error:'Foydalanuvchi topilmadi'});const b=req.body||{},patch:any={updated_at:new Date().toISOString()};if(typeof b.active==='boolean'){patch.is_active=b.active;patch.is_blocked=!b.active}if(b.full_name!==undefined)patch.full_name=String(b.full_name||'').trim();if(b.phone!==undefined)patch.phone=String(b.phone||'').trim()||null;const rows=await supabaseRest<any[]>('users',{method:'PATCH',headers:{Prefer:'return=representation'},query:`?id=eq.${q(id)}&role=eq.customer`,body:JSON.stringify(patch)});await audit('CUSTOMER_UPDATED','users',id,old,rows[0]);return{ok:true,customer:rows[0]}}catch(e){return err(reply,e,'Customer update failed',400)}});
 
-  // REVIEWS
-  app.get('/api/admin/reviews', async (req: any, reply: any) => {
-    try {
-      await guard(req);
-      const [reviews, users, instructors] = await Promise.all([
-        supabaseRest<any[]>('reviews', { query: '?select=*&order=created_at.desc' }),
-        supabaseRest<any[]>('users', { query: '?select=id,full_name,phone' }),
-        supabaseRest<any[]>('instructor_profiles', { query: '?select=id,user_id,rating,total_reviews' }),
-      ]);
-      const um = new Map(users.map(u => [u.id, u])); const im = new Map(instructors.map(i => [i.id, i]));
-      return { ok: true, reviews: reviews.map(r => ({ ...r, customer: um.get(r.customer_id) || null, instructor: im.get(r.instructor_id) ? { ...im.get(r.instructor_id), profile: um.get(im.get(r.instructor_id).user_id) || null } : null })) };
-    } catch (e) { return err(reply, e, 'Failed to load reviews'); }
-  });
-  app.patch('/api/admin/reviews/:id', async (req: any, reply: any) => {
-    try {
-      await guard(req); const id = String(req.params.id); const status = String(req.body?.status || 'approved');
-      if (!['pending', 'approved', 'rejected'].includes(status)) return reply.code(400).send({ ok: false, error: 'Sharh holati noto‘g‘ri' });
-      const rows = await supabaseRest<any[]>('reviews', { method: 'PATCH', headers: { Prefer: 'return=representation' }, query: `?id=eq.${q(id)}`, body: JSON.stringify({ status, admin_note: String(req.body?.admin_note || '') || null, moderated_at: new Date().toISOString() }) });
-      if (!rows[0]) return reply.code(404).send({ ok: false, error: 'Sharh topilmadi' });
-      await audit('REVIEW_MODERATED', 'reviews', id, null, rows[0]); return { ok: true, review: rows[0] };
-    } catch (e) { return err(reply, e, 'Review update failed', 400); }
-  });
+  app.get('/api/admin/reviews',async(req:any,reply:any)=>{try{await guard(req);const[reviews,users,instructors]=await Promise.all([supabaseRest<any[]>('reviews',{query:'?select=*&order=created_at.desc'}),supabaseRest<any[]>('users',{query:'?select=id,full_name,phone'}),supabaseRest<any[]>('instructor_profiles',{query:'?select=id,user_id,rating,total_reviews'})]);const um=new Map(users.map(u=>[u.id,u])),im=new Map(instructors.map(i=>[i.id,i]));return{ok:true,reviews:reviews.map(r=>({...r,customer:um.get(r.customer_id)||null,instructor:im.get(r.instructor_id)?{...im.get(r.instructor_id),profile:um.get(im.get(r.instructor_id).user_id)||null}:null}))}}catch(e){return err(reply,e,'Failed to load reviews')}});
+  app.patch('/api/admin/reviews/:id',async(req:any,reply:any)=>{try{await guard(req);const id=String(req.params.id),status=String(req.body?.status||'approved');if(!['pending','approved','rejected'].includes(status))return reply.code(400).send({ok:false,error:'Sharh holati noto‘g‘ri'});const rows=await supabaseRest<any[]>('reviews',{method:'PATCH',headers:{Prefer:'return=representation'},query:`?id=eq.${q(id)}`,body:JSON.stringify({status,admin_note:String(req.body?.admin_note||'')||null,moderated_at:new Date().toISOString()})});if(!rows[0])return reply.code(404).send({ok:false,error:'Sharh topilmadi'});await audit('REVIEW_MODERATED','reviews',id,null,rows[0]);return{ok:true,review:rows[0]}}catch(e){return err(reply,e,'Review update failed',400)}});
 
-  // COURSES / PRICING
-  app.get('/api/admin/courses', async (req: any, reply: any) => { try { await guard(req); return { ok: true, courses: await supabaseRest<any[]>('courses', { query: '?select=*&order=created_at.desc' }) }; } catch (e) { return err(reply, e, 'Courses load failed'); } });
-  app.post('/api/admin/courses', async (req: any, reply: any) => {
-    try {
-      await guard(req); const b = req.body || {}; const name = String(b.name || '').trim(); const minutes = Number(b.duration_minutes); const price = Number(b.price);
-      if (name.length < 2 || !Number.isInteger(minutes) || minutes < 15 || minutes > 480 || !Number.isFinite(price) || price < 0) return reply.code(400).send({ ok: false, error: 'Kurs nomi, davomiyligi yoki narxi noto‘g‘ri' });
-      const rows = await supabaseRest<any[]>('courses', { method: 'POST', headers: { Prefer: 'return=representation' }, body: JSON.stringify({ name, description: String(b.description || '') || null, duration_minutes: minutes, price, is_active: b.is_active !== false }) });
-      await audit('COURSE_CREATED', 'courses', rows[0]?.id, null, rows[0]); return reply.code(201).send({ ok: true, course: rows[0] });
-    } catch (e) { return err(reply, e, 'Course creation failed', 400); }
-  });
-  app.patch('/api/admin/courses/:id', async (req: any, reply: any) => {
-    try { await guard(req); const b = req.body || {}, patch: any = {}; if (b.name !== undefined) patch.name = String(b.name || '').trim(); if (b.description !== undefined) patch.description = String(b.description || '') || null; if (b.duration_minutes !== undefined) patch.duration_minutes = Number(b.duration_minutes); if (b.price !== undefined) patch.price = Number(b.price); if (b.is_active !== undefined) patch.is_active = Boolean(b.is_active); const rows = await supabaseRest<any[]>('courses', { method: 'PATCH', headers: { Prefer: 'return=representation' }, query: `?id=eq.${q(String(req.params.id))}`, body: JSON.stringify(patch) }); if (!rows[0]) return reply.code(404).send({ ok: false, error: 'Kurs topilmadi' }); await audit('COURSE_UPDATED', 'courses', rows[0].id, null, rows[0]); return { ok: true, course: rows[0] }; } catch (e) { return err(reply, e, 'Course update failed', 400); }
-  });
+  app.get('/api/admin/courses',async(req:any,reply:any)=>{try{await guard(req);return{ok:true,courses:await supabaseRest<any[]>('courses',{query:'?select=*&order=created_at.desc'})}}catch(e){return err(reply,e,'Courses load failed')}});
+  app.post('/api/admin/courses',async(req:any,reply:any)=>{try{await guard(req);const b=req.body||{},name=String(b.name||'').trim(),minutes=Number(b.duration_minutes),price=Number(b.price);if(name.length<2||!Number.isInteger(minutes)||minutes<15||minutes>480||!Number.isFinite(price)||price<0)return reply.code(400).send({ok:false,error:'Kurs nomi, davomiyligi yoki narxi noto‘g‘ri'});const rows=await supabaseRest<any[]>('courses',{method:'POST',headers:{Prefer:'return=representation'},body:JSON.stringify({name,description:String(b.description||'')||null,duration_minutes:minutes,price,is_active:b.is_active!==false})});await audit('COURSE_CREATED','courses',rows[0]?.id,null,rows[0]);return reply.code(201).send({ok:true,course:rows[0]})}catch(e){return err(reply,e,'Course creation failed',400)}});
+  app.patch('/api/admin/courses/:id',async(req:any,reply:any)=>{try{await guard(req);const b=req.body||{},patch:any={};if(b.name!==undefined)patch.name=String(b.name||'').trim();if(b.description!==undefined)patch.description=String(b.description||'')||null;if(b.duration_minutes!==undefined)patch.duration_minutes=Number(b.duration_minutes);if(b.price!==undefined)patch.price=Number(b.price);if(b.is_active!==undefined)patch.is_active=Boolean(b.is_active);const rows=await supabaseRest<any[]>('courses',{method:'PATCH',headers:{Prefer:'return=representation'},query:`?id=eq.${q(String(req.params.id))}`,body:JSON.stringify(patch)});if(!rows[0])return reply.code(404).send({ok:false,error:'Kurs topilmadi'});await audit('COURSE_UPDATED','courses',rows[0].id,null,rows[0]);return{ok:true,course:rows[0]}}catch(e){return err(reply,e,'Course update failed',400)}});
 
-  app.get('/api/admin/pricing', async (req: any, reply: any) => { try { await guard(req); const rows = await supabaseRest<any[]>('admin_settings', { query: '?key=in.(lesson_price,lesson_duration,booking_enabled,system_name)&select=key,value,updated_at' }); const settings: any = {}; rows.forEach(r => settings[r.key] = r.value); return { ok: true, settings }; } catch (e) { return err(reply, e, 'Pricing load failed'); } });
-  app.put('/api/admin/pricing', async (req: any, reply: any) => {
-    try { await guard(req); const b = req.body || {}, amount = Number(b.amount), minutes = Number(b.minutes); if (!Number.isFinite(amount) || amount < 0) return reply.code(400).send({ ok: false, error: 'Narx noto‘g‘ri' }); if (!Number.isInteger(minutes) || minutes < 15 || minutes > 480) return reply.code(400).send({ ok: false, error: 'Davomiylik 15-480 daqiqa oralig‘ida bo‘lsin' }); const now = new Date().toISOString(); for (const x of [{ key: 'lesson_price', value: { amount, currency: 'UZS' } }, { key: 'lesson_duration', value: { minutes } }, { key: 'booking_enabled', value: { enabled: b.booking_enabled !== false } }]) await supabaseRest('admin_settings', { method: 'POST', headers: { Prefer: 'resolution=merge-duplicates' }, body: JSON.stringify({ ...x, updated_at: now }) }); await audit('PRICING_UPDATED', 'admin_settings', undefined, null, b); return { ok: true }; }
-    catch (e) { return err(reply, e, 'Pricing update failed', 400); }
-  });
+  app.get('/api/admin/pricing',async(req:any,reply:any)=>{try{await guard(req);const rows=await supabaseRest<any[]>('admin_settings',{query:'?key=in.(lesson_price,lesson_duration,booking_enabled,system_name)&select=key,value,updated_at'});const settings:any={};rows.forEach(r=>settings[r.key]=r.value);return{ok:true,settings}}catch(e){return err(reply,e,'Pricing load failed')}});
+  app.put('/api/admin/pricing',async(req:any,reply:any)=>{try{await guard(req);const b=req.body||{},amount=Number(b.amount),minutes=Number(b.minutes);if(!Number.isFinite(amount)||amount<0)return reply.code(400).send({ok:false,error:'Narx noto‘g‘ri'});if(!Number.isInteger(minutes)||minutes<15||minutes>480)return reply.code(400).send({ok:false,error:'Davomiylik 15-480 daqiqa oralig‘ida bo‘lsin'});const now=new Date().toISOString();for(const x of [{key:'lesson_price',value:{amount,currency:'UZS'}},{key:'lesson_duration',value:{minutes}},{key:'booking_enabled',value:{enabled:b.booking_enabled!==false}}])await supabaseRest('admin_settings',{method:'POST',headers:{Prefer:'resolution=merge-duplicates'},body:JSON.stringify({...x,updated_at:now})});await audit('PRICING_UPDATED','admin_settings',undefined,null,b);return{ok:true}}catch(e){return err(reply,e,'Pricing update failed',400)}});
 
-  // PAYMENTS
-  app.get('/api/admin/payments', async (req: any, reply: any) => {
-    try { await guard(req); const [payments, users] = await Promise.all([supabaseRest<any[]>('payments', { query: '?select=*&order=created_at.desc' }), supabaseRest<any[]>('users', { query: '?select=id,full_name,phone' })]); const um = new Map(users.map(u => [u.id, u])); return { ok: true, payments: payments.map(p => ({ ...p, customer: um.get(p.customer_id) || null })) }; }
-    catch (e) { return err(reply, e, 'Payments load failed'); }
-  });
-  app.patch('/api/admin/payments/:id', async (req: any, reply: any) => {
-    try { await guard(req); const status = String(req.body?.status || ''); if (!['pending', 'paid', 'failed', 'refunded', 'cancelled'].includes(status)) return reply.code(400).send({ ok: false, error: 'To‘lov holati noto‘g‘ri' }); const rows = await supabaseRest<any[]>('payments', { method: 'PATCH', headers: { Prefer: 'return=representation' }, query: `?id=eq.${q(String(req.params.id))}`, body: JSON.stringify({ status, paid_at: status === 'paid' ? new Date().toISOString() : null }) }); if (!rows[0]) return reply.code(404).send({ ok: false, error: 'To‘lov topilmadi' }); await audit('PAYMENT_UPDATED', 'payments', rows[0].id, null, rows[0]); return { ok: true, payment: rows[0] }; }
-    catch (e) { return err(reply, e, 'Payment update failed', 400); }
-  });
+  app.get('/api/admin/payments',async(req:any,reply:any)=>{try{await guard(req);const[payments,users]=await Promise.all([supabaseRest<any[]>('payments',{query:'?select=*&order=created_at.desc'}),supabaseRest<any[]>('users',{query:'?select=id,full_name,phone'})]);const um=new Map(users.map(u=>[u.id,u]));return{ok:true,payments:payments.map(p=>({...p,customer:um.get(p.customer_id)||null}))}}catch(e){return err(reply,e,'Payments load failed')}});
+  app.patch('/api/admin/payments/:id',async(req:any,reply:any)=>{try{await guard(req);const status=String(req.body?.status||'');if(!['pending','paid','failed','refunded','cancelled'].includes(status))return reply.code(400).send({ok:false,error:'To‘lov holati noto‘g‘ri'});const rows=await supabaseRest<any[]>('payments',{method:'PATCH',headers:{Prefer:'return=representation'},query:`?id=eq.${q(String(req.params.id))}`,body:JSON.stringify({status,paid_at:status==='paid'?new Date().toISOString():null})});if(!rows[0])return reply.code(404).send({ok:false,error:'To‘lov topilmadi'});await audit('PAYMENT_UPDATED','payments',rows[0].id,null,rows[0]);return{ok:true,payment:rows[0]}}catch(e){return err(reply,e,'Payment update failed',400)}});
 
-  // SETTINGS / AUDIT / NOTIFICATIONS
-  app.get('/api/admin/settings', async (req: any, reply: any) => { try { await guard(req); return { ok: true, settings: await supabaseRest<any[]>('admin_settings', { query: '?select=key,value,updated_at&order=key.asc' }) }; } catch (e) { return err(reply, e, 'Settings load failed'); } });
-  app.put('/api/admin/settings/:key', async (req: any, reply: any) => { try { await guard(req); const key = String(req.params.key || '').trim(); if (!/^[a-z0-9_]+$/.test(key)) return reply.code(400).send({ ok: false, error: 'Settings key noto‘g‘ri' }); await supabaseRest('admin_settings', { method: 'POST', headers: { Prefer: 'resolution=merge-duplicates' }, body: JSON.stringify({ key, value: req.body || {}, updated_at: new Date().toISOString() }) }); await audit('SETTING_UPDATED', 'admin_settings', undefined, null, { key, value: req.body || {} }); return { ok: true }; } catch (e) { return err(reply, e, 'Settings update failed', 400); } });
-  app.get('/api/admin/audit-logs', async (req: any, reply: any) => { try { await guard(req); return { ok: true, logs: await supabaseRest<any[]>('admin_audit_logs', { query: '?select=id,action,entity_type,entity_id,old_data,new_data,created_at&order=created_at.desc' }) }; } catch (e) { return err(reply, e, 'Audit log load failed'); } });
-  app.get('/api/admin/notifications', async (req: any, reply: any) => { try { await guard(req); return { ok: true, notifications: await supabaseRest<any[]>('notifications', { query: '?select=*&order=created_at.desc' }) }; } catch (e) { return err(reply, e, 'Notifications load failed'); } });
+  app.get('/api/admin/settings',async(req:any,reply:any)=>{try{await guard(req);return{ok:true,settings:await supabaseRest<any[]>('admin_settings',{query:'?select=key,value,updated_at&order=key.asc'})}}catch(e){return err(reply,e,'Settings load failed')}});
+  app.put('/api/admin/settings/:key',async(req:any,reply:any)=>{try{await guard(req);const key=String(req.params.key||'').trim();if(!/^[a-z0-9_]+$/.test(key))return reply.code(400).send({ok:false,error:'Settings key noto‘g‘ri'});await supabaseRest('admin_settings',{method:'POST',headers:{Prefer:'resolution=merge-duplicates'},body:JSON.stringify({key,value:req.body||{},updated_at:new Date().toISOString()})});await audit('SETTING_UPDATED','admin_settings',undefined,null,{key,value:req.body||{}});return{ok:true}}catch(e){return err(reply,e,'Settings update failed',400)}});
+  app.get('/api/admin/audit-logs',async(req:any,reply:any)=>{try{await guard(req);return{ok:true,logs:await supabaseRest<any[]>('admin_audit_logs',{query:'?select=id,action,entity_type,entity_id,old_data,new_data,created_at&order=created_at.desc'})}}catch(e){return err(reply,e,'Audit log load failed')}});
+  app.get('/api/admin/notifications',async(req:any,reply:any)=>{try{await guard(req);return{ok:true,notifications:await supabaseRest<any[]>('notifications',{query:'?select=*&order=created_at.desc'})}}catch(e){return err(reply,e,'Notifications load failed')}});
 }
