@@ -11,7 +11,7 @@
     { "source": "/admin/", "destination": "/frontend/admin-entry-v3.html" },
     { "source": "/admin/login", "destination": "/frontend/admin-entry-v3.html" },
     { "source": "/admin/login.html", "destination": "/frontend/admin-entry-v3.html" },
-    { "source": "/admin/dashboard", "destination": "/frontend/admin-dashboard-v3.html" },
-    { "source": "/admin/dashboard/", "destination": "/frontend/admin-dashboard-v3.html" }
+    { "source": "/admin/dashboard", "destination": "/admin/dashboard.html" },
+    { "source": "/admin/dashboard/", "destination": "/admin/dashboard.html" }
   ]
 }
