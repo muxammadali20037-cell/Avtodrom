@@ -1,12 +1,30 @@
 import type { FastifyInstance } from 'fastify';
 import { supabaseRest } from './supabase.js';
+import { sendEventNotification } from './telegram.js';
 import type { TelegramWebAppUser } from './telegram.js';
 function q(value: string) { return encodeURIComponent(value); }
+const BOT_TOKEN = process.env.CUSTOMER_BOT_TOKEN || '';
+const MINI_APP_URL = process.env.MINI_APP_URL || '';
+const ADMIN_CHAT_IDS = (process.env.ADMIN_TELEGRAM_CHAT_IDS || '').split(',').map(x => x.trim()).filter(Boolean);
 async function profileForTelegram(user: TelegramWebAppUser) {
   const rows = await supabaseRest<any[]>('profiles', { query: `?telegram_id=eq.${q(String(user.id))}&select=*` });
   if (rows[0]) return rows[0];
-  const created = await supabaseRest<any[]>('profiles', { method: 'POST', headers: { Prefer: 'return=representation' }, body: JSON.stringify({ telegram_id: user.id, first_name: user.first_name, last_name: user.last_name, username: user.username }) });
+  const created = await supabaseRest<any[]>('profiles', { method: 'POST', headers: { Prefer: 'return=representation' }, body: JSON.stringify({ telegram_id: user.id, first_name: user.first_name, last_name: user.last_name, username: user.username, role: 'customer' }) });
   return created[0];
+}
+async function notifyProfile(profileId: string | null | undefined, title: string, body: string) {
+  if (!profileId || !BOT_TOKEN) return;
+  const rows = await supabaseRest<any[]>('profiles', { query: `?id=eq.${q(String(profileId))}&select=telegram_id` });
+  await sendEventNotification(BOT_TOKEN, rows[0]?.telegram_id, title, body, MINI_APP_URL);
+}
+async function notifyAdmins(title: string, body: string) {
+  if (!BOT_TOKEN) return;
+  await Promise.all(ADMIN_CHAT_IDS.map(id => sendEventNotification(BOT_TOKEN, id, title, body, MINI_APP_URL)));
+}
+async function notifyInstructor(instructorId: string | null | undefined, title: string, body: string) {
+  if (!instructorId || !BOT_TOKEN) return;
+  const rows = await supabaseRest<any[]>('instructors', { query: `?id=eq.${q(String(instructorId))}&select=profile_id` });
+  if (rows[0]?.profile_id) await notifyProfile(rows[0].profile_id, title, body);
 }
 export async function registerBookingRoutes(app: FastifyInstance, authenticate: (request: any) => Promise<TelegramWebAppUser>) {
   app.get('/api/me', async (request, reply) => { try { return { ok: true, profile: await profileForTelegram(await authenticate(request)) }; } catch { return reply.code(401).send({ ok: false, error: 'Unauthorized' }); } });
@@ -30,7 +48,13 @@ export async function registerBookingRoutes(app: FastifyInstance, authenticate: 
       if (body.instructor_id && conflicts.some(x => x.instructor_id === body.instructor_id)) return reply.code(409).send({ ok: false, error: 'Instructor is busy at this time' });
       if (body.car_id && conflicts.some(x => x.car_id === body.car_id)) return reply.code(409).send({ ok: false, error: 'Car is busy at this time' });
       const rows = await supabaseRest<any[]>('bookings', { method: 'POST', headers: { Prefer: 'return=representation' }, body: JSON.stringify({ customer_id: profile.id, instructor_id: body.instructor_id || null, car_id: body.car_id || null, start_at: body.start_at, end_at: body.end_at, customer_note: body.customer_note || null, status: 'pending' }) });
-      const booking = rows[0]; if (booking) await supabaseRest('notifications', { method: 'POST', body: JSON.stringify({ profile_id: profile.id, booking_id: booking.id, title: 'Bron yaratildi', body: 'Mashg‘ulot broni yaratildi va tasdiqlash uchun yuborildi.', channel: 'in_app' }) });
+      const booking = rows[0];
+      if (booking) {
+        await supabaseRest('notifications', { method: 'POST', body: JSON.stringify({ profile_id: profile.id, booking_id: booking.id, title: 'Bron yaratildi', body: 'Mashg‘ulot broni yaratildi va tasdiqlash uchun yuborildi.', channel: 'in_app' }) });
+        await notifyProfile(profile.id, '🆕 Bron yaratildi', `Bron #${booking.id} tasdiqlash uchun yuborildi.`);
+        await notifyInstructor(booking.instructor_id, '🆕 Yangi bron', `Sizga yangi bron biriktirildi. Bron #${booking.id}`);
+        await notifyAdmins('🆕 Yangi bron', `Yangi bron yaratildi. Bron #${booking.id}`);
+      }
       return reply.code(201).send({ ok: true, booking });
     } catch (e) { return reply.code(400).send({ ok: false, error: e instanceof Error ? e.message : 'Booking failed' }); }
   });
@@ -42,7 +66,12 @@ export async function registerBookingRoutes(app: FastifyInstance, authenticate: 
       const current = await supabaseRest<any[]>('bookings', { query: `?id=eq.${q(id)}&select=*` }); if (!current[0]) return reply.code(404).send({ ok: false, error: 'Booking not found' });
       if (profile.role === 'instructor') { const ins = await supabaseRest<any[]>('instructors', { query: `?profile_id=eq.${q(profile.id)}&select=id` }); if (!ins[0] || current[0].instructor_id !== ins[0].id) return reply.code(403).send({ ok: false, error: 'Booking is not assigned to this instructor' }); }
       const rows = await supabaseRest<any[]>('bookings', { method: 'PATCH', headers: { Prefer: 'return=representation' }, query: `?id=eq.${q(id)}`, body: JSON.stringify({ status: body.status, cancelled_reason: body.reason || null, updated_at: new Date().toISOString() }) });
-      const booking = rows[0]; await supabaseRest('notifications', { method: 'POST', body: JSON.stringify({ profile_id: booking.customer_id, booking_id: booking.id, title: 'Bron holati o‘zgardi', body: `Bron holati: ${body.status}`, channel: 'in_app' }) }); return { ok: true, booking };
+      const booking = rows[0];
+      await supabaseRest('notifications', { method: 'POST', body: JSON.stringify({ profile_id: booking.customer_id, booking_id: booking.id, title: 'Bron holati o‘zgardi', body: `Bron holati: ${body.status}`, channel: 'in_app' }) });
+      await notifyProfile(booking.customer_id, '🔔 Bron holati o‘zgardi', `Bron #${booking.id} holati: ${body.status}`);
+      if (booking.instructor_id) await notifyInstructor(booking.instructor_id, '🔔 Bron yangilandi', `Bron #${booking.id} holati: ${body.status}`);
+      await notifyAdmins('🔔 Bron yangilandi', `Bron #${booking.id} holati: ${body.status}`);
+      return { ok: true, booking };
     } catch (e) { return reply.code(400).send({ ok: false, error: e instanceof Error ? e.message : 'Status update failed' }); }
   });
   app.get('/api/notifications', async (request, reply) => { try { const profile = await profileForTelegram(await authenticate(request)); return { ok: true, notifications: await supabaseRest<any[]>('notifications', { query: `?profile_id=eq.${q(profile.id)}&select=*&order=created_at.desc&limit=100` }) }; } catch { return reply.code(401).send({ ok: false, error: 'Unauthorized' }); } });
