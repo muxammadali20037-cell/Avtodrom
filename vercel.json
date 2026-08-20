@@ -2,8 +2,8 @@
   "cleanUrls": true,
   "trailingSlash": false,
   "functions": {
-    "api/**/*.ts": { "runtime": "@vercel/node@5.0.0", "maxDuration": 60 },
-    "api/*.mjs": { "runtime": "@vercel/node@5.0.0", "maxDuration": 60 }
+    "api/**/*.mjs": { "runtime": "@vercel/node@5.0.0", "maxDuration": 60 },
+    "api/**/*.ts": { "runtime": "@vercel/node@5.0.0", "maxDuration": 60 }
   },
   "rewrites": [
     { "source": "/api/health", "destination": "/api/health.mjs" },
