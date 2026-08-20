@@ -1,0 +1,12 @@
+{
+  "functions": {
+    "api/index.ts": {
+      "runtime": "nodejs20.x",
+      "maxDuration": 60
+    }
+  },
+  "rewrites": [
+    { "source": "/api", "destination": "/api/index.ts" },
+    { "source": "/api/(.*)", "destination": "/api/index.ts" }
+  ]
+}
