@@ -12,5 +12,9 @@
     "zod": "latest",
     "dotenv": "latest",
     "@prisma/client": "latest"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.3",
+    "@types/node": "^22.10.0"
   }
 }
