@@ -1,17 +1,15 @@
 {
   "functions": {
-    "api/*.ts": {
-      "runtime": "@vercel/node@5.0.0",
-      "maxDuration": 60
-    },
-    "api/*.mjs": {
-      "runtime": "@vercel/node@5.0.0",
-      "maxDuration": 60
-    }
+    "api/*.ts": { "runtime": "@vercel/node@5.0.0", "maxDuration": 60 },
+    "api/*.mjs": { "runtime": "@vercel/node@5.0.0", "maxDuration": 60 }
   },
   "rewrites": [
     { "source": "/api/health", "destination": "/api/health.mjs" },
     { "source": "/api", "destination": "/api/index.ts" },
-    { "source": "/api/(.*)", "destination": "/api/index.ts" }
+    { "source": "/api/(.*)", "destination": "/api/index.ts" },
+    { "source": "/admin", "destination": "/frontend/admin/login.html" },
+    { "source": "/admin/", "destination": "/frontend/admin/login.html" },
+    { "source": "/admin/login.html", "destination": "/frontend/admin/login.html" },
+    { "source": "/admin/login", "destination": "/frontend/admin/login.html" }
   ]
 }
