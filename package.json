@@ -1,0 +1,16 @@
+{
+  "name": "avtodrom-vercel",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "engines": { "node": ">=20" },
+  "dependencies": {
+    "@fastify/cors": "latest",
+    "@fastify/rate-limit": "latest",
+    "@fastify/cookie": "latest",
+    "fastify": "latest",
+    "zod": "latest",
+    "dotenv": "latest",
+    "@prisma/client": "latest"
+  }
+}
