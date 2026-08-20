@@ -4,6 +4,7 @@ import cors from '@fastify/cors';
 import rateLimit from '@fastify/rate-limit';
 import { sendCustomerStart, validateTelegramInitData, type TelegramWebAppUser } from './telegram.js';
 import { registerBookingRoutes } from './booking-routes.js';
+import { registerInstructorRoutes } from './instructor-routes.js';
 import { registerAdminRoutes } from './admin-routes.js';
 
 const app = Fastify({ logger: true });
@@ -33,6 +34,7 @@ export async function authenticate(request: any): Promise<TelegramWebAppUser> {
 }
 
 await registerBookingRoutes(app, authenticate);
+await registerInstructorRoutes(app, authenticate);
 await registerAdminRoutes(app, authenticate);
 
 app.post<{ Body: { chatId?: number } }>('/api/telegram/customer/start', async (request, reply) => {
