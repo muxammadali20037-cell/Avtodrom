@@ -12,11 +12,7 @@ function json(response, status, data) {
 
 function readBody(request) {
   if (request.body && typeof request.body === 'object' && !Buffer.isBuffer(request.body)) return request.body;
-  try {
-    return JSON.parse(typeof request.body === 'string' ? request.body : '');
-  } catch {
-    return {};
-  }
+  try { return JSON.parse(typeof request.body === 'string' ? request.body : ''); } catch { return {}; }
 }
 
 function makeToken(login, secret) {
@@ -31,41 +27,22 @@ export default function handler(request, response) {
     response.setHeader('Allow', 'POST');
     return json(response, 405, { ok: false, error: 'Method not allowed' });
   }
-
   try {
-    const login = String(readBody(request).login ?? '').trim();
-    const password = String(readBody(request).password ?? '');
+    const body = readBody(request);
+    const login = String(body.login ?? '').trim();
+    const password = String(body.password ?? '');
     const expectedLogin = String(process.env.ADMIN_LOGIN ?? '').trim();
     const expectedPassword = String(process.env.ADMIN_PASSWORD ?? '');
-    const secret = String(process.env.ADMIN_SESSION_SECRET ?? '').trim();
-
-    if (!expectedLogin || !expectedPassword || !secret) {
-      console.error('Admin env missing:', {
-        ADMIN_LOGIN: Boolean(expectedLogin),
-        ADMIN_PASSWORD: Boolean(expectedPassword),
-        ADMIN_SESSION_SECRET: Boolean(secret)
-      });
-      return json(response, 500, {
-        ok: false,
-        error: 'Admin server sozlamalari to‘liq emas. Vercel Environment Variables ni tekshiring.'
-      });
+    // Session secret can be omitted during setup; the admin password is only used as a fallback HMAC key.
+    const secret = String(process.env.ADMIN_SESSION_SECRET ?? expectedPassword).trim();
+    if (!expectedLogin || !expectedPassword) {
+      console.error('Admin env missing:', { ADMIN_LOGIN: Boolean(expectedLogin), ADMIN_PASSWORD: Boolean(expectedPassword) });
+      return json(response, 500, { ok: false, error: 'ADMIN_LOGIN yoki ADMIN_PASSWORD Vercel Environment Variables da yo‘q.' });
     }
-
-    if (login !== expectedLogin || password !== expectedPassword) {
-      return json(response, 401, { ok: false, error: 'Login yoki parol noto‘g‘ri.' });
-    }
-
+    if (login !== expectedLogin || password !== expectedPassword) return json(response, 401, { ok: false, error: 'Login yoki parol noto‘g‘ri.' });
     const token = makeToken(expectedLogin, secret);
-    response.setHeader(
-      'Set-Cookie',
-      `${COOKIE_NAME}=${encodeURIComponent(token)}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=${SESSION_TTL}`
-    );
-
-    return json(response, 200, {
-      ok: true,
-      login: expectedLogin,
-      redirect: '/admin/dashboard'
-    });
+    response.setHeader('Set-Cookie', `${COOKIE_NAME}=${encodeURIComponent(token)}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=${SESSION_TTL}`);
+    return json(response, 200, { ok: true, login: expectedLogin, redirect: '/admin/dashboard.html' });
   } catch (error) {
     console.error('Admin login fatal error:', error);
     return json(response, 500, { ok: false, error: 'Internal server error' });
