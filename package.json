@@ -8,6 +8,7 @@
     "@fastify/cors": "latest",
     "@fastify/rate-limit": "latest",
     "@fastify/cookie": "latest",
+    "@vercel/node": "latest",
     "fastify": "latest",
     "zod": "latest",
     "dotenv": "latest",
