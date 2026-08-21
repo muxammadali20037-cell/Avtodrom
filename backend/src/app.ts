@@ -11,9 +11,11 @@ import { handleInstructorStart } from './instructor-start.js';
 import { registerAdminPasswordRoutes } from './admin-password-routes.js';
 
 const app = Fastify({ logger: true });
-const CUSTOMER_BOT_TOKEN = process.env.CUSTOMER_BOT_TOKEN || '';
-const INSTRUCTOR_BOT_TOKEN = process.env.INSTRUCTOR_BOT_TOKEN || '';
-const ADMIN_BOT_TOKEN = process.env.ADMIN_BOT_TOKEN || '';
+const CUSTOMER_BOT_TOKEN = process.env.CUSTOMER_BOT_TOKEN || process.env.TELEGRAM_CUSTOMER_BOT_TOKEN || '';
+// Keep both names supported: the Edge webhook uses TELEGRAM_INSTRUCTOR_BOT_TOKEN,
+// while the backend historically used INSTRUCTOR_BOT_TOKEN.
+const INSTRUCTOR_BOT_TOKEN = process.env.INSTRUCTOR_BOT_TOKEN || process.env.TELEGRAM_INSTRUCTOR_BOT_TOKEN || '';
+const ADMIN_BOT_TOKEN = process.env.ADMIN_BOT_TOKEN || process.env.TELEGRAM_ADMIN_BOT_TOKEN || '';
 const CUSTOMER_MINI_APP_URL = process.env.CUSTOMER_MINI_APP_URL || process.env.MINI_APP_URL || 'https://avtodrom.vercel.app/';
 const INSTRUCTOR_MINI_APP_URL = process.env.INSTRUCTOR_MINI_APP_URL || 'https://avtodrom.vercel.app/instructor';
 const ADMIN_MINI_APP_URL = process.env.ADMIN_MINI_APP_URL || 'https://avtodrom.vercel.app/admin';
