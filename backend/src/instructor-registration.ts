@@ -2,10 +2,11 @@ import { telegramApi, type TelegramWebAppUser } from './telegram.js';
 
 const SUPABASE_URL = process.env.SUPABASE_URL || '';
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
-const INSTRUCTOR_BOT_TOKEN = process.env.INSTRUCTOR_BOT_TOKEN || '';
-const INSTRUCTOR_MINI_APP_URL = process.env.INSTRUCTOR_MINI_APP_URL || '';
+const INSTRUCTOR_BOT_TOKEN = process.env.INSTRUCTOR_BOT_TOKEN || process.env.TELEGRAM_INSTRUCTOR_BOT_TOKEN || '';
+const INSTRUCTOR_MINI_APP_URL = process.env.INSTRUCTOR_MINI_APP_URL || 'https://avtodrom.vercel.app/instructor';
 
 async function rpc<T>(fn: string, args: Record<string, unknown>): Promise<T> {
+  if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) throw new Error('Supabase server credentials are missing');
   const r = await fetch(`${SUPABASE_URL}/rest/v1/rpc/${fn}`, {
     method: 'POST',
     headers: {
@@ -16,7 +17,7 @@ async function rpc<T>(fn: string, args: Record<string, unknown>): Promise<T> {
     body: JSON.stringify(args),
   });
   const data = await r.json();
-  if (!r.ok) throw new Error(data?.message || data?.hint || 'Supabase RPC error');
+  if (!r.ok) throw new Error(data?.message || data?.hint || data?.error || 'Supabase RPC error');
   return data as T;
 }
 
@@ -46,6 +47,6 @@ export async function sendInstructorStatusMessage(chatId: number, status: 'APPRO
   await telegramApi(INSTRUCTOR_BOT_TOKEN, 'sendMessage', {
     chat_id: chatId,
     text,
-    reply_markup: INSTRUCTOR_MINI_APP_URL ? { inline_keyboard: [[{ text: '👨‍🏫 Instructor Mini App', web_app: { url: INSTRUCTOR_MINI_APP_URL } }]] } : undefined,
+    reply_markup: { inline_keyboard: [[{ text: '👨‍🏫 Instructor Mini App', web_app: { url: INSTRUCTOR_MINI_APP_URL } }]] },
   });
 }
