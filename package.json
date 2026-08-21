@@ -12,7 +12,8 @@
     "fastify": "latest",
     "zod": "latest",
     "dotenv": "latest",
-    "@prisma/client": "latest"
+    "@prisma/client": "latest",
+    "@supabase/supabase-js": "latest"
   },
   "devDependencies": {
     "typescript": "^5.7.3",
