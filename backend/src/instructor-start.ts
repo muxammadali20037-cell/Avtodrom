@@ -2,7 +2,9 @@ import { instructorRegistrationStatus } from './instructor-registration.js';
 import { telegramApi, type TelegramWebAppUser } from './telegram.js';
 
 function registrationUrl(miniAppUrl: string) {
-  return `${miniAppUrl.replace(/\/$/, '')}/register.html`;
+  // The instructor Mini App already contains the registration screen.
+  // Do not point Telegram to /register.html: that file does not exist in this repo.
+  return miniAppUrl.replace(/\/$/, '') + '/';
 }
 
 export async function handleInstructorStart(token: string, chatId: number, user: TelegramWebAppUser, miniAppUrl: string) {
@@ -10,7 +12,7 @@ export async function handleInstructorStart(token: string, chatId: number, user:
   if (status.status === 'APPROVED') return telegramApi(token, 'sendMessage', {
     chat_id: chatId,
     text: '✅ Arizangiz tasdiqlangan. Instructor paneliga kirishingiz mumkin.',
-    reply_markup: { inline_keyboard: [[{ text: '👨‍🏫 Instructor panelini ochish', web_app: { url: miniAppUrl } }]] }
+    reply_markup: { inline_keyboard: [[{ text: '👨‍🏫 Instructor panelini ochish', web_app: { url: registrationUrl(miniAppUrl) } }]] }
   });
   if (status.status === 'PENDING') return telegramApi(token, 'sendMessage', {
     chat_id: chatId,
