@@ -12,8 +12,6 @@ import { registerAdminPasswordRoutes } from './admin-password-routes.js';
 
 const app = Fastify({ logger: true });
 const CUSTOMER_BOT_TOKEN = process.env.CUSTOMER_BOT_TOKEN || process.env.TELEGRAM_CUSTOMER_BOT_TOKEN || '';
-// Keep both names supported: the Edge webhook uses TELEGRAM_INSTRUCTOR_BOT_TOKEN,
-// while the backend historically used INSTRUCTOR_BOT_TOKEN.
 const INSTRUCTOR_BOT_TOKEN = process.env.INSTRUCTOR_BOT_TOKEN || process.env.TELEGRAM_INSTRUCTOR_BOT_TOKEN || '';
 const ADMIN_BOT_TOKEN = process.env.ADMIN_BOT_TOKEN || process.env.TELEGRAM_ADMIN_BOT_TOKEN || '';
 const CUSTOMER_MINI_APP_URL = process.env.CUSTOMER_MINI_APP_URL || process.env.MINI_APP_URL || 'https://avtodrom.vercel.app/';
@@ -23,10 +21,21 @@ const TELEGRAM_WEBHOOK_SECRET = process.env.TELEGRAM_WEBHOOK_SECRET || '';
 
 await app.register(cors, { origin: process.env.FRONTEND_ORIGIN ? [process.env.FRONTEND_ORIGIN] : true, credentials: true });
 await app.register(rateLimit, { max: 120, timeWindow: '1 minute' });
-app.get('/api/health', async () => ({ ok:true, service:'avtodrom-api', bots:{customer:Boolean(CUSTOMER_BOT_TOKEN),instructor:Boolean(INSTRUCTOR_BOT_TOKEN),admin:Boolean(ADMIN_BOT_TOKEN)} }));
+app.get('/api/health', async () => ({ ok:true, service:'avtodrom-api', bots:{customer:Boolean(CUSTOMER_BOT_TOKEN),instructor:Boolean(INSTRUCTOR_BOT_TOKEN),admin:Boolean(ADMIN_BOT_TOKEN)}, supabase:Boolean(process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY) }));
 
-function authenticateWithToken(botToken:string){ return async(request:any):Promise<TelegramWebAppUser>=>{ const initData=String(request.headers['x-telegram-init-data']||'').trim(); if(!initData) throw new Error('Telegram initData missing'); return validateTelegramInitData(initData,botToken); }; }
-app.post<{Body:{initData?:string}}>('/api/telegram/auth',async(request,reply)=>{try{return{ok:true,user:validateTelegramInitData(request.body?.initData||'',CUSTOMER_BOT_TOKEN)}}catch{return reply.code(401).send({ok:false,error:'Telegram authentication failed'})}});
+function authenticateWithToken(botToken:string){
+  return async(request:any):Promise<TelegramWebAppUser>=>{
+    let initData=String(request.headers['x-telegram-init-data']||'').trim();
+    if(!initData){
+      const auth=String(request.headers.authorization||'').trim();
+      if(auth.toLowerCase().startsWith('tma ')) initData=auth.slice(4).trim();
+    }
+    if(!initData && request.query?.initData) initData=String(request.query.initData).trim();
+    if(!initData) throw new Error('Telegram initData missing');
+    return validateTelegramInitData(initData,botToken);
+  }; 
+}
+app.post<{Body:{initData?:string}}>('/api/telegram/auth',async(request,reply)=>{try{return{ok:true,user:validateTelegramInitData(request.body?.initData||'',CUSTOMER_BOT_TOKEN)}}catch(e:any){return reply.code(401).send({ok:false,error:e?.message||'Telegram authentication failed'})}});
 export const authenticateCustomer=authenticateWithToken(CUSTOMER_BOT_TOKEN);
 export const authenticateInstructor=authenticateWithToken(INSTRUCTOR_BOT_TOKEN);
 export const authenticateAdmin=authenticateWithToken(ADMIN_BOT_TOKEN);
@@ -48,12 +57,8 @@ async function handleTelegramWebhook(request:any,reply:any,token:string,miniAppU
 
 async function webhookDiagnostic(token:string, role:string, expectedUrl:string){
  if(!token) return {configured:false,role,expected_url:expectedUrl,reason:'bot token missing'};
- try {
-  const info = await telegramApi<any>(token,'getWebhookInfo',{});
-  return {configured:true,role,expected_url:expectedUrl,telegram:{url:info.url||'',pending_update_count:info.pending_update_count||0,last_error_date:info.last_error_date||null,last_error_message:info.last_error_message||null}};
- } catch(error:any) {
-  return {configured:true,role,expected_url:expectedUrl,error:String(error?.message||error)};
- }
+ try { const info=await telegramApi<any>(token,'getWebhookInfo',{}); return {configured:true,role,expected_url:expectedUrl,telegram:{url:info.url||'',pending_update_count:info.pending_update_count||0,last_error_date:info.last_error_date||null,last_error_message:info.last_error_message||null}}; }
+ catch(error:any){ return {configured:true,role,expected_url:expectedUrl,error:String(error?.message||error)}; }
 }
 
 app.get('/api/telegram/instructor/webhook',async()=>webhookDiagnostic(INSTRUCTOR_BOT_TOKEN,'instructor','https://avtodrom.vercel.app/api/telegram/instructor/webhook'));
