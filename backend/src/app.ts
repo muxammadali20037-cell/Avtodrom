@@ -7,6 +7,7 @@ import { registerBookingRoutes } from './booking-routes.js';
 import { registerInstructorRoutes } from './instructor-routes.js';
 import { registerInstructorRegistrationRoutes } from './instructor-registration-routes.js';
 import { registerAdminInstructorRoutes } from './admin-instructor-routes.js';
+import { registerAdminRoutes } from './admin-routes.js';
 import { handleInstructorStart } from './instructor-start.js';
 import { registerAdminPasswordRoutes } from './admin-password-routes.js';
 
@@ -33,7 +34,7 @@ function authenticateWithToken(botToken:string){
     if(!initData && request.query?.initData) initData=String(request.query.initData).trim();
     if(!initData) throw new Error('Telegram initData missing');
     return validateTelegramInitData(initData,botToken);
-  }; 
+  };
 }
 app.post<{Body:{initData?:string}}>('/api/telegram/auth',async(request,reply)=>{try{return{ok:true,user:validateTelegramInitData(request.body?.initData||'',CUSTOMER_BOT_TOKEN)}}catch(e:any){return reply.code(401).send({ok:false,error:e?.message||'Telegram authentication failed'})}});
 export const authenticateCustomer=authenticateWithToken(CUSTOMER_BOT_TOKEN);
@@ -44,6 +45,7 @@ await registerBookingRoutes(app,authenticateCustomer);
 await registerInstructorRoutes(app,authenticateInstructor);
 await registerInstructorRegistrationRoutes(app,authenticateInstructor);
 await registerAdminInstructorRoutes(app,authenticateAdmin);
+await registerAdminRoutes(app,authenticateAdmin);
 await registerAdminPasswordRoutes(app);
 
 async function handleTelegramWebhook(request:any,reply:any,token:string,miniAppUrl:string,role:'customer'|'admin'){
