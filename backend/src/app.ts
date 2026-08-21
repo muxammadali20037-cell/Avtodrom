@@ -8,6 +8,7 @@ import { registerInstructorRoutes } from './instructor-routes.js';
 import { registerInstructorRegistrationRoutes } from './instructor-registration-routes.js';
 import { registerAdminInstructorRoutes } from './admin-instructor-routes.js';
 import { registerAdminRoutes } from './admin-routes.js';
+import { registerAdminDashboardRoutes } from './admin-dashboard-routes.js';
 import { handleInstructorStart } from './instructor-start.js';
 import { registerAdminPasswordRoutes } from './admin-password-routes.js';
 
@@ -46,6 +47,7 @@ await registerInstructorRoutes(app,authenticateInstructor);
 await registerInstructorRegistrationRoutes(app,authenticateInstructor);
 await registerAdminInstructorRoutes(app,authenticateAdmin);
 await registerAdminRoutes(app,authenticateAdmin);
+await registerAdminDashboardRoutes(app);
 await registerAdminPasswordRoutes(app);
 
 async function handleTelegramWebhook(request:any,reply:any,token:string,miniAppUrl:string,role:'customer'|'admin'){
