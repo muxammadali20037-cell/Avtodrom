@@ -12,6 +12,10 @@
     { "source": "/admin/login", "destination": "/admin/index.html" },
     { "source": "/admin/login.html", "destination": "/admin/index.html" },
     { "source": "/admin/dashboard", "destination": "/admin/dashboard.html" },
-    { "source": "/admin/dashboard/", "destination": "/admin/dashboard.html" }
+    { "source": "/admin/dashboard/", "destination": "/admin/dashboard.html" },
+    { "source": "/instructor", "destination": "/instructor/index.html" },
+    { "source": "/instructor/", "destination": "/instructor/index.html" },
+    { "source": "/instructor/register", "destination": "/frontend/instructor/register.html" },
+    { "source": "/instructor/register.html", "destination": "/frontend/instructor/register.html" }
   ]
 }
