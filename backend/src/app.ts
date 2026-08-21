@@ -5,6 +5,8 @@ import rateLimit from '@fastify/rate-limit';
 import { sendMiniAppStart, sendCustomerStart, sendInstructorStart, sendAdminStart, validateTelegramInitData, type TelegramWebAppUser } from './telegram.js';
 import { registerBookingRoutes } from './booking-routes.js';
 import { registerInstructorRoutes } from './instructor-routes.js';
+import { registerInstructorRegistrationRoutes } from './instructor-registration-routes.js';
+import { handleInstructorStart } from './instructor-start.js';
 import { registerAdminPasswordRoutes } from './admin-password-routes.js';
 
 const app = Fastify({ logger: true });
@@ -34,15 +36,14 @@ app.post<{ Body: { initData?: string } }>('/api/telegram/auth', async (request, 
   catch { return reply.code(401).send({ ok: false, error: 'Telegram authentication failed' }); }
 });
 
-export async function authenticate(request: any): Promise<TelegramWebAppUser> {
-  return authenticateWithToken(CUSTOMER_BOT_TOKEN)(request);
-}
+export async function authenticate(request: any): Promise<TelegramWebAppUser> { return authenticateWithToken(CUSTOMER_BOT_TOKEN)(request); }
 export const authenticateCustomer = authenticateWithToken(CUSTOMER_BOT_TOKEN);
 export const authenticateInstructor = authenticateWithToken(INSTRUCTOR_BOT_TOKEN);
 export const authenticateAdmin = authenticateWithToken(ADMIN_BOT_TOKEN);
 
 await registerBookingRoutes(app, authenticateCustomer);
 await registerInstructorRoutes(app, authenticateInstructor);
+await registerInstructorRegistrationRoutes(app, authenticateInstructor);
 await registerAdminPasswordRoutes(app);
 
 async function handleTelegramWebhook(request: any, reply: any, token: string, miniAppUrl: string, role: 'customer'|'instructor'|'admin') {
@@ -53,14 +54,24 @@ async function handleTelegramWebhook(request: any, reply: any, token: string, mi
   const message = update?.message;
   const text = typeof message?.text === 'string' ? message.text.trim() : '';
   const chatId = Number(message?.chat?.id);
-  if (Number.isSafeInteger(chatId) && chatId > 0 && /^\/start(?:@\w+)?(?:\s.*)?$/i.test(text)) {
-    await sendMiniAppStart(token, chatId, miniAppUrl, role);
-  }
+  if (Number.isSafeInteger(chatId) && chatId > 0 && /^\/start(?:@\w+)?(?:\s.*)?$/i.test(text)) await sendMiniAppStart(token, chatId, miniAppUrl, role);
   return { ok: true };
 }
 
 app.post('/api/telegram/customer/webhook', async (request, reply) => handleTelegramWebhook(request, reply, CUSTOMER_BOT_TOKEN, CUSTOMER_MINI_APP_URL, 'customer'));
-app.post('/api/telegram/instructor/webhook', async (request, reply) => handleTelegramWebhook(request, reply, INSTRUCTOR_BOT_TOKEN, INSTRUCTOR_MINI_APP_URL, 'instructor'));
+app.post('/api/telegram/instructor/webhook', async (request, reply) => {
+  const secret = String(request.headers['x-telegram-bot-api-secret-token'] || '');
+  if (TELEGRAM_WEBHOOK_SECRET && secret !== TELEGRAM_WEBHOOK_SECRET) return reply.code(401).send({ ok: false, error: 'Invalid webhook secret' });
+  const update = request.body as any;
+  const message = update?.message;
+  const text = typeof message?.text === 'string' ? message.text.trim() : '';
+  const chatId = Number(message?.chat?.id);
+  if (!INSTRUCTOR_BOT_TOKEN || !INSTRUCTOR_MINI_APP_URL) return reply.code(503).send({ ok: false, error: 'Instructor bot is not configured' });
+  if (Number.isSafeInteger(chatId) && chatId > 0 && /^\/start(?:@\w+)?(?:\s.*)?$/i.test(text)) {
+    await handleInstructorStart(INSTRUCTOR_BOT_TOKEN, chatId, { id: chatId, first_name: message?.from?.first_name, last_name: message?.from?.last_name, username: message?.from?.username }, INSTRUCTOR_MINI_APP_URL);
+  }
+  return { ok: true };
+});
 app.post('/api/telegram/admin/webhook', async (request, reply) => handleTelegramWebhook(request, reply, ADMIN_BOT_TOKEN, ADMIN_MINI_APP_URL, 'admin'));
 
 app.post<{ Body: { chatId?: number } }>('/api/telegram/customer/start', async (request, reply) => {
@@ -73,7 +84,7 @@ app.post<{ Body: { chatId?: number } }>('/api/telegram/instructor/start', async 
   const chatId = Number(request.body?.chatId);
   if (!INSTRUCTOR_BOT_TOKEN || !INSTRUCTOR_MINI_APP_URL) return reply.code(503).send({ ok: false, error: 'Instructor bot is not configured' });
   if (!Number.isSafeInteger(chatId)) return reply.code(400).send({ ok: false, error: 'Invalid chatId' });
-  await sendInstructorStart(INSTRUCTOR_BOT_TOKEN, chatId, INSTRUCTOR_MINI_APP_URL); return { ok: true };
+  await handleInstructorStart(INSTRUCTOR_BOT_TOKEN, chatId, { id: chatId }, INSTRUCTOR_MINI_APP_URL); return { ok: true };
 });
 app.post<{ Body: { chatId?: number } }>('/api/telegram/admin/start', async (request, reply) => {
   const chatId = Number(request.body?.chatId);
