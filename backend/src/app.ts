@@ -2,7 +2,7 @@ import 'dotenv/config';
 import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import rateLimit from '@fastify/rate-limit';
-import { sendMiniAppStart, sendCustomerStart, sendInstructorStart, sendAdminStart, validateTelegramInitData, type TelegramWebAppUser } from './telegram.js';
+import { sendMiniAppStart, sendCustomerStart, sendInstructorStart, sendAdminStart, validateTelegramInitData, telegramApi, type TelegramWebAppUser } from './telegram.js';
 import { registerBookingRoutes } from './booking-routes.js';
 import { registerInstructorRoutes } from './instructor-routes.js';
 import { registerInstructorRegistrationRoutes } from './instructor-registration-routes.js';
@@ -43,6 +43,21 @@ async function handleTelegramWebhook(request:any,reply:any,token:string,miniAppU
  if(Number.isSafeInteger(chatId)&&chatId>0&&/^\/start(?:@\w+)?(?:\s.*)?$/i.test(text)) await sendMiniAppStart(token,chatId,miniAppUrl,role);
  return {ok:true};
 }
+
+async function webhookDiagnostic(token:string, role:string, expectedUrl:string){
+ if(!token) return {configured:false,role,expected_url:expectedUrl,reason:'bot token missing'};
+ try {
+  const info = await telegramApi<any>(token,'getWebhookInfo',{});
+  return {configured:true,role,expected_url:expectedUrl,telegram:{url:info.url||'',pending_update_count:info.pending_update_count||0,last_error_date:info.last_error_date||null,last_error_message:info.last_error_message||null}};
+ } catch(error:any) {
+  return {configured:true,role,expected_url:expectedUrl,error:String(error?.message||error)};
+ }
+}
+
+app.get('/api/telegram/instructor/webhook',async()=>webhookDiagnostic(INSTRUCTOR_BOT_TOKEN,'instructor','https://avtodrom.vercel.app/api/telegram/instructor/webhook'));
+app.get('/api/telegram/customer/webhook',async()=>webhookDiagnostic(CUSTOMER_BOT_TOKEN,'customer','https://avtodrom.vercel.app/api/telegram/customer/webhook'));
+app.get('/api/telegram/admin/webhook',async()=>webhookDiagnostic(ADMIN_BOT_TOKEN,'admin','https://avtodrom.vercel.app/api/telegram/admin/webhook'));
+
 app.post('/api/telegram/customer/webhook',async(request,reply)=>handleTelegramWebhook(request,reply,CUSTOMER_BOT_TOKEN,CUSTOMER_MINI_APP_URL,'customer'));
 app.post('/api/telegram/instructor/webhook',async(request,reply)=>{
  const secret=String(request.headers['x-telegram-bot-api-secret-token']||''); if(TELEGRAM_WEBHOOK_SECRET&&secret!==TELEGRAM_WEBHOOK_SECRET)return reply.code(401).send({ok:false,error:'Invalid webhook secret'});
