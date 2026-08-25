@@ -3,6 +3,8 @@ import { requireAdmin, supabaseConfig, BUCKET } from './_auth.js';
 
 const VIDEO_TYPES = new Set(['video/mp4', 'video/webm', 'video/quicktime']);
 const IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif']);
+const ALL_TYPES = [...VIDEO_TYPES, ...IMAGE_TYPES];
+const MAX_FILE_SIZE = 50 * 1024 * 1024;
 
 function cleanName(name: string) {
   return String(name || 'media').normalize('NFKD').replace(/[^a-zA-Z0-9._-]+/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '').slice(0, 100) || 'media';
@@ -12,6 +14,30 @@ function ext(name: string, type: string) {
   const found = String(name).toLowerCase().match(/\.[a-z0-9]{2,6}$/)?.[0];
   if (found) return found;
   return ({'video/mp4':'.mp4','video/webm':'.webm','video/quicktime':'.mov','image/jpeg':'.jpg','image/png':'.png','image/webp':'.webp','image/gif':'.gif'} as Record<string,string>)[type] || '';
+}
+
+async function ensureBucket(url: string, key: string) {
+  const headers = {apikey:key, Authorization:`Bearer ${key}`, 'Content-Type':'application/json'};
+  const check = await fetch(`${url}/storage/v1/bucket/${encodeURIComponent(BUCKET)}`, {headers});
+  if (check.ok) return;
+  if (check.status !== 404) {
+    const text = await check.text().catch(()=> '');
+    throw new Error(`Storage bucket tekshiruvi ${check.status}: ${text || 'xato'}`);
+  }
+  const create = await fetch(`${url}/storage/v1/bucket`, {
+    method:'POST', headers,
+    body:JSON.stringify({
+      id:BUCKET,
+      name:BUCKET,
+      public:true,
+      file_size_limit:MAX_FILE_SIZE,
+      allowed_mime_types:ALL_TYPES,
+    }),
+  });
+  if (!create.ok && create.status !== 409) {
+    const text = await create.text().catch(()=> '');
+    throw new Error(`Storage bucket yaratilmadi (${create.status}): ${text || 'xato'}`);
+  }
 }
 
 export default async function handler(request: any, response: any) {
@@ -36,8 +62,14 @@ export default async function handler(request: any, response: any) {
     const key = mediaType === 'video' ? 'guide_video' : 'home_image';
     const path = `${key}/${Date.now()}-${randomUUID()}-${fileName.replace(/\.[a-z0-9]{2,6}$/i,'')}${ext(fileName,contentType)}`;
     const {url,key:serviceKey} = supabaseConfig();
+    await ensureBucket(url, serviceKey);
+
     const signUrl = `${url}/storage/v1/object/upload/sign/${BUCKET}/${path}`;
-    const r = await fetch(signUrl, {method:'POST',headers:{apikey:serviceKey,Authorization:`Bearer ${serviceKey}`,'Content-Type':'application/json','x-upsert':'true'},body:JSON.stringify({expiresIn:3600,upsert:true,contentType})});
+    const r = await fetch(signUrl, {
+      method:'POST',
+      headers:{apikey:serviceKey,Authorization:`Bearer ${serviceKey}`,'Content-Type':'application/json','x-upsert':'true'},
+      body:JSON.stringify({expiresIn:3600,upsert:true,contentType}),
+    });
     const data:any = await r.json().catch(()=>({}));
     if (!r.ok) throw new Error(`Storage sign ${r.status}: ${JSON.stringify(data)}`);
     const absolute = String(data.url || '').startsWith('http') ? String(data.url) : `${url}${data.url || ''}`;
