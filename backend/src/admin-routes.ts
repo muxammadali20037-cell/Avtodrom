@@ -297,7 +297,7 @@ export async function registerAdminRoutes(app: FastifyInstance, _authenticate: (
   app.post('/api/admin/courses', async (request, reply) => {
     try {
       await requireAdminSession(request);
-      const body = request.body || {};
+      const body = (request.body || {}) as Record<string, unknown>;
       const name = String(body.name || '').trim();
       const duration = Number(body.duration_minutes || 60);
       const price = Number(body.price || 0);
@@ -372,7 +372,7 @@ export async function registerAdminRoutes(app: FastifyInstance, _authenticate: (
   app.put('/api/admin/pricing', async (request, reply) => {
     try {
       await requireAdminSession(request);
-      const body = request.body || {};
+      const body = (request.body || {}) as Record<string, unknown>;
       const amount = Math.max(0, Number(body.amount || 0));
       const minutes = Math.max(15, Number(body.minutes || 60));
       const enabled = body.booking_enabled !== false;
