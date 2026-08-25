@@ -27,6 +27,7 @@ export default function handler(request, response) {
     response.setHeader('Allow', 'POST');
     return json(response, 405, { ok: false, error: 'Method not allowed' });
   }
+
   try {
     const body = readBody(request);
     const login = String(body.login ?? '').trim();
@@ -34,16 +35,45 @@ export default function handler(request, response) {
     const expectedLogin = String(process.env.ADMIN_LOGIN ?? '').trim();
     const expectedPassword = String(process.env.ADMIN_PASSWORD ?? '');
     const secret = String(process.env.ADMIN_SESSION_SECRET ?? expectedPassword).trim();
+
     if (!expectedLogin || !expectedPassword) {
-      console.error('Admin env missing:', { ADMIN_LOGIN: Boolean(expectedLogin), ADMIN_PASSWORD: Boolean(expectedPassword) });
-      return json(response, 500, { ok: false, error: 'ADMIN_LOGIN yoki ADMIN_PASSWORD Vercel Environment Variables da yo‘q.' });
+      console.error('Admin env missing:', {
+        ADMIN_LOGIN: Boolean(expectedLogin),
+        ADMIN_PASSWORD: Boolean(expectedPassword)
+      });
+      return json(response, 500, {
+        ok: false,
+        error: 'ADMIN_LOGIN yoki ADMIN_PASSWORD Vercel Environment Variables da yo‘q.'
+      });
     }
-    if (login !== expectedLogin || password !== expectedPassword) return json(response, 401, { ok: false, error: 'Login yoki parol noto‘g‘ri.' });
+
+    if (login !== expectedLogin || password !== expectedPassword) {
+      return json(response, 401, {
+        ok: false,
+        error: 'Login yoki parol noto‘g‘ri.'
+      });
+    }
+
     const token = makeToken(expectedLogin, secret);
-    response.setHeader('Set-Cookie', `${COOKIE_NAME}=${encodeURIComponent(token)}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=${SESSION_TTL}`);
-    return json(response, 200, { ok: true, login: expectedLogin, redirect: '/admin/index.html' });
+
+    response.setHeader(
+      'Set-Cookie',
+      `${COOKIE_NAME}=${encodeURIComponent(token)}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=${SESSION_TTL}`
+    );
+
+    // Cookie is the primary session mechanism.
+    // token is also returned because the current admin frontend expects it.
+    return json(response, 200, {
+      ok: true,
+      login: expectedLogin,
+      token,
+      redirect: '/admin/index.html'
+    });
   } catch (error) {
     console.error('Admin login fatal error:', error);
-    return json(response, 500, { ok: false, error: 'Internal server error' });
+    return json(response, 500, {
+      ok: false,
+      error: 'Internal server error'
+    });
   }
 }
