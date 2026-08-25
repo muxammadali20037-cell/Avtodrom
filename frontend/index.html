@@ -1,42 +1,3958 @@
 <!doctype html>
 <html lang="uz">
 <head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>AVTODROM INDEX</title><script src="https://telegram.org/js/telegram-web-app.js"></script>
-<style>
-:root{--g:#087443;--bg:#f4f7f5;--t:#14221b;--m:#718078;--l:#e1e8e4;--d:#b42318}*{box-sizing:border-box}html,body{margin:0;background:var(--bg);color:var(--t);font-family:Arial,sans-serif}body{min-height:100vh}.app{max-width:560px;min-height:100vh;margin:auto;background:#fff;padding-bottom:76px}.top{position:sticky;top:0;z-index:20;background:#fff;border-bottom:1px solid var(--l);padding:12px 14px;display:flex;align-items:center;gap:9px}.brand{font-size:18px;font-weight:900;flex:1}.actions{display:flex;gap:6px}.btn{border:1px solid #d7e0db;background:#fff;border-radius:11px;padding:10px 13px;font-weight:800;color:var(--t);cursor:pointer}.primary{background:var(--g);border-color:var(--g);color:#fff}.content{padding:14px 14px 24px}.page{display:none}.page.active{display:block}.hero{background:linear-gradient(145deg,#e9f7ef,#fff);border:1px solid #d8eee0;border-radius:20px;padding:18px;margin-bottom:12px}.hero h1{font-size:24px;margin:0 0 7px}.hero p{color:var(--m);line-height:1.45;margin:0 0 16px}.card{border:1px solid var(--l);border-radius:16px;padding:14px;margin:11px 0;background:#fff}.topline{display:flex;align-items:center;justify-content:space-between;gap:8px}.card-title{font-weight:900;margin-bottom:7px}.field{display:grid;gap:6px;margin:12px 0}.field label{font-size:13px;font-weight:800}.field input,.field select,.field textarea{width:100%;border:1px solid #d5dfda;border-radius:11px;padding:12px;background:#fff;color:var(--t);font:inherit}.field input:focus,.field select:focus,.field textarea:focus{outline:0;border-color:var(--g);box-shadow:0 0 0 3px #08744318}.full{width:100%}.muted{color:var(--m)}.empty{text-align:center;padding:25px 10px;color:var(--m)}.loader{text-align:center;padding:20px;color:var(--m)}.notice{padding:11px 12px;border-radius:11px;margin:10px 0;font-size:13px}.error{background:#fff0ef;color:var(--d);border:1px solid #f3d0cc}.info{background:#eef6f1;color:#21613f}.badge{display:inline-flex;padding:5px 9px;border-radius:999px;font-size:12px;font-weight:900;background:#eef6f1}.pending{background:#fff6db;color:#9a6700}.confirmed{background:#eaf7ef;color:#087443}.progress{background:#e8f2ff;color:#1769aa}.done{background:#edf0ef;color:#53615a}.cancel{background:#fff0ef;color:var(--d)}.booking .date{font-weight:900;font-size:15px}.meta{display:grid;gap:5px;margin:10px 0;color:#53615a;font-size:13px}.nav{position:fixed;left:50%;bottom:0;transform:translateX(-50%);width:min(560px,100%);height:72px;background:#fff;border-top:1px solid var(--l);display:grid;grid-template-columns:repeat(4,1fr);z-index:25;padding-bottom:env(safe-area-inset-bottom)}.nav button{border:0;background:#fff;color:#58655f;font-size:11px;font-weight:700}.nav button.active{color:var(--g)}.ico{font-size:20px;line-height:25px}.ai{position:fixed;right:max(16px,calc((100vw - 560px)/2 + 16px));bottom:84px;border:0;background:var(--g);color:#fff;border-radius:999px;padding:12px 15px;font-weight:900;box-shadow:0 8px 25px #08744333;z-index:24}.chat{display:none;position:fixed;right:max(12px,calc((100vw - 560px)/2 + 12px));bottom:145px;width:min(390px,calc(100vw - 24px));height:470px;background:#fff;border:1px solid var(--l);border-radius:18px;box-shadow:0 15px 45px #0003;z-index:40;overflow:hidden}.chat.open{display:flex;flex-direction:column}.chathead{background:var(--g);color:#fff;padding:13px 14px;font-weight:900}.chathead button{float:right;border:0;background:transparent;color:#fff;font-size:22px}.messages{flex:1;overflow:auto;padding:12px;background:#f7f9f8}.msg{max-width:86%;padding:10px 12px;border-radius:13px;background:#fff;margin:7px 0;line-height:1.4}.mine{margin-left:auto;background:var(--g);color:#fff}.chatinput{display:flex;gap:7px;padding:9px;border-top:1px solid var(--l)}.chatinput input{min-width:0;flex:1;border:1px solid #d5dfda;border-radius:10px;padding:10px}.timegrid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}.time{border:1px solid #d5dfda;background:#fff;border-radius:10px;padding:10px 3px;font-weight:800}.time.selected{background:var(--g);color:#fff;border-color:var(--g)}.time.busy{opacity:.35;text-decoration:line-through}.person{display:flex;gap:10px;align-items:center}.avatar{width:42px;height:42px;border-radius:50%;background:#eaf7ef;display:grid;place-items:center;font-weight:900;color:var(--g);flex:none}.info{min-width:0}.name{font-weight:900}.small{font-size:12px;color:var(--m);margin-top:3px}.langmenu{display:none;position:absolute;right:14px;top:57px;background:#fff;border:1px solid var(--l);border-radius:13px;box-shadow:0 12px 35px #0002;overflow:hidden;z-index:30}.langmenu.open{display:block}.langmenu button{display:block;width:170px;border:0;background:#fff;text-align:left;padding:12px 15px;font-weight:700}
-</style></head>
-<body><div class="app">
-<header class="top"><div class="brand">🚗 AVTODROM INDEX</div><div class="actions"><button class="btn" id="langBtn">UZ</button><button class="btn" id="helpBtn">🤖 <span data-i18n="help">Yordam</span></button></div><div id="langMenu" class="langmenu"><button data-lang="uz">🇺🇿 O‘zbekcha</button><button data-lang="ru">🇷🇺 Русский</button></div></header>
-<main class="content">
-<section id="home" class="page active"><div class="hero"><h1 id="hello">Xush kelibsiz!</h1><p data-i18n="hero">Avtodromdagi darsingizni qulay bron qiling, holatini kuzating va instruktor bilan bog‘laning.</p><button class="btn primary full" id="heroBook" data-i18n="book_lesson">Dars bron qilish</button></div><div class="card"><div class="topline"><div class="card-title" data-i18n="notifications">Bildirishnomalar</div><span class="badge" id="notificationCount">0</span></div><div id="notifications" class="loader">Yuklanmoqda...</div></div><div class="card"><div class="topline"><div class="card-title" data-i18n="next_booking">Keyingi bron</div><button class="btn" id="allBookings" data-i18n="all">Barchasi</button></div><div id="nextBooking" class="empty">Yuklanmoqda...</div></div></section>
-<section id="book" class="page"><h2 data-i18n="book_lesson">Dars bron qilish</h2><div id="bookError"></div><div class="card"><div class="field"><label data-i18n="instructor">Instruktor</label><select id="instructor"></select></div><div class="field"><label data-i18n="date">Sana</label><input id="date" type="date"></div><div class="field"><label data-i18n="time">Boshlanish vaqti</label><div id="times" class="timegrid"></div></div><div class="field"><label data-i18n="duration">Dars davomiyligi</label><select id="duration"><option value="30">30 daqiqa / 30 минут</option><option value="60">60 daqiqa / 60 минут</option><option value="90">90 daqiqa / 90 минут</option></select></div><div class="field"><label data-i18n="note">Izoh</label><textarea id="note" rows="3" maxlength="500" data-i18n-placeholder="note_placeholder" placeholder="Qo‘shimcha izoh..."></textarea></div><button class="btn primary full" id="bookBtn" data-i18n="send_booking">Bron yuborish</button></div><div class="notice info" data-i18n="booking_info">Bron yuborilgach, Admin tasdiqlaydi. Tasdiqdan keyin bron holati shu panelda ko‘rinadi.</div></section>
-<section id="bookings" class="page"><div class="topline"><h2 data-i18n="my_bookings">Bronlarim</h2><button class="btn" id="refreshBookings">↻</button></div><div id="bookingList" class="loader">Yuklanmoqda...</div></section>
-<section id="profile" class="page"><h2 data-i18n="my_profile">Profilim</h2><div class="card"><div class="person"><div class="avatar" id="avatar">U</div><div class="info"><div class="name" id="profileName">Foydalanuvchi</div><div class="small" id="profileUsername">Telegram</div></div></div><div class="field"><label data-i18n="first_name">Ism *</label><input id="first"></div><div class="field"><label data-i18n="last_name">Familiya *</label><input id="last"></div><div class="field"><label data-i18n="phone">Telefon *</label><input id="phone" type="tel" placeholder="+998 90 123 45 67"></div><button class="btn primary full" id="saveProfile" data-i18n="save">Saqlash</button></div><div class="card"><div class="card-title" data-i18n="account">Akkaunt</div><p class="muted" id="accountInfo">Telegram orqali himoyalangan akkaunt.</p></div></section>
-</main>
-<nav class="nav"><button data-page="home" class="active"><div class="ico">⌂</div><span data-i18n="home">Bosh sahifa</span></button><button data-page="book"><div class="ico">＋</div><span data-i18n="book">Bron</span></button><button data-page="bookings"><div class="ico">▣</div><span data-i18n="my_bookings">Bronlarim</span></button><button data-page="profile"><div class="ico">♙</div><span data-i18n="profile">Profil</span></button></nav></div>
-<button class="ai" id="aiBtn">🤖 AI</button><div id="chat" class="chat"><div class="chathead"><span data-i18n="ai_title">AVTODROM AI yordamchi</span><button id="closeChat">×</button></div><div id="messages" class="messages"><div class="msg" data-i18n="ai_welcome">Assalomu alaykum! Savolingizni yozing.</div></div><div class="chatinput"><input id="question" data-i18n-placeholder="question" placeholder="Savolingiz..."><button class="btn primary" id="sendQuestion" data-i18n="send">Yuborish</button></div></div>
+  <meta charset="utf-8">
+  <meta
+    name="viewport"
+    content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no"
+  >
+
+  <meta name="theme-color" content="#087443">
+  <title>AVTODROM INDEX</title>
+
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+
+  <style>
+    :root{
+      --green:#087443;
+      --green-dark:#065b34;
+      --green-soft:#eaf7ef;
+
+      --bg:#f4f7f5;
+      --card:#ffffff;
+      --text:#14221b;
+      --muted:#718078;
+      --border:#e1e8e4;
+
+      --danger:#b42318;
+      --danger-bg:#fff0ef;
+
+      --warning:#946200;
+      --warning-bg:#fff7df;
+
+      --blue:#1769aa;
+      --blue-bg:#eaf3ff;
+
+      --shadow:0 10px 35px rgba(0,0,0,.07);
+      --radius:18px;
+
+      --safe-bottom:env(safe-area-inset-bottom,0px);
+    }
+
+    *{
+      box-sizing:border-box;
+      -webkit-tap-highlight-color:transparent;
+    }
+
+    html{
+      scroll-behavior:smooth;
+    }
+
+    body{
+      margin:0;
+      min-height:100vh;
+      background:var(--bg);
+      color:var(--text);
+      font-family:
+        Inter,
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        Roboto,
+        Arial,
+        sans-serif;
+    }
+
+    button,
+    input,
+    select,
+    textarea{
+      font:inherit;
+    }
+
+    button{
+      cursor:pointer;
+    }
+
+    button:disabled{
+      cursor:not-allowed;
+      opacity:.55;
+    }
+
+    .app{
+      width:100%;
+      max-width:560px;
+      min-height:100vh;
+      margin:0 auto;
+      background:#fff;
+      padding-bottom:calc(78px + var(--safe-bottom));
+      position:relative;
+    }
+
+    /* =========================
+       HEADER
+    ========================= */
+
+    .top{
+      position:sticky;
+      top:0;
+      z-index:100;
+
+      min-height:64px;
+      padding:10px 14px;
+
+      display:flex;
+      align-items:center;
+      gap:10px;
+
+      background:rgba(255,255,255,.96);
+      backdrop-filter:blur(15px);
+
+      border-bottom:1px solid var(--border);
+    }
+
+    .brand{
+      flex:1;
+      min-width:0;
+
+      font-size:18px;
+      font-weight:900;
+      letter-spacing:-.2px;
+
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+
+    .actions{
+      display:flex;
+      gap:6px;
+      flex:none;
+    }
+
+    .btn{
+      min-height:42px;
+
+      border:1px solid #d5dfda;
+      background:#fff;
+      color:var(--text);
+
+      border-radius:12px;
+      padding:10px 13px;
+
+      font-size:14px;
+      font-weight:800;
+
+      transition:
+        transform .15s ease,
+        background .15s ease,
+        border-color .15s ease;
+    }
+
+    .btn:active{
+      transform:scale(.97);
+    }
+
+    .btn.primary{
+      color:#fff;
+      background:var(--green);
+      border-color:var(--green);
+    }
+
+    .btn.primary:hover{
+      background:var(--green-dark);
+    }
+
+    .btn.full{
+      width:100%;
+    }
+
+    /* =========================
+       LANGUAGE
+    ========================= */
+
+    .lang-wrap{
+      position:relative;
+    }
+
+    .lang-menu{
+      position:absolute;
+      right:0;
+      top:50px;
+
+      width:180px;
+
+      display:none;
+
+      background:#fff;
+      border:1px solid var(--border);
+      border-radius:14px;
+
+      box-shadow:var(--shadow);
+      overflow:hidden;
+      z-index:300;
+    }
+
+    .lang-menu.open{
+      display:block;
+    }
+
+    .lang-menu button{
+      width:100%;
+      border:0;
+      background:#fff;
+
+      padding:13px 15px;
+
+      text-align:left;
+      font-weight:800;
+    }
+
+    .lang-menu button:active{
+      background:#f1f5f3;
+    }
+
+    /* =========================
+       CONTENT
+    ========================= */
+
+    .content{
+      padding:14px 14px 25px;
+    }
+
+    .page{
+      display:none;
+      animation:pageIn .18s ease;
+    }
+
+    .page.active{
+      display:block;
+    }
+
+    @keyframes pageIn{
+      from{
+        opacity:0;
+        transform:translateY(4px);
+      }
+      to{
+        opacity:1;
+        transform:none;
+      }
+    }
+
+    h1,
+    h2,
+    h3,
+    p{
+      margin-top:0;
+    }
+
+    h2{
+      margin-bottom:14px;
+      font-size:22px;
+      letter-spacing:-.3px;
+    }
+
+    /* =========================
+       HERO
+    ========================= */
+
+    .hero{
+      position:relative;
+      overflow:hidden;
+
+      background:
+        radial-gradient(
+          circle at 100% 0,
+          rgba(8,116,67,.13),
+          transparent 42%
+        ),
+        linear-gradient(
+          145deg,
+          #e9f7ef,
+          #ffffff
+        );
+
+      border:1px solid #d8eee0;
+      border-radius:22px;
+
+      padding:20px;
+      margin-bottom:13px;
+    }
+
+    .hero::after{
+      content:"🚗";
+      position:absolute;
+      right:-6px;
+      bottom:-15px;
+
+      font-size:88px;
+      opacity:.07;
+      pointer-events:none;
+    }
+
+    .hero h1{
+      position:relative;
+      z-index:1;
+
+      margin-bottom:8px;
+
+      font-size:25px;
+      line-height:1.15;
+      letter-spacing:-.5px;
+    }
+
+    .hero p{
+      position:relative;
+      z-index:1;
+
+      color:var(--muted);
+      line-height:1.5;
+
+      margin-bottom:17px;
+    }
+
+    /* =========================
+       CARDS
+    ========================= */
+
+    .card{
+      background:var(--card);
+
+      border:1px solid var(--border);
+      border-radius:var(--radius);
+
+      padding:15px;
+      margin:11px 0;
+
+      box-shadow:0 2px 10px rgba(0,0,0,.02);
+    }
+
+    .topline{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+    }
+
+    .card-title{
+      font-size:15px;
+      font-weight:900;
+    }
+
+    /* =========================
+       FORM
+    ========================= */
+
+    .field{
+      display:grid;
+      gap:7px;
+      margin:14px 0;
+    }
+
+    .field label{
+      font-size:13px;
+      font-weight:900;
+    }
+
+    .field input,
+    .field select,
+    .field textarea{
+      width:100%;
+
+      border:1px solid #d5dfda;
+      border-radius:12px;
+
+      padding:12px;
+
+      background:#fff;
+      color:var(--text);
+
+      outline:none;
+
+      transition:
+        border-color .15s ease,
+        box-shadow .15s ease;
+    }
+
+    .field input:focus,
+    .field select:focus,
+    .field textarea:focus{
+      border-color:var(--green);
+
+      box-shadow:
+        0 0 0 3px rgba(8,116,67,.10);
+    }
+
+    textarea{
+      resize:vertical;
+      min-height:90px;
+    }
+
+    .field input[type="date"]{
+      min-height:46px;
+    }
+
+    /* =========================
+       NOTICES
+    ========================= */
+
+    .notice{
+      border-radius:12px;
+      padding:12px 13px;
+
+      margin:10px 0;
+
+      font-size:13px;
+      line-height:1.45;
+    }
+
+    .notice.info{
+      background:#eef6f1;
+      border:1px solid #d7eadf;
+      color:#21613f;
+    }
+
+    .notice.error{
+      background:var(--danger-bg);
+      border:1px solid #f3d0cc;
+      color:var(--danger);
+    }
+
+    .notice.warning{
+      background:var(--warning-bg);
+      border:1px solid #f0dfae;
+      color:var(--warning);
+    }
+
+    /* =========================
+       BADGES
+    ========================= */
+
+    .badge{
+      display:inline-flex;
+      align-items:center;
+
+      min-height:26px;
+
+      padding:5px 9px;
+
+      border-radius:999px;
+
+      font-size:11px;
+      font-weight:900;
+
+      white-space:nowrap;
+    }
+
+    .badge.pending{
+      background:var(--warning-bg);
+      color:var(--warning);
+    }
+
+    .badge.confirmed{
+      background:var(--green-soft);
+      color:var(--green);
+    }
+
+    .badge.progress{
+      background:var(--blue-bg);
+      color:var(--blue);
+    }
+
+    .badge.done{
+      background:#edf0ef;
+      color:#53615a;
+    }
+
+    .badge.cancel{
+      background:var(--danger-bg);
+      color:var(--danger);
+    }
+
+    /* =========================
+       LOADING
+    ========================= */
+
+    .loader{
+      min-height:60px;
+
+      display:flex;
+      align-items:center;
+      justify-content:center;
+
+      color:var(--muted);
+      font-size:13px;
+    }
+
+    .spinner{
+      width:19px;
+      height:19px;
+
+      border:2px solid #d9e6df;
+      border-top-color:var(--green);
+
+      border-radius:50%;
+
+      animation:spin .7s linear infinite;
+    }
+
+    @keyframes spin{
+      to{
+        transform:rotate(360deg);
+      }
+    }
+
+    .loading-row{
+      display:flex;
+      justify-content:center;
+      align-items:center;
+      gap:8px;
+      padding:18px;
+    }
+
+    /* =========================
+       EMPTY
+    ========================= */
+
+    .empty{
+      text-align:center;
+      padding:30px 15px;
+
+      color:var(--muted);
+      font-size:13px;
+    }
+
+    .empty-icon{
+      font-size:35px;
+      margin-bottom:8px;
+    }
+
+    /* =========================
+       BOOKING
+    ========================= */
+
+    .booking{
+      position:relative;
+      overflow:hidden;
+    }
+
+    .booking + .booking{
+      margin-top:10px;
+    }
+
+    .booking-date{
+      font-size:15px;
+      font-weight:900;
+    }
+
+    .meta{
+      display:grid;
+      gap:7px;
+
+      margin-top:12px;
+
+      color:#53615a;
+      font-size:13px;
+      line-height:1.4;
+    }
+
+    .meta-row{
+      display:flex;
+      align-items:flex-start;
+      gap:7px;
+    }
+
+    .booking-price{
+      font-size:16px;
+      font-weight:900;
+      color:var(--green);
+    }
+
+    /* =========================
+       TIME SLOTS
+    ========================= */
+
+    .timegrid{
+      display:grid;
+      grid-template-columns:repeat(3,1fr);
+      gap:8px;
+    }
+
+    .time{
+      min-height:44px;
+
+      border:1px solid #d5dfda;
+      background:#fff;
+
+      color:var(--text);
+
+      border-radius:11px;
+
+      padding:9px 3px;
+
+      font-weight:900;
+      font-size:13px;
+
+      transition:.15s ease;
+    }
+
+    .time:active{
+      transform:scale(.97);
+    }
+
+    .time.selected{
+      color:#fff;
+      background:var(--green);
+      border-color:var(--green);
+    }
+
+    .time.busy{
+      opacity:.35;
+      text-decoration:line-through;
+    }
+
+    .time.past{
+      opacity:.3;
+    }
+
+    /* =========================
+       PROFILE
+    ========================= */
+
+    .person{
+      display:flex;
+      align-items:center;
+      gap:11px;
+
+      margin-bottom:17px;
+    }
+
+    .avatar{
+      width:48px;
+      height:48px;
+
+      flex:none;
+
+      display:grid;
+      place-items:center;
+
+      border-radius:50%;
+
+      background:var(--green-soft);
+      color:var(--green);
+
+      font-size:18px;
+      font-weight:900;
+    }
+
+    .profile-name{
+      font-weight:900;
+      font-size:16px;
+    }
+
+    .profile-username{
+      margin-top:3px;
+
+      color:var(--muted);
+      font-size:12px;
+    }
+
+    /* =========================
+       NOTIFICATION
+    ========================= */
+
+    .notification{
+      padding:12px;
+
+      border:1px solid var(--border);
+      border-radius:13px;
+
+      margin:8px 0;
+    }
+
+    .notification-title{
+      font-weight:900;
+      font-size:13px;
+    }
+
+    .notification-body{
+      color:var(--muted);
+      font-size:12px;
+      line-height:1.45;
+
+      margin-top:4px;
+    }
+
+    .count{
+      min-width:25px;
+      height:25px;
+
+      display:inline-flex;
+      justify-content:center;
+      align-items:center;
+
+      border-radius:999px;
+
+      background:var(--green-soft);
+      color:var(--green);
+
+      font-size:11px;
+      font-weight:900;
+    }
+
+    /* =========================
+       BOTTOM NAV
+    ========================= */
+
+    .nav{
+      position:fixed;
+      z-index:110;
+
+      left:50%;
+      bottom:0;
+
+      transform:translateX(-50%);
+
+      width:min(560px,100%);
+
+      min-height:72px;
+
+      padding-bottom:var(--safe-bottom);
+
+      background:rgba(255,255,255,.97);
+      backdrop-filter:blur(15px);
+
+      border-top:1px solid var(--border);
+
+      display:grid;
+      grid-template-columns:repeat(4,1fr);
+    }
+
+    .nav button{
+      border:0;
+      background:transparent;
+
+      color:#66736d;
+
+      font-size:11px;
+      font-weight:800;
+
+      padding:7px 3px;
+
+      transition:.15s ease;
+    }
+
+    .nav button.active{
+      color:var(--green);
+    }
+
+    .nav-icon{
+      height:27px;
+
+      display:flex;
+      justify-content:center;
+      align-items:center;
+
+      font-size:21px;
+    }
+
+    /* =========================
+       AI
+    ========================= */
+
+    .ai{
+      position:fixed;
+      z-index:120;
+
+      right:max(
+        16px,
+        calc((100vw - 560px)/2 + 16px)
+      );
+
+      bottom:calc(86px + var(--safe-bottom));
+
+      border:0;
+
+      background:var(--green);
+      color:#fff;
+
+      border-radius:999px;
+
+      padding:12px 16px;
+
+      font-weight:900;
+
+      box-shadow:
+        0 8px 25px rgba(8,116,67,.25);
+
+      transition:.15s ease;
+    }
+
+    .ai:active{
+      transform:scale(.95);
+    }
+
+    .chat{
+      position:fixed;
+      z-index:300;
+
+      right:max(
+        12px,
+        calc((100vw - 560px)/2 + 12px)
+      );
+
+      bottom:calc(145px + var(--safe-bottom));
+
+      width:min(
+        390px,
+        calc(100vw - 24px)
+      );
+
+      height:470px;
+
+      display:none;
+      flex-direction:column;
+
+      background:#fff;
+
+      border:1px solid var(--border);
+      border-radius:19px;
+
+      box-shadow:0 15px 45px rgba(0,0,0,.20);
+
+      overflow:hidden;
+    }
+
+    .chat.open{
+      display:flex;
+    }
+
+    .chat-head{
+      min-height:54px;
+
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+
+      padding:13px 14px;
+
+      background:var(--green);
+      color:#fff;
+
+      font-weight:900;
+    }
+
+    .chat-close{
+      border:0;
+      background:transparent;
+      color:#fff;
+
+      font-size:24px;
+      line-height:1;
+    }
+
+    .messages{
+      flex:1;
+
+      overflow:auto;
+
+      padding:12px;
+
+      background:#f7f9f8;
+    }
+
+    .msg{
+      width:max-content;
+      max-width:86%;
+
+      padding:10px 12px;
+
+      margin:7px 0;
+
+      border-radius:13px;
+
+      background:#fff;
+
+      font-size:13px;
+      line-height:1.45;
+
+      box-shadow:0 1px 4px rgba(0,0,0,.04);
+    }
+
+    .msg.mine{
+      margin-left:auto;
+
+      color:#fff;
+      background:var(--green);
+    }
+
+    .chat-input{
+      display:flex;
+      gap:7px;
+
+      padding:9px;
+
+      border-top:1px solid var(--border);
+    }
+
+    .chat-input input{
+      min-width:0;
+      flex:1;
+
+      border:1px solid #d5dfda;
+      border-radius:11px;
+
+      padding:10px;
+
+      outline:none;
+    }
+
+    /* =========================
+       TOAST
+    ========================= */
+
+    .toast-wrap{
+      position:fixed;
+      z-index:500;
+
+      left:50%;
+      bottom:calc(88px + var(--safe-bottom));
+
+      transform:translateX(-50%);
+
+      width:min(
+        calc(100vw - 30px),
+        500px
+      );
+
+      pointer-events:none;
+    }
+
+    .toast{
+      padding:13px 15px;
+
+      border-radius:13px;
+
+      background:#14221b;
+      color:#fff;
+
+      font-size:13px;
+      font-weight:700;
+
+      box-shadow:0 10px 30px rgba(0,0,0,.18);
+
+      animation:toastIn .2s ease;
+    }
+
+    .toast.success{
+      background:var(--green);
+    }
+
+    .toast.error{
+      background:var(--danger);
+    }
+
+    @keyframes toastIn{
+      from{
+        opacity:0;
+        transform:translateY(8px);
+      }
+      to{
+        opacity:1;
+        transform:none;
+      }
+    }
+
+    /* =========================
+       OFFLINE
+    ========================= */
+
+    .offline{
+      display:none;
+
+      position:fixed;
+      z-index:600;
+
+      left:0;
+      right:0;
+      top:0;
+
+      background:#b42318;
+      color:#fff;
+
+      text-align:center;
+
+      padding:7px;
+
+      font-size:12px;
+      font-weight:800;
+    }
+
+    .offline.show{
+      display:block;
+    }
+
+    /* =========================
+       RESPONSIVE
+    ========================= */
+
+    @media(max-width:370px){
+      .brand{
+        font-size:16px;
+      }
+
+      .btn{
+        padding-left:10px;
+        padding-right:10px;
+      }
+
+      .timegrid{
+        grid-template-columns:repeat(2,1fr);
+      }
+
+      .hero h1{
+        font-size:22px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+<div id="offline" class="offline">
+  Internet connection unavailable
+</div>
+
+<div class="app">
+
+  <!-- HEADER -->
+  <header class="top">
+
+    <div class="brand">
+      🚗 AVTODROM INDEX
+    </div>
+
+    <div class="actions">
+
+      <div class="lang-wrap">
+
+        <button
+          id="langBtn"
+          class="btn"
+          type="button"
+          aria-label="Language"
+        >
+          UZ
+        </button>
+
+        <div
+          id="langMenu"
+          class="lang-menu"
+        >
+          <button
+            type="button"
+            data-lang="uz"
+          >
+            🇺🇿 O‘zbekcha
+          </button>
+
+          <button
+            type="button"
+            data-lang="ru"
+          >
+            🇷🇺 Русский
+          </button>
+        </div>
+
+      </div>
+
+      <button
+        id="helpBtn"
+        class="btn"
+        type="button"
+      >
+        🤖
+        <span data-i18n="help">
+          Yordam
+        </span>
+      </button>
+
+    </div>
+
+  </header>
+
+  <!-- MAIN -->
+  <main class="content">
+
+    <!-- ================= HOME ================= -->
+
+    <section
+      id="home"
+      class="page active"
+    >
+
+      <div class="hero">
+
+        <h1 id="hello">
+          Xush kelibsiz!
+        </h1>
+
+        <p data-i18n="hero">
+          Avtodromdagi darsingizni qulay bron qiling,
+          holatini kuzating va instruktor bilan bog‘laning.
+        </p>
+
+        <button
+          id="heroBook"
+          class="btn primary full"
+          type="button"
+          data-i18n="book_lesson"
+        >
+          Dars bron qilish
+        </button>
+
+      </div>
+
+      <!-- Notifications -->
+
+      <div class="card">
+
+        <div class="topline">
+
+          <div
+            class="card-title"
+            data-i18n="notifications"
+          >
+            Bildirishnomalar
+          </div>
+
+          <span
+            id="notificationCount"
+            class="count"
+          >
+            0
+          </span>
+
+        </div>
+
+        <div id="notifications">
+          <div class="loader">
+            <div class="spinner"></div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Next booking -->
+
+      <div class="card">
+
+        <div class="topline">
+
+          <div
+            class="card-title"
+            data-i18n="next_booking"
+          >
+            Keyingi bron
+          </div>
+
+          <button
+            id="allBookings"
+            class="btn"
+            type="button"
+            data-i18n="all"
+          >
+            Barchasi
+          </button>
+
+        </div>
+
+        <div id="nextBooking">
+          <div class="loader">
+            <div class="spinner"></div>
+          </div>
+        </div>
+
+      </div>
+
+    </section>
+
+    <!-- ================= BOOK ================= -->
+
+    <section
+      id="book"
+      class="page"
+    >
+
+      <h2 data-i18n="book_lesson">
+        Dars bron qilish
+      </h2>
+
+      <div id="bookError"></div>
+
+      <div class="card">
+
+        <!-- Instructor -->
+
+        <div class="field">
+
+          <label
+            for="instructor"
+            data-i18n="instructor"
+          >
+            Instruktor
+          </label>
+
+          <select id="instructor">
+            <option>
+              Yuklanmoqda...
+            </option>
+          </select>
+
+        </div>
+
+        <!-- Date -->
+
+        <div class="field">
+
+          <label
+            for="date"
+            data-i18n="date"
+          >
+            Sana
+          </label>
+
+          <input
+            id="date"
+            type="date"
+            autocomplete="off"
+          >
+
+        </div>
+
+        <!-- Time -->
+
+        <div class="field">
+
+          <label data-i18n="time">
+            Boshlanish vaqti
+          </label>
+
+          <div id="times">
+            <div class="loader">
+              <div class="spinner"></div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Duration -->
+
+        <div class="field">
+
+          <label
+            for="duration"
+            data-i18n="duration"
+          >
+            Dars davomiyligi
+          </label>
+
+          <select id="duration">
+
+            <option
+              value="30"
+              data-i18n="min30"
+            >
+              30 daqiqa
+            </option>
+
+            <option
+              value="60"
+              data-i18n="min60"
+            >
+              60 daqiqa
+            </option>
+
+            <option
+              value="90"
+              data-i18n="min90"
+            >
+              90 daqiqa
+            </option>
+
+          </select>
+
+        </div>
+
+        <!-- Note -->
+
+        <div class="field">
+
+          <label
+            for="note"
+            data-i18n="note"
+          >
+            Izoh
+          </label>
+
+          <textarea
+            id="note"
+            maxlength="500"
+            data-i18n-placeholder="note_placeholder"
+            placeholder="Qo‘shimcha izoh..."
+          ></textarea>
+
+        </div>
+
+        <button
+          id="bookBtn"
+          class="btn primary full"
+          type="button"
+          data-i18n="send_booking"
+        >
+          Bron yuborish
+        </button>
+
+      </div>
+
+      <div
+        class="notice info"
+        data-i18n="booking_info"
+      >
+        Bron yuborilgach, Admin tasdiqlaydi.
+        Tasdiqdan keyin bron holati shu panelda ko‘rinadi.
+      </div>
+
+    </section>
+
+    <!-- ================= BOOKINGS ================= -->
+
+    <section
+      id="bookings"
+      class="page"
+    >
+
+      <div class="topline">
+
+        <h2 data-i18n="my_bookings">
+          Bronlarim
+        </h2>
+
+        <button
+          id="refreshBookings"
+          class="btn"
+          type="button"
+          aria-label="Refresh"
+        >
+          ↻
+        </button>
+
+      </div>
+
+      <div id="bookingList">
+        <div class="loader">
+          <div class="spinner"></div>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ================= PROFILE ================= -->
+
+    <section
+      id="profile"
+      class="page"
+    >
+
+      <h2 data-i18n="my_profile">
+        Profilim
+      </h2>
+
+      <div class="card">
+
+        <div class="person">
+
+          <div
+            id="avatar"
+            class="avatar"
+          >
+            U
+          </div>
+
+          <div>
+
+            <div
+              id="profileName"
+              class="profile-name"
+            >
+              Foydalanuvchi
+            </div>
+
+            <div
+              id="profileUsername"
+              class="profile-username"
+            >
+              Telegram
+            </div>
+
+          </div>
+
+        </div>
+
+        <div class="field">
+
+          <label
+            for="first"
+            data-i18n="first_name"
+          >
+            Ism *
+          </label>
+
+          <input
+            id="first"
+            type="text"
+            maxlength="80"
+            autocomplete="given-name"
+          >
+
+        </div>
+
+        <div class="field">
+
+          <label
+            for="last"
+            data-i18n="last_name"
+          >
+            Familiya *
+          </label>
+
+          <input
+            id="last"
+            type="text"
+            maxlength="80"
+            autocomplete="family-name"
+          >
+
+        </div>
+
+        <div class="field">
+
+          <label
+            for="phone"
+            data-i18n="phone"
+          >
+            Telefon *
+          </label>
+
+          <input
+            id="phone"
+            type="tel"
+            inputmode="tel"
+            maxlength="20"
+            placeholder="+998 90 123 45 67"
+            autocomplete="tel"
+          >
+
+        </div>
+
+        <button
+          id="saveProfile"
+          class="btn primary full"
+          type="button"
+          data-i18n="save"
+        >
+          Saqlash
+        </button>
+
+      </div>
+
+      <div class="card">
+
+        <div
+          class="card-title"
+          data-i18n="account"
+        >
+          Akkaunt
+        </div>
+
+        <p
+          id="accountInfo"
+          class="muted"
+        >
+          Telegram orqali himoyalangan akkaunt.
+        </p>
+
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- ================= BOTTOM NAV ================= -->
+
+  <nav class="nav">
+
+    <button
+      type="button"
+      class="active"
+      data-page="home"
+    >
+      <div class="nav-icon">⌂</div>
+      <span data-i18n="home">
+        Bosh sahifa
+      </span>
+    </button>
+
+    <button
+      type="button"
+      data-page="book"
+    >
+      <div class="nav-icon">＋</div>
+      <span data-i18n="book">
+        Bron
+      </span>
+    </button>
+
+    <button
+      type="button"
+      data-page="bookings"
+    >
+      <div class="nav-icon">▣</div>
+      <span data-i18n="my_bookings">
+        Bronlarim
+      </span>
+    </button>
+
+    <button
+      type="button"
+      data-page="profile"
+    >
+      <div class="nav-icon">♙</div>
+      <span data-i18n="profile">
+        Profil
+      </span>
+    </button>
+
+  </nav>
+
+</div>
+
+<!-- AI -->
+
+<button
+  id="aiBtn"
+  class="ai"
+  type="button"
+>
+  🤖 AI
+</button>
+
+<div
+  id="chat"
+  class="chat"
+>
+
+  <div class="chat-head">
+
+    <span data-i18n="ai_title">
+      AVTODROM AI yordamchi
+    </span>
+
+    <button
+      id="closeChat"
+      class="chat-close"
+      type="button"
+    >
+      ×
+    </button>
+
+  </div>
+
+  <div
+    id="messages"
+    class="messages"
+  >
+
+    <div
+      class="msg"
+      data-i18n="ai_welcome"
+    >
+      Assalomu alaykum!
+      Savolingizni yozing.
+    </div>
+
+  </div>
+
+  <div class="chat-input">
+
+    <input
+      id="question"
+      type="text"
+      maxlength="500"
+      data-i18n-placeholder="question"
+      placeholder="Savolingiz..."
+      autocomplete="off"
+    >
+
+    <button
+      id="sendQuestion"
+      class="btn primary"
+      type="button"
+      data-i18n="send"
+    >
+      Yuborish
+    </button>
+
+  </div>
+
+</div>
+
+<!-- Toast -->
+
+<div
+  id="toastWrap"
+  class="toast-wrap"
+></div>
+
 <script>
-'use strict';const tg=window.Telegram&&window.Telegram.WebApp?window.Telegram.WebApp:null;if(tg){tg.ready();tg.expand();try{tg.setHeaderColor('#ffffff');tg.setBackgroundColor('#f4f7f5')}catch(e){}}
-const API=window.AVTODROM_API_URL||location.origin;let initData=tg&&tg.initData?tg.initData:'';let profile=null,allBookings=[],selectedTime='',lang=localStorage.getItem('avtodrom_lang')||'uz';const $=id=>document.getElementById(id);
-const I={uz:{help:'Yordam',hero:'Avtodromdagi darsingizni qulay bron qiling, holatini kuzating va instruktor bilan bog‘laning.',book_lesson:'Dars bron qilish',notifications:'Bildirishnomalar',next_booking:'Keyingi bron',all:'Barchasi',home:'Bosh sahifa',book:'Bron',my_bookings:'Bronlarim',profile:'Profil',instructor:'Instruktor',date:'Sana',time:'Boshlanish vaqti',duration:'Dars davomiyligi',note:'Izoh',note_placeholder:'Qo‘shimcha izoh...',send_booking:'Bron yuborish',booking_info:'Bron yuborilgach, Admin tasdiqlaydi. Tasdiqdan keyin bron holati shu panelda ko‘rinadi.',my_profile:'Profilim',first_name:'Ism *',last_name:'Familiya *',phone:'Telefon *',save:'Saqlash',account:'Akkaunt',question:'Savolingiz...',send:'Yuborish',ai_title:'AVTODROM AI yordamchi',ai_welcome:'Assalomu alaykum! Savolingizni yozing.',welcome:'Xush kelibsiz',loading:'Yuklanmoqda...',no_notifications:'Hozircha bildirishnoma yo‘q.',no_bookings:'Hozircha bronlar yo‘q.',no_instructors:'Tasdiqlangan instruktorlar topilmadi.',profile_required:'Avval ism, familiya va telefonni to‘ldiring.',choose:'Instruktor, sana va vaqtni tanlang.',sent:'Bron yuborildi. Admin tasdiqlashini kuting.',saved:'Profil saqlandi.',telegram:'Telegram Mini Appni bot ichidan oching.',pending:'Tasdiqlash kutilmoqda',confirmed:'Tasdiqlangan',in_progress:'Dars jarayonida',completed:'Tugagan',cancelled:'Bekor qilingan',no_show:'Kelmagan',busy:'Band',empty_times:'Bu sana uchun vaqtlar mavjud emas.',ai_booking:'Bron bo‘limidan tasdiqlangan instruktorni, sanani va bo‘sh vaqtni tanlab bron yuborasiz.',ai_instructor:'Faqat Admin tasdiqlagan va faol instruktorlar bron oynasida chiqadi.',ai_status:'Bronlarim bo‘limida barcha bronlaringiz va ularning holatini ko‘rasiz.',ai_cancel:'Bronni bekor qilish uchun Admin bilan bog‘laning.',ai_default:'Savolingiz qabul qilindi. Bron, instruktor yoki bron holati haqida savol bersangiz yordam beraman.'},ru:{help:'Помощь',hero:'Удобно бронируйте занятие на автодроме, следите за статусом и связывайтесь с инструктором.',book_lesson:'Забронировать занятие',notifications:'Уведомления',next_booking:'Ближайшая бронь',all:'Все',home:'Главная',book:'Бронь',my_bookings:'Мои бронирования',profile:'Профиль',instructor:'Инструктор',date:'Дата',time:'Время начала',duration:'Продолжительность',note:'Комментарий',note_placeholder:'Дополнительный комментарий...',send_booking:'Отправить бронь',booking_info:'После отправки бронь подтверждает администратор. Статус будет отображаться здесь.',my_profile:'Мой профиль',first_name:'Имя *',last_name:'Фамилия *',phone:'Телефон *',save:'Сохранить',account:'Аккаунт',question:'Ваш вопрос...',send:'Отправить',ai_title:'AI-помощник AVTODROM',ai_welcome:'Здравствуйте! Напишите ваш вопрос.',welcome:'Добро пожаловать',loading:'Загрузка...',no_notifications:'Уведомлений пока нет.',no_bookings:'Бронирований пока нет.',no_instructors:'Подтверждённых инструкторов нет.',profile_required:'Сначала заполните имя, фамилию и телефон.',choose:'Выберите инструктора, дату и время.',sent:'Бронь отправлена. Ожидайте подтверждения администратора.',saved:'Профиль сохранён.',telegram:'Откройте Mini App через Telegram-бота.',pending:'Ожидает подтверждения',confirmed:'Подтверждено',in_progress:'Занятие идёт',completed:'Завершено',cancelled:'Отменено',no_show:'Не пришёл',busy:'Занято',empty_times:'На эту дату свободного времени нет.',ai_booking:'В разделе бронирования выберите подтверждённого инструктора, дату и свободное время.',ai_instructor:'В форме отображаются только активные инструкторы, подтверждённые администратором.',ai_status:'Все бронирования и их статусы находятся в разделе «Мои бронирования».',ai_cancel:'Для отмены бронирования свяжитесь с администратором.',ai_default:'Вопрос принят. Я помогу с бронированием, инструкторами и статусом брони.'}};
-const t=k=>I[lang][k]||k;function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
-function applyLang(){document.documentElement.lang=lang;document.querySelectorAll('[data-i18n]').forEach(e=>e.textContent=t(e.dataset.i18n));document.querySelectorAll('[data-i18n-placeholder]').forEach(e=>e.placeholder=t(e.dataset.i18nPlaceholder));$('langBtn').textContent=lang.toUpperCase();if(profile){$('hello').textContent=t('welcome')+', '+(profile.first_name||'')+'!';$('profileName').textContent=((profile.first_name||'')+' '+(profile.last_name||'')).trim()||'Telegram'}renderBookings();renderNotifications();renderTimes();}
-$('langBtn').onclick=()=>$('langMenu').classList.toggle('open');document.querySelectorAll('[data-lang]').forEach(b=>b.onclick=()=>{lang=b.dataset.lang;localStorage.setItem('avtodrom_lang',lang);$('langMenu').classList.remove('open');applyLang()});
-document.querySelectorAll('.nav button').forEach(b=>b.onclick=()=>setPage(b.dataset.page));$('heroBook').onclick=()=>setPage('book');$('allBookings').onclick=()=>setPage('bookings');$('refreshBookings').onclick=()=>loadBookings();$('helpBtn').onclick=toggleAI;$('aiBtn').onclick=toggleAI;$('closeChat').onclick=toggleAI;
-function setPage(id){document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));$(id).classList.add('active');document.querySelectorAll('.nav button').forEach(x=>x.classList.toggle('active',x.dataset.page===id));if(id==='book'){loadInstructors();renderTimes()}if(id==='bookings')loadBookings();if(id==='home'){loadNotifications();loadBookings()}}
-function headers(){return{'Content-Type':'application/json','X-Telegram-Init-Data':initData}}async function api(path,opt={}){const r=await fetch(API+path,{...opt,headers:{...headers(),...(opt.headers||{})}}),d=await r.json().catch(()=>({}));if(!r.ok)throw Error(d.error||('HTTP '+r.status));return d}
-function today(){const d=new Date(),x=new Date(d.getTime()-d.getTimezoneOffset()*60000);return x.toISOString().slice(0,10)}function initDate(){$('date').min=today();$('date').value=today()}function slots(){const a=[];for(let h=8;h<21;h++)for(let m=0;m<60;m+=30)a.push(String(h).padStart(2,'0')+':'+String(m).padStart(2,'0'));return a}
-$('date').onchange=()=>{selectedTime='';renderTimes()};$('instructor').onchange=()=>{selectedTime='';renderTimes()};$('duration').onchange=()=>renderTimes();
-function renderTimes(){const box=$('times');if(!box)return;const date=$('date').value,ins=$('instructor').value,dur=Number($('duration').value||30);if(!date){box.innerHTML='<div class="muted">'+t('date')+'</div>';return}const busy=allBookings.filter(b=>b.instructor_id===ins&&['pending','confirmed','in_progress'].includes(b.status));box.innerHTML=slots().map(tm=>{const s=new Date(date+'T'+tm+':00'),e=new Date(s.getTime()+dur*60000),conf=busy.some(b=>new Date(b.start_at)<e&&new Date(b.end_at)>s),past=s.getTime()<Date.now(),disabled=conf||past;return '<button class="time '+(selectedTime===tm?'selected ':'')+(disabled?'busy':'')+'" '+(disabled?'disabled':'')+' data-time="'+tm+'">'+tm+(conf?' · '+t('busy'):'')+'</button>'}).join('');box.querySelectorAll('.time:not([disabled])').forEach(b=>b.onclick=()=>{selectedTime=b.dataset.time;renderTimes()})}
-async function loadInstructors(){try{const d=await api('/api/instructors');$('instructor').innerHTML=d.instructors.length?d.instructors.map(x=>'<option value="'+x.id+'">'+esc(((x.profile?.first_name||'')+' '+(x.profile?.last_name||'')).trim())+(x.experience_years?' · '+x.experience_years+' yil':'')+'</option>').join(''):'<option value="">'+t('no_instructors')+'</option>';renderTimes()}catch(e){$('bookError').innerHTML='<div class="notice error">'+esc(e.message)+'</div>'}}
-async function loadBookings(){try{const d=await api('/api/bookings');allBookings=d.bookings||[];renderBookings();renderNext();renderTimes()}catch(e){$('bookingList').innerHTML='<div class="notice error">'+esc(e.message)+'</div>'}}
-function sc(s){return s==='pending'?'pending':s==='confirmed'?'confirmed':s==='in_progress'?'progress':s==='completed'?'done':'cancel'}function st(s){return t(s)||s}
-function renderBookings(){if(!allBookings.length){$('bookingList').innerHTML='<div class="empty">'+t('no_bookings')+'</div>';return}$('bookingList').innerHTML=allBookings.map(b=>{const d=new Date(b.start_at),name=((b.instructor?.profile?.first_name||'')+' '+(b.instructor?.profile?.last_name||'')).trim()||t('instructor');return '<div class="card booking"><div class="topline"><div class="date">'+d.toLocaleDateString(lang==='ru'?'ru-RU':'uz-UZ')+' · '+d.toLocaleTimeString(lang==='ru'?'ru-RU':'uz-UZ',{hour:'2-digit',minute:'2-digit'})+'</div><span class="badge '+sc(b.status)+'">'+esc(st(b.status))+'</span></div><div class="meta"><div>👨‍🏫 '+esc(name)+'</div><div>🕐 '+Math.round((new Date(b.end_at)-new Date(b.start_at))/60000)+' '+(lang==='ru'?'минут':'daqiqa')+'</div>'+(b.customer_note?'<div>💬 '+esc(b.customer_note)+'</div>':'')+'</div></div>'}).join('')}
-function renderNext(){const b=allBookings.filter(x=>['pending','confirmed','in_progress'].includes(x.status)&&new Date(x.end_at)>new Date()).sort((a,z)=>new Date(a.start_at)-new Date(z.start_at))[0];$('nextBooking').innerHTML=b?'<b>'+new Date(b.start_at).toLocaleString(lang==='ru'?'ru-RU':'uz-UZ')+'</b><p class="muted">'+esc(((b.instructor?.profile?.first_name||'')+' '+(b.instructor?.profile?.last_name||'')).trim())+'</p><span class="badge '+sc(b.status)+'">'+esc(st(b.status))+'</span>':'<div class="empty">'+t('no_bookings')+'</div>'}
-function renderNotifications(){if(!profile)return;api('/api/notifications').then(d=>{const n=d.notifications||[];$('notificationCount').textContent=n.length;$('notifications').innerHTML=n.length?n.slice(0,5).map(x=>'<div class="card"><b>'+esc(x.title||'AVTODROM')+'</b><p class="muted">'+esc(x.body||'')+'</p></div>').join(''):'<div class="empty">'+t('no_notifications')+'</div>'}).catch(e=>$('notifications').innerHTML='<div class="notice error">'+esc(e.message)+'</div>')}
-$('bookBtn').onclick=async()=>{try{$('bookError').innerHTML='';if(!profile?.first_name||!profile?.last_name||!profile?.phone){setPage('profile');alert(t('profile_required'));return}if(!$('instructor').value||!$('date').value||!selectedTime)throw Error(t('choose'));const s=new Date($('date').value+'T'+selectedTime+':00'),e=new Date(s.getTime()+Number($('duration').value)*60000),btn=$('bookBtn');btn.disabled=true;await api('/api/bookings',{method:'POST',body:JSON.stringify({instructor_id:$('instructor').value,start_at:s.toISOString(),end_at:e.toISOString(),customer_note:$('note').value.trim()||null})});btn.disabled=false;alert(t('sent'));$('note').value='';selectedTime='';await loadBookings();setPage('bookings')}catch(e){$('bookBtn').disabled=false;$('bookError').innerHTML='<div class="notice error">'+esc(e.message)+'</div>'}}
-$('saveProfile').onclick=async()=>{try{const d=await api('/api/me',{method:'PATCH',body:JSON.stringify({first_name:$('first').value,last_name:$('last').value,phone:$('phone').value})});profile=d.profile;renderProfile();alert(t('saved'))}catch(e){alert(e.message)}};function renderProfile(){if(!profile)return;$('first').value=profile.first_name||'';$('last').value=profile.last_name||'';$('phone').value=profile.phone||'';$('profileName').textContent=((profile.first_name||'')+' '+(profile.last_name||'')).trim()||'Telegram';$('profileUsername').textContent=profile.username?'@'+profile.username:'Telegram';$('avatar').textContent=(profile.first_name||'U').slice(0,1).toUpperCase();$('accountInfo').textContent='Telegram ID: '+profile.telegram_id}
-function toggleAI(){$('chat').classList.toggle('open')}function addMsg(text,mine){const e=document.createElement('div');e.className='msg'+(mine?' mine':'');e.textContent=text;$('messages').appendChild(e);$('messages').scrollTop=$('messages').scrollHeight}function sendQuestion(){const q=$('question').value.trim();if(!q)return;addMsg(q,true);$('question').value='';const s=q.toLowerCase();let a=t('ai_default');if(s.includes('bron')||s.includes('бро'))a=t('ai_booking');else if(s.includes('instruk')||s.includes('инструкт'))a=t('ai_instructor');else if(s.includes('holat')||s.includes('статус'))a=t('ai_status');else if(s.includes('bekor')||s.includes('отмен'))a=t('ai_cancel');setTimeout(()=>addMsg(a,false),180)}$('sendQuestion').onclick=sendQuestion;$('question').onkeydown=e=>{if(e.key==='Enter')sendQuestion()};
-async function boot(){initDate();applyLang();if(!initData){$('notifications').innerHTML='<div class="notice error">'+t('telegram')+'</div>';return}try{const d=await api('/api/me');profile=d.profile;renderProfile();$('hello').textContent=t('welcome')+', '+(profile.first_name||'')+'!';await Promise.all([loadBookings(),loadInstructors()]);renderNotifications()}catch(e){$('notifications').innerHTML='<div class="notice error">'+t('telegram')+'<br><small>'+esc(e.message)+'</small></div>'}}boot();
-</script></body></html>
+'use strict';
+
+/* ============================================================
+   TELEGRAM
+============================================================ */
+
+const tg =
+  window.Telegram &&
+  window.Telegram.WebApp
+    ? window.Telegram.WebApp
+    : null;
+
+if (tg) {
+  tg.ready();
+  tg.expand();
+
+  try {
+    tg.setHeaderColor('#ffffff');
+    tg.setBackgroundColor('#f4f7f5');
+  } catch (_) {}
+
+  try {
+    tg.enableClosingConfirmation();
+  } catch (_) {}
+}
+
+/* ============================================================
+   CONFIG
+============================================================ */
+
+const API =
+  window.AVTODROM_API_URL ||
+  window.location.origin;
+
+const initData =
+  tg && tg.initData
+    ? tg.initData
+    : '';
+
+/* ============================================================
+   STATE
+============================================================ */
+
+let profile = null;
+let bookings = [];
+let instructors = [];
+
+let selectedTime = '';
+
+let lang =
+  localStorage.getItem('avtodrom_lang') ||
+  'uz';
+
+let requestBusy = false;
+
+/* ============================================================
+   HELPERS
+============================================================ */
+
+const $ = id =>
+  document.getElementById(id);
+
+const escapeHTML = value =>
+  String(value ?? '')
+    .replace(/[&<>"']/g, char => ({
+      '&':'&amp;',
+      '<':'&lt;',
+      '>':'&gt;',
+      '"':'&quot;',
+      "'":'&#39;'
+    }[char]));
+
+function showToast(
+  message,
+  type = ''
+){
+  const wrap = $('toastWrap');
+
+  wrap.innerHTML =
+    '<div class="toast '+escapeHTML(type)+'">'+
+      escapeHTML(message)+
+    '</div>';
+
+  setTimeout(() => {
+    wrap.innerHTML = '';
+  }, 3200);
+}
+
+function showError(
+  element,
+  message
+){
+  if (!element) return;
+
+  element.innerHTML =
+    '<div class="notice error">'+
+      escapeHTML(message)+
+    '</div>';
+}
+
+function showLoader(element){
+  if (!element) return;
+
+  element.innerHTML =
+    '<div class="loading-row">'+
+      '<div class="spinner"></div>'+
+    '</div>';
+}
+
+/* ============================================================
+   TRANSLATIONS
+============================================================ */
+
+const I = {
+
+  uz: {
+
+    help:'Yordam',
+
+    hero:
+      'Avtodromdagi darsingizni qulay bron qiling, holatini kuzating va instruktor bilan bog‘laning.',
+
+    book_lesson:'Dars bron qilish',
+
+    notifications:'Bildirishnomalar',
+
+    next_booking:'Keyingi bron',
+
+    all:'Barchasi',
+
+    home:'Bosh sahifa',
+
+    book:'Bron',
+
+    my_bookings:'Bronlarim',
+
+    profile:'Profil',
+
+    instructor:'Instruktor',
+
+    date:'Sana',
+
+    time:'Boshlanish vaqti',
+
+    duration:'Dars davomiyligi',
+
+    min30:'30 daqiqa',
+
+    min60:'60 daqiqa',
+
+    min90:'90 daqiqa',
+
+    note:'Izoh',
+
+    note_placeholder:
+      'Qo‘shimcha izoh...',
+
+    send_booking:'Bron yuborish',
+
+    booking_info:
+      'Bron yuborilgach, Admin tasdiqlaydi. Tasdiqdan keyin bron holati shu panelda ko‘rinadi.',
+
+    my_profile:'Profilim',
+
+    first_name:'Ism *',
+
+    last_name:'Familiya *',
+
+    phone:'Telefon *',
+
+    save:'Saqlash',
+
+    account:'Akkaunt',
+
+    question:'Savolingiz...',
+
+    send:'Yuborish',
+
+    ai_title:
+      'AVTODROM AI yordamchi',
+
+    ai_welcome:
+      'Assalomu alaykum! Savolingizni yozing.',
+
+    welcome:
+      'Xush kelibsiz',
+
+    loading:
+      'Yuklanmoqda...',
+
+    no_notifications:
+      'Hozircha bildirishnoma yo‘q.',
+
+    no_bookings:
+      'Hozircha bronlar yo‘q.',
+
+    no_instructors:
+      'Tasdiqlangan instruktorlar topilmadi.',
+
+    profile_required:
+      'Avval ism, familiya va telefonni to‘ldiring.',
+
+    choose:
+      'Instruktor, sana va vaqtni tanlang.',
+
+    sent:
+      'Bron yuborildi. Admin tasdiqlashini kuting.',
+
+    saved:
+      'Profil saqlandi.',
+
+    telegram:
+      'Telegram Mini Appni bot ichidan oching.',
+
+    pending:
+      'Tasdiqlash kutilmoqda',
+
+    confirmed:
+      'Tasdiqlangan',
+
+    in_progress:
+      'Dars jarayonida',
+
+    completed:
+      'Tugagan',
+
+    cancelled:
+      'Bekor qilingan',
+
+    no_show:
+      'Kelmagan',
+
+    busy:
+      'Band',
+
+    empty_times:
+      'Bu sana uchun bo‘sh vaqt mavjud emas.',
+
+    server_error:
+      'Server bilan bog‘lanishda xatolik yuz berdi.',
+
+    network_error:
+      'Internet yoki server bilan aloqa yo‘q.',
+
+    booking_failed:
+      'Bronni yuborib bo‘lmadi.',
+
+    profile_failed:
+      'Profilni saqlab bo‘lmadi.',
+
+    ai_booking:
+      'Bron bo‘limidan tasdiqlangan instruktorni, sanani va bo‘sh vaqtni tanlab bron yuborasiz.',
+
+    ai_instructor:
+      'Faqat Admin tasdiqlagan va faol instruktorlar bron oynasida chiqadi.',
+
+    ai_status:
+      'Bronlarim bo‘limida barcha bronlaringiz va ularning holatini ko‘rasiz.',
+
+    ai_cancel:
+      'Bronni bekor qilish uchun Admin bilan bog‘laning.',
+
+    ai_default:
+      'Savolingiz qabul qilindi. Bron, instruktor yoki bron holati haqida savol bersangiz yordam beraman.',
+
+    minute:
+      'daqiqa',
+
+    telegram_account:
+      'Telegram orqali himoyalangan akkaunt.'
+  },
+
+  ru: {
+
+    help:'Помощь',
+
+    hero:
+      'Удобно бронируйте занятие на автодроме, следите за статусом и связывайтесь с инструктором.',
+
+    book_lesson:
+      'Забронировать занятие',
+
+    notifications:
+      'Уведомления',
+
+    next_booking:
+      'Ближайшая бронь',
+
+    all:'Все',
+
+    home:'Главная',
+
+    book:'Бронь',
+
+    my_bookings:
+      'Мои бронирования',
+
+    profile:'Профиль',
+
+    instructor:'Инструктор',
+
+    date:'Дата',
+
+    time:'Время начала',
+
+    duration:
+      'Продолжительность',
+
+    min30:'30 минут',
+
+    min60:'60 минут',
+
+    min90:'90 минут',
+
+    note:'Комментарий',
+
+    note_placeholder:
+      'Дополнительный комментарий...',
+
+    send_booking:
+      'Отправить бронь',
+
+    booking_info:
+      'После отправки бронь подтверждает администратор. Статус будет отображаться здесь.',
+
+    my_profile:
+      'Мой профиль',
+
+    first_name:'Имя *',
+
+    last_name:'Фамилия *',
+
+    phone:'Телефон *',
+
+    save:'Сохранить',
+
+    account:'Аккаунт',
+
+    question:'Ваш вопрос...',
+
+    send:'Отправить',
+
+    ai_title:
+      'AI-помощник AVTODROM',
+
+    ai_welcome:
+      'Здравствуйте! Напишите ваш вопрос.',
+
+    welcome:
+      'Добро пожаловать',
+
+    loading:'Загрузка...',
+
+    no_notifications:
+      'Уведомлений пока нет.',
+
+    no_bookings:
+      'Бронирований пока нет.',
+
+    no_instructors:
+      'Подтверждённых инструкторов нет.',
+
+    profile_required:
+      'Сначала заполните имя, фамилию и телефон.',
+
+    choose:
+      'Выберите инструктора, дату и время.',
+
+    sent:
+      'Бронь отправлена. Ожидайте подтверждения администратора.',
+
+    saved:
+      'Профиль сохранён.',
+
+    telegram:
+      'Откройте Telegram Mini App через бота.',
+
+    pending:
+      'Ожидает подтверждения',
+
+    confirmed:
+      'Подтверждено',
+
+    in_progress:
+      'Занятие идёт',
+
+    completed:
+      'Завершено',
+
+    cancelled:
+      'Отменено',
+
+    no_show:
+      'Не пришёл',
+
+    busy:
+      'Занято',
+
+    empty_times:
+      'На эту дату свободного времени нет.',
+
+    server_error:
+      'Ошибка соединения с сервером.',
+
+    network_error:
+      'Нет связи с интернетом или сервером.',
+
+    booking_failed:
+      'Не удалось отправить бронь.',
+
+    profile_failed:
+      'Не удалось сохранить профиль.',
+
+    ai_booking:
+      'В разделе бронирования выберите подтверждённого инструктора, дату и свободное время.',
+
+    ai_instructor:
+      'В форме отображаются только активные инструкторы, подтверждённые администратором.',
+
+    ai_status:
+      'Все бронирования и их статусы находятся в разделе «Мои бронирования».',
+
+    ai_cancel:
+      'Для отмены бронирования свяжитесь с администратором.',
+
+    ai_default:
+      'Вопрос принят. Я помогу с бронированием, инструкторами и статусом брони.',
+
+    minute:'минут',
+
+    telegram_account:
+      'Аккаунт защищён через Telegram.'
+  }
+};
+
+const t = key =>
+  I[lang]?.[key] ??
+  I.uz[key] ??
+  key;
+
+/* ============================================================
+   LANGUAGE
+============================================================ */
+
+function applyLanguage(){
+
+  document.documentElement.lang = lang;
+
+  document
+    .querySelectorAll('[data-i18n]')
+    .forEach(element => {
+
+      element.textContent =
+        t(element.dataset.i18n);
+
+    });
+
+  document
+    .querySelectorAll('[data-i18n-placeholder]')
+    .forEach(element => {
+
+      element.placeholder =
+        t(element.dataset.i18nPlaceholder);
+
+    });
+
+  $('langBtn').textContent =
+    lang.toUpperCase();
+
+  if (profile) {
+    renderProfile();
+
+    $('hello').textContent =
+      t('welcome')+
+      ', '+
+      (profile.first_name || '')+
+      '!';
+  }
+
+  renderBookings();
+  renderNextBooking();
+  renderTimes();
+}
+
+/* ============================================================
+   LANGUAGE MENU
+============================================================ */
+
+$('langBtn').addEventListener(
+  'click',
+  event => {
+
+    event.stopPropagation();
+
+    $('langMenu')
+      .classList
+      .toggle('open');
+
+  }
+);
+
+document
+  .querySelectorAll('[data-lang]')
+  .forEach(button => {
+
+    button.addEventListener(
+      'click',
+      () => {
+
+        lang =
+          button.dataset.lang;
+
+        localStorage.setItem(
+          'avtodrom_lang',
+          lang
+        );
+
+        $('langMenu')
+          .classList
+          .remove('open');
+
+        applyLanguage();
+
+      }
+    );
+
+  });
+
+document.addEventListener(
+  'click',
+  event => {
+
+    if (
+      !event.target.closest('.lang-wrap')
+    ){
+
+      $('langMenu')
+        .classList
+        .remove('open');
+
+    }
+
+  }
+);
+
+/* ============================================================
+   API
+============================================================ */
+
+function headers(){
+
+  return {
+    'Content-Type':
+      'application/json',
+
+    'X-Telegram-Init-Data':
+      initData
+  };
+
+}
+
+async function api(
+  path,
+  options = {}
+){
+
+  if (!navigator.onLine){
+    throw new Error(
+      t('network_error')
+    );
+  }
+
+  const controller =
+    new AbortController();
+
+  const timeout =
+    setTimeout(
+      () => controller.abort(),
+      15000
+    );
+
+  try {
+
+    const response =
+      await fetch(
+        API + path,
+        {
+          ...options,
+
+          headers:{
+            ...headers(),
+            ...(options.headers || {})
+          },
+
+          signal:
+            controller.signal
+        }
+      );
+
+    const data =
+      await response
+        .json()
+        .catch(() => ({}));
+
+    if (!response.ok){
+
+      throw new Error(
+        data.error ||
+        data.message ||
+        (
+          'HTTP '+
+          response.status
+        )
+      );
+
+    }
+
+    return data;
+
+  } catch(error){
+
+    if (
+      error.name ===
+      'AbortError'
+    ){
+
+      throw new Error(
+        t('server_error')
+      );
+
+    }
+
+    if (
+      error instanceof TypeError
+    ){
+
+      throw new Error(
+        t('network_error')
+      );
+
+    }
+
+    throw error;
+
+  } finally {
+
+    clearTimeout(timeout);
+
+  }
+
+}
+
+/* ============================================================
+   PAGE NAVIGATION
+============================================================ */
+
+function setPage(id){
+
+  document
+    .querySelectorAll('.page')
+    .forEach(page => {
+
+      page.classList
+        .remove('active');
+
+    });
+
+  const page =
+    $(id);
+
+  if (!page) return;
+
+  page.classList.add('active');
+
+  document
+    .querySelectorAll('.nav button')
+    .forEach(button => {
+
+      button.classList.toggle(
+        'active',
+        button.dataset.page === id
+      );
+
+    });
+
+  window.scrollTo({
+    top:0,
+    behavior:'smooth'
+  });
+
+  if (id === 'book'){
+
+    loadInstructors();
+
+  }
+
+  if (id === 'bookings'){
+
+    loadBookings();
+
+  }
+
+  if (id === 'home'){
+
+    loadBookings();
+    loadNotifications();
+
+  }
+
+}
+
+/* ============================================================
+   NAV EVENTS
+============================================================ */
+
+document
+  .querySelectorAll('.nav button')
+  .forEach(button => {
+
+    button.addEventListener(
+      'click',
+      () =>
+        setPage(
+          button.dataset.page
+        )
+    );
+
+  });
+
+$('heroBook').addEventListener(
+  'click',
+  () => setPage('book')
+);
+
+$('allBookings').addEventListener(
+  'click',
+  () => setPage('bookings')
+);
+
+$('refreshBookings').addEventListener(
+  'click',
+  () => loadBookings()
+);
+
+/* ============================================================
+   DATE
+============================================================ */
+
+function localDate(){
+
+  const now =
+    new Date();
+
+  const offset =
+    now.getTimezoneOffset();
+
+  const local =
+    new Date(
+      now.getTime() -
+      offset * 60000
+    );
+
+  return local
+    .toISOString()
+    .slice(0,10);
+
+}
+
+function initDate(){
+
+  const today =
+    localDate();
+
+  $('date').min =
+    today;
+
+  if (
+    !$('date').value
+  ){
+
+    $('date').value =
+      today;
+
+  }
+
+}
+
+/* ============================================================
+   TIME SLOTS
+============================================================ */
+
+function createSlots(){
+
+  const slots = [];
+
+  /*
+    08:00 -> 20:30
+  */
+
+  for (
+    let hour = 8;
+    hour < 21;
+    hour++
+  ){
+
+    for (
+      let minute = 0;
+      minute < 60;
+      minute += 30
+    ){
+
+      slots.push(
+        String(hour)
+          .padStart(2,'0')+
+        ':'+
+        String(minute)
+          .padStart(2,'0')
+      );
+
+    }
+
+  }
+
+  return slots;
+
+}
+
+/* ============================================================
+   TIME RENDER
+============================================================ */
+
+function renderTimes(){
+
+  const box =
+    $('times');
+
+  if (!box) return;
+
+  const date =
+    $('date').value;
+
+  const instructorId =
+    $('instructor').value;
+
+  const duration =
+    Number(
+      $('duration').value || 30
+    );
+
+  if (!date){
+
+    box.innerHTML =
+      '<div class="empty">'+
+      t('empty_times')+
+      '</div>';
+
+    return;
+
+  }
+
+  if (!instructorId){
+
+    box.innerHTML =
+      '<div class="empty">'+
+      t('no_instructors')+
+      '</div>';
+
+    return;
+
+  }
+
+  /*
+    IMPORTANT:
+    Bu faqat frontend preview.
+    Haqiqiy bandlikni server ham tekshirishi kerak.
+  */
+
+  const activeBookings =
+    bookings.filter(
+      booking =>
+        String(
+          booking.instructor_id
+        ) === String(instructorId) &&
+
+        [
+          'pending',
+          'confirmed',
+          'in_progress'
+        ].includes(
+          booking.status
+        )
+    );
+
+  const now =
+    Date.now();
+
+  const slots =
+    createSlots();
+
+  const html =
+    slots.map(time => {
+
+      const start =
+        new Date(
+          date+
+          'T'+
+          time+
+          ':00'
+        );
+
+      const end =
+        new Date(
+          start.getTime()+
+          duration*60000
+        );
+
+      const isPast =
+        start.getTime() <
+        now;
+
+      const isBusy =
+        activeBookings.some(
+          booking => {
+
+            const bs =
+              new Date(
+                booking.start_at
+              );
+
+            const be =
+              new Date(
+                booking.end_at
+              );
+
+            return (
+              bs < end &&
+              be > start
+            );
+
+          }
+        );
+
+      const disabled =
+        isPast ||
+        isBusy;
+
+      const selected =
+        selectedTime === time;
+
+      let classes =
+        'time';
+
+      if (selected)
+        classes +=
+          ' selected';
+
+      if (isBusy)
+        classes +=
+          ' busy';
+
+      if (isPast)
+        classes +=
+          ' past';
+
+      return `
+        <button
+          type="button"
+          class="${classes}"
+          data-time="${escapeHTML(time)}"
+          ${disabled ? 'disabled' : ''}
+        >
+          ${escapeHTML(time)}
+          ${isBusy ? ' · '+escapeHTML(t('busy')) : ''}
+        </button>
+      `;
+
+    }).join('');
+
+  box.innerHTML =
+    html ||
+    '<div class="empty">'+
+    escapeHTML(
+      t('empty_times')
+    )+
+    '</div>';
+
+  box
+    .querySelectorAll(
+      '.time:not(:disabled)'
+    )
+    .forEach(button => {
+
+      button.addEventListener(
+        'click',
+        () => {
+
+          selectedTime =
+            button.dataset.time;
+
+          renderTimes();
+
+        }
+      );
+
+    });
+
+}
+
+/* ============================================================
+   INSTRUCTORS
+============================================================ */
+
+async function loadInstructors(){
+
+  const select =
+    $('instructor');
+
+  try {
+
+    select.innerHTML =
+      '<option>'+
+      escapeHTML(
+        t('loading')
+      )+
+      '</option>';
+
+    const data =
+      await api(
+        '/api/instructors'
+      );
+
+    instructors =
+      Array.isArray(
+        data.instructors
+      )
+        ? data.instructors
+        : [];
+
+    if (!instructors.length){
+
+      select.innerHTML =
+        '<option value="">'+
+        escapeHTML(
+          t('no_instructors')
+        )+
+        '</option>';
+
+      renderTimes();
+
+      return;
+
+    }
+
+    select.innerHTML =
+      instructors
+        .map(
+          instructor => {
+
+            const first =
+              instructor.profile
+                ?.first_name ||
+              '';
+
+            const last =
+              instructor.profile
+                ?.last_name ||
+              '';
+
+            const name =
+              (
+                first+
+                ' '+
+                last
+              ).trim() ||
+              t('instructor');
+
+            const experience =
+              instructor.experience_years
+                ? ' · '+
+                  instructor.experience_years+
+                  ' yil'
+                : '';
+
+            return `
+              <option
+                value="${escapeHTML(instructor.id)}"
+              >
+                ${escapeHTML(name)}
+                ${escapeHTML(experience)}
+              </option>
+            `;
+
+          }
+        )
+        .join('');
+
+    selectedTime = '';
+
+    renderTimes();
+
+  } catch(error){
+
+    select.innerHTML =
+      '<option value="">'+
+      escapeHTML(
+        t('no_instructors')
+      )+
+      '</option>';
+
+    showError(
+      $('bookError'),
+      error.message
+    );
+
+  }
+
+}
+
+/* ============================================================
+   BOOKINGS
+============================================================ */
+
+async function loadBookings(){
+
+  try {
+
+    const data =
+      await api(
+        '/api/bookings'
+      );
+
+    bookings =
+      Array.isArray(
+        data.bookings
+      )
+        ? data.bookings
+        : [];
+
+    renderBookings();
+    renderNextBooking();
+    renderTimes();
+
+  } catch(error){
+
+    $('bookingList').innerHTML =
+      '<div class="notice error">'+
+      escapeHTML(
+        error.message
+      )+
+      '</div>';
+
+    $('nextBooking').innerHTML =
+      '<div class="notice error">'+
+      escapeHTML(
+        error.message
+      )+
+      '</div>';
+
+  }
+
+}
+
+/* ============================================================
+   STATUS
+============================================================ */
+
+function statusClass(status){
+
+  if (
+    status === 'pending'
+  )
+    return 'pending';
+
+  if (
+    status === 'confirmed'
+  )
+    return 'confirmed';
+
+  if (
+    status === 'in_progress'
+  )
+    return 'progress';
+
+  if (
+    status === 'completed'
+  )
+    return 'done';
+
+  return 'cancel';
+
+}
+
+function statusText(status){
+
+  return (
+    t(status) ||
+    status
+  );
+
+}
+
+/* ============================================================
+   FORMAT DATE
+============================================================ */
+
+function formatDateTime(
+  value
+){
+
+  const date =
+    new Date(value);
+
+  if (
+    Number.isNaN(
+      date.getTime()
+    )
+  ){
+
+    return '-';
+
+  }
+
+  return date.toLocaleString(
+    lang === 'ru'
+      ? 'ru-RU'
+      : 'uz-UZ',
+    {
+      day:'2-digit',
+      month:'2-digit',
+      year:'numeric',
+      hour:'2-digit',
+      minute:'2-digit'
+    }
+  );
+
+}
+
+/* ============================================================
+   INSTRUCTOR NAME
+============================================================ */
+
+function instructorName(
+  booking
+){
+
+  const profile =
+    booking
+      ?.instructor
+      ?.profile;
+
+  const name =
+    (
+      profile?.first_name ||
+      ''
+    )+
+    ' '+
+    (
+      profile?.last_name ||
+      ''
+    );
+
+  return (
+    name.trim() ||
+    t('instructor')
+  );
+
+}
+
+/* ============================================================
+   RENDER BOOKINGS
+============================================================ */
+
+function renderBookings(){
+
+  const list =
+    $('bookingList');
+
+  if (!list) return;
+
+  if (!bookings.length){
+
+    list.innerHTML = `
+      <div class="card empty">
+        <div class="empty-icon">📋</div>
+        ${escapeHTML(
+          t('no_bookings')
+        )}
+      </div>
+    `;
+
+    return;
+
+  }
+
+  list.innerHTML =
+    bookings
+      .map(booking => {
+
+        const start =
+          new Date(
+            booking.start_at
+          );
+
+        const end =
+          new Date(
+            booking.end_at
+          );
+
+        const duration =
+          Math.max(
+            0,
+            Math.round(
+              (
+                end.getTime() -
+                start.getTime()
+              ) /
+              60000
+            )
+          );
+
+        const name =
+          instructorName(
+            booking
+          );
+
+        return `
+          <div class="card booking">
+
+            <div class="topline">
+
+              <div class="booking-date">
+                ${escapeHTML(
+                  formatDateTime(
+                    booking.start_at
+                  )
+                )}
+              </div>
+
+              <span
+                class="badge ${statusClass(
+                  booking.status
+                )}"
+              >
+                ${escapeHTML(
+                  statusText(
+                    booking.status
+                  )
+                )}
+              </span>
+
+            </div>
+
+            <div class="meta">
+
+              <div class="meta-row">
+                <span>👨‍🏫</span>
+                <span>
+                  ${escapeHTML(name)}
+                </span>
+              </div>
+
+              <div class="meta-row">
+                <span>🕐</span>
+                <span>
+                  ${duration}
+                  ${escapeHTML(
+                    t('minute')
+                  )}
+                </span>
+              </div>
+
+              ${
+                booking.price != null
+                  ? `
+                    <div class="meta-row">
+                      <span>💰</span>
+                      <span class="booking-price">
+                        ${escapeHTML(
+                          Number(
+                            booking.price
+                          ).toLocaleString(
+                            'uz-UZ'
+                          )
+                        )}
+                        so‘m
+                      </span>
+                    </div>
+                  `
+                  : ''
+              }
+
+              ${
+                booking.customer_note
+                  ? `
+                    <div class="meta-row">
+                      <span>💬</span>
+                      <span>
+                        ${escapeHTML(
+                          booking.customer_note
+                        )}
+                      </span>
+                    </div>
+                  `
+                  : ''
+              }
+
+            </div>
+
+          </div>
+        `;
+
+      })
+      .join('');
+
+}
+
+/* ============================================================
+   NEXT BOOKING
+============================================================ */
+
+function renderNextBooking(){
+
+  const box =
+    $('nextBooking');
+
+  if (!box) return;
+
+  const upcoming =
+    bookings
+      .filter(
+        booking =>
+
+          [
+            'pending',
+            'confirmed',
+            'in_progress'
+          ].includes(
+            booking.status
+          ) &&
+
+          new Date(
+            booking.end_at
+          ).getTime() >
+          Date.now()
+      )
+      .sort(
+        (a,b) =>
+          new Date(a.start_at) -
+          new Date(b.start_at)
+      );
+
+  const booking =
+    upcoming[0];
+
+  if (!booking){
+
+    box.innerHTML = `
+      <div class="empty">
+        <div class="empty-icon">📅</div>
+        ${escapeHTML(
+          t('no_bookings')
+        )}
+      </div>
+    `;
+
+    return;
+
+  }
+
+  box.innerHTML = `
+
+    <div class="booking">
+
+      <div class="booking-date">
+        ${escapeHTML(
+          formatDateTime(
+            booking.start_at
+          )
+        )}
+      </div>
+
+      <div class="meta">
+
+        <div class="meta-row">
+          👨‍🏫
+          <span>
+            ${escapeHTML(
+              instructorName(
+                booking
+              )
+            )}
+          </span>
+        </div>
+
+      </div>
+
+      <span
+        class="badge ${statusClass(
+          booking.status
+        )}"
+      >
+        ${escapeHTML(
+          statusText(
+            booking.status
+          )
+        )}
+      </span>
+
+    </div>
+  `;
+
+}
+
+/* ============================================================
+   NOTIFICATIONS
+============================================================ */
+
+async function loadNotifications(){
+
+  if (!profile)
+    return;
+
+  try {
+
+    const data =
+      await api(
+        '/api/notifications'
+      );
+
+    const list =
+      Array.isArray(
+        data.notifications
+      )
+        ? data.notifications
+        : [];
+
+    $('notificationCount')
+      .textContent =
+      list.length;
+
+    if (!list.length){
+
+      $('notifications').innerHTML =
+        '<div class="empty">'+
+        '<div class="empty-icon">🔔</div>'+
+        escapeHTML(
+          t('no_notifications')
+        )+
+        '</div>';
+
+      return;
+
+    }
+
+    $('notifications').innerHTML =
+      list
+        .slice(0,8)
+        .map(
+          notification => `
+
+            <div class="notification">
+
+              <div class="notification-title">
+                ${escapeHTML(
+                  notification.title ||
+                  'AVTODROM'
+                )}
+              </div>
+
+              <div class="notification-body">
+                ${escapeHTML(
+                  notification.body ||
+                  ''
+                )}
+              </div>
+
+            </div>
+
+          `
+        )
+        .join('');
+
+  } catch(error){
+
+    $('notifications').innerHTML =
+      '<div class="notice error">'+
+      escapeHTML(
+        error.message
+      )+
+      '</div>';
+
+  }
+
+}
+
+/* ============================================================
+   PROFILE
+============================================================ */
+
+function renderProfile(){
+
+  if (!profile)
+    return;
+
+  $('first').value =
+    profile.first_name ||
+    '';
+
+  $('last').value =
+    profile.last_name ||
+    '';
+
+  $('phone').value =
+    profile.phone ||
+    '';
+
+  const fullName =
+    (
+      profile.first_name ||
+      ''
+    )+
+    ' '+
+    (
+      profile.last_name ||
+      ''
+    );
+
+  $('profileName')
+    .textContent =
+    fullName.trim() ||
+    'Telegram';
+
+  $('profileUsername')
+    .textContent =
+    profile.username
+      ? '@'+profile.username
+      : 'Telegram';
+
+  $('avatar')
+    .textContent =
+    (
+      profile.first_name ||
+      'U'
+    )
+      .slice(0,1)
+      .toUpperCase();
+
+  $('accountInfo')
+    .textContent =
+    profile.telegram_id
+      ? 'Telegram ID: '+
+        profile.telegram_id
+      : t(
+          'telegram_account'
+        );
+
+}
+
+/* ============================================================
+   PROFILE SAVE
+============================================================ */
+
+$('saveProfile')
+  .addEventListener(
+    'click',
+    async () => {
+
+      if (requestBusy)
+        return;
+
+      const first =
+        $('first')
+          .value
+          .trim();
+
+      const last =
+        $('last')
+          .value
+          .trim();
+
+      const phone =
+        $('phone')
+          .value
+          .trim();
+
+      if (
+        !first ||
+        !last ||
+        !phone
+      ){
+
+        showToast(
+          t('profile_required'),
+          'error'
+        );
+
+        return;
+
+      }
+
+      requestBusy = true;
+
+      const button =
+        $('saveProfile');
+
+      const original =
+        button.textContent;
+
+      button.disabled = true;
+
+      button.textContent =
+        t('loading');
+
+      try {
+
+        const data =
+          await api(
+            '/api/me',
+            {
+              method:'PATCH',
+
+              body:JSON.stringify({
+                first_name:first,
+                last_name:last,
+                phone:phone
+              })
+            }
+          );
+
+        profile =
+          data.profile;
+
+        renderProfile();
+
+        $('hello').textContent =
+          t('welcome')+
+          ', '+
+          (
+            profile.first_name ||
+            ''
+          )+
+          '!';
+
+        showToast(
+          t('saved'),
+          'success'
+        );
+
+      } catch(error){
+
+        showToast(
+          error.message ||
+          t('profile_failed'),
+          'error'
+        );
+
+      } finally {
+
+        requestBusy = false;
+
+        button.disabled = false;
+
+        button.textContent =
+          original;
+
+      }
+
+    }
+  );
+
+/* ============================================================
+   BOOKING
+============================================================ */
+
+$('date')
+  .addEventListener(
+    'change',
+    () => {
+
+      selectedTime = '';
+
+      renderTimes();
+
+    }
+  );
+
+$('instructor')
+  .addEventListener(
+    'change',
+    () => {
+
+      selectedTime = '';
+
+      renderTimes();
+
+    }
+  );
+
+$('duration')
+  .addEventListener(
+    'change',
+    () => {
+
+      selectedTime = '';
+
+      renderTimes();
+
+    }
+  );
+
+/* ============================================================
+   CREATE BOOKING
+============================================================ */
+
+$('bookBtn')
+  .addEventListener(
+    'click',
+    async () => {
+
+      if (requestBusy)
+        return;
+
+      $('bookError').innerHTML = '';
+
+      if (
+        !profile ||
+        !profile.first_name ||
+        !profile.last_name ||
+        !profile.phone
+      ){
+
+        setPage('profile');
+
+        showToast(
+          t('profile_required'),
+          'error'
+        );
+
+        return;
+
+      }
+
+      const instructorId =
+        $('instructor').value;
+
+      const date =
+        $('date').value;
+
+      const duration =
+        Number(
+          $('duration').value
+        );
+
+      const note =
+        $('note')
+          .value
+          .trim();
+
+      if (
+        !instructorId ||
+        !date ||
+        !selectedTime
+      ){
+
+        showError(
+          $('bookError'),
+          t('choose')
+        );
+
+        return;
+
+      }
+
+      const start =
+        new Date(
+          date+
+          'T'+
+          selectedTime+
+          ':00'
+        );
+
+      const end =
+        new Date(
+          start.getTime()+
+          duration*60000
+        );
+
+      if (
+        Number.isNaN(
+          start.getTime()
+        ) ||
+        Number.isNaN(
+          end.getTime()
+        )
+      ){
+
+        showError(
+          $('bookError'),
+          t('choose')
+        );
+
+        return;
+
+      }
+
+      if (
+        start.getTime() <
+        Date.now()
+      ){
+
+        showError(
+          $('bookError'),
+          t('choose')
+        );
+
+        renderTimes();
+
+        return;
+
+      }
+
+      requestBusy = true;
+
+      const button =
+        $('bookBtn');
+
+      const original =
+        button.textContent;
+
+      button.disabled = true;
+
+      button.textContent =
+        t('loading');
+
+      try {
+
+        await api(
+          '/api/bookings',
+          {
+            method:'POST',
+
+            body:JSON.stringify({
+
+              instructor_id:
+                instructorId,
+
+              start_at:
+                start.toISOString(),
+
+              end_at:
+                end.toISOString(),
+
+              customer_note:
+                note || null
+
+            })
+          }
+        );
+
+        selectedTime = '';
+
+        $('note').value = '';
+
+        showToast(
+          t('sent'),
+          'success'
+        );
+
+        await loadBookings();
+
+        setPage(
+          'bookings'
+        );
+
+      } catch(error){
+
+        showError(
+          $('bookError'),
+          error.message ||
+          t('booking_failed')
+        );
+
+        showToast(
+          error.message ||
+          t('booking_failed'),
+          'error'
+        );
+
+      } finally {
+
+        requestBusy = false;
+
+        button.disabled = false;
+
+        button.textContent =
+          original;
+
+      }
+
+    }
+  );
+
+/* ============================================================
+   AI
+============================================================ */
+
+function toggleAI(){
+
+  $('chat')
+    .classList
+    .toggle('open');
+
+  if (
+    $('chat')
+      .classList
+      .contains('open')
+  ){
+
+    setTimeout(
+      () =>
+        $('question').focus(),
+      100
+    );
+
+  }
+
+}
+
+$('helpBtn')
+  .addEventListener(
+    'click',
+    toggleAI
+  );
+
+$('aiBtn')
+  .addEventListener(
+    'click',
+    toggleAI
+  );
+
+$('closeChat')
+  .addEventListener(
+    'click',
+    toggleAI
+  );
+
+function addMessage(
+  text,
+  mine = false
+){
+
+  const message =
+    document.createElement(
+      'div'
+    );
+
+  message.className =
+    'msg'+
+    (
+      mine
+        ? ' mine'
+        : ''
+    );
+
+  message.textContent =
+    text;
+
+  $('messages')
+    .appendChild(
+      message
+    );
+
+  $('messages').scrollTop =
+    $('messages').scrollHeight;
+
+}
+
+function aiAnswer(
+  question
+){
+
+  const q =
+    question
+      .toLowerCase();
+
+  if (
+    q.includes('bron') ||
+    q.includes('бро') ||
+    q.includes('booking')
+  ){
+
+    return t(
+      'ai_booking'
+    );
+
+  }
+
+  if (
+    q.includes('instruk') ||
+    q.includes('инструкт')
+  ){
+
+    return t(
+      'ai_instructor'
+    );
+
+  }
+
+  if (
+    q.includes('holat') ||
+    q.includes('status') ||
+    q.includes('статус')
+  ){
+
+    return t(
+      'ai_status'
+    );
+
+  }
+
+  if (
+    q.includes('bekor') ||
+    q.includes('отмен')
+  ){
+
+    return t(
+      'ai_cancel'
+    );
+
+  }
+
+  return t(
+    'ai_default'
+  );
+
+}
+
+function sendQuestion(){
+
+  const input =
+    $('question');
+
+  const question =
+    input.value.trim();
+
+  if (!question)
+    return;
+
+  addMessage(
+    question,
+    true
+  );
+
+  input.value = '';
+
+  setTimeout(
+    () => {
+
+      addMessage(
+        aiAnswer(
+          question
+        )
+      );
+
+    },
+    180
+  );
+
+}
+
+$('sendQuestion')
+  .addEventListener(
+    'click',
+    sendQuestion
+  );
+
+$('question')
+  .addEventListener(
+    'keydown',
+    event => {
+
+      if (
+        event.key ===
+        'Enter'
+      ){
+
+        event.preventDefault();
+
+        sendQuestion();
+
+      }
+
+    }
+  );
+
+/* ============================================================
+   NETWORK STATUS
+============================================================ */
+
+function updateNetwork(){
+
+  $('offline')
+    .classList.toggle(
+      'show',
+      !navigator.onLine
+    );
+
+}
+
+window.addEventListener(
+  'online',
+  updateNetwork
+);
+
+window.addEventListener(
+  'offline',
+  updateNetwork
+);
+
+/* ============================================================
+   BOOT
+============================================================ */
+
+async function boot(){
+
+  initDate();
+
+  applyLanguage();
+
+  updateNetwork();
+
+  /*
+    Telegram Mini App ichidan
+    ochilganini tekshiramiz.
+  */
+
+  if (!initData){
+
+    $('notifications').innerHTML =
+      '<div class="notice error">'+
+      escapeHTML(
+        t('telegram')
+      )+
+      '</div>';
+
+    $('nextBooking').innerHTML =
+      '<div class="notice error">'+
+      escapeHTML(
+        t('telegram')
+      )+
+      '</div>';
+
+    return;
+
+  }
+
+  try {
+
+    const data =
+      await api(
+        '/api/me'
+      );
+
+    profile =
+      data.profile;
+
+    renderProfile();
+
+    $('hello').textContent =
+      t('welcome')+
+      ', '+
+      (
+        profile.first_name ||
+        ''
+      )+
+      '!';
+
+    await Promise.all([
+      loadBookings(),
+      loadInstructors(),
+      loadNotifications()
+    ]);
+
+  } catch(error){
+
+    const message =
+      error.message ||
+      t('server_error');
+
+    $('notifications').innerHTML =
+      '<div class="notice error">'+
+      escapeHTML(
+        message
+      )+
+      '</div>';
+
+    $('nextBooking').innerHTML =
+      '<div class="notice error">'+
+      escapeHTML(
+        message
+      )+
+      '</div>';
+
+  }
+
+}
+
+boot();
+
+/* ============================================================
+   PERIODIC REFRESH
+============================================================ */
+
+setInterval(
+  async () => {
+
+    if (
+      document.hidden ||
+      !initData
+    ){
+
+      return;
+
+    }
+
+    try {
+
+      await loadBookings();
+      await loadNotifications();
+
+    } catch (_) {}
+
+  },
+  30000
+);
+
+</script>
+
+</body>
+</html>
