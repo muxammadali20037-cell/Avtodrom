@@ -6,6 +6,8 @@ const TTL=60*60*12;
 const BUCKET='customer-media';
 const SUPA=()=>String(process.env.SUPABASE_URL||'').replace(/\/$/,'');
 const KEY=()=>String(process.env.SUPABASE_SERVICE_ROLE_KEY||'');
+const BOT_TOKEN=()=>String(process.env.INSTRUCTOR_BOT_TOKEN||process.env.TELEGRAM_INSTRUCTOR_BOT_TOKEN||'');
+const MINI_APP_URL=()=>String(process.env.INSTRUCTOR_MINI_APP_URL||'https://avtodrom.vercel.app/instructor');
 function cookie(req:any){const raw=String(req.headers?.cookie||'');const item=raw.split(';').map((x:string)=>x.trim()).find((x:string)=>x.startsWith(`${COOKIE}=`));if(!item)return '';try{return decodeURIComponent(item.slice(COOKIE.length+1))}catch{return ''}}
 function valid(token:string){try{const secret=String(process.env.ADMIN_SESSION_SECRET||process.env.ADMIN_PASSWORD||'').trim();const login=String(process.env.ADMIN_LOGIN||'').trim();if(!secret||!login||!token)return false;const d=Buffer.from(token,'base64url').toString('utf8');const a=d.indexOf(':'),b=d.indexOf(':',a+1);if(a<=0||b<=a)return false;const l=d.slice(0,a),ts=Number(d.slice(a+1,b)),sig=d.slice(b+1);if(l!==login||!Number.isFinite(ts)||!sig||Date.now()-ts<0||Date.now()-ts>TTL*1000)return false;const exp=createHmac('sha256',secret).update(`${login}:${ts}`).digest('hex');const x=Buffer.from(sig),y=Buffer.from(exp);return x.length===y.length&&timingSafeEqual(x,y)}catch{return false}}
 function auth(req:any){let t=cookie(req);if(!t){const h=String(req.headers?.authorization||'');if(/^Bearer\s+/i.test(h))t=h.replace(/^Bearer\s+/i,'').trim()}if(!valid(t))throw new Error('Unauthorized')}
@@ -16,75 +18,32 @@ async function safe(table:string,q:string){try{return await rest(table,q)}catch{
 const publicUrl=(p:string)=>`${SUPA()}/storage/v1/object/public/${BUCKET}/${p.split('/').map(encodeURIComponent).join('/')}`;
 function body(req:any){if(req.body&&typeof req.body==='object'&&!Buffer.isBuffer(req.body))return req.body;try{return JSON.parse(typeof req.body==='string'?req.body:'{}')}catch{return {}}}
 async function rpc(fn:string,args:any){const r=await supa().rpc(fn,args);if(r.error)throw new Error(r.error.message||'Supabase RPC xatosi');return r.data}
-async function getInstructorRows(){
- const [users,profiles]=await Promise.all([
-  rest('users','?role=eq.instructor&select=id,telegram_id,phone,full_name,is_active,is_blocked,created_at,updated_at&order=created_at.desc'),
-  rest('instructor_profiles','?select=user_id,experience_years,is_verified,is_available,bio,rating,total_reviews')
- ]);
- const byUser=new Map(profiles.map((p:any)=>[String(p.user_id),p]));
- return users.map((u:any)=>{const p=byUser.get(String(u.id))||{};const names=String(u.full_name||'').trim().split(/\s+/);return {...u,...p,id:u.id,first_name:names[0]||'',last_name:names.slice(1).join(' '),approved:Boolean(p.is_verified),active:Boolean(u.is_active&&!u.is_blocked),is_available:Boolean(p.is_available)}});
-}
+async function getInstructorRows(){const [users,profiles]=await Promise.all([rest('users','?role=eq.instructor&select=id,telegram_id,phone,full_name,is_active,is_blocked,created_at,updated_at&order=created_at.desc'),rest('instructor_profiles','?select=user_id,experience_years,is_verified,is_available,bio,rating,total_reviews')]);const byUser=new Map(profiles.map((p:any)=>[String(p.user_id),p]));return users.map((u:any)=>{const p=byUser.get(String(u.id))||{},names=String(u.full_name||'').trim().split(/\s+/);return {...u,...p,id:u.id,first_name:names[0]||'',last_name:names.slice(1).join(' '),approved:Boolean(p.is_verified),active:Boolean(u.is_active&&!u.is_blocked),is_available:Boolean(p.is_available)}})}
+async function notifyInstructor(telegramId:number,firstName:string){const token=BOT_TOKEN();if(!token||!telegramId)return false;try{const r=await fetch(`https://api.telegram.org/bot${token}/sendMessage`,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({chat_id:telegramId,text:`🎉 ${firstName||'Instructor'}, arizangiz Admin tomonidan tasdiqlandi!\n\nEndi Instructor panelingizga kirishingiz mumkin.`,reply_markup:{inline_keyboard:[[{text:'👨‍🏫 Instructor panelini ochish',web_app:{url:MINI_APP_URL()}}]]}})});return r.ok}catch{return false}}
 
 export default async function handler(req:any,res:any){
  try{
   auth(req); const action=String(req.query?.action||'dashboard');
   if(req.method==='GET'&&action==='dashboard'){
-   const [users,instructors,bookings,media,applications]=await Promise.all([
-    safe('tg_users','?select=tg_id'),
-    safe('users','?role=eq.instructor&is_active=eq.true&is_blocked=eq.false&select=id'),
-    safe('bookings','?select=id,instructor_id,customer_id,date,time,duration,status,price,payment_status,tg_user_id,created_at&order=created_at.desc'),
-    safe('admin_media','?select=id'),
-    safe('instructor_applications','?status=eq.PENDING&select=id')
-   ]);
-   const today=new Date().toISOString().slice(0,10),todayRows=bookings.filter((x:any)=>String(x.date||'')===today),revenue=todayRows.reduce((s:number,x:any)=>['paid','completed'].includes(String(x.payment_status||'').toLowerCase())?s+Number(x.price||0):s,0);
-   return json(res,200,{ok:true,dashboard:{users:users.length,activeInstructors:instructors.length,pendingBookings:bookings.filter((x:any)=>x.status==='pending').length,todayBookings:todayRows.length,todayRevenue:revenue,media:media.length,pendingInstructorApplications:applications.length}})
+   const [users,instructors,bookings,media,applications]=await Promise.all([safe('tg_users','?select=tg_id'),safe('users','?role=eq.instructor&is_active=eq.true&is_blocked=eq.false&select=id'),safe('bookings','?select=id,instructor_id,customer_id,date,time,duration,status,price,payment_status,tg_user_id,created_at&order=created_at.desc'),safe('admin_media','?select=id'),safe('instructor_applications','?status=eq.PENDING&select=id')]);const today=new Date().toISOString().slice(0,10),todayRows=bookings.filter((x:any)=>String(x.date||'')===today),revenue=todayRows.reduce((s:number,x:any)=>['paid','completed'].includes(String(x.payment_status||'').toLowerCase())?s+Number(x.price||0):s,0);return json(res,200,{ok:true,dashboard:{users:users.length,activeInstructors:instructors.length,pendingBookings:bookings.filter((x:any)=>x.status==='pending').length,todayBookings:todayRows.length,todayRevenue:revenue,media:media.length,pendingInstructorApplications:applications.length}})
   }
   if(req.method==='GET'&&action==='bookings')return json(res,200,{ok:true,bookings:await safe('bookings','?select=*&order=created_at.desc')});
   if(req.method==='GET'&&action==='users')return json(res,200,{ok:true,users:await safe('tg_users','?select=tg_id,first_name,username,customer_id,created_at&order=created_at.desc')});
-  if(req.method==='GET'&&action==='instructor-applications'){
-   const status=String(req.query?.status||'').trim().toUpperCase();const q=status&&['PENDING','APPROVED','REJECTED'].includes(status)?`?status=eq.${status}&select=*&order=created_at.desc`:'?select=*&order=created_at.desc';return json(res,200,{ok:true,applications:await rest('instructor_applications',q)});
-  }
-  if(req.method==='POST'&&action==='approve-instructor'){
-   const id=String(body(req).id||'').trim();if(!id)return json(res,400,{ok:false,error:'Ariza ID kerak'});const result=await rpc('admin_approve_instructor_service',{p_application_id:id});return json(res,200,{ok:true,application:Array.isArray(result)?result[0]:result});
-  }
-  if(req.method==='POST'&&action==='reject-instructor'){
-   const b=body(req),id=String(b.id||'').trim(),reason=String(b.reason||'').trim();if(!id)return json(res,400,{ok:false,error:'Ariza ID kerak'});const result=await rpc('admin_reject_instructor_service',{p_application_id:id,p_reason:reason||null});return json(res,200,{ok:true,application:Array.isArray(result)?result[0]:result});
-  }
+  if(req.method==='GET'&&action==='instructor-applications'){const status=String(req.query?.status||'').trim().toUpperCase();const q=status&&['PENDING','APPROVED','REJECTED'].includes(status)?`?status=eq.${status}&select=*&order=created_at.desc`:'?select=*&order=created_at.desc';return json(res,200,{ok:true,applications:await rest('instructor_applications',q)})}
+  if(req.method==='POST'&&action==='approve-instructor'){const id=String(body(req).id||'').trim();if(!id)return json(res,400,{ok:false,error:'Ariza ID kerak'});const result=await rpc('admin_approve_instructor_service',{p_application_id:id});const application=Array.isArray(result)?result[0]:result;const notification_sent=await notifyInstructor(Number(application?.telegram_user_id||0),String(application?.first_name||''));return json(res,200,{ok:true,application,notification_sent})}
+  if(req.method==='POST'&&action==='reject-instructor'){const b=body(req),id=String(b.id||'').trim(),reason=String(b.reason||'').trim();if(!id)return json(res,400,{ok:false,error:'Ariza ID kerak'});const result=await rpc('admin_reject_instructor_service',{p_application_id:id,p_reason:reason||null});return json(res,200,{ok:true,application:Array.isArray(result)?result[0]:result})}
   if(req.method==='GET'&&action==='instructors')return json(res,200,{ok:true,instructors:await getInstructorRows()});
-  if(req.method==='PATCH'&&action==='instructor-status'){
-   const b=body(req),id=encodeURIComponent(String(b.id||''));if(!id)return json(res,400,{ok:false,error:'Instructor ID kerak'});const active=Boolean(b.active);
-   await rest('users',`?id=eq.${id}`,{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify({is_active:active,is_blocked:!active,updated_at:new Date().toISOString()})});
-   await rest('instructor_profiles',`?user_id=eq.${id}`,{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify({is_available:active,is_verified:active,updated_at:new Date().toISOString()})});
-   return json(res,200,{ok:true});
-  }
-  if(req.method==='GET'&&action==='media'){
-   const rows=await safe('admin_media','?select=*&order=sort_order.asc,created_at.desc');return json(res,200,{ok:true,media:rows.map((x:any)=>({...x,id:String(x.id),storage_path:x.path,url:x.public_url||publicUrl(x.path||'')}))});
-  }
+  if(req.method==='PATCH'&&action==='instructor-status'){const b=body(req),id=encodeURIComponent(String(b.id||''));if(!id)return json(res,400,{ok:false,error:'Instructor ID kerak'});const active=Boolean(b.active);await rest('users',`?id=eq.${id}`,{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify({is_active:active,is_blocked:!active,updated_at:new Date().toISOString()})});await rest('instructor_profiles',`?user_id=eq.${id}`,{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify({is_available:active,is_verified:active,updated_at:new Date().toISOString()})});return json(res,200,{ok:true})}
+  if(req.method==='GET'&&action==='media'){const rows=await safe('admin_media','?select=*&order=sort_order.asc,created_at.desc');return json(res,200,{ok:true,media:rows.map((x:any)=>({...x,id:String(x.id),storage_path:x.path,url:x.public_url||publicUrl(x.path||'')}))})}
   if(req.method==='GET'&&action==='results'){const rows=await safe('bookings','?select=*&order=created_at.desc');return json(res,200,{ok:true,results:rows,summary:{total:rows.length,completed:rows.filter((x:any)=>x.status==='completed').length,revenue:rows.reduce((s:number,x:any)=>s+Number(x.price||0),0)}})}
   if(req.method==='GET'&&action==='prices'){const s=(await safe('app_state','?id=eq.main&select=data'))[0]?.data||{};return json(res,200,{ok:true,prices:Array.isArray(s.prices)?s.prices:[]})}
   if(req.method==='GET'&&action==='settings'){const s=(await safe('app_state','?id=eq.main&select=data'))[0]?.data||{};return json(res,200,{ok:true,settings:s.settings||{}})}
-  if(req.method==='PATCH'&&action==='booking-status'){
-   const b=body(req),id=encodeURIComponent(String(b.id||'')),status=String(b.status||'');if(!id||!['pending','confirmed','in_progress','completed','cancelled','no_show','rejected'].includes(status))return json(res,400,{ok:false,error:'Noto‘g‘ri bron holati'});const rows=await rest('bookings',`?id=eq.${id}`,{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify({status,updated_at:new Date().toISOString()})});return json(res,200,{ok:true,booking:rows[0]})
-  }
-  if(req.method==='POST'&&action==='price'){
-   const s=(await safe('app_state','?id=eq.main&select=data'))[0]||{data:{}},prices=Array.isArray(s.data?.prices)?s.data.prices:[],b=body(req),item={id:`price-${Date.now()}`,name:String(b.name||'Xizmat'),duration_minutes:Number(b.duration_minutes||60),price:Number(b.price||0),status:'active'};prices.push(item);await rest('app_state','?id=eq.main',{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify({data:{...(s.data||{}),prices},updated_at:new Date().toISOString()})});return json(res,200,{ok:true,price:item})
-  }
-  if(req.method==='PATCH'&&action==='settings'){
-   const s=(await safe('app_state','?id=eq.main&select=data'))[0]||{data:{}},settings={...(s.data?.settings||{}),...body(req)};await rest('app_state','?id=eq.main',{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify({data:{...(s.data||{}),settings},updated_at:new Date().toISOString()})});return json(res,200,{ok:true,settings})
-  }
-  if(req.method==='POST'&&action==='sign'){
-   const b=body(req),original=String(b.file_name||'video.mp4').trim(),name=original.replace(/[^a-zA-Z0-9._-]/g,'_').slice(-180)||'video.mp4',type=String(b.content_type||'video/mp4').toLowerCase().split(';')[0].trim(),size=Number(b.file_size||0);
-   if(!type.startsWith('video/'))return json(res,400,{ok:false,error:'Faqat video fayl yuklang'});if(size>0&&size>500*1024*1024)return json(res,413,{ok:false,error:'Video 500 MB dan katta bo‘lishi mumkin emas'});
-   const path=`customer/${Date.now()}-${Math.random().toString(36).slice(2,9)}-${name}`,client=supa(),{data,error}=await client.storage.from(BUCKET).createSignedUploadUrl(path,{upsert:true});
-   if(error||!data?.signedUrl||!data?.token)throw new Error(error?.message||'Supabase signed upload URL yaratmadi');return json(res,200,{ok:true,path,storage_path:path,token:data.token,upload_url:data.signedUrl,public_url:publicUrl(path)});
-  }
-  if(req.method==='POST'&&action==='commit'){
-   const b=body(req),storagePath=String(b.storage_path||b.path||'').trim(),title=String(b.title||'Video qo‘llanma').trim().slice(0,200),public_url=String(b.public_url||publicUrl(storagePath)).trim();
-   if(!storagePath||!storagePath.startsWith('customer/'))return json(res,400,{ok:false,error:'Video storage yo‘li noto‘g‘ri'});const rows=await rest('admin_media','',{method:'POST',headers:{Prefer:'return=representation'},body:JSON.stringify({key:`admin_${Date.now()}_${Math.random().toString(36).slice(2,8)}`,title,media_type:'video',path:storagePath,public_url,is_active:true,sort_order:0,updated_at:new Date().toISOString()})});return json(res,200,{ok:true,media:rows[0]});
-  }
-  if(req.method==='DELETE'&&action==='media'){
-   const id=encodeURIComponent(String(req.query?.id||''));if(!id)return json(res,400,{ok:false,error:'Media ID kerak'});const rows=await rest('admin_media',`?id=eq.${id}&select=path`,{method:'GET'}),path=rows[0]?.path;if(path){try{await supa().storage.from(BUCKET).remove([path])}catch{}}await rest('admin_media',`?id=eq.${id}`,{method:'DELETE'});return json(res,200,{ok:true});
-  }
+  if(req.method==='PATCH'&&action==='booking-status'){const b=body(req),id=encodeURIComponent(String(b.id||'')),status=String(b.status||'');if(!id||!['pending','confirmed','in_progress','completed','cancelled','no_show','rejected'].includes(status))return json(res,400,{ok:false,error:'Noto‘g‘ri bron holati'});const rows=await rest('bookings',`?id=eq.${id}`,{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify({status,updated_at:new Date().toISOString()})});return json(res,200,{ok:true,booking:rows[0]})}
+  if(req.method==='POST'&&action==='price'){const s=(await safe('app_state','?id=eq.main&select=data'))[0]||{data:{}},prices=Array.isArray(s.data?.prices)?s.data.prices:[],b=body(req),item={id:`price-${Date.now()}`,name:String(b.name||'Xizmat'),duration_minutes:Number(b.duration_minutes||60),price:Number(b.price||0),status:'active'};prices.push(item);await rest('app_state','?id=eq.main',{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify({data:{...(s.data||{}),prices},updated_at:new Date().toISOString()})});return json(res,200,{ok:true,price:item})}
+  if(req.method==='PATCH'&&action==='settings'){const s=(await safe('app_state','?id=eq.main&select=data'))[0]||{data:{}},settings={...(s.data?.settings||{}),...body(req)};await rest('app_state','?id=eq.main',{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify({data:{...(s.data||{}),settings},updated_at:new Date().toISOString()})});return json(res,200,{ok:true,settings})}
+  if(req.method==='POST'&&action==='sign'){const b=body(req),original=String(b.file_name||'video.mp4').trim(),name=original.replace(/[^a-zA-Z0-9._-]/g,'_').slice(-180)||'video.mp4',type=String(b.content_type||'video/mp4').toLowerCase().split(';')[0].trim(),size=Number(b.file_size||0);if(!type.startsWith('video/'))return json(res,400,{ok:false,error:'Faqat video fayl yuklang'});if(size>0&&size>500*1024*1024)return json(res,413,{ok:false,error:'Video 500 MB dan katta bo‘lishi mumkin emas'});const path=`customer/${Date.now()}-${Math.random().toString(36).slice(2,9)}-${name}`,client=supa(),{data,error}=await client.storage.from(BUCKET).createSignedUploadUrl(path,{upsert:true});if(error||!data?.signedUrl||!data?.token)throw new Error(error?.message||'Supabase signed upload URL yaratmadi');return json(res,200,{ok:true,path,storage_path:path,token:data.token,upload_url:data.signedUrl,public_url:publicUrl(path)})}
+  if(req.method==='POST'&&action==='commit'){const b=body(req),storagePath=String(b.storage_path||b.path||'').trim(),title=String(b.title||'Video qo‘llanma').trim().slice(0,200),public_url=String(b.public_url||publicUrl(storagePath)).trim();if(!storagePath||!storagePath.startsWith('customer/'))return json(res,400,{ok:false,error:'Video storage yo‘li noto‘g‘ri'});const rows=await rest('admin_media','',{method:'POST',headers:{Prefer:'return=representation'},body:JSON.stringify({key:`admin_${Date.now()}_${Math.random().toString(36).slice(2,8)}`,title,media_type:'video',path:storagePath,public_url,is_active:true,sort_order:0,updated_at:new Date().toISOString()})});return json(res,200,{ok:true,media:rows[0]})}
+  if(req.method==='DELETE'&&action==='media'){const id=encodeURIComponent(String(req.query?.id||''));if(!id)return json(res,400,{ok:false,error:'Media ID kerak'});const rows=await rest('admin_media',`?id=eq.${id}&select=path`,{method:'GET'}),path=rows[0]?.path;if(path){try{await supa().storage.from(BUCKET).remove([path])}catch{}}await rest('admin_media',`?id=eq.${id}`,{method:'DELETE'});return json(res,200,{ok:true})}
   return json(res,404,{ok:false,error:'Admin action topilmadi'});
- }catch(e:any){const msg=e?.message||'Server xatosi';return json(res,msg==='Unauthorized'?401:500,{ok:false,error:msg});}
+ }catch(e:any){const msg=e?.message||'Server xatosi';return json(res,msg==='Unauthorized'?401:500,{ok:false,error:msg})}
 }
