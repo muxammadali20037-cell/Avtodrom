@@ -4,7 +4,7 @@
 (function () {
   'use strict';
 
-  const SUPABASE_URL = 'https://izmonnkzyolaqwjwjvzj.supabase.co';
+  const SUPABASE_URL = 'https://bxgevyghvkuekbwbcsna.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_REVq-3nTJ-SDUEJQmDP7Bw_Xxg5Uqrx';
 
   const state = {
@@ -14,7 +14,6 @@
     ready: null
   };
 
-  // Expose the namespace immediately so the page can safely detect it.
   window.AvtodromSupabase = state;
 
   function loadSupabase() {
@@ -23,7 +22,6 @@
         resolve();
         return;
       }
-
       const script = document.createElement('script');
       script.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js';
       script.async = false;
@@ -33,33 +31,20 @@
     });
   }
 
-  state.ready = loadSupabase()
-    .then(() => {
-      if (!window.supabase || typeof window.supabase.createClient !== 'function') {
-        throw new Error('Supabase client kutubxonasi mavjud emas.');
-      }
-
-      if (!SUPABASE_PUBLISHABLE_KEY || SUPABASE_PUBLISHABLE_KEY.includes('PASTE_YOUR_')) {
-        throw new Error('Supabase publishable key kiritilmagan.');
-      }
-
-      state.client = window.supabase.createClient(
-        SUPABASE_URL,
-        SUPABASE_PUBLISHABLE_KEY,
-        {
-          auth: {
-            persistSession: true,
-            autoRefreshToken: true,
-            detectSessionInUrl: false
-          }
-        }
-      );
-
-      console.info('[AVTODROM] Supabase client tayyor.');
-      return state.client;
-    })
-    .catch((error) => {
-      console.error('[AVTODROM] Supabase ulanish xatosi:', error);
-      throw error;
+  state.ready = loadSupabase().then(() => {
+    if (!window.supabase || typeof window.supabase.createClient !== 'function') {
+      throw new Error('Supabase client kutubxonasi mavjud emas.');
+    }
+    if (!SUPABASE_PUBLISHABLE_KEY || SUPABASE_PUBLISHABLE_KEY.includes('PASTE_YOUR_')) {
+      throw new Error('Supabase publishable key kiritilmagan.');
+    }
+    state.client = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
+      auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false }
     });
+    console.info('[AVTODROM] Supabase client tayyor:', SUPABASE_URL);
+    return state.client;
+  }).catch((error) => {
+    console.error('[AVTODROM] Supabase ulanish xatosi:', error);
+    throw error;
+  });
 })();
