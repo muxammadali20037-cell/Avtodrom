@@ -1,4 +1,4 @@
-import app from '../../backend/src/app';
+import app from '../../backend/src/app.js';
 
 export default async function handler(request: any, response: any) {
   try {
