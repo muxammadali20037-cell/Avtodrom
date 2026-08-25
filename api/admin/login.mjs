@@ -33,7 +33,6 @@ export default function handler(request, response) {
     const password = String(body.password ?? '');
     const expectedLogin = String(process.env.ADMIN_LOGIN ?? '').trim();
     const expectedPassword = String(process.env.ADMIN_PASSWORD ?? '');
-    // Session secret can be omitted during setup; the admin password is only used as a fallback HMAC key.
     const secret = String(process.env.ADMIN_SESSION_SECRET ?? expectedPassword).trim();
     if (!expectedLogin || !expectedPassword) {
       console.error('Admin env missing:', { ADMIN_LOGIN: Boolean(expectedLogin), ADMIN_PASSWORD: Boolean(expectedPassword) });
@@ -42,7 +41,7 @@ export default function handler(request, response) {
     if (login !== expectedLogin || password !== expectedPassword) return json(response, 401, { ok: false, error: 'Login yoki parol noto‘g‘ri.' });
     const token = makeToken(expectedLogin, secret);
     response.setHeader('Set-Cookie', `${COOKIE_NAME}=${encodeURIComponent(token)}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=${SESSION_TTL}`);
-    return json(response, 200, { ok: true, login: expectedLogin, redirect: '/admin/dashboard.html' });
+    return json(response, 200, { ok: true, login: expectedLogin, redirect: '/admin/index.html' });
   } catch (error) {
     console.error('Admin login fatal error:', error);
     return json(response, 500, { ok: false, error: 'Internal server error' });
