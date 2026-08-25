@@ -51,6 +51,7 @@ button:disabled{cursor:not-allowed;opacity:.55}
 }
 .hero h1{font-size:25px;margin:0 0 8px;letter-spacing:-.4px}
 .hero p{color:var(--m);line-height:1.5;margin:0 0 16px}
+.video-card video{width:100%;display:block;border-radius:14px;background:#000;max-height:300px}.video-title{font-weight:900;margin-bottom:8px}.video-caption{font-size:13px;color:var(--m);line-height:1.45;margin-top:8px}
 .card{
   border:1px solid var(--l);border-radius:16px;padding:14px;margin:11px 0;
   background:#fff;box-shadow:0 2px 8px rgba(15,40,25,.025)
@@ -193,6 +194,12 @@ button:disabled{cursor:not-allowed;opacity:.55}
 
   <div id="browserNotice" class="notice info" style="display:none"></div>
 
+  <div id="customerVideo" class="card video-card" style="display:none">
+    <div class="video-title" id="customerVideoTitle">🎬 Video qo‘llanma</div>
+    <video id="customerVideoPlayer" controls playsinline preload="metadata"></video>
+    <div class="video-caption" id="customerVideoCaption"></div>
+  </div>
+
   <div class="card">
     <div class="topline">
       <div class="card-title" data-i18n="notifications">Bildirishnomalar</div>
@@ -295,7 +302,7 @@ button:disabled{cursor:not-allowed;opacity:.55}
 
   <div class="card">
     <div class="card-title" data-i18n="account">Akkaunt</div>
-    <p class="muted" id="accountInfo">Akkaunt ma'lumotlari yuklanmoqda...</p>
+    <p class="muted" id="accountInfo">Akkaunt</p>
   </div>
 </section>
 
@@ -344,7 +351,7 @@ const tg = window.Telegram && window.Telegram.WebApp
 /* Telegram bo'lsa Mini App rejimi, bo'lmasa oddiy browser rejimi. */
 const IS_TELEGRAM = Boolean(tg);
 const INIT_DATA = tg && tg.initData ? tg.initData : '';
-const API = window.AVTODROM_API_URL || window.location.origin;
+const API = (window.AVTODROM_API_URL || 'https://avtodrom.vercel.app').replace(/\/$/, '');
 
 if (tg) {
   try {
@@ -370,6 +377,7 @@ const I = {
     hero:'Avtodromdagi darsingizni qulay bron qiling, holatini kuzating va instruktor bilan bog‘laning.',
     book_lesson:'Dars bron qilish',
     notifications:'Bildirishnomalar',
+    guide_video:'Video qo‘llanma',
     next_booking:'Keyingi bron',
     all:'Barchasi',
     home:'Bosh sahifa',
@@ -425,6 +433,7 @@ const I = {
     hero:'Удобно бронируйте занятие на автодроме, следите за статусом и связывайтесь с инструктором.',
     book_lesson:'Забронировать занятие',
     notifications:'Уведомления',
+    guide_video:'Видео-инструкция',
     next_booking:'Ближайшая бронь',
     all:'Все',
     home:'Главная',
@@ -550,8 +559,7 @@ function applyLang(){
       ((profile.first_name||'')+' '+(profile.last_name||'')).trim() || 'Telegram';
   }
 
-  $('browserNotice').textContent = IS_TELEGRAM ? t('telegram_mode') : t('browser_mode');
-  $('browserNotice').style.display = IS_TELEGRAM ? 'none' : 'block';
+  $('browserNotice').style.display = 'none';
 
   renderBookings();
   renderNext();
@@ -765,6 +773,22 @@ async function loadBookings(){
   }
 }
 
+async function loadCustomerVideo(){
+  try{
+    const data=await api('/api/content');
+    const media=Array.isArray(data.media)?data.media:[];
+    const video=media.find(x=>x.key==='guide_video' && x.media_type==='video' && x.public_url);
+    const card=$('customerVideo');
+    if(!video){card.style.display='none';return;}
+    $('customerVideoTitle').textContent='🎬 '+(video.title||t('guide_video'));
+    $('customerVideoPlayer').src=video.public_url;
+    $('customerVideoCaption').textContent=lang==='ru'?'Видео-инструкция для клиентов.':'Customerlar uchun video qo‘llanma.';
+    card.style.display='block';
+  }catch(error){
+    $('customerVideo').style.display='none';
+  }
+}
+
 async function loadNotifications(){
   if(!profile){
     $('notifications').innerHTML='<div class="empty">'+esc(t('no_notifications'))+'</div>';
@@ -975,7 +999,7 @@ $('saveProfile').addEventListener('click',async()=>{
     $('hello').textContent=t('welcome')+', '+(profile.first_name||'')+'!';
     alert(t('saved'));
   }catch(error){
-    alert(error.message || t('api_error'));
+    alert(lang==='ru' ? 'Профиль не удалось сохранить. Проверьте соединение и попробуйте ещё раз.' : 'Profilni saqlab bo‘lmadi. Internetni tekshirib, qayta urinib ko‘ring.');
   }finally{
     btn.disabled=false;
     btn.textContent=old;
@@ -1046,6 +1070,7 @@ async function loadMe(){
     return true;
   }catch(error){
     profile=null;
+    $('accountInfo').textContent = '';
 
     /*
       Muhim:
@@ -1089,7 +1114,8 @@ async function boot(){
     await Promise.allSettled([
       loadBookings(),
       loadInstructors(),
-      loadNotifications()
+      loadNotifications(),
+      loadCustomerVideo()
     ]);
   }else{
     allBookings=[];
@@ -1104,6 +1130,7 @@ setInterval(()=>{
   if(profile){
     loadBookings();
     loadNotifications();
+    loadCustomerVideo();
   }
 },15000);
 
