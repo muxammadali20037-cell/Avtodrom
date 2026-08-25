@@ -22,12 +22,7 @@ async function auth(r: VercelRequest) {
 async function rest(table: string, query: string, options: RequestInit = {}) {
   const x = await fetch(`${U}/rest/v1/${table}${query}`, {
     ...options,
-    headers: {
-      apikey: K,
-      Authorization: `Bearer ${K}`,
-      'Content-Type': 'application/json',
-      ...(options.headers || {}),
-    },
+    headers: { apikey: K, Authorization: `Bearer ${K}`, 'Content-Type': 'application/json', ...(options.headers || {}) },
   });
   const t = await x.text();
   let d: any = null;
@@ -41,12 +36,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     const u = await auth(req);
     const users = await rest('users', `?telegram_id=eq.${q(String(u.id))}&select=id,role,is_active,is_blocked&limit=1`);
-    const instructor = users[0];
-    if (!instructor || instructor.role !== 'instructor' || instructor.is_active === false || instructor.is_blocked === true) {
+    const user = users[0];
+    if (!user || user.role !== 'instructor' || user.is_active === false || user.is_blocked === true) {
       return out(res, 403, { ok: false, error: 'Instructor tasdiqlanmagan' });
     }
-    const profiles = await rest('instructor_profiles', `?user_id=eq.${q(String(instructor.id))}&select=is_verified,is_available&limit=1`);
-    if (!profiles[0] || profiles[0].is_verified !== true || profiles[0].is_available === false) {
+
+    const profiles = await rest('instructor_profiles', `?user_id=eq.${q(String(user.id))}&select=id,is_verified,is_available&limit=1`);
+    const instructor = profiles[0];
+    if (!instructor || instructor.is_verified !== true || instructor.is_available === false) {
       return out(res, 403, { ok: false, error: 'Instructor tasdiqlanmagan' });
     }
 
