@@ -11,6 +11,7 @@ import { registerAdminRoutes } from './admin-routes.js';
 import { registerAdminDashboardRoutes } from './admin-dashboard-routes.js';
 import { handleInstructorStart } from './instructor-start.js';
 import { registerAdminPasswordRoutes } from './admin-password-routes.js';
+import { registerContentRoutes } from './content-routes.js';
 
 const app = Fastify({ logger: true });
 const CUSTOMER_BOT_TOKEN = process.env.CUSTOMER_BOT_TOKEN || process.env.TELEGRAM_CUSTOMER_BOT_TOKEN || '';
@@ -49,10 +50,10 @@ await registerAdminInstructorRoutes(app,authenticateAdmin);
 await registerAdminRoutes(app,authenticateAdmin);
 await registerAdminDashboardRoutes(app);
 await registerAdminPasswordRoutes(app);
+await registerContentRoutes(app);
 
 async function handleTelegramWebhook(request:any,reply:any,token:string,miniAppUrl:string,role:'customer'|'admin'){
- const secret=String(request.headers['x-telegram-bot-api-secret-token']||'');
- if(TELEGRAM_WEBHOOK_SECRET&&secret!==TELEGRAM_WEBHOOK_SECRET)return reply.code(401).send({ok:false,error:'Invalid webhook secret'});
+ const secret=String(request.headers['x-telegram-bot-api-secret-token']||''); if(TELEGRAM_WEBHOOK_SECRET&&secret!==TELEGRAM_WEBHOOK_SECRET)return reply.code(401).send({ok:false,error:'Invalid webhook secret'});
  if(!token||!miniAppUrl)return reply.code(503).send({ok:false,error:`${role} bot is not configured`});
  const message=(request.body as any)?.message; const text=typeof message?.text==='string'?message.text.trim():''; const chatId=Number(message?.chat?.id);
  if(Number.isSafeInteger(chatId)&&chatId>0&&/^\/start(?:@\w+)?(?:\s.*)?$/i.test(text)) await sendMiniAppStart(token,chatId,miniAppUrl,role);
