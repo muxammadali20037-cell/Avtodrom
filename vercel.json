@@ -13,6 +13,8 @@
     { "source": "/admin/login.html", "destination": "/admin/login.html" },
     { "source": "/admin/dashboard", "destination": "/admin/index.html" },
     { "source": "/admin/dashboard/", "destination": "/admin/index.html" },
+    { "source": "/admin/dashboard-v2", "destination": "/admin/index.html" },
+    { "source": "/admin/dashboard-v2/", "destination": "/admin/index.html" },
     { "source": "/admin/media", "destination": "/admin/media.html" },
     { "source": "/admin/media/", "destination": "/admin/media.html" },
     { "source": "/instructor", "destination": "/instructor/index.html" },
