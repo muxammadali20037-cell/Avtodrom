@@ -11,6 +11,8 @@
     { "source": "/admin/", "destination": "/admin/index.html" },
     { "source": "/admin/login", "destination": "/admin/index.html" },
     { "source": "/admin/login.html", "destination": "/admin/index.html" },
+    { "source": "/admin/media", "destination": "/admin/media.html" },
+    { "source": "/admin/media/", "destination": "/admin/media.html" },
     { "source": "/admin/dashboard", "destination": "/admin/live.html" },
     { "source": "/admin/dashboard/", "destination": "/admin/live.html" },
     { "source": "/instructor", "destination": "/instructor/index.html" },
