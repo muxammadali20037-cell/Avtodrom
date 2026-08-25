@@ -1,91 +1,20 @@
 import type { FastifyInstance } from 'fastify';
-import { supabaseRest } from './supabase.js';
+import { supabaseRest, requireSupabase } from './supabase.js';
+import { createHmac, timingSafeEqual } from 'node:crypto';
 
-async function getContentSetting() {
-  try {
-    const rows = await supabaseRest<any[]>('admin_settings', { query: '?key=eq.customer_content&select=key,value,updated_at' });
-    return rows[0]?.value || { media: [] };
-  } catch {
-    return { media: [] };
-  }
-}
+const ADMIN_COOKIE='avtodrom_admin_session';
+const SESSION_TTL=60*60*12;
+function adminCookie(request:any){const raw=String(request.headers?.cookie||'');const item=raw.split(';').map((x:string)=>x.trim()).find((x:string)=>x.startsWith(`${ADMIN_COOKIE}=`));return item?decodeURIComponent(item.slice(ADMIN_COOKIE.length+1)):''}
+function validAdminSession(token:string){try{const fallback=String(process.env.ADMIN_PASSWORD||'').trim();const secret=String(process.env.ADMIN_SESSION_SECRET||fallback).trim();const loginExpected=String(process.env.ADMIN_LOGIN||'').trim();if(!secret||!token||!loginExpected)return false;const decoded=Buffer.from(token,'base64url').toString('utf8');const a=decoded.indexOf(':'),b=decoded.indexOf(':',a+1);if(a<=0||b<=a)return false;const login=decoded.slice(0,a),ts=Number(decoded.slice(a+1,b)),sig=decoded.slice(b+1);if(login!==loginExpected||!Number.isFinite(ts)||!sig)return false;const age=Date.now()-ts;if(age<0||age>SESSION_TTL*1000)return false;const expected=createHmac('sha256',secret).update(`${login}:${ts}`).digest('hex');const x=Buffer.from(sig),y=Buffer.from(expected);return x.length===y.length&&timingSafeEqual(x,y)}catch{return false}}
+function requireAdmin(request:any){if(!validAdminSession(adminCookie(request)))throw new Error('Unauthorized')}
 
-async function saveContentSetting(value: any) {
-  const body = JSON.stringify({ key: 'customer_content', value, updated_at: new Date().toISOString() });
-  const patched = await supabaseRest<any[]>('admin_settings', {
-    method: 'PATCH', headers: { Prefer: 'return=representation' }, query: '?key=eq.customer_content', body,
-  });
-  if (patched[0]) return patched[0];
-  const created = await supabaseRest<any[]>('admin_settings', {
-    method: 'POST', headers: { Prefer: 'return=representation' }, body,
-  });
-  return created[0];
-}
+async function getContentSetting(){try{const rows=await supabaseRest<any[]>('admin_settings',{query:'?key=eq.customer_content&select=key,value,updated_at'});return rows[0]?.value||{media:[]}}catch{return{media:[]}}}
+async function saveContentSetting(value:any){const body=JSON.stringify({key:'customer_content',value,updated_at:new Date().toISOString()});const patched=await supabaseRest<any[]>('admin_settings',{method:'PATCH',headers:{Prefer:'return=representation'},query:'?key=eq.customer_content',body});if(patched[0])return patched[0];const created=await supabaseRest<any[]>('admin_settings',{method:'POST',headers:{Prefer:'return=representation'},body});return created[0]}
 
-export async function registerContentRoutes(app: FastifyInstance) {
-  app.get('/api/content', async () => {
-    const content = await getContentSetting();
-    return { ok: true, media: Array.isArray(content.media) ? content.media : [], updated_at: content.updated_at || null };
-  });
-
-  app.get('/api/results', async () => {
-    const safeCount = async (table: string, query: string) => {
-      try { return (await supabaseRest<any[]>(table, { query })).length; } catch { return 0; }
-    };
-    const [customers, instructors, completedBookings] = await Promise.all([
-      safeCount('profiles', '?role=eq.customer&select=id'),
-      safeCount('instructors', '?active=eq.true&approved=eq.true&select=id'),
-      safeCount('bookings', '?status=eq.completed&select=id'),
-    ]);
-    let averageRating = 0;
-    try {
-      const rows = await supabaseRest<any[]>('reviews', { query: '?status=eq.approved&select=rating' });
-      const ratings = rows.map(x => Number(x.rating)).filter(Number.isFinite);
-      if (ratings.length) averageRating = Number((ratings.reduce((a,b)=>a+b,0)/ratings.length).toFixed(2));
-    } catch {}
-    return { ok: true, stats: { customers, instructors, completedBookings, averageRating } };
-  });
-
-  // This endpoint is intentionally metadata-only. Actual video bytes belong in Supabase Storage.
-  // Admin UI can commit a Storage public URL here after a successful upload.
-  app.post('/api/admin/content', async (request, reply) => {
-    try {
-      const cookie = String(request.headers?.cookie || '');
-      if (!cookie.includes('avtodrom_admin_session=')) return reply.code(401).send({ok:false,error:'Unauthorized'});
-      const body = (request.body || {}) as any;
-      const current = await getContentSetting();
-      const media = Array.isArray(current.media) ? current.media : [];
-      const item = {
-        id: String(body.id || `${Date.now()}-${Math.random().toString(36).slice(2)}`),
-        key: String(body.key || 'guide_video'),
-        title: String(body.title || 'Video qo‘llanma').trim(),
-        description: String(body.description || '').trim(),
-        media_type: String(body.media_type || 'video'),
-        public_url: String(body.public_url || '').trim(),
-        active: body.active !== false,
-        created_at: new Date().toISOString(),
-      };
-      if (!item.public_url) return reply.code(400).send({ok:false,error:'public_url required'});
-      const filtered = media.filter((x:any)=>String(x.id)!==item.id && String(x.key)!==item.key);
-      filtered.unshift(item);
-      await saveContentSetting({media:filtered.slice(0,20),updated_at:new Date().toISOString()});
-      return {ok:true,media:filtered};
-    } catch (e:any) {
-      return reply.code(500).send({ok:false,error:e?.message||'Content save failed'});
-    }
-  });
-
-  app.delete('/api/admin/content/:id', async (request, reply) => {
-    try {
-      const cookie = String(request.headers?.cookie || '');
-      if (!cookie.includes('avtodrom_admin_session=')) return reply.code(401).send({ok:false,error:'Unauthorized'});
-      const id = String((request.params as any).id || '');
-      const current = await getContentSetting();
-      const media = (Array.isArray(current.media) ? current.media : []).filter((x:any)=>String(x.id)!==id);
-      await saveContentSetting({media,updated_at:new Date().toISOString()});
-      return {ok:true,media};
-    } catch(e:any) {
-      return reply.code(500).send({ok:false,error:e?.message||'Content delete failed'});
-    }
-  });
+export async function registerContentRoutes(app:FastifyInstance){
+ app.get('/api/content',async()=>{const content=await getContentSetting();return{ok:true,media:Array.isArray(content.media)?content.media:[],updated_at:content.updated_at||null}});
+ app.get('/api/results',async()=>{const safeCount=async(table:string,query:string)=>{try{return(await supabaseRest<any[]>(table,{query})).length}catch{return 0}};const[customers,instructors,completedBookings]=await Promise.all([safeCount('profiles','?role=eq.customer&select=id'),safeCount('instructors','?active=eq.true&approved=eq.true&select=id'),safeCount('bookings','?status=eq.completed&select=id')]);let averageRating=0;try{const rows=await supabaseRest<any[]>('reviews',{query:'?status=eq.approved&select=rating'});const ratings=rows.map(x=>Number(x.rating)).filter(Number.isFinite);if(ratings.length)averageRating=Number((ratings.reduce((a,b)=>a+b,0)/ratings.length).toFixed(2))}catch{}return{ok:true,stats:{customers,instructors,completedBookings,averageRating}}});
+ app.post('/api/admin/content/sign',async(request,reply)=>{try{requireAdmin(request);requireSupabase();const body=(request.body||{}) as any;const filename=String(body.filename||'').trim();const contentType=String(body.contentType||'video/mp4').trim();if(!filename)return reply.code(400).send({ok:false,error:'filename required'});const safe=filename.replace(/[^a-zA-Z0-9._-]/g,'_');const path=`customer/${Date.now()}-${safe}`;const url=String(process.env.SUPABASE_URL||'');const key=String(process.env.SUPABASE_SERVICE_ROLE_KEY||'');const r=await fetch(`${url}/storage/v1/object/upload/sign/customer-media/${encodeURIComponent(path)}`,{method:'POST',headers:{apikey:key,Authorization:`Bearer ${key}`,'Content-Type':'application/json'},body:JSON.stringify({expiresIn:3600,upsert:true,contentType})});const data=await r.json().catch(()=>({}));if(!r.ok)return reply.code(r.status).send({ok:false,error:data?.message||data?.error||'Storage sign failed'});return{ok:true,path,token:data.token,public_url:`${url}/storage/v1/object/public/customer-media/${path}`}}catch(e:any){return reply.code(401).send({ok:false,error:e?.message||'Unauthorized'})}});
+ app.post('/api/admin/content',async(request,reply)=>{try{requireAdmin(request);const body=(request.body||{}) as any;const current=await getContentSetting();const media=Array.isArray(current.media)?current.media:[];const item={id:String(body.id||`${Date.now()}-${Math.random().toString(36).slice(2)}`),key:String(body.key||'guide_video'),title:String(body.title||'Video qo‘llanma').trim(),description:String(body.description||'').trim(),media_type:String(body.media_type||'video'),public_url:String(body.public_url||'').trim(),active:body.active!==false,created_at:new Date().toISOString()};if(!item.public_url)return reply.code(400).send({ok:false,error:'public_url required'});const filtered=media.filter((x:any)=>String(x.id)!==item.id&&String(x.key)!==item.key);filtered.unshift(item);await saveContentSetting({media:filtered.slice(0,20),updated_at:new Date().toISOString()});return{ok:true,media:filtered}}catch(e:any){return reply.code(401).send({ok:false,error:e?.message||'Unauthorized'})}});
+ app.delete('/api/admin/content/:id',async(request,reply)=>{try{requireAdmin(request);const id=String((request.params as any).id||'');const current=await getContentSetting();const media=(Array.isArray(current.media)?current.media:[]).filter((x:any)=>String(x.id)!==id);await saveContentSetting({media,updated_at:new Date().toISOString()});return{ok:true,media}}catch(e:any){return reply.code(401).send({ok:false,error:e?.message||'Unauthorized'})}});
 }
