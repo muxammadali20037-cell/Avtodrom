@@ -1,100 +1,2499 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="uz">
 <head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#087443"><title>AVTODROM INDEX — ADMIN</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+
+<title>AVTODROM INDEX — Hisobotlar</title>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
 <style>
-:root{--g:#087443;--g2:#0b8a52;--bg:#f4f7f5;--card:#fff;--text:#14221b;--muted:#718078;--line:#dce6e0;--red:#b42318;--redbg:#fff0ee;--amber:#8a6500;--amberbg:#fff5d8;--blue:#245f91;--bluebg:#edf5fb;--shadow:0 12px 35px #16332712}
-*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:14px Arial,system-ui,sans-serif}button,input,select,textarea{font:inherit}button{cursor:pointer}.hidden{display:none!important}
-.top{height:70px;background:#fff;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;padding:0 20px;position:sticky;top:0;z-index:20}.brand{display:flex;gap:11px;align-items:center}.logo{width:40px;height:40px;border-radius:11px;background:var(--g);color:#fff;display:grid;place-items:center;font-weight:900}.brand b{display:block}.brand small{display:block;color:var(--muted);font-size:9px;letter-spacing:.5px;margin-top:3px}.tools{display:flex;gap:8px}.btn{border:1px solid var(--line);background:#fff;border-radius:10px;padding:10px 13px;font-weight:800;font-size:12px}.btn.primary{background:var(--g);border-color:var(--g);color:#fff}.btn.danger{background:var(--redbg);border-color:#ffd0ca;color:var(--red)}.btn:disabled{opacity:.5;cursor:not-allowed}
-.layout{max-width:1450px;margin:auto;padding:15px;display:grid;grid-template-columns:225px 1fr;gap:15px}.side{height:max-content;background:#fff;border:1px solid var(--line);border-radius:14px;padding:7px;position:sticky;top:85px}.nav{width:100%;border:0;background:transparent;text-align:left;padding:12px;border-radius:9px;color:var(--muted);font-weight:800}.nav:hover,.nav.on{background:#eaf7f0;color:var(--g)}
-.page{display:none}.page.on{display:block}.head{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;margin-bottom:15px}.head h1{margin:0;font-size:25px}.head p{margin:5px 0 0;color:var(--muted);font-size:12px}.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:15px;box-shadow:var(--shadow)}.stats{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}.label{font-size:11px;color:var(--muted)}.num{font-size:26px;font-weight:900;margin-top:6px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}.toolbar{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:11px}.input,.select,.textarea{width:100%;border:1px solid var(--line);border-radius:10px;padding:11px;background:#fff;outline:0}.input:focus,.select:focus,.textarea:focus{border-color:var(--g)}.textarea{min-height:90px;resize:vertical}.table{overflow:auto;border:1px solid var(--line);border-radius:10px}table{width:100%;border-collapse:collapse;min-width:760px}th,td{padding:10px;border-bottom:1px solid #edf1ef;text-align:left;font-size:12px;vertical-align:middle}th{font-size:10px;text-transform:uppercase;color:var(--muted);background:#f8faf9}.badge{display:inline-block;padding:5px 8px;border-radius:8px;font-size:9px;font-weight:900}.badge.ok{background:#eaf7f0;color:var(--g)}.badge.wait{background:var(--amberbg);color:var(--amber)}.badge.bad{background:var(--redbg);color:var(--red)}.badge.blue{background:var(--bluebg);color:var(--blue)}.notice{padding:11px;border-radius:10px;margin-bottom:12px;font-size:12px}.notice.err{background:var(--redbg);border:1px solid #ffd0ca;color:var(--red)}.notice.ok{background:#eaf7f0;border:1px solid #cce8d9;color:var(--g)}.empty{padding:28px;text-align:center;color:var(--muted)}
-.mediaGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.media{overflow:hidden;border:1px solid var(--line);border-radius:12px;background:#fff}.media video{width:100%;height:190px;display:block;background:#111;object-fit:contain}.media .body{padding:11px}.drop{border:2px dashed #c9d8d0;border-radius:12px;padding:16px;background:#f8fbf9}.preview{width:100%;max-height:260px;background:#111;border-radius:10px;margin-top:10px;display:none}.progress{height:7px;background:#e7efea;border-radius:9px;overflow:hidden;margin:10px 0}.progress i{display:block;height:100%;width:0;background:var(--g);transition:width .15s}.modalbg{position:fixed;inset:0;background:#0008;display:none;align-items:center;justify-content:center;padding:15px;z-index:100}.modalbg.on{display:flex}.modal{width:min(650px,100%);max-height:92vh;overflow:auto;background:#fff;border-radius:16px}.mh{position:sticky;top:0;background:#fff;z-index:2;padding:14px 16px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between}.x{border:0;background:#eef3f0;border-radius:9px;width:34px;height:34px;font-size:18px}.login{min-height:100vh;display:grid;place-items:center;padding:20px;background:linear-gradient(145deg,#eaf7ef,#f7faf8)}.loginbox{width:min(430px,100%);background:#fff;border:1px solid var(--line);border-radius:20px;padding:28px;box-shadow:var(--shadow)}.loginbox h1{margin:0 0 5px}.field{margin:13px 0}.field label{display:block;font-weight:800;font-size:11px;margin-bottom:6px}.spinner{display:inline-block;width:13px;height:13px;border:2px solid #ffffff66;border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}
-@media(max-width:1050px){.layout{grid-template-columns:1fr}.side{position:static;display:flex;overflow:auto}.nav{white-space:nowrap;width:auto}.stats{grid-template-columns:repeat(3,1fr)}.mediaGrid{grid-template-columns:repeat(2,1fr)}}@media(max-width:650px){.top{padding:0 9px}.brand small{display:none}.layout{padding:9px}.stats{grid-template-columns:1fr 1fr}.grid{grid-template-columns:1fr}.mediaGrid{grid-template-columns:1fr}.head{align-items:flex-start;flex-direction:column}.tools .btn{padding:9px}}
+*{
+  box-sizing:border-box;
+}
+
+body{
+  margin:0;
+  font-family:Inter,Arial,sans-serif;
+  background:#f4f7f5;
+  color:#17201b;
+}
+
+button,
+input,
+select{
+  font:inherit;
+}
+
+button{
+  cursor:pointer;
+}
+
+.header{
+  height:74px;
+  background:#fff;
+  border-bottom:1px solid #dfe7e2;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:0 28px;
+  position:sticky;
+  top:0;
+  z-index:20;
+}
+
+.brand{
+  display:flex;
+  align-items:center;
+  gap:12px;
+}
+
+.logo{
+  width:42px;
+  height:42px;
+  background:#07844c;
+  color:white;
+  border-radius:12px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-weight:900;
+}
+
+.brand-title{
+  font-size:17px;
+  font-weight:900;
+}
+
+.brand-sub{
+  font-size:10px;
+  color:#738078;
+  margin-top:2px;
+}
+
+.header-actions{
+  display:flex;
+  gap:10px;
+}
+
+.btn{
+  border:1px solid #d8e2dc;
+  background:#fff;
+  padding:10px 15px;
+  border-radius:10px;
+  font-weight:700;
+}
+
+.btn:hover{
+  background:#f2f6f4;
+}
+
+.btn-green{
+  background:#07844c;
+  border-color:#07844c;
+  color:white;
+}
+
+.btn-green:hover{
+  background:#066d3f;
+}
+
+.container{
+  max-width:1450px;
+  margin:auto;
+  padding:25px;
+}
+
+.page-title{
+  font-size:30px;
+  font-weight:900;
+  margin:0;
+}
+
+.page-sub{
+  color:#6e7c74;
+  margin-top:6px;
+}
+
+.filters{
+  margin-top:24px;
+  background:#fff;
+  border:1px solid #dfe7e2;
+  border-radius:16px;
+  padding:18px;
+  display:grid;
+  grid-template-columns:repeat(6,1fr);
+  gap:12px;
+}
+
+.field label{
+  display:block;
+  font-size:12px;
+  font-weight:800;
+  margin-bottom:6px;
+}
+
+.field input,
+.field select{
+  width:100%;
+  height:42px;
+  border:1px solid #d6e0da;
+  border-radius:9px;
+  padding:0 12px;
+  background:#fff;
+  outline:none;
+}
+
+.field input:focus,
+.field select:focus{
+  border-color:#07844c;
+}
+
+.filter-buttons{
+  display:flex;
+  align-items:end;
+  gap:8px;
+}
+
+.cards{
+  display:grid;
+  grid-template-columns:repeat(6,1fr);
+  gap:14px;
+  margin-top:18px;
+}
+
+.card{
+  background:#fff;
+  border:1px solid #dfe7e2;
+  border-radius:15px;
+  padding:17px;
+}
+
+.card-title{
+  font-size:12px;
+  color:#738078;
+  font-weight:800;
+}
+
+.card-value{
+  font-size:28px;
+  font-weight:900;
+  margin-top:8px;
+}
+
+.card-note{
+  margin-top:6px;
+  font-size:11px;
+  color:#89948e;
+}
+
+.section{
+  background:#fff;
+  border:1px solid #dfe7e2;
+  border-radius:16px;
+  margin-top:18px;
+  overflow:hidden;
+}
+
+.section-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:17px 18px;
+  border-bottom:1px solid #e7ece9;
+}
+
+.section-title{
+  font-size:17px;
+  font-weight:900;
+}
+
+.section-tools{
+  display:flex;
+  gap:8px;
+}
+
+.search{
+  height:38px;
+  padding:0 12px;
+  border:1px solid #d6e0da;
+  border-radius:8px;
+  outline:none;
+}
+
+.table-wrap{
+  overflow:auto;
+}
+
+table{
+  width:100%;
+  border-collapse:collapse;
+  min-width:900px;
+}
+
+th{
+  text-align:left;
+  font-size:11px;
+  color:#77837c;
+  background:#f8faf9;
+  padding:12px 14px;
+  white-space:nowrap;
+}
+
+td{
+  padding:13px 14px;
+  border-top:1px solid #edf1ef;
+  font-size:13px;
+  white-space:nowrap;
+}
+
+tr:hover td{
+  background:#fafcfb;
+}
+
+.badge{
+  display:inline-flex;
+  align-items:center;
+  padding:5px 9px;
+  border-radius:999px;
+  font-size:11px;
+  font-weight:900;
+}
+
+.badge-green{
+  background:#e4f6ed;
+  color:#087745;
+}
+
+.badge-yellow{
+  background:#fff3ce;
+  color:#8b6400;
+}
+
+.badge-red{
+  background:#ffe8e7;
+  color:#bd302a;
+}
+
+.badge-gray{
+  background:#edf1ef;
+  color:#637069;
+}
+
+.chart-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:18px;
+  margin-top:18px;
+}
+
+.hour-chart{
+  padding:20px;
+}
+
+.bar-row{
+  display:grid;
+  grid-template-columns:55px 1fr 55px;
+  gap:10px;
+  align-items:center;
+  margin:10px 0;
+}
+
+.bar{
+  height:22px;
+  background:#e8efeb;
+  border-radius:6px;
+  overflow:hidden;
+}
+
+.bar-inner{
+  height:100%;
+  background:#07844c;
+  border-radius:6px;
+}
+
+.bar-number{
+  font-weight:800;
+  text-align:right;
+}
+
+.comment{
+  max-width:500px;
+  white-space:normal;
+  line-height:1.45;
+}
+
+.loading{
+  text-align:center;
+  padding:35px;
+  color:#77837c;
+}
+
+.error{
+  background:#fff0ef;
+  color:#b82e28;
+  border:1px solid #ffc7c4;
+  padding:14px;
+  border-radius:10px;
+  margin-top:15px;
+}
+
+.empty{
+  text-align:center;
+  padding:40px;
+  color:#829089;
+}
+
+@media(max-width:1100px){
+  .cards{
+    grid-template-columns:repeat(3,1fr);
+  }
+
+  .filters{
+    grid-template-columns:repeat(3,1fr);
+  }
+}
+
+@media(max-width:700px){
+  .header{
+    padding:0 12px;
+  }
+
+  .container{
+    padding:12px;
+  }
+
+  .page-title{
+    font-size:23px;
+  }
+
+  .cards{
+    grid-template-columns:repeat(2,1fr);
+  }
+
+  .filters{
+    grid-template-columns:1fr;
+  }
+
+  .chart-grid{
+    grid-template-columns:1fr;
+  }
+
+  .header-actions .btn{
+    padding:8px;
+  }
+}
 </style>
 </head>
+
 <body>
-<div id="login" class="login"><form id="loginForm" class="loginbox">
-<div class="logo">AI</div><h1>AVTODROM INDEX</h1><p style="color:var(--muted);font-size:12px">Administrator paneliga xavfsiz kirish.</p>
-<div id="loginError" class="notice err hidden"></div>
-<div class="field"><label>LOGIN</label><input id="loginName" class="input" autocomplete="username" required></div>
-<div class="field"><label>PAROL</label><input id="loginPass" class="input" type="password" autocomplete="current-password" required></div>
-<button id="loginBtn" class="btn primary" style="width:100%;height:45px">Kirish</button>
-</form></div>
 
-<div id="app" class="hidden">
-<header class="top"><div class="brand"><div class="logo">AI</div><div><b>AVTODROM — ADMIN</b><small>ADMINISTRATOR PANELI · AVTODROM INDEX</small></div></div><div class="tools"><button class="btn" onclick="refreshAll()">↻ Yangilash</button><button class="btn danger" onclick="logout()">Chiqish</button></div></header>
-<div class="layout">
-<aside class="side">
-<button class="nav on" data-page="dash" onclick="go('dash')">Umumiy</button>
-<button class="nav" data-page="applications" onclick="go('applications')">📝 Instruktor arizalari <span id="appCount"></span></button>
-<button class="nav" data-page="inst" onclick="go('inst')">👨‍🏫 Instruktorlar</button>
-<button class="nav" data-page="book" onclick="go('book')">📋 Bronlar</button>
-<button class="nav" data-page="users" onclick="go('users')">👤 Foydalanuvchilar</button>
-<button class="nav" data-page="media" onclick="go('media')">🎬 Media / Video</button>
-<button class="nav" data-page="results" onclick="go('results')">📊 Natijalar</button>
-<button class="nav" data-page="prices" onclick="go('prices')">💰 Narxlar</button>
-<button class="nav" data-page="settings" onclick="go('settings')">⚙️ Sozlamalar</button>
-</aside>
-<main><div id="notice"></div>
-<section id="dash" class="page on"><div class="head"><div><h1>Umumiy boshqaruv</h1><p>Admin, foydalanuvchi va instruktor jarayonlari bitta panelda.</p></div><span class="badge ok">Tizim faol</span></div>
-<div class="stats"><div class="card"><div class="label">Foydalanuvchilar</div><div id="u" class="num">0</div></div><div class="card"><div class="label">Faol instruktorlar</div><div id="i" class="num">0</div></div><div class="card"><div class="label">Kutilayotgan bron</div><div id="p" class="num">0</div></div><div class="card"><div class="label">Bugungi bronlar</div><div id="t" class="num">0</div></div><div class="card"><div class="label">Bugungi tushum</div><div id="r" class="num">0</div><div class="label">so‘m</div></div></div>
-<div class="grid"><div class="card"><b>Instruktor arizalari</b><p class="label">Yangi arizalar shu yerga tushadi.</p><div id="dashApps" style="margin-top:14px"></div></div><div class="card"><b>Tezkor boshqaruv</b><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px"><button class="btn primary" onclick="go('applications')">Arizalarni ko‘rish</button><button class="btn" onclick="openVideo()">+ Video yuklash</button></div></div></div></section>
+<header class="header">
 
-<section id="applications" class="page"><div class="head"><div><h1>Instruktor arizalari</h1><p>Telegram botdan yuborilgan arizalar. Tasdiqlashdan keyin instructor avtomatik faol bo‘ladi.</p></div><button class="btn" onclick="loadApplications()">↻ Yangilash</button></div><div class="card"><div class="toolbar"><select id="appFilter" class="select" style="max-width:190px" onchange="loadApplications()"><option value="PENDING">Kutilayotgan</option><option value="APPROVED">Tasdiqlangan</option><option value="REJECTED">Rad etilgan</option><option value="">Barchasi</option></select></div><div class="table"><table><thead><tr><th>Ism</th><th>Telefon</th><th>Telegram ID</th><th>Tajriba</th><th>Izoh</th><th>Sana</th><th>Holat</th><th>Amal</th></tr></thead><tbody id="applicationsRows"></tbody></table></div></div></section>
+  <div class="brand">
+    <div class="logo">AI</div>
 
-<section id="inst" class="page"><div class="head"><div><h1>Instruktorlar</h1><p>Tasdiqlangan instruktorlar va ularning faol holati.</p></div><button class="btn" onclick="loadInstructors()">↻</button></div><div class="card"><div class="table"><table><thead><tr><th>ID</th><th>Ism</th><th>Telefon</th><th>Telegram</th><th>Holat</th><th>Amal</th></tr></thead><tbody id="instRows"></tbody></table></div></div></section>
+    <div>
+      <div class="brand-title">
+        AVTODROM — HISOBOTLAR
+      </div>
 
-<section id="book" class="page"><div class="head"><div><h1>Bronlar</h1><p>Mijoz bronlari va statuslari.</p></div></div><div class="card"><div class="toolbar"><input id="search" class="input" style="max-width:300px" placeholder="Qidirish..." oninput="renderBooks()"><select id="filter" class="select" style="max-width:180px" onchange="renderBooks()"><option value="">Barchasi</option><option value="pending">pending</option><option value="confirmed">confirmed</option><option value="in_progress">in_progress</option><option value="completed">completed</option><option value="cancelled">cancelled</option></select></div><div class="table"><table><thead><tr><th>ID</th><th>Mijoz</th><th>Instruktor</th><th>Sana</th><th>Vaqt</th><th>Narx</th><th>Holat</th><th>Amal</th></tr></thead><tbody id="bookRows"></tbody></table></div></div></section>
+      <div class="brand-sub">
+        ADMINISTRATOR PANELI
+      </div>
+    </div>
+  </div>
 
-<section id="users" class="page"><div class="head"><div><h1>Foydalanuvchilar</h1><p>Telegram orqali ro‘yxatdan o‘tgan mijozlar.</p></div><button class="btn" onclick="loadUsers()">↻</button></div><div class="card"><div class="table"><table><thead><tr><th>Telegram ID</th><th>Ism</th><th>Username</th><th>Customer ID</th><th>Sana</th></tr></thead><tbody id="userRows"></tbody></table></div></div></section>
+  <div class="header-actions">
+    <button class="btn" onclick="loadReports()">
+      🔄 Yangilash
+    </button>
 
-<section id="media" class="page"><div class="head"><div><h1>Media / Video</h1><p>Foydalanuvchi Mini App'da ko‘rinadigan videolar.</p></div><button class="btn primary" onclick="openVideo()">+ Galereyadan video</button></div><div class="card"><div id="mediaGrid" class="mediaGrid"></div></div></section>
+    <button class="btn btn-green" onclick="exportExcel()">
+      📥 Excel
+    </button>
+  </div>
 
-<section id="results" class="page"><div class="head"><div><h1>Natijalar</h1><p>Bronlar va tushum statistikasi.</p></div></div><div class="stats" style="grid-template-columns:repeat(3,1fr)"><div class="card"><div class="label">Jami bron</div><div id="rt" class="num">0</div></div><div class="card"><div class="label">Tugagan</div><div id="rc" class="num">0</div></div><div class="card"><div class="label">Jami tushum</div><div id="rr" class="num">0</div><div class="label">so‘m</div></div></div></section>
+</header>
 
-<section id="prices" class="page"><div class="head"><div><h1>Narxlar</h1><p>Xizmat tariflari.</p></div><button class="btn primary" onclick="openPrice()">+ Narx</button></div><div class="card"><div class="table"><table><thead><tr><th>Xizmat</th><th>Daqiqa</th><th>Narx</th><th>Holat</th></tr></thead><tbody id="priceRows"></tbody></table></div></div></section>
 
-<section id="settings" class="page"><div class="head"><div><h1>Sozlamalar</h1><p>Tizim sozlamalari.</p></div></div><div class="card"><div class="field"><label>Tizim nomi</label><input id="sys" class="input"></div><div class="field"><label>Bronlar</label><select id="ben" class="select"><option value="true">Yoqilgan</option><option value="false">O‘chirilgan</option></select></div><button class="btn primary" onclick="saveSettings()">Saqlash</button></div></section>
-</main></div></div>
+<main class="container">
 
-<div id="modal" class="modalbg"><div class="modal"><div class="mh"><b id="modalTitle">Video yuklash</b><button class="x" onclick="closeModal()">×</button></div><div id="modalBody" style="padding:16px"></div></div></div>
+  <h1 class="page-title">
+    📊 Kunlik va umumiy hisobot
+  </h1>
+
+  <div class="page-sub">
+    Bronlar, instruktorlar, foydalanuvchilar, tushum va sharhlar statistikasi
+  </div>
+
+
+  <!-- FILTER -->
+
+  <div class="filters">
+
+    <div class="field">
+      <label>Boshlanish sanasi</label>
+      <input type="date" id="dateFrom">
+    </div>
+
+    <div class="field">
+      <label>Tugash sanasi</label>
+      <input type="date" id="dateTo">
+    </div>
+
+    <div class="field">
+      <label>Instruktor</label>
+      <select id="instructorFilter">
+        <option value="">Barcha instruktorlar</option>
+      </select>
+    </div>
+
+    <div class="field">
+      <label>Holat</label>
+      <select id="statusFilter">
+        <option value="">Barcha holatlar</option>
+        <option value="pending">Kutilmoqda</option>
+        <option value="confirmed">Tasdiqlangan</option>
+        <option value="in_progress">Jarayonda</option>
+        <option value="completed">Tugagan</option>
+        <option value="cancelled">Bekor qilingan</option>
+        <option value="no_show">Kelmagan</option>
+        <option value="rejected">Rad etilgan</option>
+      </select>
+    </div>
+
+    <div class="field">
+      <label>Qidirish</label>
+      <input
+        type="text"
+        id="search"
+        placeholder="Ism, telefon, instruktor..."
+        oninput="renderAll()"
+      >
+    </div>
+
+    <div class="filter-buttons">
+      <button class="btn btn-green" onclick="loadReports()">
+        Hisobotni ko‘rsatish
+      </button>
+    </div>
+
+  </div>
+
+
+  <!-- MAIN CARDS -->
+
+  <div class="cards">
+
+    <div class="card">
+      <div class="card-title">JAMI BRON</div>
+      <div class="card-value" id="totalBookings">0</div>
+      <div class="card-note">Tanlangan davr</div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">KELGAN</div>
+      <div class="card-value" id="arrived">0</div>
+      <div class="card-note" id="arrivedPercent">0%</div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">KELMAGAN</div>
+      <div class="card-value" id="noShow">0</div>
+      <div class="card-note" id="noShowPercent">0%</div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">BEKOR QILINGAN</div>
+      <div class="card-value" id="cancelled">0</div>
+      <div class="card-note">Bekor qilingan bronlar</div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">TUGAGAN</div>
+      <div class="card-value" id="completed">0</div>
+      <div class="card-note">Muvaffaqiyatli yakunlangan</div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">TUSHUM</div>
+      <div class="card-value" id="revenue">0</div>
+      <div class="card-note">so‘m</div>
+    </div>
+
+  </div>
+
+
+  <!-- HOURLY + DAILY -->
+
+  <div class="chart-grid">
+
+    <div class="section">
+      <div class="section-head">
+        <div class="section-title">
+          🕐 Soat bo‘yicha bronlar
+        </div>
+      </div>
+
+      <div class="hour-chart" id="hourChart">
+        <div class="loading">Yuklanmoqda...</div>
+      </div>
+    </div>
+
+
+    <div class="section">
+      <div class="section-head">
+        <div class="section-title">
+          📅 Kunlik statistika
+        </div>
+      </div>
+
+      <div class="table-wrap">
+
+        <table>
+
+          <thead>
+            <tr>
+              <th>SANA</th>
+              <th>BRON</th>
+              <th>KELDI</th>
+              <th>KELMAGAN</th>
+              <th>BEKOR</th>
+              <th>TUGADI</th>
+              <th>TUSHUM</th>
+            </tr>
+          </thead>
+
+          <tbody id="dailyBody"></tbody>
+
+        </table>
+
+      </div>
+    </div>
+
+  </div>
+
+
+  <!-- INSTRUCTORS -->
+
+  <div class="section">
+
+    <div class="section-head">
+
+      <div class="section-title">
+        👨‍🏫 Instruktorlar statistikasi
+      </div>
+
+      <input
+        class="search"
+        id="instructorSearch"
+        placeholder="Instruktor qidirish..."
+        oninput="renderInstructorTable()"
+      >
+
+    </div>
+
+    <div class="table-wrap">
+
+      <table>
+
+        <thead>
+
+          <tr>
+            <th>INSTRUKTOR</th>
+            <th>JAMI BRON</th>
+            <th>TASDIQLANGAN</th>
+            <th>KELDI</th>
+            <th>KELMAGAN</th>
+            <th>BEKOR</th>
+            <th>TUGATDI</th>
+            <th>TUSHUM</th>
+            <th>REYTING</th>
+          </tr>
+
+        </thead>
+
+        <tbody id="instructorBody"></tbody>
+
+      </table>
+
+    </div>
+
+  </div>
+
+
+  <!-- BOOKINGS -->
+
+  <div class="section">
+
+    <div class="section-head">
+
+      <div class="section-title">
+        📋 Bronlar tafsiloti
+      </div>
+
+    </div>
+
+    <div class="table-wrap">
+
+      <table>
+
+        <thead>
+
+          <tr>
+            <th>SANA</th>
+            <th>VAQT</th>
+            <th>MIJOZ</th>
+            <th>TELEFON</th>
+            <th>INSTRUKTOR</th>
+            <th>HOLAT</th>
+            <th>SUMMA</th>
+          </tr>
+
+        </thead>
+
+        <tbody id="bookingBody"></tbody>
+
+      </table>
+
+    </div>
+
+  </div>
+
+
+  <!-- USERS -->
+
+  <div class="section">
+
+    <div class="section-head">
+
+      <div class="section-title">
+        👤 Foydalanuvchilar statistikasi
+      </div>
+
+    </div>
+
+    <div class="table-wrap">
+
+      <table>
+
+        <thead>
+
+          <tr>
+            <th>FOYDALANUVCHI</th>
+            <th>TELEFON</th>
+            <th>JAMI BRON</th>
+            <th>KELDI</th>
+            <th>KELMAGAN</th>
+            <th>BEKOR</th>
+            <th>JAMI TUSHUM</th>
+          </tr>
+
+        </thead>
+
+        <tbody id="userBody"></tbody>
+
+      </table>
+
+    </div>
+
+  </div>
+
+
+  <!-- REVIEWS -->
+
+  <div class="section">
+
+    <div class="section-head">
+
+      <div class="section-title">
+        ⭐ Foydalanuvchilar sharhlari
+      </div>
+
+    </div>
+
+    <div class="table-wrap">
+
+      <table>
+
+        <thead>
+
+          <tr>
+            <th>SANA</th>
+            <th>FOYDALANUVCHI</th>
+            <th>INSTRUKTOR</th>
+            <th>REYTING</th>
+            <th>KOMMENTARIYA</th>
+          </tr>
+
+        </thead>
+
+        <tbody id="reviewBody"></tbody>
+
+      </table>
+
+    </div>
+
+  </div>
+
+
+  <div id="errorBox"></div>
+
+</main>
+
+
 <script>
-const $=id=>document.getElementById(id),esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])),money=x=>new Intl.NumberFormat('uz-UZ').format(Number(x||0));
-let books=[],applications=[],instructors=[];
-function token(){return sessionStorage.getItem('avtodrom_admin_token')||localStorage.getItem('avtodrom_admin_token')||''}
-async function request(url,opt={}){const h={'content-type':'application/json',...(opt.headers||{})};const t=token();if(t)h.Authorization='Bearer '+t;const r=await fetch(url,{...opt,credentials:'include',cache:'no-store',headers:h});const text=await r.text();let d={};try{d=text?JSON.parse(text):{}}catch{d={error:text||'Server noto‘g‘ri javob qaytardi'}}if(r.status===401){logout();throw new Error('Admin sessiyasi tugagan. Qayta kiring.')}if(!r.ok)throw new Error(d.error||`Server xatosi (${r.status})`);return d}
-function note(text,type='err'){const n=$('notice');n.className='notice '+(type==='ok'?'ok':'err');n.textContent=text;setTimeout(()=>{if(n.textContent===text)n.className='notice hidden'},5000)}
-function go(id){document.querySelectorAll('.page').forEach(x=>x.classList.remove('on'));$(id)?.classList.add('on');document.querySelectorAll('.nav').forEach(x=>x.classList.toggle('on',x.dataset.page===id));if(id==='applications')loadApplications();if(id==='inst')loadInstructors();if(id==='book')loadBookings();if(id==='users')loadUsers();if(id==='media')loadMedia();if(id==='results')loadResults();if(id==='prices')loadPrices();if(id==='settings')loadSettings()}
-async function login(login,password){const r=await fetch('/api/admin/login',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({login,password}),credentials:'include'});const d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.error||'Kirish amalga oshmadi');if(d.token)sessionStorage.setItem('avtodrom_admin_token',d.token);localStorage.removeItem('avtodrom_admin_token');return d}
-$('loginForm').addEventListener('submit',async e=>{e.preventDefault();$('loginError').classList.add('hidden');const b=$('loginBtn');b.disabled=true;b.innerHTML='<span class="spinner"></span> Kirilmoqda...';try{await login($('loginName').value.trim(),$('loginPass').value);$('login').classList.add('hidden');$('app').classList.remove('hidden');await refreshAll()}catch(err){$('loginError').textContent=err.message;$('loginError').classList.remove('hidden')}finally{b.disabled=false;b.textContent='Kirish'}});
-function logout(){sessionStorage.removeItem('avtodrom_admin_token');localStorage.removeItem('avtodrom_admin_token');$('app').classList.add('hidden');$('login').classList.remove('hidden')}
-async function refreshAll(){try{const d=await request('/api/admin/panel?action=dashboard');const x=d.dashboard||{};$('u').textContent=x.users||0;$('i').textContent=x.activeInstructors||0;$('p').textContent=x.pendingBookings||0;$('t').textContent=x.todayBookings||0;$('r').textContent=money(x.todayRevenue||0);$('appCount').textContent=x.pendingInstructorApplications?`(${x.pendingInstructorApplications})`:'';$('dashApps').innerHTML=x.pendingInstructorApplications?`<span class="badge wait">${x.pendingInstructorApplications} ta yangi ariza</span>`:'<span class="badge ok">Yangi ariza yo‘q</span>';await loadMedia();}catch(e){note(e.message)}}
-function statusBadge(s){s=String(s||'').toUpperCase();if(s==='APPROVED'||s==='COMPLETED'||s==='CONFIRMED')return `<span class="badge ok">${esc(s)}</span>`;if(s==='PENDING'||s==='IN_PROGRESS')return `<span class="badge wait">${esc(s)}</span>`;if(s==='REJECTED'||s==='CANCELLED')return `<span class="badge bad">${esc(s)}</span>`;return `<span class="badge blue">${esc(s)}</span>`}
-async function loadApplications(){try{const d=await request('/api/admin/panel?action=instructor-applications&status='+encodeURIComponent($('appFilter')?.value||''));applications=d.applications||[];const body=$('applicationsRows');if(!applications.length){body.innerHTML='<tr><td colspan="8" class="empty">Arizalar topilmadi.</td></tr>';return}body.innerHTML=applications.map(a=>`<tr><td><b>${esc(a.first_name)} ${esc(a.last_name)}</b></td><td>${esc(a.phone)}</td><td>${esc(a.telegram_user_id)}</td><td>${a.experience_years==null?'—':esc(a.experience_years+' yil')}</td><td style="max-width:220px">${esc(a.message||'—')}</td><td>${a.created_at?new Date(a.created_at).toLocaleString('uz-UZ'):''}</td><td>${statusBadge(a.status)}</td><td>${String(a.status).toUpperCase()==='PENDING'?`<div style="display:flex;gap:5px"><button class="btn primary" onclick="approve('${a.id}')">Tasdiqlash</button><button class="btn danger" onclick="rejectApp('${a.id}')">Rad</button></div>`:'—'}</td></tr>`).join('')}catch(e){note(e.message)}}
-async function approve(id){if(!confirm('Ushbu instruktorni tasdiqlaysizmi?'))return;try{await request('/api/admin/panel?action=approve-instructor',{method:'POST',body:JSON.stringify({id})});note('Instruktor tasdiqlandi va faol qilindi.','ok');await loadApplications();await loadInstructors();await refreshAll()}catch(e){note(e.message)}}
-async function rejectApp(id){const reason=prompt('Rad etish sababi (ixtiyoriy):','');if(reason===null)return;try{await request('/api/admin/panel?action=reject-instructor',{method:'POST',body:JSON.stringify({id,reason})});note('Ariza rad etildi.','ok');await loadApplications();await refreshAll()}catch(e){note(e.message)}}
-async function loadInstructors(){try{const d=await request('/api/admin/panel?action=instructors');instructors=d.instructors||[];const body=$('instRows');if(!instructors.length){body.innerHTML='<tr><td colspan="6" class="empty">Tasdiqlangan instruktor yo‘q.</td></tr>';return}body.innerHTML=instructors.map(i=>`<tr><td>${esc(i.id)}</td><td><b>${esc(i.first_name||'')} ${esc(i.last_name||'')}</b></td><td>${esc(i.phone||'—')}</td><td>${esc(i.telegram_user_id||'—')}</td><td>${i.active&&i.approved?'<span class="badge ok">FAOL</span>':'<span class="badge bad">NOFAOL</span>'}</td><td><button class="btn ${i.active?'danger':'primary'}" onclick="toggleInstructor('${i.id}',${!i.active})">${i.active?'O‘chirish':'Faollashtirish'}</button></td></tr>`).join('')}catch(e){note(e.message)}}
-async function toggleInstructor(id,active){try{await request('/api/admin/panel?action=instructor-status',{method:'PATCH',body:JSON.stringify({id,active})});await loadInstructors();await refreshAll();note(active?'Instruktor faollashtirildi.':'Instruktor vaqtincha o‘chirildi.','ok')}catch(e){note(e.message)}}
-async function loadBookings(){try{const d=await request('/api/admin/panel?action=bookings');books=d.bookings||[];renderBooks()}catch(e){note(e.message)}}
-function renderBooks(){const q=($('search')?.value||'').toLowerCase(),f=$('filter')?.value||'';const rows=books.filter(b=>(!f||b.status===f)&&(!q||JSON.stringify(b).toLowerCase().includes(q)));$('bookRows').innerHTML=rows.length?rows.map(b=>`<tr><td>${esc(String(b.id).slice(0,8))}</td><td>${esc(b.customer_name||b.tg_user_id||b.customer_id||'—')}</td><td>${esc(b.instructor_name||b.instructor_id||'—')}</td><td>${esc(b.date||'—')}</td><td>${esc(b.time||'—')}</td><td>${money(b.price)} so‘m</td><td>${statusBadge(b.status)}</td><td>${b.status==='pending'?'<button class="btn primary" onclick="setBooking(\''+esc(b.id)+'\',\'confirmed\')">Tasdiqlash</button>':'—'}</td></tr>`).join(''):'<tr><td colspan="8" class="empty">Bronlar topilmadi.</td></tr>'}
-async function setBooking(id,status){try{await request('/api/admin/panel?action=booking-status',{method:'PATCH',body:JSON.stringify({id,status})});await loadBookings();await refreshAll();note('Bron holati yangilandi.','ok')}catch(e){note(e.message)}}
-async function loadUsers(){try{const d=await request('/api/admin/panel?action=users'),rows=d.users||[];$('userRows').innerHTML=rows.length?rows.map(u=>`<tr><td>${esc(u.tg_id)}</td><td>${esc(u.first_name||'')}</td><td>${esc(u.username?'@'+u.username:'—')}</td><td>${esc(u.customer_id||'—')}</td><td>${u.created_at?new Date(u.created_at).toLocaleString('uz-UZ'):''}</td></tr>`).join(''):'<tr><td colspan="5" class="empty">Foydalanuvchilar topilmadi.</td></tr>'}catch(e){note(e.message)}}
-async function loadMedia(){try{const d=await request('/api/admin/panel?action=media'),rows=d.media||[];$('mediaGrid').innerHTML=rows.length?rows.map(m=>`<div class="media"><video src="${esc(m.url)}" controls preload="metadata"></video><div class="body"><b>${esc(m.title)}</b><div class="label" style="margin-top:6px">${m.created_at?new Date(m.created_at).toLocaleString('uz-UZ'):''}</div><button class="btn danger" style="margin-top:9px" onclick="deleteMedia('${esc(m.id)}')">O‘chirish</button></div></div>`).join(''):'<div class="empty" style="grid-column:1/-1">Hozircha video joylanmagan.</div>'}catch(e){note(e.message)}}
-async function deleteMedia(id){if(!confirm('Videoni o‘chirasizmi?'))return;try{await request('/api/admin/panel?action=media&id='+encodeURIComponent(id),{method:'DELETE'});await loadMedia();note('Video o‘chirildi.','ok')}catch(e){note(e.message)}}
-function openVideo(){
- $('modalTitle').textContent='Video yuklash';$('modalBody').innerHTML=`<div class="field"><label>Sarlavha *</label><input id="vtitle" class="input" placeholder="Masalan: Avtodrom darsi"></div><div class="field"><label>Video fayl *</label><div class="drop"><input id="vfile" type="file" accept="video/mp4,video/webm,video/quicktime,video/*"><div class="label" style="margin-top:5px">MP4 / WebM / MOV · maksimal 500 MB</div><video id="vpreview" class="preview" controls></video></div></div><div id="vstatus" class="notice hidden"></div><div class="progress"><i id="vprogress"></i></div><button id="vupload" class="btn primary" style="width:100%" onclick="uploadVideo()">Videoni yuklash</button>`;$('modal').classList.add('on');$('vfile').addEventListener('change',previewVideo)
+
+/* =========================================================
+   SUPABASE
+========================================================= */
+
+const SUPABASE_URL =
+  "https://izmonnkzyolaqwjwjvzj.supabase.coL";
+
+const SUPABASE_ANON_KEY =
+  "sb_publishable_REVq-3nTJ-SDUEJQmDP7Bw_Xxg5Uqrx";
+
+const supabaseClient =
+  window.supabase.createClient(
+    SUPABASE_URL,
+    SUPABASE_ANON_KEY
+  );
+
+
+/* =========================================================
+   GLOBAL DATA
+========================================================= */
+
+let bookings = [];
+let instructors = [];
+let reviews = [];
+
+let filteredBookings = [];
+
+
+/* =========================================================
+   INIT
+========================================================= */
+
+document.addEventListener("DOMContentLoaded", async () => {
+
+  setDefaultDates();
+
+  await loadInstructors();
+
+  await loadReports();
+
+});
+
+
+/* =========================================================
+   DEFAULT DATES
+========================================================= */
+
+function setDefaultDates(){
+
+  const now = new Date();
+
+  const today =
+    now.toISOString().slice(0,10);
+
+  document.getElementById("dateFrom").value =
+    today;
+
+  document.getElementById("dateTo").value =
+    today;
 }
-function previewVideo(){const f=$('vfile').files[0],v=$('vpreview');if(!f)return;if(f.size>500*1024*1024){setVStatus('Video 500 MB dan katta.','err');$('vfile').value='';v.style.display='none';return}v.src=URL.createObjectURL(f);v.style.display='block';setVStatus(`${f.name} · ${(f.size/1024/1024).toFixed(1)} MB`,'ok')}
-function setVStatus(t,type='ok'){$('vstatus').textContent=t;$('vstatus').className='notice '+(type==='ok'?'ok':'err')}
-async function uploadVideo(){const title=$('vtitle').value.trim(),file=$('vfile').files[0],btn=$('vupload');if(!title)return setVStatus('Sarlavha kiriting.','err');if(!file)return setVStatus('Video fayl tanlang.','err');if(file.size>500*1024*1024)return setVStatus('Video 500 MB dan katta.','err');btn.disabled=true;btn.textContent='Yuklanmoqda...';$('vprogress').style.width='3%';try{const sign=await request('/api/admin/panel?action=sign',{method:'POST',body:JSON.stringify({file_name:file.name,content_type:file.type,file_size:file.size})});$('vprogress').style.width='10%';const r=await fetch(sign.upload_url,{method:'PUT',headers:{'Content-Type':file.type||'video/mp4','x-upsert':'true'},body:file});if(!r.ok){const tx=await r.text();throw new Error(`Storage yuklash xatosi (${r.status}): ${tx.slice(0,180)}`)}$('vprogress').style.width='90%';await request('/api/admin/panel?action=commit',{method:'POST',body:JSON.stringify({storage_path:sign.storage_path,public_url:sign.public_url,title})});$('vprogress').style.width='100%';setVStatus('Video muvaffaqiyatli joylandi.','ok');await loadMedia();setTimeout(closeModal,600)}catch(e){setVStatus(e.message,'err');$('vprogress').style.width='0'}finally{btn.disabled=false;btn.textContent='Videoni yuklash'}}
-function closeModal(){$('modal').classList.remove('on')}
-function openPrice(){$('modalTitle').textContent='Yangi narx';$('modalBody').innerHTML=`<div class="field"><label>Xizmat</label><input id="pn" class="input" placeholder="Avtodrom"></div><div class="field"><label>Daqiqa</label><input id="pd" class="input" type="number" value="60"></div><div class="field"><label>Narx (so‘m)</label><input id="pp" class="input" type="number" value="50000"></div><button class="btn primary" style="width:100%" onclick="savePrice()">Saqlash</button>`;$('modal').classList.add('on')}
-async function savePrice(){try{await request('/api/admin/panel?action=price',{method:'POST',body:JSON.stringify({name:$('pn').value,duration_minutes:$('pd').value,price:$('pp').value})});closeModal();await loadPrices();note('Narx saqlandi.','ok')}catch(e){note(e.message)}}
-async function loadPrices(){try{const d=await request('/api/admin/panel?action=prices'),rows=d.prices||[];$('priceRows').innerHTML=rows.length?rows.map(p=>`<tr><td>${esc(p.name)}</td><td>${esc(p.duration_minutes)}</td><td>${money(p.price)} so‘m</td><td>${statusBadge(p.status)}</td></tr>`).join(''):'<tr><td colspan="4" class="empty">Narxlar kiritilmagan.</td></tr>'}catch(e){note(e.message)}}
-async function loadResults(){try{const d=await request('/api/admin/panel?action=results'),s=d.summary||{};$('rt').textContent=s.total||0;$('rc').textContent=s.completed||0;$('rr').textContent=money(s.revenue||0)}catch(e){note(e.message)}}
-async function loadSettings(){try{const d=await request('/api/admin/panel?action=settings'),s=d.settings||{};$('sys').value=s.system_name||'AVTODROM INDEX';$('ben').value=String(s.bookings_enabled!==false)}catch(e){note(e.message)}}
-async function saveSettings(){try{await request('/api/admin/panel?action=settings',{method:'PATCH',body:JSON.stringify({system_name:$('sys').value,bookings_enabled:$('ben').value==='true'})});note('Sozlamalar saqlandi.','ok')}catch(e){note(e.message)}}
-(async()=>{if(token()){try{$('login').classList.add('hidden');$('app').classList.remove('hidden');await refreshAll()}catch{logout()}}})();
+
+
+/* =========================================================
+   LOAD INSTRUCTORS
+========================================================= */
+
+async function loadInstructors(){
+
+  try{
+
+    const {data,error} =
+      await supabaseClient
+        .from("instructors")
+        .select("*")
+        .order("created_at",{ascending:false});
+
+    if(error) throw error;
+
+    instructors = data || [];
+
+    const select =
+      document.getElementById("instructorFilter");
+
+    select.innerHTML =
+      `<option value="">Barcha instruktorlar</option>`;
+
+    instructors.forEach(i => {
+
+      const name =
+        getInstructorName(i);
+
+      const option =
+        document.createElement("option");
+
+      option.value =
+        i.id;
+
+      option.textContent =
+        name;
+
+      select.appendChild(option);
+
+    });
+
+  }catch(error){
+
+    showError(
+      "Instruktorlarni yuklashda xato: "
+      + error.message
+    );
+
+  }
+
+}
+
+
+/* =========================================================
+   LOAD REPORTS
+========================================================= */
+
+async function loadReports(){
+
+  clearError();
+
+  try{
+
+    const from =
+      document.getElementById("dateFrom").value;
+
+    const to =
+      document.getElementById("dateTo").value;
+
+    const status =
+      document.getElementById("statusFilter").value;
+
+    let query =
+      supabaseClient
+        .from("bookings")
+        .select("*")
+        .gte("created_at", from + "T00:00:00")
+        .lte("created_at", to + "T23:59:59")
+        .order("created_at",{ascending:false});
+
+    if(status){
+
+      query =
+        query.eq("status",status);
+
+    }
+
+    const instructor =
+      document.getElementById("instructorFilter").value;
+
+    if(instructor){
+
+      query =
+        query.eq(
+          "instructor_id",
+          instructor
+        );
+
+    }
+
+    const result =
+      await query;
+
+    if(result.error)
+      throw result.error;
+
+    bookings =
+      result.data || [];
+
+
+    /*
+      SHARHLAR
+    */
+
+    const reviewResult =
+      await supabaseClient
+        .from("reviews")
+        .select("*")
+        .gte("created_at", from + "T00:00:00")
+        .lte("created_at", to + "T23:59:59")
+        .order("created_at",{ascending:false});
+
+    if(reviewResult.error){
+
+      console.warn(
+        "reviews jadvali:",
+        reviewResult.error.message
+      );
+
+      reviews = [];
+
+    }else{
+
+      reviews =
+        reviewResult.data || [];
+
+    }
+
+
+    filteredBookings =
+      applySearch(bookings);
+
+    renderAll();
+
+  }catch(error){
+
+    showError(
+      "Hisobotni yuklashda xato: "
+      + error.message
+    );
+
+  }
+
+}
+
+
+/* =========================================================
+   SEARCH
+========================================================= */
+
+function applySearch(data){
+
+  const q =
+    document
+      .getElementById("search")
+      .value
+      .trim()
+      .toLowerCase();
+
+  if(!q)
+    return data;
+
+  return data.filter(b => {
+
+    const text =
+      JSON.stringify(b)
+        .toLowerCase();
+
+    return text.includes(q);
+
+  });
+
+}
+
+
+/* =========================================================
+   RENDER ALL
+========================================================= */
+
+function renderAll(){
+
+  filteredBookings =
+    applySearch(bookings);
+
+  renderCards();
+
+  renderHourChart();
+
+  renderDaily();
+
+  renderInstructorTable();
+
+  renderBookingTable();
+
+  renderUserTable();
+
+  renderReviewTable();
+
+}
+
+
+/* =========================================================
+   CARDS
+========================================================= */
+
+function renderCards(){
+
+  const total =
+    filteredBookings.length;
+
+  const arrived =
+    filteredBookings.filter(
+      isArrived
+    ).length;
+
+  const noShow =
+    filteredBookings.filter(
+      b => b.status === "no_show"
+    ).length;
+
+  const cancelled =
+    filteredBookings.filter(
+      b => b.status === "cancelled"
+    ).length;
+
+  const completed =
+    filteredBookings.filter(
+      b => b.status === "completed"
+    ).length;
+
+  const revenue =
+    filteredBookings
+      .filter(b => b.status === "completed")
+      .reduce(
+        (sum,b) =>
+          sum + getAmount(b),
+        0
+      );
+
+
+  setText(
+    "totalBookings",
+    total
+  );
+
+  setText(
+    "arrived",
+    arrived
+  );
+
+  setText(
+    "noShow",
+    noShow
+  );
+
+  setText(
+    "cancelled",
+    cancelled
+  );
+
+  setText(
+    "completed",
+    completed
+  );
+
+  setText(
+    "revenue",
+    formatMoney(revenue)
+  );
+
+
+  setText(
+    "arrivedPercent",
+    percent(arrived,total)
+  );
+
+  setText(
+    "noShowPercent",
+    percent(noShow,total)
+  );
+
+}
+
+
+/* =========================================================
+   HOUR CHART
+========================================================= */
+
+function renderHourChart(){
+
+  const counts =
+    {};
+
+  for(let h=0;h<24;h++){
+
+    counts[h] = 0;
+
+  }
+
+
+  filteredBookings.forEach(b => {
+
+    const date =
+      getBookingDate(b);
+
+    if(!date)
+      return;
+
+    const hour =
+      new Date(date)
+        .getHours();
+
+    counts[hour]++;
+
+  });
+
+
+  const max =
+    Math.max(
+      1,
+      ...Object.values(counts)
+    );
+
+
+  let html = "";
+
+  for(let h=0;h<24;h++){
+
+    const count =
+      counts[h];
+
+    const width =
+      (count/max)*100;
+
+    html += `
+      <div class="bar-row">
+
+        <div>
+          ${String(h).padStart(2,"0")}:00
+        </div>
+
+        <div class="bar">
+          <div
+            class="bar-inner"
+            style="width:${width}%"
+          ></div>
+        </div>
+
+        <div class="bar-number">
+          ${count}
+        </div>
+
+      </div>
+    `;
+
+  }
+
+
+  document.getElementById(
+    "hourChart"
+  ).innerHTML = html;
+
+}
+
+
+/* =========================================================
+   DAILY REPORT
+========================================================= */
+
+function renderDaily(){
+
+  const days = {};
+
+  filteredBookings.forEach(b => {
+
+    const date =
+      getBookingDate(b);
+
+    if(!date)
+      return;
+
+    const key =
+      new Date(date)
+        .toISOString()
+        .slice(0,10);
+
+    if(!days[key]){
+
+      days[key] = {
+        total:0,
+        arrived:0,
+        noShow:0,
+        cancelled:0,
+        completed:0,
+        revenue:0
+      };
+
+    }
+
+
+    days[key].total++;
+
+    if(isArrived(b))
+      days[key].arrived++;
+
+    if(b.status === "no_show")
+      days[key].noShow++;
+
+    if(b.status === "cancelled")
+      days[key].cancelled++;
+
+    if(b.status === "completed"){
+
+      days[key].completed++;
+
+      days[key].revenue +=
+        getAmount(b);
+
+    }
+
+  });
+
+
+  const body =
+    document.getElementById(
+      "dailyBody"
+    );
+
+  const keys =
+    Object.keys(days)
+      .sort()
+      .reverse();
+
+
+  if(!keys.length){
+
+    body.innerHTML =
+      `<tr><td colspan="7" class="empty">
+        Ma'lumot topilmadi
+      </td></tr>`;
+
+    return;
+
+  }
+
+
+  body.innerHTML =
+    keys.map(key => {
+
+      const d =
+        days[key];
+
+      return `
+        <tr>
+
+          <td>
+            <strong>${formatDate(key)}</strong>
+          </td>
+
+          <td>${d.total}</td>
+
+          <td>
+            <span class="badge badge-green">
+              ${d.arrived}
+            </span>
+          </td>
+
+          <td>
+            <span class="badge badge-yellow">
+              ${d.noShow}
+            </span>
+          </td>
+
+          <td>
+            <span class="badge badge-red">
+              ${d.cancelled}
+            </span>
+          </td>
+
+          <td>${d.completed}</td>
+
+          <td>
+            <strong>
+              ${formatMoney(d.revenue)} so‘m
+            </strong>
+          </td>
+
+        </tr>
+      `;
+
+    }).join("");
+
+}
+
+
+/* =========================================================
+   INSTRUCTOR REPORT
+========================================================= */
+
+function renderInstructorTable(){
+
+  const search =
+    document
+      .getElementById("instructorSearch")
+      .value
+      .trim()
+      .toLowerCase();
+
+
+  const map = {};
+
+
+  filteredBookings.forEach(b => {
+
+    const id =
+      b.instructor_id ||
+      b.instructorId ||
+      "unknown";
+
+    if(!map[id]){
+
+      map[id] = {
+        id,
+        total:0,
+        confirmed:0,
+        arrived:0,
+        noShow:0,
+        cancelled:0,
+        completed:0,
+        revenue:0
+      };
+
+    }
+
+
+    const x =
+      map[id];
+
+    x.total++;
+
+    if(b.status === "confirmed")
+      x.confirmed++;
+
+    if(isArrived(b))
+      x.arrived++;
+
+    if(b.status === "no_show")
+      x.noShow++;
+
+    if(b.status === "cancelled")
+      x.cancelled++;
+
+    if(b.status === "completed"){
+
+      x.completed++;
+
+      x.revenue +=
+        getAmount(b);
+
+    }
+
+  });
+
+
+  let rows =
+    Object.values(map);
+
+
+  rows =
+    rows.filter(x => {
+
+      const instructor =
+        instructors.find(
+          i => String(i.id) === String(x.id)
+        );
+
+      const name =
+        instructor
+          ? getInstructorName(instructor)
+          : "Noma'lum instruktor";
+
+      return !search ||
+        name.toLowerCase().includes(search);
+
+    });
+
+
+  const body =
+    document.getElementById(
+      "instructorBody"
+    );
+
+
+  if(!rows.length){
+
+    body.innerHTML =
+      `<tr>
+        <td colspan="9" class="empty">
+          Instruktor statistikasi topilmadi
+        </td>
+      </tr>`;
+
+    return;
+
+  }
+
+
+  body.innerHTML =
+    rows.map(x => {
+
+      const instructor =
+        instructors.find(
+          i => String(i.id) === String(x.id)
+        );
+
+      const name =
+        instructor
+          ? getInstructorName(instructor)
+          : "Noma'lum";
+
+
+      const rating =
+        getInstructorRating(x.id);
+
+
+      return `
+        <tr>
+
+          <td>
+            <strong>${escapeHtml(name)}</strong>
+          </td>
+
+          <td>${x.total}</td>
+
+          <td>${x.confirmed}</td>
+
+          <td>
+            <span class="badge badge-green">
+              ${x.arrived}
+            </span>
+          </td>
+
+          <td>
+            <span class="badge badge-yellow">
+              ${x.noShow}
+            </span>
+          </td>
+
+          <td>
+            <span class="badge badge-red">
+              ${x.cancelled}
+            </span>
+          </td>
+
+          <td>${x.completed}</td>
+
+          <td>
+            ${formatMoney(x.revenue)}
+            so‘m
+          </td>
+
+          <td>
+            ⭐ ${rating}
+          </td>
+
+        </tr>
+      `;
+
+    }).join("");
+
+}
+
+
+/* =========================================================
+   BOOKING TABLE
+========================================================= */
+
+function renderBookingTable(){
+
+  const body =
+    document.getElementById(
+      "bookingBody"
+    );
+
+
+  if(!filteredBookings.length){
+
+    body.innerHTML =
+      `<tr>
+        <td colspan="7" class="empty">
+          Bronlar topilmadi
+        </td>
+      </tr>`;
+
+    return;
+
+  }
+
+
+  body.innerHTML =
+    filteredBookings.map(b => {
+
+      const instructor =
+        instructors.find(
+          i =>
+            String(i.id) ===
+            String(
+              b.instructor_id ||
+              b.instructorId
+            )
+        );
+
+
+      const date =
+        getBookingDate(b);
+
+      const clientName =
+        b.user_name ||
+        b.customer_name ||
+        b.name ||
+        b.full_name ||
+        "Noma'lum";
+
+
+      const phone =
+        b.phone ||
+        b.user_phone ||
+        b.customer_phone ||
+        "—";
+
+
+      return `
+        <tr>
+
+          <td>
+            ${date
+              ? formatDate(date)
+              : "—"}
+          </td>
+
+          <td>
+            ${date
+              ? new Date(date)
+                .toLocaleTimeString(
+                  "uz-UZ",
+                  {
+                    hour:"2-digit",
+                    minute:"2-digit"
+                  }
+                )
+              : "—"}
+          </td>
+
+          <td>
+            <strong>
+              ${escapeHtml(clientName)}
+            </strong>
+          </td>
+
+          <td>
+            ${escapeHtml(phone)}
+          </td>
+
+          <td>
+            ${
+              instructor
+              ? escapeHtml(
+                  getInstructorName(instructor)
+                )
+              : "—"
+            }
+          </td>
+
+          <td>
+            ${statusBadge(b.status)}
+          </td>
+
+          <td>
+            ${formatMoney(getAmount(b))}
+            so‘m
+          </td>
+
+        </tr>
+      `;
+
+    }).join("");
+
+}
+
+
+/* =========================================================
+   USERS
+========================================================= */
+
+function renderUserTable(){
+
+  const users = {};
+
+
+  filteredBookings.forEach(b => {
+
+    const id =
+      b.user_id ||
+      b.userId ||
+      b.customer_id ||
+      b.phone ||
+      "unknown";
+
+
+    if(!users[id]){
+
+      users[id] = {
+        name:
+          b.user_name ||
+          b.customer_name ||
+          b.name ||
+          b.full_name ||
+          "Noma'lum",
+
+        phone:
+          b.phone ||
+          b.user_phone ||
+          b.customer_phone ||
+          "—",
+
+        total:0,
+        arrived:0,
+        noShow:0,
+        cancelled:0,
+        revenue:0
+
+      };
+
+    }
+
+
+    const u =
+      users[id];
+
+    u.total++;
+
+    if(isArrived(b))
+      u.arrived++;
+
+    if(b.status === "no_show")
+      u.noShow++;
+
+    if(b.status === "cancelled")
+      u.cancelled++;
+
+    if(b.status === "completed")
+      u.revenue += getAmount(b);
+
+  });
+
+
+  const body =
+    document.getElementById(
+      "userBody"
+    );
+
+
+  const rows =
+    Object.values(users);
+
+
+  if(!rows.length){
+
+    body.innerHTML =
+      `<tr>
+        <td colspan="7" class="empty">
+          Foydalanuvchilar topilmadi
+        </td>
+      </tr>`;
+
+    return;
+
+  }
+
+
+  body.innerHTML =
+    rows.map(u => {
+
+      return `
+        <tr>
+
+          <td>
+            <strong>
+              ${escapeHtml(u.name)}
+            </strong>
+          </td>
+
+          <td>
+            ${escapeHtml(u.phone)}
+          </td>
+
+          <td>${u.total}</td>
+
+          <td>
+            <span class="badge badge-green">
+              ${u.arrived}
+            </span>
+          </td>
+
+          <td>
+            <span class="badge badge-yellow">
+              ${u.noShow}
+            </span>
+          </td>
+
+          <td>
+            <span class="badge badge-red">
+              ${u.cancelled}
+            </span>
+          </td>
+
+          <td>
+            ${formatMoney(u.revenue)}
+            so‘m
+          </td>
+
+        </tr>
+      `;
+
+    }).join("");
+
+}
+
+
+/* =========================================================
+   REVIEWS
+========================================================= */
+
+function renderReviewTable(){
+
+  const body =
+    document.getElementById(
+      "reviewBody"
+    );
+
+
+  if(!reviews.length){
+
+    body.innerHTML =
+      `<tr>
+        <td colspan="5" class="empty">
+          Sharhlar topilmadi
+        </td>
+      </tr>`;
+
+    return;
+
+  }
+
+
+  body.innerHTML =
+    reviews.map(r => {
+
+      const instructor =
+        instructors.find(
+          i =>
+            String(i.id) ===
+            String(
+              r.instructor_id ||
+              r.instructorId
+            )
+        );
+
+
+      const name =
+        r.user_name ||
+        r.customer_name ||
+        r.name ||
+        "Noma'lum";
+
+
+      const comment =
+        r.comment ||
+        r.review ||
+        r.text ||
+        r.message ||
+        "—";
+
+
+      return `
+        <tr>
+
+          <td>
+            ${formatDate(
+              r.created_at
+            )}
+          </td>
+
+          <td>
+            ${escapeHtml(name)}
+          </td>
+
+          <td>
+            ${
+              instructor
+              ? escapeHtml(
+                  getInstructorName(instructor)
+                )
+              : "—"
+            }
+          </td>
+
+          <td>
+            <strong>
+              ⭐ ${r.rating || 0}
+            </strong>
+          </td>
+
+          <td class="comment">
+            ${escapeHtml(comment)}
+          </td>
+
+        </tr>
+      `;
+
+    }).join("");
+
+}
+
+
+/* =========================================================
+   EXCEL
+========================================================= */
+
+function exportExcel(){
+
+  if(
+    typeof XLSX ===
+    "undefined"
+  ){
+
+    alert(
+      "Excel kutubxonasi yuklanmadi."
+    );
+
+    return;
+
+  }
+
+
+  const wb =
+    XLSX.utils.book_new();
+
+
+  /*
+    1. UMUMIY
+  */
+
+  const total =
+    filteredBookings.length;
+
+  const arrived =
+    filteredBookings.filter(
+      isArrived
+    ).length;
+
+  const noShow =
+    filteredBookings.filter(
+      b => b.status === "no_show"
+    ).length;
+
+  const cancelled =
+    filteredBookings.filter(
+      b => b.status === "cancelled"
+    ).length;
+
+  const completed =
+    filteredBookings.filter(
+      b => b.status === "completed"
+    ).length;
+
+  const revenue =
+    filteredBookings
+      .filter(
+        b => b.status === "completed"
+      )
+      .reduce(
+        (s,b) =>
+          s + getAmount(b),
+        0
+      );
+
+
+  const general = [
+
+    ["AVTODROM INDEX — UMUMIY HISOBOT"],
+    [],
+    ["Jami bron",total],
+    ["Kelgan",arrived],
+    ["Kelmagan",noShow],
+    ["Bekor qilingan",cancelled],
+    ["Tugagan",completed],
+    ["Tushum",revenue],
+    [],
+    [
+      "Davr",
+      document.getElementById("dateFrom").value
+      + " — "
+      + document.getElementById("dateTo").value
+    ]
+
+  ];
+
+
+  addSheet(
+    wb,
+    "Umumiy",
+    general
+  );
+
+
+  /*
+    2. BRONLAR
+  */
+
+  const bookingRows = [
+
+    [
+      "Sana",
+      "Vaqt",
+      "Mijoz",
+      "Telefon",
+      "Instruktor",
+      "Holat",
+      "Summa"
+    ]
+
+  ];
+
+
+  filteredBookings.forEach(b => {
+
+    const date =
+      getBookingDate(b);
+
+    const instructor =
+      instructors.find(
+        i =>
+          String(i.id) ===
+          String(
+            b.instructor_id ||
+            b.instructorId
+          )
+      );
+
+
+    bookingRows.push([
+
+      date
+        ? formatDate(date)
+        : "",
+
+      date
+        ? new Date(date)
+          .toLocaleTimeString(
+            "uz-UZ",
+            {
+              hour:"2-digit",
+              minute:"2-digit"
+            }
+          )
+        : "",
+
+      b.user_name ||
+      b.customer_name ||
+      b.name ||
+      b.full_name ||
+      "",
+
+      b.phone ||
+      b.user_phone ||
+      b.customer_phone ||
+      "",
+
+      instructor
+        ? getInstructorName(instructor)
+        : "",
+
+      b.status || "",
+
+      getAmount(b)
+
+    ]);
+
+  });
+
+
+  addSheet(
+    wb,
+    "Bronlar",
+    bookingRows
+  );
+
+
+  /*
+    3. KUNLIK
+  */
+
+  const daily = {};
+
+  filteredBookings.forEach(b => {
+
+    const date =
+      getBookingDate(b);
+
+    if(!date)
+      return;
+
+    const key =
+      new Date(date)
+        .toISOString()
+        .slice(0,10);
+
+    if(!daily[key]){
+
+      daily[key] = {
+        total:0,
+        arrived:0,
+        noShow:0,
+        cancelled:0,
+        completed:0,
+        revenue:0
+      };
+
+    }
+
+
+    daily[key].total++;
+
+    if(isArrived(b))
+      daily[key].arrived++;
+
+    if(b.status === "no_show")
+      daily[key].noShow++;
+
+    if(b.status === "cancelled")
+      daily[key].cancelled++;
+
+    if(b.status === "completed"){
+
+      daily[key].completed++;
+
+      daily[key].revenue +=
+        getAmount(b);
+
+    }
+
+  });
+
+
+  const dailyRows = [
+
+    [
+      "Sana",
+      "Jami bron",
+      "Keldi",
+      "Kelmagan",
+      "Bekor",
+      "Tugagan",
+      "Tushum"
+    ]
+
+  ];
+
+
+  Object.keys(daily)
+    .sort()
+    .forEach(key => {
+
+      const d =
+        daily[key];
+
+      dailyRows.push([
+
+        key,
+        d.total,
+        d.arrived,
+        d.noShow,
+        d.cancelled,
+        d.completed,
+        d.revenue
+
+      ]);
+
+    });
+
+
+  addSheet(
+    wb,
+    "Kunlik statistika",
+    dailyRows
+  );
+
+
+  /*
+    4. SOATLIK
+  */
+
+  const hourRows = [
+    ["Soat","Bron"]
+  ];
+
+  const hourCounts = {};
+
+  for(let h=0;h<24;h++)
+    hourCounts[h] = 0;
+
+  filteredBookings.forEach(b => {
+
+    const date =
+      getBookingDate(b);
+
+    if(!date)
+      return;
+
+    const h =
+      new Date(date).getHours();
+
+    hourCounts[h]++;
+
+  });
+
+
+  for(let h=0;h<24;h++){
+
+    hourRows.push([
+      `${String(h).padStart(2,"0")}:00`,
+      hourCounts[h]
+    ]);
+
+  }
+
+
+  addSheet(
+    wb,
+    "Soatlik",
+    hourRows
+  );
+
+
+  /*
+    5. SHARHLAR
+  */
+
+  const reviewRows = [
+
+    [
+      "Sana",
+      "Foydalanuvchi",
+      "Instruktor",
+      "Reyting",
+      "Kommentariya"
+    ]
+
+  ];
+
+
+  reviews.forEach(r => {
+
+    const instructor =
+      instructors.find(
+        i =>
+          String(i.id) ===
+          String(
+            r.instructor_id ||
+            r.instructorId
+          )
+      );
+
+
+    reviewRows.push([
+
+      formatDate(r.created_at),
+
+      r.user_name ||
+      r.customer_name ||
+      r.name ||
+      "",
+
+      instructor
+        ? getInstructorName(instructor)
+        : "",
+
+      r.rating || 0,
+
+      r.comment ||
+      r.review ||
+      r.text ||
+      r.message ||
+      ""
+
+    ]);
+
+  });
+
+
+  addSheet(
+    wb,
+    "Sharhlar",
+    reviewRows
+  );
+
+
+  /*
+    SAVE
+  */
+
+  XLSX.writeFile(
+    wb,
+    "AVTODROM_HISOBOT.xlsx"
+  );
+
+}
+
+
+/* =========================================================
+   EXCEL HELPER
+========================================================= */
+
+function addSheet(
+  wb,
+  name,
+  data
+){
+
+  const ws =
+    XLSX.utils.aoa_to_sheet(data);
+
+  ws["!cols"] =
+    data[0]
+      ? data[0].map(() => ({
+          wch:20
+        }))
+      : [];
+
+  XLSX.utils.book_append_sheet(
+    wb,
+    ws,
+    name
+  );
+
+}
+
+
+/* =========================================================
+   HELPERS
+========================================================= */
+
+function getInstructorName(i){
+
+  return (
+    i.full_name ||
+    i.name ||
+    [
+      i.first_name,
+      i.last_name
+    ]
+      .filter(Boolean)
+      .join(" ") ||
+    i.username ||
+    i.email ||
+    "Noma'lum"
+  );
+
+}
+
+
+function getBookingDate(b){
+
+  return (
+    b.start_time ||
+    b.booking_time ||
+    b.scheduled_at ||
+    b.date_time ||
+    b.datetime ||
+    b.created_at ||
+    null
+  );
+
+}
+
+
+function getAmount(b){
+
+  const value =
+    b.price ??
+    b.amount ??
+    b.total_price ??
+    b.total_amount ??
+    b.payment_amount ??
+    0;
+
+  const n =
+    Number(value);
+
+  return Number.isFinite(n)
+    ? n
+    : 0;
+
+}
+
+
+function isArrived(b){
+
+  return (
+    b.arrived === true ||
+    b.attendance === "arrived" ||
+    b.attendance_status === "arrived" ||
+    b.status === "in_progress" ||
+    b.status === "completed"
+  );
+
+}
+
+
+function getInstructorRating(id){
+
+  const rows =
+    reviews.filter(
+      r =>
+        String(
+          r.instructor_id ||
+          r.instructorId
+        ) === String(id)
+    );
+
+  if(!rows.length)
+    return "0.0";
+
+  const sum =
+    rows.reduce(
+      (s,r) =>
+        s + Number(r.rating || 0),
+      0
+    );
+
+  return (
+    sum / rows.length
+  ).toFixed(1);
+
+}
+
+
+function statusBadge(status){
+
+  const map = {
+
+    pending:
+      ["Kutilmoqda","badge-yellow"],
+
+    confirmed:
+      ["Tasdiqlangan","badge-green"],
+
+    in_progress:
+      ["Jarayonda","badge-green"],
+
+    completed:
+      ["Tugagan","badge-green"],
+
+    cancelled:
+      ["Bekor qilingan","badge-red"],
+
+    no_show:
+      ["Kelmagan","badge-yellow"],
+
+    rejected:
+      ["Rad etilgan","badge-red"]
+
+  };
+
+
+  const x =
+    map[status] ||
+    [status || "Noma'lum","badge-gray"];
+
+
+  return `
+    <span class="badge ${x[1]}">
+      ${x[0]}
+    </span>
+  `;
+
+}
+
+
+function formatMoney(n){
+
+  return Number(n || 0)
+    .toLocaleString("uz-UZ");
+
+}
+
+
+function formatDate(value){
+
+  if(!value)
+    return "—";
+
+  const d =
+    new Date(value);
+
+  if(Number.isNaN(d.getTime()))
+    return String(value);
+
+  return d.toLocaleDateString(
+    "uz-UZ"
+  );
+
+}
+
+
+function percent(a,b){
+
+  if(!b)
+    return "0%";
+
+  return (
+    (a/b)*100
+  ).toFixed(1)
+  + "%";
+
+}
+
+
+function setText(id,value){
+
+  const el =
+    document.getElementById(id);
+
+  if(el)
+    el.textContent = value;
+
+}
+
+
+function escapeHtml(value){
+
+  return String(value ?? "")
+    .replaceAll("&","&amp;")
+    .replaceAll("<","&lt;")
+    .replaceAll(">","&gt;")
+    .replaceAll('"',"&quot;")
+    .replaceAll("'","&#039;");
+
+}
+
+
+function showError(message){
+
+  document.getElementById(
+    "errorBox"
+  ).innerHTML = `
+    <div class="error">
+      ❌ ${escapeHtml(message)}
+    </div>
+  `;
+
+}
+
+
+function clearError(){
+
+  document.getElementById(
+    "errorBox"
+  ).innerHTML = "";
+
+}
+
 </script>
-</body></html>
+
+</body>
+</html>
