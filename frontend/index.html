@@ -7,4048 +7,1142 @@
 <meta name="color-scheme" content="light">
 <title>AVTODROM INDEX</title>
 
+<!-- Telegram Mini App SDK. Telegram ichida mavjud bo'lsa ishlatiladi,
+     oddiy Chrome/Safari brauzerida esa ilova to'xtab qolmaydi. -->
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 
 <style>
 :root{
-  --green:#087443;
-  --green2:#0b8a50;
-  --bg:#f4f7f5;
-  --text:#14221b;
-  --muted:#718078;
-  --border:#e1e8e4;
-  --red:#b42318;
-  --yellow:#9a6700;
-  --blue:#1769aa;
-  --soft:#eaf7ef;
-  --shadow:0 12px 35px rgba(15,40,25,.10);
+  --g:#087443;--g2:#0b8a50;--bg:#f4f7f5;--t:#14221b;--m:#718078;
+  --l:#e1e8e4;--d:#b42318;--warn:#9a6700;--blue:#1769aa;
+  --soft:#eaf7ef;--shadow:0 12px 35px rgba(15,40,25,.10)
 }
-
-*{
-  box-sizing:border-box;
-}
-
-html,
-body{
-  margin:0;
-  min-height:100%;
-  background:var(--bg);
-  color:var(--text);
-  font-family:
-    Inter,
-    Arial,
-    system-ui,
-    -apple-system,
-    BlinkMacSystemFont,
-    "Segoe UI",
-    sans-serif;
-}
-
-body{
-  min-height:100vh;
-}
-
-button,
-input,
-select,
-textarea{
-  font:inherit;
-}
-
-button{
-  cursor:pointer;
-}
-
-button:disabled{
-  cursor:not-allowed;
-  opacity:.55;
-}
-
-.app{
-  width:min(560px,100%);
-  min-height:100vh;
-  margin:auto;
-  background:#fff;
-  padding-bottom:88px;
-}
-
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%;background:var(--bg);color:var(--t);
+  font-family:Inter,Arial,system-ui,-apple-system,"Segoe UI",sans-serif}
+body{min-height:100vh}
+button,input,select,textarea{font:inherit}
+button{cursor:pointer}
+button:disabled{cursor:not-allowed;opacity:.55}
+.app{width:min(560px,100%);min-height:100vh;margin:auto;background:#fff;padding-bottom:86px}
 .top{
-  position:sticky;
-  top:0;
-  z-index:20;
-  background:rgba(255,255,255,.96);
-  backdrop-filter:blur(12px);
-  border-bottom:1px solid var(--border);
-  padding:11px 14px;
-  display:flex;
-  align-items:center;
-  gap:8px;
+  position:sticky;top:0;z-index:20;background:rgba(255,255,255,.96);
+  backdrop-filter:blur(12px);border-bottom:1px solid var(--l);
+  padding:11px 14px;display:flex;align-items:center;gap:8px
 }
-
-.brand{
-  font-size:18px;
-  font-weight:950;
-  flex:1;
-  letter-spacing:-.2px;
-}
-
-.actions{
-  display:flex;
-  gap:6px;
-  position:relative;
-}
-
+.brand{font-size:18px;font-weight:950;flex:1;letter-spacing:-.2px}
+.actions{display:flex;gap:6px;position:relative}
 .btn{
-  border:1px solid #d5dfda;
-  background:#fff;
-  border-radius:11px;
-  padding:10px 13px;
-  font-weight:850;
-  color:var(--text);
+  border:1px solid #d5dfda;background:#fff;border-radius:11px;
+  padding:10px 13px;font-weight:850;color:var(--t);cursor:pointer
 }
-
-.btn:hover{
-  background:#fbfdfc;
-}
-
-.btn.primary{
-  background:var(--green);
-  border-color:var(--green);
-  color:#fff;
-}
-
-.btn.primary:hover{
-  background:var(--green2);
-}
-
-.full{
-  width:100%;
-}
-
-.content{
-  padding:14px 14px 24px;
-}
-
-.page{
-  display:none;
-  animation:pageIn .18s ease;
-}
-
-.page.active{
-  display:block;
-}
-
-@keyframes pageIn{
-  from{
-    opacity:.2;
-    transform:translateY(4px);
-  }
-  to{
-    opacity:1;
-    transform:none;
-  }
-}
+.btn:hover{background:#fbfdfc}
+.btn.primary{background:var(--g);border-color:var(--g);color:#fff}
+.btn.primary:hover{background:var(--g2)}
+.full{width:100%}
+.content{padding:14px 14px 24px}
+.page{display:none;animation:pageIn .18s ease}
+.page.active{display:block}
+@keyframes pageIn{from{opacity:.2;transform:translateY(4px)}to{opacity:1;transform:none}}
 
 .hero{
-  background:linear-gradient(145deg,#e9f7ef,#fff);
-  border:1px solid #d8eee0;
-  border-radius:20px;
-  padding:19px;
-  margin-bottom:12px;
+  background:linear-gradient(145deg,#e9f7ef,#fff);border:1px solid #d8eee0;
+  border-radius:20px;padding:19px;margin-bottom:12px
 }
-
-.hero h1{
-  font-size:25px;
-  margin:0 0 8px;
-}
-
-.hero p{
-  color:var(--muted);
-  line-height:1.5;
-  margin:0 0 16px;
-}
-
+.hero h1{font-size:25px;margin:0 0 8px;letter-spacing:-.4px}
+.hero p{color:var(--m);line-height:1.5;margin:0 0 16px}
+.video-card video{width:100%;display:block;border-radius:14px;background:#000;max-height:300px}.video-title{font-weight:900;margin-bottom:8px}.video-caption{font-size:13px;color:var(--m);line-height:1.45;margin-top:8px}
 .card{
-  border:1px solid var(--border);
-  border-radius:16px;
-  padding:14px;
-  margin:11px 0;
-  background:#fff;
-  box-shadow:0 2px 8px rgba(15,40,25,.025);
+  border:1px solid var(--l);border-radius:16px;padding:14px;margin:11px 0;
+  background:#fff;box-shadow:0 2px 8px rgba(15,40,25,.025)
 }
-
-.topline{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:8px;
+.topline{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.card-title{font-weight:900;margin-bottom:7px}
+.field{display:grid;gap:6px;margin:13px 0}
+.field label{font-size:13px;font-weight:850}
+.field input,.field select,.field textarea{
+  width:100%;border:1px solid #d5dfda;border-radius:11px;padding:12px;
+  background:#fff;color:var(--t);font:inherit;outline:0
 }
-
-.card-title{
-  font-weight:900;
-  margin-bottom:7px;
+.field input:focus,.field select:focus,.field textarea:focus{
+  border-color:var(--g);box-shadow:0 0 0 3px rgba(8,116,67,.10)
 }
-
-.field{
-  display:grid;
-  gap:6px;
-  margin:13px 0;
-}
-
-.field label{
-  font-size:13px;
-  font-weight:850;
-}
-
-.field input,
-.field select,
-.field textarea{
-  width:100%;
-  border:1px solid #d5dfda;
-  border-radius:11px;
-  padding:12px;
-  background:#fff;
-  color:var(--text);
-  outline:0;
-}
-
-.field input:focus,
-.field select:focus,
-.field textarea:focus{
-  border-color:var(--green);
-  box-shadow:0 0 0 3px rgba(8,116,67,.10);
-}
-
-.muted{
-  color:var(--muted);
-}
-
-.empty{
-  text-align:center;
-  padding:25px 10px;
-  color:var(--muted);
-}
-
-.loader{
-  text-align:center;
-  padding:20px;
-  color:var(--muted);
-}
-
-.notice{
-  padding:11px 12px;
-  border-radius:11px;
-  margin:10px 0;
-  font-size:13px;
-  line-height:1.45;
-}
-
-.notice.error{
-  background:#fff0ef;
-  color:var(--red);
-  border:1px solid #f3d0cc;
-}
-
-.notice.info{
-  background:#eef6f1;
-  color:#21613f;
-}
-
+.muted{color:var(--m)}
+.empty{text-align:center;padding:25px 10px;color:var(--m)}
+.loader{text-align:center;padding:20px;color:var(--m)}
+.notice{padding:11px 12px;border-radius:11px;margin:10px 0;font-size:13px;line-height:1.45}
+.notice.error{background:#fff0ef;color:var(--d);border:1px solid #f3d0cc}
+.notice.info{background:#eef6f1;color:#21613f}
+.notice.warn{background:#fff6db;color:var(--warn);border:1px solid #f1dfaa}
 .badge{
-  display:inline-flex;
-  align-items:center;
-  padding:5px 9px;
-  border-radius:999px;
-  font-size:12px;
-  font-weight:900;
-  background:#eef6f1;
-  white-space:nowrap;
+  display:inline-flex;align-items:center;padding:5px 9px;border-radius:999px;
+  font-size:12px;font-weight:900;background:#eef6f1;white-space:nowrap
 }
-
-.badge.pending{
-  background:#fff6db;
-  color:var(--yellow);
-}
-
-.badge.confirmed{
-  background:#eaf7ef;
-  color:var(--green);
-}
-
-.badge.progress{
-  background:#e8f2ff;
-  color:var(--blue);
-}
-
-.badge.done{
-  background:#edf0ef;
-  color:#53615a;
-}
-
-.badge.cancel{
-  background:#fff0ef;
-  color:var(--red);
-}
-
-.person{
-  display:flex;
-  gap:10px;
-  align-items:center;
-}
-
+.badge.pending{background:#fff6db;color:var(--warn)}
+.badge.confirmed{background:#eaf7ef;color:var(--g)}
+.badge.progress{background:#e8f2ff;color:var(--blue)}
+.badge.done{background:#edf0ef;color:#53615a}
+.badge.cancel{background:#fff0ef;color:var(--d)}
+.booking .date{font-weight:900;font-size:15px}
+.meta{display:grid;gap:5px;margin:10px 0;color:#53615a;font-size:13px}
+.person{display:flex;gap:10px;align-items:center}
 .avatar{
-  width:42px;
-  height:42px;
-  border-radius:50%;
-  background:#eaf7ef;
-  display:grid;
-  place-items:center;
-  font-weight:950;
-  color:var(--green);
-  flex:none;
+  width:42px;height:42px;border-radius:50%;background:#eaf7ef;
+  display:grid;place-items:center;font-weight:950;color:var(--g);flex:none
 }
-
-.info{
-  min-width:0;
-}
-
-.name{
-  font-weight:900;
-  white-space:nowrap;
-  overflow:hidden;
-  text-overflow:ellipsis;
-}
-
-.small{
-  font-size:12px;
-  color:var(--muted);
-  margin-top:3px;
-}
+.info{min-width:0}
+.name{font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.small{font-size:12px;color:var(--m);margin-top:3px}
 
 .langmenu{
-  display:none;
-  position:absolute;
-  right:0;
-  top:48px;
-  background:#fff;
-  border:1px solid var(--border);
-  border-radius:13px;
-  box-shadow:var(--shadow);
-  overflow:hidden;
-  z-index:30;
+  display:none;position:absolute;right:0;top:48px;background:#fff;
+  border:1px solid var(--l);border-radius:13px;box-shadow:var(--shadow);
+  overflow:hidden;z-index:30
 }
-
-.langmenu.open{
-  display:block;
-}
-
+.langmenu.open{display:block}
 .langmenu button{
-  display:block;
-  width:175px;
-  border:0;
-  background:#fff;
-  text-align:left;
-  padding:12px 15px;
-  font-weight:750;
+  display:block;width:175px;border:0;background:#fff;text-align:left;
+  padding:12px 15px;font-weight:750
 }
-
-.langmenu button:hover{
-  background:#f4f7f5;
-}
-
-/* MEDIA */
-
-.media-card{
-  overflow:hidden;
-}
-
-.video-card{
-  margin-top:10px;
-}
-
-.video-card video{
-  width:100%;
-  display:block;
-  border-radius:14px;
-  background:#000;
-  max-height:310px;
-}
-
-.video-title{
-  font-weight:900;
-  margin-bottom:8px;
-  font-size:16px;
-}
-
-.video-caption{
-  font-size:13px;
-  color:var(--muted);
-  line-height:1.45;
-  margin-top:8px;
-}
-
-.media-grid{
-  display:grid;
-  gap:12px;
-  margin-top:12px;
-}
-
-.media-item{
-  border:1px solid var(--border);
-  border-radius:14px;
-  overflow:hidden;
-  background:#fff;
-}
-
-.media-item video{
-  width:100%;
-  display:block;
-  background:#000;
-  max-height:280px;
-}
-
-.media-info{
-  padding:11px;
-}
-
-.media-info strong{
-  display:block;
-  margin-bottom:4px;
-}
-
-.media-info span{
-  font-size:12px;
-  color:var(--muted);
-}
-
-/* RESULTS */
-
-.result-grid{
-  display:grid;
-  grid-template-columns:repeat(2,1fr);
-  gap:8px;
-}
-
-.result-item{
-  padding:13px;
-  border:1px solid #e2ebe5;
-  border-radius:13px;
-  text-align:center;
-  background:#f8fbf9;
-}
-
-.result-item .emoji{
-  font-size:22px;
-}
-
-.result-item .num{
-  font-size:20px;
-  font-weight:950;
-  color:var(--green);
-  margin-top:3px;
-}
-
-.result-item .label{
-  font-size:12px;
-  color:var(--muted);
-  margin-top:3px;
-}
-
-/* TIME */
-
-.timegrid{
-  display:grid;
-  grid-template-columns:repeat(3,1fr);
-  gap:7px;
-}
-
-.time{
-  border:1px solid #d5dfda;
-  background:#fff;
-  border-radius:10px;
-  padding:10px 3px;
-  font-weight:850;
-  color:var(--text);
-}
-
-.time.selected{
-  background:var(--green);
-  color:#fff;
-  border-color:var(--green);
-}
-
-.time.busy{
-  opacity:.35;
-  text-decoration:line-through;
-}
-
-.time:disabled{
-  opacity:.35;
-}
-
-/* NAV */
+.langmenu button:hover{background:#f4f7f5}
 
 .nav{
-  position:fixed;
-  left:50%;
-  bottom:0;
-  transform:translateX(-50%);
-  width:min(560px,100%);
-  min-height:72px;
-  background:#fff;
-  border-top:1px solid var(--border);
-  display:grid;
-  grid-template-columns:repeat(4,1fr);
-  z-index:25;
-  padding:5px 0 env(safe-area-inset-bottom);
+  position:fixed;left:50%;bottom:0;transform:translateX(-50%);
+  width:min(560px,100%);min-height:72px;background:#fff;border-top:1px solid var(--l);
+  display:grid;grid-template-columns:repeat(4,1fr);z-index:25;
+  padding:5px 0 env(safe-area-inset-bottom)
 }
-
 .nav button{
-  border:0;
-  background:#fff;
-  color:#58655f;
-  font-size:11px;
-  font-weight:750;
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  justify-content:center;
-  gap:1px;
+  border:0;background:#fff;color:#58655f;font-size:11px;font-weight:750;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px
 }
-
-.nav button.active{
-  color:var(--green);
-}
-
-.ico{
-  font-size:20px;
-  line-height:25px;
-}
-
-/* AI */
+.nav button.active{color:var(--g)}
+.ico{font-size:20px;line-height:25px}
 
 .ai{
-  position:fixed;
-  right:max(
-    16px,
-    calc((100vw - 560px)/2 + 16px)
-  );
-  bottom:84px;
-  border:0;
-  background:var(--green);
-  color:#fff;
-  border-radius:999px;
-  padding:12px 15px;
-  font-weight:950;
-  box-shadow:0 8px 25px rgba(8,116,67,.22);
-  z-index:24;
+  position:fixed;right:max(16px,calc((100vw - 560px)/2 + 16px));bottom:84px;
+  border:0;background:var(--g);color:#fff;border-radius:999px;padding:12px 15px;
+  font-weight:950;box-shadow:0 8px 25px rgba(8,116,67,.22);z-index:24
 }
-
 .chat{
-  display:none;
-  position:fixed;
-  right:max(
-    12px,
-    calc((100vw - 560px)/2 + 12px)
-  );
-  bottom:145px;
-  width:min(390px,calc(100vw - 24px));
-  height:470px;
-  background:#fff;
-  border:1px solid var(--border);
-  border-radius:18px;
-  box-shadow:0 15px 45px rgba(0,0,0,.20);
-  z-index:40;
-  overflow:hidden;
+  display:none;position:fixed;right:max(12px,calc((100vw - 560px)/2 + 12px));
+  bottom:145px;width:min(390px,calc(100vw - 24px));height:470px;
+  background:#fff;border:1px solid var(--l);border-radius:18px;
+  box-shadow:0 15px 45px rgba(0,0,0,.20);z-index:40;overflow:hidden
 }
-
-.chat.open{
-  display:flex;
-  flex-direction:column;
-}
-
-.chathead{
-  background:var(--green);
-  color:#fff;
-  padding:13px 14px;
-  font-weight:900;
-}
-
-.chathead button{
-  float:right;
-  border:0;
-  background:transparent;
-  color:#fff;
-  font-size:22px;
-  line-height:18px;
-}
-
-.messages{
-  flex:1;
-  overflow:auto;
-  padding:12px;
-  background:#f7f9f8;
-}
-
-.msg{
-  max-width:86%;
-  padding:10px 12px;
-  border-radius:13px;
-  background:#fff;
-  margin:7px 0;
-  line-height:1.4;
-}
-
-.msg.mine{
-  margin-left:auto;
-  background:var(--green);
-  color:#fff;
-}
-
-.chatinput{
-  display:flex;
-  gap:7px;
-  padding:9px;
-  border-top:1px solid var(--border);
-}
-
+.chat.open{display:flex;flex-direction:column}
+.chathead{background:var(--g);color:#fff;padding:13px 14px;font-weight:900}
+.chathead button{float:right;border:0;background:transparent;color:#fff;font-size:22px;line-height:18px}
+.messages{flex:1;overflow:auto;padding:12px;background:#f7f9f8}
+.msg{max-width:86%;padding:10px 12px;border-radius:13px;background:#fff;margin:7px 0;line-height:1.4}
+.msg.mine{margin-left:auto;background:var(--g);color:#fff}
+.chatinput{display:flex;gap:7px;padding:9px;border-top:1px solid var(--l)}
 .chatinput input{
-  min-width:0;
-  flex:1;
-  border:1px solid #d5dfda;
-  border-radius:10px;
-  padding:10px;
-  outline:0;
+  min-width:0;flex:1;border:1px solid #d5dfda;border-radius:10px;padding:10px;outline:0
+}
+.timegrid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}
+.time{
+  border:1px solid #d5dfda;background:#fff;border-radius:10px;
+  padding:10px 3px;font-weight:850;color:var(--t)
+}
+.time.selected{background:var(--g);color:#fff;border-color:var(--g)}
+.time.busy{opacity:.35;text-decoration:line-through}
+.time:disabled{opacity:.35}
+.statusline{
+  display:flex;align-items:center;justify-content:space-between;gap:8px;
+  padding:9px 0;border-bottom:1px solid #eef2ef
+}
+.statusline:last-child{border-bottom:0}
+.refreshing{opacity:.6;pointer-events:none}
+
+.browserMode::after{
+  content:"";display:none
 }
 
 @media(max-width:420px){
-  .brand{
-    font-size:16px;
-  }
-
-  .btn{
-    padding:9px 11px;
-  }
-
-  .hero h1{
-    font-size:23px;
-  }
+  .brand{font-size:16px}
+  .btn{padding:9px 11px}
+  .hero h1{font-size:23px}
+  .timegrid{grid-template-columns:repeat(3,1fr)}
 }
 </style>
 </head>
 
 <body>
-
 <div class="app">
 
 <header class="top">
   <div class="brand">🚗 AVTODROM INDEX</div>
-
   <div class="actions">
-
-    <button
-      class="btn"
-      id="langBtn"
-      type="button"
-    >
-      UZ
-    </button>
-
-    <button
-      class="btn"
-      id="helpBtn"
-      type="button"
-    >
-      🤖 <span data-i18n="help">Yordam</span>
-    </button>
-
-    <div
-      id="langMenu"
-      class="langmenu"
-    >
-      <button type="button" data-lang="uz">
-        🇺🇿 O‘zbekcha
-      </button>
-
-      <button type="button" data-lang="ru">
-        🇷🇺 Русский
-      </button>
+    <button class="btn" id="langBtn" type="button">UZ</button>
+    <button class="btn" id="helpBtn" type="button">🤖 <span data-i18n="help">Yordam</span></button>
+    <div id="langMenu" class="langmenu">
+      <button type="button" data-lang="uz">🇺🇿 O‘zbekcha</button>
+      <button type="button" data-lang="ru">🇷🇺 Русский</button>
     </div>
-
   </div>
 </header>
 
-
 <main class="content">
 
-<!-- ================= HOME ================= -->
-
-<section
-  id="home"
-  class="page active"
->
-
+<section id="home" class="page active">
   <div class="hero">
-
-    <h1 id="hello">
-      Xush kelibsiz!
-    </h1>
-
-    <p data-i18n="hero">
-      Avtodromdagi darsingizni qulay bron qiling,
-      holatini kuzating va instruktor bilan bog‘laning.
-    </p>
-
-    <button
-      class="btn primary full"
-      id="heroBook"
-      data-i18n="book_lesson"
-    >
-      Dars bron qilish
-    </button>
-
+    <h1 id="hello">Xush kelibsiz!</h1>
+    <p data-i18n="hero">Avtodromdagi darsingizni qulay bron qiling, holatini kuzating va instruktor bilan bog‘laning.</p>
+    <button class="btn primary full" id="heroBook" data-i18n="book_lesson">Dars bron qilish</button>
   </div>
 
+  <div id="browserNotice" class="notice info" style="display:none"></div>
 
-  <!-- XATO FAQAT KERAK BO'LSA KO'RINADI -->
-
-  <div
-    id="customerContentError"
-    class="notice error"
-    style="display:none"
-  ></div>
-
-
-  <!-- ================= MEDIA ================= -->
-
-  <section
-    id="mediaSection"
-    class="card media-card"
-  >
-
-    <div class="topline">
-
-      <div class="card-title">
-        🎬
-        <span data-i18n="media_title">
-          Media
-        </span>
-      </div>
-
-      <span class="badge">
-        HD
-      </span>
-
-    </div>
-
-
-    <div
-      id="mediaLoading"
-      class="loader"
-    >
-      Video yuklanmoqda...
-    </div>
-
-
-    <div
-      id="mediaEmpty"
-      class="empty"
-      style="display:none"
-    >
-      🎬 Hozircha video mavjud emas.
-    </div>
-
-
-    <div
-      id="mediaGrid"
-      class="media-grid"
-    ></div>
-
-  </section>
-
-
-  <!-- ================= RESULTS ================= -->
-
-  <section
-    id="resultsSection"
-    class="card"
-  >
-
-    <div class="card-title">
-      🏆
-      <span data-i18n="results_title">
-        Natijalarimiz
-      </span>
-    </div>
-
-
-    <div
-      id="resultsGrid"
-      class="result-grid"
-    >
-
-      <div class="result-item">
-        <div class="emoji">
-          👥
-        </div>
-
-        <div
-          class="num"
-          id="resultCustomers"
-        >
-          0
-        </div>
-
-        <div
-          class="label"
-          data-i18n="customers"
-        >
-          Mijozlar
-        </div>
-      </div>
-
-
-      <div class="result-item">
-        <div class="emoji">
-          🚗
-        </div>
-
-        <div
-          class="num"
-          id="resultLessons"
-        >
-          0
-        </div>
-
-        <div
-          class="label"
-          data-i18n="lessons"
-        >
-          Darslar
-        </div>
-      </div>
-
-
-      <div class="result-item">
-        <div class="emoji">
-          ⭐
-        </div>
-
-        <div
-          class="num"
-          id="resultRating"
-        >
-          0
-        </div>
-
-        <div
-          class="label"
-          data-i18n="rating"
-        >
-          Reyting
-        </div>
-      </div>
-
-
-      <div class="result-item">
-        <div class="emoji">
-          👨‍🏫
-        </div>
-
-        <div
-          class="num"
-          id="resultInstructors"
-        >
-          0
-        </div>
-
-        <div
-          class="label"
-          data-i18n="instructors"
-        >
-          Instruktorlar
-        </div>
-      </div>
-
-    </div>
-
-  </section>
-
-
-  <!-- ================= NOTIFICATIONS ================= -->
+  <div id="customerVideo" class="card video-card" style="display:none">
+    <div class="video-title" id="customerVideoTitle">🎬 Video qo‘llanma</div>
+    <video id="customerVideoPlayer" controls playsinline preload="metadata"></video>
+    <div class="video-caption" id="customerVideoCaption"></div>
+  </div>
 
   <div class="card">
-
     <div class="topline">
-
-      <div
-        class="card-title"
-        data-i18n="notifications"
-      >
-        Bildirishnomalar
-      </div>
-
-      <span
-        class="badge"
-        id="notificationCount"
-      >
-        0
-      </span>
-
+      <div class="card-title" data-i18n="notifications">Bildirishnomalar</div>
+      <span class="badge" id="notificationCount">0</span>
     </div>
-
-
-    <div
-      id="notifications"
-      class="loader"
-    >
-      Yuklanmoqda...
-    </div>
-
+    <div id="notifications" class="loader" data-i18n="loading">Yuklanmoqda...</div>
   </div>
-
-
-  <!-- ================= NEXT BOOKING ================= -->
 
   <div class="card">
-
     <div class="topline">
-
-      <div
-        class="card-title"
-        data-i18n="next_booking"
-      >
-        Keyingi bron
-      </div>
-
-      <button
-        class="btn"
-        id="allBookings"
-        data-i18n="all"
-      >
-        Barchasi
-      </button>
-
+      <div class="card-title" data-i18n="next_booking">Keyingi bron</div>
+      <button class="btn" id="allBookings" data-i18n="all">Barchasi</button>
     </div>
-
-
-    <div
-      id="nextBooking"
-      class="empty"
-    >
-      Yuklanmoqda...
-    </div>
-
+    <div id="nextBooking" class="empty" data-i18n="loading">Yuklanmoqda...</div>
   </div>
-
 </section>
 
-
-<!-- ================= BOOK ================= -->
-
-<section
-  id="book"
-  class="page"
->
-
-  <h2 data-i18n="book_lesson">
-    Dars bron qilish
-  </h2>
-
-
+<section id="book" class="page">
+  <h2 data-i18n="book_lesson">Dars bron qilish</h2>
   <div id="bookError"></div>
 
-
   <div class="card">
-
     <div class="field">
-
-      <label data-i18n="instructor">
-        Instruktor
-      </label>
-
-      <select id="instructor">
-        <option>
-          Yuklanmoqda...
-        </option>
-      </select>
-
+      <label data-i18n="instructor">Instruktor</label>
+      <select id="instructor"></select>
     </div>
 
-
     <div class="field">
-
-      <label data-i18n="date">
-        Sana
-      </label>
-
-      <input
-        id="date"
-        type="date"
-      >
-
+      <label data-i18n="date">Sana</label>
+      <input id="date" type="date">
     </div>
 
-
     <div class="field">
-
-      <label data-i18n="time">
-        Boshlanish vaqti
-      </label>
-
-      <div
-        id="times"
-        class="timegrid"
-      ></div>
-
+      <label data-i18n="time">Boshlanish vaqti</label>
+      <div id="times" class="timegrid"></div>
     </div>
 
-
     <div class="field">
-
-      <label data-i18n="duration">
-        Dars davomiyligi
-      </label>
-
+      <label data-i18n="duration">Dars davomiyligi</label>
       <select id="duration">
-
-        <option value="30">
-          30 daqiqa / 30 минут
-        </option>
-
-        <option value="60">
-          60 daqiqa / 60 минут
-        </option>
-
-        <option value="90">
-          90 daqiqa / 90 минут
-        </option>
-
+        <option value="30">30 daqiqa / 30 минут</option>
+        <option value="60">60 daqiqa / 60 минут</option>
+        <option value="90">90 daqiqa / 90 минут</option>
       </select>
-
     </div>
-
 
     <div class="field">
-
-      <label data-i18n="note">
-        Izoh
-      </label>
-
-      <textarea
-        id="note"
-        rows="3"
-        maxlength="500"
-        placeholder="Qo‘shimcha izoh..."
-      ></textarea>
-
+      <label data-i18n="note">Izoh</label>
+      <textarea id="note" rows="3" maxlength="500"
+        data-i18n-placeholder="note_placeholder"
+        placeholder="Qo‘shimcha izoh..."></textarea>
     </div>
 
-
-    <button
-      class="btn primary full"
-      id="bookBtn"
-      data-i18n="send_booking"
-    >
-      Bron yuborish
-    </button>
-
+    <button class="btn primary full" id="bookBtn" data-i18n="send_booking">Bron yuborish</button>
   </div>
 
-
-  <div
-    class="notice info"
-    data-i18n="booking_info"
-  >
-    Bron yuborilgach, Admin tasdiqlaydi.
-    Tasdiqdan keyin bron holati shu panelda ko‘rinadi.
+  <div class="notice info" data-i18n="booking_info">
+    Bron yuborilgach, Admin tasdiqlaydi. Tasdiqdan keyin bron holati shu panelda ko‘rinadi.
   </div>
-
 </section>
 
-
-<!-- ================= BOOKINGS ================= -->
-
-<section
-  id="bookings"
-  class="page"
->
-
+<section id="bookings" class="page">
   <div class="topline">
-
-    <h2 data-i18n="my_bookings">
-      Bronlarim
-    </h2>
-
-    <button
-      class="btn"
-      id="refreshBookings"
-      type="button"
-    >
-      ↻
-    </button>
-
+    <h2 data-i18n="my_bookings">Bronlarim</h2>
+    <button class="btn" id="refreshBookings" type="button">↻</button>
   </div>
-
-
-  <div
-    id="bookingList"
-    class="loader"
-  >
-    Yuklanmoqda...
-  </div>
-
+  <div id="bookingList" class="loader" data-i18n="loading">Yuklanmoqda...</div>
 </section>
 
-
-<!-- ================= PROFILE ================= -->
-
-<section
-  id="profile"
-  class="page"
->
-
-  <h2 data-i18n="my_profile">
-    Profilim
-  </h2>
-
+<section id="profile" class="page">
+  <h2 data-i18n="my_profile">Profilim</h2>
 
   <div class="card">
-
     <div class="person">
-
-      <div
-        class="avatar"
-        id="avatar"
-      >
-        U
-      </div>
-
+      <div class="avatar" id="avatar">U</div>
       <div class="info">
-
-        <div
-          class="name"
-          id="profileName"
-        >
-          Foydalanuvchi
-        </div>
-
-        <div
-          class="small"
-          id="profileUsername"
-        >
-          Telegram
-        </div>
-
+        <div class="name" id="profileName">Foydalanuvchi</div>
+        <div class="small" id="profileUsername">Telegram</div>
       </div>
-
     </div>
-
 
     <div class="field">
-
-      <label data-i18n="first_name">
-        Ism *
-      </label>
-
-      <input
-        id="first"
-        autocomplete="given-name"
-      >
-
+      <label data-i18n="first_name">Ism *</label>
+      <input id="first" autocomplete="given-name">
     </div>
-
 
     <div class="field">
-
-      <label data-i18n="last_name">
-        Familiya *
-      </label>
-
-      <input
-        id="last"
-        autocomplete="family-name"
-      >
-
+      <label data-i18n="last_name">Familiya *</label>
+      <input id="last" autocomplete="family-name">
     </div>
-
 
     <div class="field">
-
-      <label data-i18n="phone">
-        Telefon *
-      </label>
-
-      <input
-        id="phone"
-        type="tel"
-        inputmode="tel"
-        placeholder="+998 90 123 45 67"
-        autocomplete="tel"
-      >
-
+      <label data-i18n="phone">Telefon *</label>
+      <input id="phone" type="tel" inputmode="tel"
+        placeholder="+998 90 123 45 67" autocomplete="tel">
     </div>
 
-
-    <button
-      class="btn primary full"
-      id="saveProfile"
-      data-i18n="save"
-    >
-      Saqlash
-    </button>
-
+    <button class="btn primary full" id="saveProfile" data-i18n="save">Saqlash</button>
   </div>
-
 
   <div class="card">
-
-    <div
-      class="card-title"
-      data-i18n="account"
-    >
-      Akkaunt
-    </div>
-
-    <p
-      class="muted"
-      id="accountInfo"
-    >
-      Akkaunt ma'lumotlari yuklanmoqda...
-    </p>
-
+    <div class="card-title" data-i18n="account">Akkaunt</div>
+    <p class="muted" id="accountInfo">Akkaunt</p>
   </div>
-
 </section>
 
 </main>
 
-
-<!-- ================= NAV ================= -->
-
 <nav class="nav">
-
-  <button
-    data-page="home"
-    class="active"
-    type="button"
-  >
-    <div class="ico">⌂</div>
-    <span data-i18n="home">
-      Bosh sahifa
-    </span>
+  <button data-page="home" class="active" type="button">
+    <div class="ico">⌂</div><span data-i18n="home">Bosh sahifa</span>
   </button>
-
-
-  <button
-    data-page="book"
-    type="button"
-  >
-    <div class="ico">＋</div>
-    <span data-i18n="book">
-      Bron
-    </span>
+  <button data-page="book" type="button">
+    <div class="ico">＋</div><span data-i18n="book">Bron</span>
   </button>
-
-
-  <button
-    data-page="bookings"
-    type="button"
-  >
-    <div class="ico">▣</div>
-    <span data-i18n="my_bookings">
-      Bronlarim
-    </span>
+  <button data-page="bookings" type="button">
+    <div class="ico">▣</div><span data-i18n="my_bookings">Bronlarim</span>
   </button>
-
-
-  <button
-    data-page="profile"
-    type="button"
-  >
-    <div class="ico">♙</div>
-    <span data-i18n="profile">
-      Profil
-    </span>
+  <button data-page="profile" type="button">
+    <div class="ico">♙</div><span data-i18n="profile">Profil</span>
   </button>
-
 </nav>
 
 </div>
 
+<button class="ai" id="aiBtn" type="button">🤖 AI</button>
 
-<!-- ================= AI BUTTON ================= -->
-
-<button
-  class="ai"
-  id="aiBtn"
-  type="button"
->
-  🤖 AI
-</button>
-
-
-<!-- ================= AI CHAT ================= -->
-
-<div
-  id="chat"
-  class="chat"
-  aria-hidden="true"
->
-
+<div id="chat" class="chat" aria-hidden="true">
   <div class="chathead">
-
-    <span data-i18n="ai_title">
-      AVTODROM AI yordamchi
-    </span>
-
-    <button
-      id="closeChat"
-      type="button"
-    >
-      ×
-    </button>
-
+    <span data-i18n="ai_title">AVTODROM AI yordamchi</span>
+    <button id="closeChat" type="button">×</button>
   </div>
-
-
-  <div
-    id="messages"
-    class="messages"
-  >
-
-    <div
-      class="msg"
-      data-i18n="ai_welcome"
-    >
-      Assalomu alaykum!
-      Savolingizni yozing.
-    </div>
-
+  <div id="messages" class="messages">
+    <div class="msg" data-i18n="ai_welcome">Assalomu alaykum! Savolingizni yozing.</div>
   </div>
-
-
   <div class="chatinput">
-
-    <input
-      id="question"
-      placeholder="Savolingiz..."
-      autocomplete="off"
-    >
-
-    <button
-      class="btn primary"
-      id="sendQuestion"
-      type="button"
-      data-i18n="send"
-    >
-      Yuborish
-    </button>
-
+    <input id="question" data-i18n-placeholder="question" placeholder="Savolingiz..." autocomplete="off">
+    <button class="btn primary" id="sendQuestion" type="button" data-i18n="send">Yuborish</button>
   </div>
-
 </div>
 
-
 <script>
-"use strict";
+'use strict';
 
-/* =========================================================
-   TELEGRAM
-========================================================= */
+const tg = window.Telegram && window.Telegram.WebApp
+  ? window.Telegram.WebApp
+  : null;
 
-const tg =
-  window.Telegram &&
-  window.Telegram.WebApp
-    ? window.Telegram.WebApp
-    : null;
+/* Telegram bo'lsa Mini App rejimi, bo'lmasa oddiy browser rejimi. */
+const IS_TELEGRAM = Boolean(tg);
+const INIT_DATA = tg && tg.initData ? tg.initData : '';
+const API = (window.AVTODROM_API_URL || 'https://avtodrom.vercel.app').replace(/\/$/, '');
 
-if(tg){
-  try{
+if (tg) {
+  try {
     tg.ready();
     tg.expand();
-  }catch(e){}
+    tg.setHeaderColor('#ffffff');
+    tg.setBackgroundColor('#f4f7f5');
+  } catch (_) {}
+} else {
+  document.body.classList.add('browserMode');
 }
 
-
-/* =========================================================
-   API
-========================================================= */
-
-/*
-  MUHIM:
-
-  GitHub domeniga /api yubormaymiz.
-
-  Barcha API so‘rovlar backend Vercel serveriga ketadi.
-*/
-
-const API =
-  (
-    window.AVTODROM_API_URL ||
-    "https://avtodrom.vercel.app"
-  ).replace(/\/+$/,"");
-
-
-/* =========================================================
-   TELEGRAM INIT DATA
-========================================================= */
-
-function telegramHeaders(){
-
-  const headers = {
-    "Content-Type":"application/json"
-  };
-
-  if(tg && tg.initData){
-    headers["X-Telegram-Init-Data"] =
-      tg.initData;
-  }
-
-  return headers;
-}
-
-
-/* =========================================================
-   FETCH HELPER
-========================================================= */
-
-async function apiFetch(
-  path,
-  options={}
-){
-
-  const url =
-    API +
-    (
-      path.startsWith("/")
-        ? path
-        : "/" + path
-    );
-
-  const opts = {
-    method:options.method || "GET",
-    headers:{
-      ...telegramHeaders(),
-      ...(options.headers || {})
-    }
-  };
-
-  if(options.body !== undefined){
-
-    opts.body =
-      typeof options.body === "string"
-        ? options.body
-        : JSON.stringify(options.body);
-
-  }
-
-  let response;
-
-  try{
-
-    response =
-      await fetch(
-        url,
-        opts
-      );
-
-  }catch(error){
-
-    throw new Error(
-      "Serverga ulanib bo‘lmadi."
-    );
-
-  }
-
-
-  let data = null;
-
-  try{
-
-    data =
-      await response.json();
-
-  }catch(e){
-
-    data = null;
-
-  }
-
-
-  if(!response.ok){
-
-    const message =
-      data &&
-      (
-        data.message ||
-        data.error ||
-        data.detail
-      );
-
-    throw new Error(
-      message ||
-      (
-        response.status === 404
-          ? "Ma'lumot topilmadi."
-          : response.status === 405
-            ? "Ushbu amal server tomonidan qo‘llab-quvvatlanmaydi."
-            : "Server xatosi."
-      )
-    );
-
-  }
-
-
-  return data;
-
-}
-
-
-/* =========================================================
-   LANGUAGE
-========================================================= */
-
-const translations = {
-
-  uz:{
-
-    help:"Yordam",
-    hero:
-      "Avtodromdagi darsingizni qulay bron qiling, holatini kuzating va instruktor bilan bog‘laning.",
-
-    book_lesson:"Dars bron qilish",
-
-    media_title:"Media",
-
-    results_title:"Natijalarimiz",
-
-    customers:"Mijozlar",
-
-    lessons:"Darslar",
-
-    rating:"Reyting",
-
-    instructors:"Instruktorlar",
-
-    notifications:"Bildirishnomalar",
-
-    next_booking:"Keyingi bron",
-
-    all:"Barchasi",
-
-    home:"Bosh sahifa",
-
-    book:"Bron",
-
-    my_bookings:"Bronlarim",
-
-    profile:"Profil",
-
-    instructor:"Instruktor",
-
-    date:"Sana",
-
-    time:"Boshlanish vaqti",
-
-    duration:"Dars davomiyligi",
-
-    note:"Izoh",
-
-    note_placeholder:"Qo‘shimcha izoh...",
-
-    send_booking:"Bron yuborish",
-
-    booking_info:
-      "Bron yuborilgach, Admin tasdiqlaydi. Tasdiqdan keyin bron holati shu panelda ko‘rinadi.",
-
-    my_profile:"Profilim",
-
-    first_name:"Ism *",
-
-    last_name:"Familiya *",
-
-    phone:"Telefon *",
-
-    save:"Saqlash",
-
-    account:"Akkaunt",
-
-    ai_title:"AVTODROM AI yordamchi",
-
-    ai_welcome:
-      "Assalomu alaykum! Savolingizni yozing.",
-
-    question:"Savolingiz...",
-
-    send:"Yuborish",
-
-    loading:"Yuklanmoqda..."
-
+let profile = null;
+let allBookings = [];
+let selectedTime = '';
+let lang = localStorage.getItem('avtodrom_lang') || 'uz';
+
+const $ = id => document.getElementById(id);
+
+const I = {
+  uz: {
+    help:'Yordam',
+    hero:'Avtodromdagi darsingizni qulay bron qiling, holatini kuzating va instruktor bilan bog‘laning.',
+    book_lesson:'Dars bron qilish',
+    notifications:'Bildirishnomalar',
+    guide_video:'Video qo‘llanma',
+    next_booking:'Keyingi bron',
+    all:'Barchasi',
+    home:'Bosh sahifa',
+    book:'Bron',
+    my_bookings:'Bronlarim',
+    profile:'Profil',
+    instructor:'Instruktor',
+    date:'Sana',
+    time:'Boshlanish vaqti',
+    duration:'Dars davomiyligi',
+    note:'Izoh',
+    note_placeholder:'Qo‘shimcha izoh...',
+    send_booking:'Bron yuborish',
+    booking_info:'Bron yuborilgach, Admin tasdiqlaydi. Tasdiqdan keyin bron holati shu panelda ko‘rinadi.',
+    my_profile:'Profilim',
+    first_name:'Ism *',
+    last_name:'Familiya *',
+    phone:'Telefon *',
+    save:'Saqlash',
+    account:'Akkaunt',
+    question:'Savolingiz...',
+    send:'Yuborish',
+    ai_title:'AVTODROM AI yordamchi',
+    ai_welcome:'Assalomu alaykum! Savolingizni yozing.',
+    welcome:'Xush kelibsiz',
+    loading:'Yuklanmoqda...',
+    no_notifications:'Hozircha bildirishnoma yo‘q.',
+    no_bookings:'Hozircha bronlar yo‘q.',
+    no_instructors:'Tasdiqlangan instruktorlar topilmadi.',
+    profile_required:'Avval ism, familiya va telefonni to‘ldiring.',
+    choose:'Instruktor, sana va vaqtni tanlang.',
+    sent:'Bron yuborildi. Admin tasdiqlashini kuting.',
+    saved:'Profil saqlandi.',
+    pending:'Tasdiqlash kutilmoqda',
+    confirmed:'Tasdiqlangan',
+    in_progress:'Dars jarayonida',
+    completed:'Tugagan',
+    cancelled:'Bekor qilingan',
+    no_show:'Kelmagan',
+    busy:'Band',
+    empty_times:'Bu sana uchun vaqtlar mavjud emas.',
+    browser_mode:'Brauzer rejimi: ilova ochildi. Ma’lumotlar serverdagi akkaunt sessiyasi mavjud bo‘lsa yuklanadi.',
+    telegram_mode:'Telegram Mini App rejimi',
+    api_error:'Server bilan bog‘lanishda xatolik.',
+    ai_booking:'Bron bo‘limidan tasdiqlangan instruktorni, sanani va bo‘sh vaqtni tanlab bron yuborasiz.',
+    ai_instructor:'Faqat Admin tasdiqlagan va faol instruktorlar bron oynasida chiqadi.',
+    ai_status:'Bronlarim bo‘limida barcha bronlaringiz va ularning holatini ko‘rasiz.',
+    ai_cancel:'Bronni bekor qilish uchun Admin bilan bog‘laning.',
+    ai_default:'Savolingiz qabul qilindi. Bron, instruktor yoki bron holati haqida savol bersangiz yordam beraman.'
   },
-
-  ru:{
-
-    help:"Помощь",
-
-    hero:
-      "Удобно бронируйте занятие на автодроме, следите за статусом и связывайтесь с инструктором.",
-
-    book_lesson:"Забронировать занятие",
-
-    media_title:"Медиа",
-
-    results_title:"Наши результаты",
-
-    customers:"Клиенты",
-
-    lessons:"Занятия",
-
-    rating:"Рейтинг",
-
-    instructors:"Инструкторы",
-
-    notifications:"Уведомления",
-
-    next_booking:"Следующая бронь",
-
-    all:"Все",
-
-    home:"Главная",
-
-    book:"Бронь",
-
-    my_bookings:"Мои брони",
-
-    profile:"Профиль",
-
-    instructor:"Инструктор",
-
-    date:"Дата",
-
-    time:"Время начала",
-
-    duration:"Продолжительность",
-
-    note:"Комментарий",
-
-    note_placeholder:"Дополнительный комментарий...",
-
-    send_booking:"Отправить бронь",
-
-    booking_info:
-      "После отправки брони администратор должен её подтвердить. Статус будет отображаться здесь.",
-
-    my_profile:"Мой профиль",
-
-    first_name:"Имя *",
-
-    last_name:"Фамилия *",
-
-    phone:"Телефон *",
-
-    save:"Сохранить",
-
-    account:"Аккаунт",
-
-    ai_title:"AVTODROM AI помощник",
-
-    ai_welcome:
-      "Здравствуйте! Напишите ваш вопрос.",
-
-    question:"Ваш вопрос...",
-
-    send:"Отправить",
-
-    loading:"Загрузка..."
-
+  ru: {
+    help:'Помощь',
+    hero:'Удобно бронируйте занятие на автодроме, следите за статусом и связывайтесь с инструктором.',
+    book_lesson:'Забронировать занятие',
+    notifications:'Уведомления',
+    guide_video:'Видео-инструкция',
+    next_booking:'Ближайшая бронь',
+    all:'Все',
+    home:'Главная',
+    book:'Бронь',
+    my_bookings:'Мои бронирования',
+    profile:'Профиль',
+    instructor:'Инструктор',
+    date:'Дата',
+    time:'Время начала',
+    duration:'Продолжительность',
+    note:'Комментарий',
+    note_placeholder:'Дополнительный комментарий...',
+    send_booking:'Отправить бронь',
+    booking_info:'После отправки бронь подтверждает администратор. Статус будет отображаться здесь.',
+    my_profile:'Мой профиль',
+    first_name:'Имя *',
+    last_name:'Фамилия *',
+    phone:'Телефон *',
+    save:'Сохранить',
+    account:'Аккаунт',
+    question:'Ваш вопрос...',
+    send:'Отправить',
+    ai_title:'AI-помощник AVTODROM',
+    ai_welcome:'Здравствуйте! Напишите ваш вопрос.',
+    welcome:'Добро пожаловать',
+    loading:'Загрузка...',
+    no_notifications:'Уведомлений пока нет.',
+    no_bookings:'Бронирований пока нет.',
+    no_instructors:'Подтверждённых инструкторов нет.',
+    profile_required:'Сначала заполните имя, фамилию и телефон.',
+    choose:'Выберите инструктора, дату и время.',
+    sent:'Бронь отправлена. Ожидайте подтверждения администратора.',
+    saved:'Профиль сохранён.',
+    pending:'Ожидает подтверждения',
+    confirmed:'Подтверждено',
+    in_progress:'Занятие идёт',
+    completed:'Завершено',
+    cancelled:'Отменено',
+    no_show:'Не пришёл',
+    busy:'Занято',
+    empty_times:'На эту дату свободного времени нет.',
+    browser_mode:'Режим браузера: приложение открыто. Данные загрузятся, если для браузера доступна серверная сессия аккаунта.',
+    telegram_mode:'Режим Telegram Mini App',
+    api_error:'Ошибка соединения с сервером.',
+    ai_booking:'В разделе бронирования выберите подтверждённого инструктора, дату и свободное время.',
+    ai_instructor:'В форме отображаются только активные инструкторы, подтверждённые администратором.',
+    ai_status:'Все бронирования и их статусы находятся в разделе «Мои бронирования».',
+    ai_cancel:'Для отмены бронирования свяжитесь с администратором.',
+    ai_default:'Вопрос принят. Я помогу с бронированием, инструкторами и статусом брони.'
   }
-
 };
 
+const t = key => (I[lang] && I[lang][key]) || key;
 
-let lang =
-  localStorage.getItem(
-    "avtodrom_lang"
-  ) || "uz";
-
-
-function t(key){
-
-  return (
-    translations[lang] &&
-    translations[lang][key]
-  ) ||
-  translations.uz[key] ||
-  key;
-
+function esc(value){
+  return String(value ?? '').replace(/[&<>"']/g, c => ({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+  }[c]));
 }
 
-
-function applyLanguage(){
-
-  document.documentElement.lang =
-    lang;
-
-  document
-    .querySelectorAll("[data-i18n]")
-    .forEach(el=>{
-
-      const key =
-        el.getAttribute(
-          "data-i18n"
-        );
-
-      el.textContent =
-        t(key);
-
-    });
-
-
-  document
-    .querySelectorAll(
-      "[data-i18n-placeholder]"
-    )
-    .forEach(el=>{
-
-      const key =
-        el.getAttribute(
-          "data-i18n-placeholder"
-        );
-
-      el.placeholder =
-        t(key);
-
-    });
-
-
-  const langBtn =
-    document.getElementById(
-      "langBtn"
-    );
-
-  if(langBtn){
-    langBtn.textContent =
-      lang === "ru"
-        ? "RU"
-        : "UZ";
-  }
-
+function setNotice(id, message, type='error'){
+  const el = $(id);
+  if(!el) return;
+  el.innerHTML = message
+    ? '<div class="notice '+type+'">'+esc(message)+'</div>'
+    : '';
 }
 
+function formatDate(value){
+  if(!value) return '—';
+  const d = new Date(value);
+  return d.toLocaleDateString(lang === 'ru' ? 'ru-RU' : 'uz-UZ', {
+    timeZone:'Asia/Tashkent',
+    day:'2-digit',month:'2-digit',year:'numeric'
+  });
+}
 
-applyLanguage();
+function formatTime(value){
+  if(!value) return '—';
+  const d = new Date(value);
+  return d.toLocaleTimeString(lang === 'ru' ? 'ru-RU' : 'uz-UZ', {
+    timeZone:'Asia/Tashkent',
+    hour:'2-digit',minute:'2-digit'
+  });
+}
 
+function formatDateTime(value){
+  if(!value) return '—';
+  return formatDate(value)+' · '+formatTime(value);
+}
 
-/* =========================================================
-   LANGUAGE MENU
-========================================================= */
+function todayTashkent(){
+  return new Intl.DateTimeFormat('en-CA',{
+    timeZone:'Asia/Tashkent',
+    year:'numeric',month:'2-digit',day:'2-digit'
+  }).format(new Date());
+}
 
-document
-  .getElementById("langBtn")
-  .addEventListener(
-    "click",
-    ()=>{
-      document
-        .getElementById("langMenu")
-        .classList.toggle("open");
-    }
-  );
+function localTashkentDateTime(dateStr,timeStr){
+  /* Asia/Tashkent UTC+5. Backendga UTC ISO yuboriladi. */
+  const m = String(timeStr).match(/^(\d{2}):(\d{2})$/);
+  if(!m) return null;
+  const [_,hh,mm] = m;
+  return new Date(`${dateStr}T${hh}:${mm}:00+05:00`);
+}
 
+function applyLang(){
+  document.documentElement.lang = lang;
 
-document
-  .querySelectorAll(
-    "#langMenu button"
-  )
-  .forEach(btn=>{
-
-    btn.addEventListener(
-      "click",
-      ()=>{
-
-        lang =
-          btn.dataset.lang;
-
-        localStorage.setItem(
-          "avtodrom_lang",
-          lang
-        );
-
-        applyLanguage();
-
-        document
-          .getElementById("langMenu")
-          .classList.remove(
-            "open"
-          );
-
-      }
-    );
-
+  document.querySelectorAll('[data-i18n]').forEach(el=>{
+    el.textContent = t(el.dataset.i18n);
   });
 
+  document.querySelectorAll('[data-i18n-placeholder]').forEach(el=>{
+    el.placeholder = t(el.dataset.i18nPlaceholder);
+  });
 
-/* =========================================================
-   NAVIGATION
-========================================================= */
+  $('langBtn').textContent = lang.toUpperCase();
 
-function showPage(page){
-
-  document
-    .querySelectorAll(".page")
-    .forEach(el=>{
-      el.classList.remove(
-        "active"
-      );
-    });
-
-
-  const target =
-    document.getElementById(
-      page
-    );
-
-  if(target){
-    target.classList.add(
-      "active"
-    );
+  if(profile){
+    $('hello').textContent = t('welcome')+', '+(profile.first_name || '')+'!';
+    $('profileName').textContent =
+      ((profile.first_name||'')+' '+(profile.last_name||'')).trim() || 'Telegram';
   }
 
+  $('browserNotice').style.display = 'none';
 
-  document
-    .querySelectorAll(
-      ".nav button"
-    )
-    .forEach(btn=>{
+  renderBookings();
+  renderNext();
+  renderTimes();
+}
 
-      btn.classList.toggle(
-        "active",
-        btn.dataset.page === page
-      );
+$('langBtn').addEventListener('click',()=>{
+  $('langMenu').classList.toggle('open');
+});
 
-    });
+document.querySelectorAll('[data-lang]').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    lang = btn.dataset.lang;
+    localStorage.setItem('avtodrom_lang',lang);
+    $('langMenu').classList.remove('open');
+    applyLang();
+  });
+});
 
+document.addEventListener('click',e=>{
+  if(!e.target.closest('.actions')) $('langMenu').classList.remove('open');
+});
 
-  window.scrollTo({
-    top:0,
-    behavior:"smooth"
+function setPage(id){
+  document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));
+  const page = $(id);
+  if(!page) return;
+  page.classList.add('active');
+
+  document.querySelectorAll('.nav button').forEach(x=>{
+    x.classList.toggle('active',x.dataset.page===id);
   });
 
-
-  if(page === "book"){
+  if(id==='book'){
+    $('bookError').innerHTML='';
     loadInstructors();
+    renderTimes();
   }
-
-  if(page === "bookings"){
+  if(id==='bookings') loadBookings();
+  if(id==='home'){
+    loadNotifications();
     loadBookings();
   }
-
 }
 
+document.querySelectorAll('.nav button').forEach(btn=>{
+  btn.addEventListener('click',()=>setPage(btn.dataset.page));
+});
 
-document
-  .querySelectorAll(
-    ".nav button"
-  )
-  .forEach(btn=>{
+$('heroBook').addEventListener('click',()=>setPage('book'));
+$('allBookings').addEventListener('click',()=>setPage('bookings'));
+$('refreshBookings').addEventListener('click',()=>loadBookings());
 
-    btn.addEventListener(
-      "click",
-      ()=>{
-
-        showPage(
-          btn.dataset.page
-        );
-
-      }
-    );
-
-  });
-
-
-document
-  .getElementById(
-    "heroBook"
-  )
-  .addEventListener(
-    "click",
-    ()=>{
-      showPage("book");
-    }
-  );
-
-
-document
-  .getElementById(
-    "allBookings"
-  )
-  .addEventListener(
-    "click",
-    ()=>{
-      showPage("bookings");
-    }
-  );
-
-
-document
-  .getElementById(
-    "helpBtn"
-  )
-  .addEventListener(
-    "click",
-    ()=>{
-      openChat();
-    }
-  );
-
-
-/* =========================================================
-   USER DATA
-========================================================= */
-
-let me = null;
-
-
-function telegramUser(){
-
-  if(
-    !tg ||
-    !tg.initDataUnsafe ||
-    !tg.initDataUnsafe.user
-  ){
-    return null;
-  }
-
-  return tg.initDataUnsafe.user;
-
+function requestHeaders(){
+  const h = {'Content-Type':'application/json'};
+  if(INIT_DATA) h['X-Telegram-Init-Data'] = INIT_DATA;
+  return h;
 }
 
-
-/* =========================================================
-   LOAD ME
-========================================================= */
-
-async function loadMe(){
-
-  const user =
-    telegramUser();
-
-
-  if(user){
-
-    const first =
-      user.first_name || "";
-
-    const last =
-      user.last_name || "";
-
-    const full =
-      [first,last]
-        .filter(Boolean)
-        .join(" ");
-
-
-    document.getElementById(
-      "hello"
-    ).textContent =
-      full
-        ? `Xush kelibsiz, ${first}!`
-        : "Xush kelibsiz!";
-
-
-    document.getElementById(
-      "profileName"
-    ).textContent =
-      full ||
-      user.username ||
-      "Foydalanuvchi";
-
-
-    document.getElementById(
-      "profileUsername"
-    ).textContent =
-      user.username
-        ? "@" + user.username
-        : "Telegram";
-
-
-    document.getElementById(
-      "avatar"
-    ).textContent =
-      (
-        first ||
-        "U"
-      ).charAt(0).toUpperCase();
-
-  }
-
+async function api(path, options={}){
+  const controller = new AbortController();
+  const timer = setTimeout(()=>controller.abort(),15000);
 
   try{
-
-    const data =
-      await apiFetch(
-        "/api/me"
-      );
-
-
-    me =
-      data &&
-      (
-        data.user ||
-        data.profile ||
-        data
-      );
-
-
-    if(me){
-
-      const first =
-        me.first_name ||
-        me.firstName ||
-        "";
-
-      const last =
-        me.last_name ||
-        me.lastName ||
-        "";
-
-      const full =
-        [first,last]
-          .filter(Boolean)
-          .join(" ");
-
-
-      if(first){
-
-        document.getElementById(
-          "first"
-        ).value =
-          first;
-
+    const response = await fetch(API+path,{
+      credentials:'include',
+      cache:'no-store',
+      ...options,
+      signal:controller.signal,
+      headers:{
+        ...requestHeaders(),
+        ...(options.headers||{})
       }
+    });
 
+    const data = await response.json().catch(()=>({}));
 
-      if(last){
-
-        document.getElementById(
-          "last"
-        ).value =
-          last;
-
-      }
-
-
-      if(me.phone){
-
-        document.getElementById(
-          "phone"
-        ).value =
-          me.phone;
-
-      }
-
-
-      document.getElementById(
-        "profileName"
-      ).textContent =
-        full ||
-        me.username ||
-        "Foydalanuvchi";
-
-
-      document.getElementById(
-        "accountInfo"
-      ).textContent =
-        me.username
-          ? "@" + me.username
-          : "Telegram akkaunt";
-
+    if(!response.ok){
+      throw new Error(data.error || data.message || ('HTTP '+response.status));
     }
 
+    return data;
   }catch(error){
-
-    /*
-      Bu yerda 404/405 ni ekranga
-      katta qizil xato qilib chiqarmaymiz.
-
-      Telegram user mavjud bo‘lsa,
-      frontend ishlashda davom etadi.
-    */
-
-    document.getElementById(
-      "accountInfo"
-    ).textContent =
-      "Telegram akkaunt";
-
+    if(error.name==='AbortError'){
+      throw new Error(lang==='ru'?'Время ожидания сервера истекло.':'Server javobi juda uzoq cho‘zildi.');
+    }
+    throw error;
+  }finally{
+    clearTimeout(timer);
   }
-
 }
 
+function initDate(){
+  const today = todayTashkent();
+  $('date').min = today;
+  if(!$('date').value || $('date').value < today) $('date').value = today;
+}
 
-/* =========================================================
-   SAVE PROFILE
-========================================================= */
-
-document
-  .getElementById(
-    "saveProfile"
-  )
-  .addEventListener(
-    "click",
-    async ()=>{
-
-      const first =
-        document.getElementById(
-          "first"
-        ).value.trim();
-
-      const last =
-        document.getElementById(
-          "last"
-        ).value.trim();
-
-      const phone =
-        document.getElementById(
-          "phone"
-        ).value.trim();
-
-
-      if(!first || !last || !phone){
-
-        alert(
-          lang === "ru"
-            ? "Заполните все обязательные поля."
-            : "Barcha majburiy maydonlarni to‘ldiring."
-        );
-
-        return;
-
-      }
-
-
-      const btn =
-        document.getElementById(
-          "saveProfile"
-        );
-
-
-      const old =
-        btn.textContent;
-
-
-      btn.disabled = true;
-
-      btn.textContent =
-        lang === "ru"
-          ? "Сохранение..."
-          : "Saqlanmoqda...";
-
-
-      try{
-
-        await apiFetch(
-          "/api/me",
-          {
-            method:"PATCH",
-            body:{
-              first_name:first,
-              last_name:last,
-              phone:phone
-            }
-          }
-        );
-
-
-        btn.textContent =
-          lang === "ru"
-            ? "Сохранено ✓"
-            : "Saqlandi ✓";
-
-
-        setTimeout(
-          ()=>{
-            btn.textContent =
-              old;
-
-            btn.disabled =
-              false;
-          },
-          1500
-        );
-
-
-      }catch(error){
-
-        btn.disabled =
-          false;
-
-        btn.textContent =
-          old;
-
-
-        alert(
-          error.message ||
-          (
-            lang === "ru"
-              ? "Не удалось сохранить."
-              : "Saqlashda xatolik."
-          )
-        );
-
-      }
-
+function slots(){
+  const result=[];
+  for(let h=8;h<21;h++){
+    for(let m=0;m<60;m+=30){
+      result.push(String(h).padStart(2,'0')+':'+String(m).padStart(2,'0'));
     }
-  );
-
-
-/* =========================================================
-   MEDIA
-========================================================= */
-
-async function loadMedia(){
-
-  const section =
-    document.getElementById(
-      "mediaSection"
-    );
-
-  const loading =
-    document.getElementById(
-      "mediaLoading"
-    );
-
-  const empty =
-    document.getElementById(
-      "mediaEmpty"
-    );
-
-  const grid =
-    document.getElementById(
-      "mediaGrid"
-    );
-
-
-  loading.style.display =
-    "block";
-
-  empty.style.display =
-    "none";
-
-  grid.innerHTML =
-    "";
-
-
-  try{
-
-    const data =
-      await apiFetch(
-        "/api/content"
-      );
-
-
-    let items = [];
-
-
-    if(Array.isArray(data)){
-      items = data;
-    }
-    else if(
-      data &&
-      Array.isArray(data.items)
-    ){
-      items = data.items;
-    }
-    else if(
-      data &&
-      Array.isArray(data.media)
-    ){
-      items = data.media;
-    }
-    else if(
-      data &&
-      data.video_url
-    ){
-      items = [data];
-    }
-
-
-    items =
-      items.filter(
-        item =>
-          item &&
-          (
-            item.video_url ||
-            item.url ||
-            item.media_url ||
-            item.file_url
-          )
-      );
-
-
-    loading.style.display =
-      "none";
-
-
-    if(!items.length){
-
-      empty.style.display =
-        "block";
-
-      section.style.display =
-        "block";
-
-      return;
-
-    }
-
-
-    section.style.display =
-      "block";
-
-
-    items.forEach(
-      item=>{
-
-        const url =
-          item.video_url ||
-          item.url ||
-          item.media_url ||
-          item.file_url;
-
-
-        if(!url){
-          return;
-        }
-
-
-        const wrapper =
-          document.createElement(
-            "div"
-          );
-
-        wrapper.className =
-          "media-item";
-
-
-        const video =
-          document.createElement(
-            "video"
-          );
-
-        video.controls =
-          true;
-
-        video.playsInline =
-          true;
-
-        video.preload =
-          "metadata";
-
-        video.src =
-          url;
-
-
-        const info =
-          document.createElement(
-            "div"
-          );
-
-        info.className =
-          "media-info";
-
-
-        const title =
-          document.createElement(
-            "strong"
-          );
-
-        title.textContent =
-          item.title ||
-          item.name ||
-          "🎬 Video qo‘llanma";
-
-
-        const caption =
-          document.createElement(
-            "span"
-          );
-
-        caption.textContent =
-          item.description ||
-          item.caption ||
-          "";
-
-
-        info.appendChild(
-          title
-        );
-
-        if(caption.textContent){
-          info.appendChild(
-            caption
-          );
-        }
-
-
-        wrapper.appendChild(
-          video
-        );
-
-        wrapper.appendChild(
-          info
-        );
-
-
-        grid.appendChild(
-          wrapper
-        );
-
-      }
-    );
-
-
-  }catch(error){
-
-    /*
-      404 bo‘lsa ham foydalanuvchiga
-      "HTTP 404" degan qizil blok
-      chiqarmaymiz.
-
-      Media shunchaki yashiriladi.
-    */
-
-    loading.style.display =
-      "none";
-
-    section.style.display =
-      "none";
-
   }
-
+  return result;
 }
 
+$('date').addEventListener('change',()=>{
+  selectedTime='';
+  renderTimes();
+});
 
-/* =========================================================
-   RESULTS
-========================================================= */
+$('instructor').addEventListener('change',()=>{
+  selectedTime='';
+  renderTimes();
+});
 
-async function loadResults(){
+$('duration').addEventListener('change',renderTimes);
 
-  const section =
-    document.getElementById(
-      "resultsSection"
-    );
-
-
-  try{
-
-    const data =
-      await apiFetch(
-        "/api/results"
-      );
-
-
-    const result =
-      data &&
-      (
-        data.results ||
-        data.stats ||
-        data
-      );
-
-
-    if(!result){
-
-      section.style.display =
-        "none";
-
-      return;
-
-    }
-
-
-    const customers =
-      result.customers ??
-      result.total_customers ??
-      result.users ??
-      0;
-
-
-    const lessons =
-      result.lessons ??
-      result.completed_lessons ??
-      result.total_lessons ??
-      result.bookings ??
-      0;
-
-
-    const rating =
-      result.rating ??
-      result.average_rating ??
-      result.avg_rating ??
-      0;
-
-
-    const instructors =
-      result.instructors ??
-      result.active_instructors ??
-      0;
-
-
-    document.getElementById(
-      "resultCustomers"
-    ).textContent =
-      Number(customers).toLocaleString(
-        "uz-UZ"
-      );
-
-
-    document.getElementById(
-      "resultLessons"
-    ).textContent =
-      Number(lessons).toLocaleString(
-        "uz-UZ"
-      );
-
-
-    document.getElementById(
-      "resultRating"
-    ).textContent =
-      Number(rating || 0)
-        .toFixed(1);
-
-
-    document.getElementById(
-      "resultInstructors"
-    ).textContent =
-      Number(instructors).toLocaleString(
-        "uz-UZ"
-      );
-
-
-    section.style.display =
-      "block";
-
-
-  }catch(error){
-
-    /*
-      Natijalar API mavjud bo‘lmasa,
-      404 ko‘rsatmaymiz.
-
-      Statistika blokini yashiramiz.
-    */
-
-    section.style.display =
-      "none";
-
-  }
-
+function instructorName(item){
+  const p=item?.profile || {};
+  return ((p.first_name||p.full_name||'')+' '+(p.last_name||'')).trim()
+    || p.username
+    || (lang==='ru'?'Инструктор':'Instruktor');
 }
 
-
-/* =========================================================
-   INSTRUCTORS
-========================================================= */
-
-async function loadInstructors(){
-
-  const select =
-    document.getElementById(
-      "instructor"
-    );
-
-
-  select.innerHTML =
-    `
-      <option value="">
-        ${lang === "ru"
-          ? "Загрузка инструкторов..."
-          : "Instruktorlar yuklanmoqda..."}
-      </option>
-    `;
-
-
-  try{
-
-    const data =
-      await apiFetch(
-        "/api/instructors"
-      );
-
-
-    let list = [];
-
-
-    if(Array.isArray(data)){
-      list = data;
-    }
-    else if(
-      data &&
-      Array.isArray(data.instructors)
-    ){
-      list =
-        data.instructors;
-    }
-    else if(
-      data &&
-      Array.isArray(data.items)
-    ){
-      list =
-        data.items;
-    }
-
-
-    select.innerHTML =
-      "";
-
-
-    if(!list.length){
-
-      select.innerHTML =
-        `
-          <option value="">
-            ${lang === "ru"
-              ? "Подтвержденные инструкторы не найдены"
-              : "Tasdiqlangan instruktorlar topilmadi"}
-          </option>
-        `;
-
-      return;
-
-    }
-
-
-    list.forEach(
-      instructor=>{
-
-        const option =
-          document.createElement(
-            "option"
-          );
-
-
-        const id =
-          instructor.id ||
-          instructor.user_id ||
-          instructor.instructor_id;
-
-
-        const name =
-          instructor.name ||
-          [
-            instructor.first_name,
-            instructor.last_name
-          ]
-          .filter(Boolean)
-          .join(" ") ||
-          "Instruktor";
-
-
-        option.value =
-          id || "";
-
-
-        option.textContent =
-          name;
-
-
-        select.appendChild(
-          option
-        );
-
-      }
-    );
-
-
-    loadTimes();
-
-
-  }catch(error){
-
-    select.innerHTML =
-      `
-        <option value="">
-          ${lang === "ru"
-            ? "Инструкторы временно недоступны"
-            : "Instruktorlar vaqtincha mavjud emas"}
-        </option>
-      `;
-
-  }
-
-}
-
-
-/* =========================================================
-   TIMES
-========================================================= */
-
-function generateDefaultTimes(){
-
-  const times =
-    [];
-
-  for(
-    let hour=8;
-    hour<=20;
-    hour++
-  ){
-
-    for(
-      let minute of [0,30]
-    ){
-
-      if(
-        hour===20 &&
-        minute>0
-      ){
-        continue;
-      }
-
-
-      times.push(
-        `${String(hour).padStart(2,"0")}:${String(minute).padStart(2,"0")}`
-      );
-
-    }
-
-  }
-
-  return times;
-
-}
-
-
-async function loadTimes(){
-
-  const container =
-    document.getElementById(
-      "times"
-    );
-
-
-  container.innerHTML =
-    "";
-
-
-  const selectedDate =
-    document.getElementById(
-      "date"
-    ).value;
-
-
-  const instructor =
-    document.getElementById(
-      "instructor"
-    ).value;
-
-
-  let busy =
-    [];
-
-
-  if(selectedDate && instructor){
-
-    try{
-
-      const data =
-        await apiFetch(
-          `/api/bookings?instructor_id=${encodeURIComponent(instructor)}&date=${encodeURIComponent(selectedDate)}`
-        );
-
-
-      const bookings =
-        Array.isArray(data)
-          ? data
-          : (
-              data &&
-              (
-                data.bookings ||
-                data.items
-              )
-            ) || [];
-
-
-      busy =
-        bookings
-          .map(
-            booking =>
-              booking.start_time ||
-              booking.startTime ||
-              booking.time
-          )
-          .filter(Boolean);
-
-    }catch(e){
-
-      /*
-        API xatosida vaqtlarni
-        butunlay yopib qo‘ymaymiz.
-      */
-
-      busy = [];
-
-    }
-
-  }
-
-
-  generateDefaultTimes()
-    .forEach(
-      time=>{
-
-        const btn =
-          document.createElement(
-            "button"
-          );
-
-
-        btn.type =
-          "button";
-
-        btn.className =
-          "time";
-
-
-        btn.textContent =
-          time;
-
-
-        if(
-          busy.includes(time)
-        ){
-
-          btn.disabled =
-            true;
-
-          btn.classList.add(
-            "busy"
-          );
-
-        }
-
-
-        btn.addEventListener(
-          "click",
-          ()=>{
-
-            document
-              .querySelectorAll(
-                ".time"
-              )
-              .forEach(
-                x =>
-                  x.classList.remove(
-                    "selected"
-                  )
-              );
-
-
-            btn.classList.add(
-              "selected"
-            );
-
-          }
-        );
-
-
-        container.appendChild(
-          btn
-        );
-
-      }
-    );
-
-}
-
-
-document
-  .getElementById(
-    "date"
-  )
-  .addEventListener(
-    "change",
-    loadTimes
-  );
-
-
-document
-  .getElementById(
-    "instructor"
-  )
-  .addEventListener(
-    "change",
-    loadTimes
-  );
-
-
-/* =========================================================
-   BOOKING
-========================================================= */
-
-document
-  .getElementById(
-    "bookBtn"
-  )
-  .addEventListener(
-    "click",
-    async ()=>{
-
-      const instructor =
-        document.getElementById(
-          "instructor"
-        ).value;
-
-
-      const date =
-        document.getElementById(
-          "date"
-        ).value;
-
-
-      const selected =
-        document.querySelector(
-          ".time.selected"
-        );
-
-
-      const duration =
-        Number(
-          document.getElementById(
-            "duration"
-          ).value
-        );
-
-
-      const note =
-        document.getElementById(
-          "note"
-        ).value.trim();
-
-
-      const errorBox =
-        document.getElementById(
-          "bookError"
-        );
-
-
-      errorBox.innerHTML =
-        "";
-
-
-      if(!instructor){
-
-        errorBox.innerHTML =
-          `
-            <div class="notice error">
-              ${lang === "ru"
-                ? "Выберите инструктора."
-                : "Instruktorni tanlang."}
-            </div>
-          `;
-
-        return;
-
-      }
-
-
-      if(!date){
-
-        errorBox.innerHTML =
-          `
-            <div class="notice error">
-              ${lang === "ru"
-                ? "Выберите дату."
-                : "Sanani tanlang."}
-            </div>
-          `;
-
-        return;
-
-      }
-
-
-      if(!selected){
-
-        errorBox.innerHTML =
-          `
-            <div class="notice error">
-              ${lang === "ru"
-                ? "Выберите время."
-                : "Boshlanish vaqtini tanlang."}
-            </div>
-          `;
-
-        return;
-
-      }
-
-
-      const btn =
-        document.getElementById(
-          "bookBtn"
-        );
-
-
-      const oldText =
-        btn.textContent;
-
-
-      btn.disabled =
-        true;
-
-      btn.textContent =
-        lang === "ru"
-          ? "Отправка..."
-          : "Yuborilmoqda...";
-
-
-      try{
-
-        await apiFetch(
-          "/api/bookings",
-          {
-            method:"POST",
-
-            body:{
-              instructor_id:
-                instructor,
-
-              date:
-                date,
-
-              start_time:
-                selected.textContent,
-
-              duration_minutes:
-                duration,
-
-              note:
-                note
-            }
-          }
-        );
-
-
-        alert(
-          lang === "ru"
-            ? "Бронь успешно отправлена!"
-            : "Bron muvaffaqiyatli yuborildi!"
-        );
-
-
-        document.getElementById(
-          "note"
-        ).value =
-          "";
-
-
-        document
-          .querySelectorAll(
-            ".time.selected"
-          )
-          .forEach(
-            x =>
-              x.classList.remove(
-                "selected"
-              )
-          );
-
-
-        loadBookings();
-
-
-        showPage(
-          "bookings"
-        );
-
-
-      }catch(error){
-
-        errorBox.innerHTML =
-          `
-            <div class="notice error">
-              ${escapeHtml(
-                error.message ||
-                (
-                  lang === "ru"
-                    ? "Ошибка бронирования."
-                    : "Bron qilishda xatolik."
-                )
-              )}
-            </div>
-          `;
-
-      }finally{
-
-        btn.disabled =
-          false;
-
-        btn.textContent =
-          oldText;
-
-      }
-
-    }
-  );
-
-
-/* =========================================================
-   BOOKINGS
-========================================================= */
-
-async function loadBookings(){
-
-  const container =
-    document.getElementById(
-      "bookingList"
-    );
-
-
-  container.innerHTML =
-    `<div class="loader">${t("loading")}</div>`;
-
-
-  try{
-
-    const data =
-      await apiFetch(
-        "/api/bookings"
-      );
-
-
-    let list =
-      Array.isArray(data)
-        ? data
-        : (
-            data &&
-            (
-              data.bookings ||
-              data.items
-            )
-          ) || [];
-
-
-    if(!list.length){
-
-      container.innerHTML =
-        `
-          <div class="empty">
-            ${lang === "ru"
-              ? "У вас пока нет брони."
-              : "Sizda hozircha bronlar yo‘q."}
-          </div>
-        `;
-
-      return;
-
-    }
-
-
-    container.innerHTML =
-      "";
-
-
-    list
-      .sort(
-        (a,b)=>
-          String(
-            b.date ||
-            b.start_at ||
-            b.created_at ||
-            ""
-          )
-          .localeCompare(
-            String(
-              a.date ||
-              a.start_at ||
-              a.created_at ||
-              ""
-            )
-          )
-      )
-      .forEach(
-        booking=>{
-
-          const card =
-            document.createElement(
-              "div"
-            );
-
-          card.className =
-            "card";
-
-
-          const status =
-            String(
-              booking.status ||
-              "pending"
-            )
-            .toLowerCase();
-
-
-          let statusClass =
-            "pending";
-
-
-          if(
-            status.includes(
-              "confirm"
-            ) ||
-            status === "approved"
-          ){
-            statusClass =
-              "confirmed";
-          }
-
-
-          if(
-            status.includes(
-              "progress"
-            ) ||
-            status === "active"
-          ){
-            statusClass =
-              "progress";
-          }
-
-
-          if(
-            status.includes(
-              "complete"
-            ) ||
-            status === "done"
-          ){
-            statusClass =
-              "done";
-          }
-
-
-          if(
-            status.includes(
-              "cancel"
-            )
-          ){
-            statusClass =
-              "cancel";
-          }
-
-
-          const statusText =
-            getStatusText(
-              status
-            );
-
-
-          const date =
-            booking.date ||
-            formatDate(
-              booking.start_at ||
-              booking.startAt
-            );
-
-
-          const time =
-            booking.start_time ||
-            booking.startTime ||
-            booking.time ||
-            formatTime(
-              booking.start_at ||
-              booking.startAt
-            );
-
-
-          const instructor =
-            booking.instructor_name ||
-            booking.instructorName ||
-            (
-              booking.instructor &&
-              (
-                booking.instructor.name ||
-                [
-                  booking.instructor.first_name,
-                  booking.instructor.last_name
-                ]
-                .filter(Boolean)
-                .join(" ")
-              )
-            ) ||
-            "Instruktor";
-
-
-          const duration =
-            booking.duration_minutes ||
-            booking.duration ||
-            0;
-
-
-          card.innerHTML =
-            `
-              <div class="topline">
-
-                <strong>
-                  ${escapeHtml(
-                    date || "-"
-                  )}
-                </strong>
-
-                <span class="badge ${statusClass}">
-                  ${escapeHtml(
-                    statusText
-                  )}
-                </span>
-
-              </div>
-
-              <div
-                class="meta"
-              >
-
-                <div>
-                  🕐
-                  ${escapeHtml(
-                    String(time || "-")
-                  )}
-                </div>
-
-                <div>
-                  👨‍🏫
-                  ${escapeHtml(
-                    String(instructor)
-                  )}
-                </div>
-
-                ${
-                  duration
-                    ? `
-                      <div>
-                        ⏱
-                        ${escapeHtml(
-                          String(duration)
-                        )} ${lang==="ru"?"минут":"daqiqa"}
-                      </div>
-                    `
-                    : ""
-                }
-
-                ${
-                  booking.note
-                    ? `
-                      <div>
-                        💬
-                        ${escapeHtml(
-                          String(
-                            booking.note
-                          )
-                        )}
-                      </div>
-                    `
-                    : ""
-                }
-
-              </div>
-            `;
-
-
-          container.appendChild(
-            card
-          );
-
-        }
-      );
-
-
-  }catch(error){
-
-    /*
-      404/405 ni ekranga chiqarib,
-      foydalanuvchini qo‘rqitmaymiz.
-    */
-
-    container.innerHTML =
-      `
-        <div class="empty">
-          ${
-            lang === "ru"
-              ? "Брони пока недоступны."
-              : "Bronlar hozircha mavjud emas."
-          }
-        </div>
-      `;
-
-  }
-
-}
-
-
-/* =========================================================
-   NOTIFICATIONS
-========================================================= */
-
-async function loadNotifications(){
-
-  const box =
-    document.getElementById(
-      "notifications"
-    );
-
-  const count =
-    document.getElementById(
-      "notificationCount"
-    );
-
-
-  try{
-
-    const data =
-      await apiFetch(
-        "/api/notifications"
-      );
-
-
-    const list =
-      Array.isArray(data)
-        ? data
-        : (
-            data &&
-            (
-              data.notifications ||
-              data.items
-            )
-          ) || [];
-
-
-    count.textContent =
-      String(list.length);
-
-
-    if(!list.length){
-
-      box.className =
-        "empty";
-
-      box.textContent =
-        lang === "ru"
-          ? "Уведомлений пока нет."
-          : "Hozircha bildirishnoma yo‘q.";
-
-      return;
-
-    }
-
-
-    box.className =
-      "";
-
-
-    box.innerHTML =
-      list
-        .slice(0,5)
-        .map(
-          item=>
-            `
-              <div
-                style="
-                  padding:10px 0;
-                  border-bottom:1px solid #edf1ef;
-                "
-              >
-
-                <strong>
-                  ${escapeHtml(
-                    item.title ||
-                    "Bildirishnoma"
-                  )}
-                </strong>
-
-                <div
-                  class="small"
-                >
-                  ${escapeHtml(
-                    item.message ||
-                    item.text ||
-                    ""
-                  )}
-                </div>
-
-              </div>
-            `
-        )
-        .join("");
-
-
-  }catch(error){
-
-    count.textContent =
-      "0";
-
-
-    box.className =
-      "empty";
-
-    box.textContent =
-      lang === "ru"
-        ? "Уведомлений пока нет."
-        : "Hozircha bildirishnoma yo‘q.";
-
-  }
-
-}
-
-
-/* =========================================================
-   NEXT BOOKING
-========================================================= */
-
-async function loadNextBooking(){
-
-  const box =
-    document.getElementById(
-      "nextBooking"
-    );
-
-
-  try{
-
-    const data =
-      await apiFetch(
-        "/api/bookings"
-      );
-
-
-    const list =
-      Array.isArray(data)
-        ? data
-        : (
-            data &&
-            (
-              data.bookings ||
-              data.items
-            )
-          ) || [];
-
-
-    if(!list.length){
-
-      box.className =
-        "empty";
-
-      box.textContent =
-        lang === "ru"
-          ? "Следующей брони нет."
-          : "Keyingi bron yo‘q.";
-
-      return;
-
-    }
-
-
-    const booking =
-      list[0];
-
-
-    box.className =
-      "";
-
-
-    box.innerHTML =
-      `
-        <strong>
-          ${escapeHtml(
-            booking.date ||
-            formatDate(
-              booking.start_at
-            ) ||
-            "-"
-          )}
-        </strong>
-
-        <div
-          class="meta"
-        >
-
-          <div>
-            🕐
-            ${escapeHtml(
-              booking.start_time ||
-              booking.time ||
-              formatTime(
-                booking.start_at
-              ) ||
-              "-"
-            )}
-          </div>
-
-          <div>
-            👨‍🏫
-            ${escapeHtml(
-              booking.instructor_name ||
-              "Instruktor"
-            )}
-          </div>
-
-        </div>
-      `;
-
-
-  }catch(error){
-
-    box.className =
-      "empty";
-
-    box.textContent =
-      lang === "ru"
-        ? "Следующей брони пока нет."
-        : "Hozircha keyingi bron yo‘q.";
-
-  }
-
-}
-
-
-/* =========================================================
-   AI
-========================================================= */
-
-const chat =
-  document.getElementById(
-    "chat"
-  );
-
-
-function openChat(){
-
-  chat.classList.add(
-    "open"
-  );
-
-  chat.setAttribute(
-    "aria-hidden",
-    "false"
-  );
-
-  setTimeout(
-    ()=>{
-      document
-        .getElementById(
-          "question"
-        )
-        .focus();
-    },
-    100
-  );
-
-}
-
-
-function closeChat(){
-
-  chat.classList.remove(
-    "open"
-  );
-
-  chat.setAttribute(
-    "aria-hidden",
-    "true"
-  );
-
-}
-
-
-document
-  .getElementById(
-    "aiBtn"
-  )
-  .addEventListener(
-    "click",
-    openChat
-  );
-
-
-document
-  .getElementById(
-    "closeChat"
-  )
-  .addEventListener(
-    "click",
-    closeChat
-  );
-
-
-async function askAI(){
-
-  const input =
-    document.getElementById(
-      "question"
-    );
-
-
-  const messages =
-    document.getElementById(
-      "messages"
-    );
-
-
-  const question =
-    input.value.trim();
-
-
-  if(!question){
+function renderTimes(){
+  const box=$('times');
+  if(!box) return;
+
+  const date=$('date').value;
+  const instructorId=$('instructor').value;
+  const duration=Number($('duration').value||30);
+
+  if(!date || !instructorId){
+    box.innerHTML='<div class="muted">'+esc(t('choose'))+'</div>';
     return;
   }
 
-
-  const mine =
-    document.createElement(
-      "div"
-    );
-
-  mine.className =
-    "msg mine";
-
-  mine.textContent =
-    question;
-
-
-  messages.appendChild(
-    mine
+  const busy = allBookings.filter(b =>
+    String(b.instructor_id)===String(instructorId) &&
+    ['pending','confirmed','in_progress'].includes(String(b.status))
   );
 
+  const now = Date.now();
 
-  input.value =
-    "";
+  const html=slots().map(tm=>{
+    const start=localTashkentDateTime(date,tm);
+    if(!start) return '';
 
+    const end=new Date(start.getTime()+duration*60000);
 
-  messages.scrollTop =
-    messages.scrollHeight;
+    const conflict=busy.some(b=>{
+      const bs=new Date(b.start_at).getTime();
+      const be=new Date(b.end_at).getTime();
+      return bs<end.getTime() && be>start.getTime();
+    });
 
+    const past=start.getTime()<now;
+    const disabled=conflict||past;
+    const label=conflict ? tm+' · '+t('busy') : tm;
 
-  const loading =
-    document.createElement(
-      "div"
-    );
+    return '<button type="button" class="time '+
+      (selectedTime===tm?'selected ':'')+
+      (disabled?'busy':'')+
+      '" '+(disabled?'disabled':'')+
+      ' data-time="'+esc(tm)+'">'+esc(label)+'</button>';
+  }).join('');
 
-  loading.className =
-    "msg";
+  box.innerHTML=html || '<div class="empty">'+esc(t('empty_times'))+'</div>';
 
-  loading.textContent =
-    lang === "ru"
-      ? "Думаю..."
-      : "O‘ylayapman...";
+  box.querySelectorAll('.time:not([disabled])').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      selectedTime=btn.dataset.time;
+      renderTimes();
+    });
+  });
+}
 
+async function loadInstructors(){
+  try{
+    const data=await api('/api/instructors');
+    let instructors=Array.isArray(data.instructors)?data.instructors:[];
 
-  messages.appendChild(
-    loading
-  );
+    // Faqat Admin tasdiqlagan VA faol instruktorlar mijozga ko‘rinadi.
+    // Backend ham bu filtrni qo‘llashi kerak; frontenddagi filtr esa qo‘shimcha himoya.
+    instructors=instructors.filter(x=>{
+      const approved=x.approved ?? x.is_approved ?? x.verified ?? x.status==='approved';
+      const active=x.active ?? x.is_active ?? x.status==='active';
+      return (approved === undefined || Boolean(approved)) && active !== false;
+    });
 
+    $('instructor').innerHTML=instructors.length
+      ? instructors.map(x=>{
+          const years=x.experience_years ? ' · '+esc(x.experience_years)+' '+(lang==='ru'?'лет':'yil') : '';
+          return '<option value="'+esc(x.id)+'">'+esc(instructorName(x))+years+'</option>';
+        }).join('')
+      : '<option value="">'+esc(t('no_instructors'))+'</option>';
+
+    renderTimes();
+  }catch(error){
+    $('instructor').innerHTML='<option value="">'+esc(t('no_instructors'))+'</option>';
+    setNotice('bookError',error.message || t('api_error'));
+    renderTimes();
+  }
+}
+
+async function loadBookings(){
+  try{
+    const data=await api('/api/bookings');
+    allBookings=Array.isArray(data.bookings)?data.bookings:[];
+    renderBookings();
+    renderNext();
+    renderTimes();
+  }catch(error){
+    $('bookingList').innerHTML='<div class="notice error">'+esc(error.message || t('api_error'))+'</div>';
+    $('nextBooking').innerHTML='<div class="empty">—</div>';
+  }
+}
+
+async function loadCustomerVideo(){
+  try{
+    const data=await api('/api/content');
+    const media=Array.isArray(data.media)?data.media:[];
+    const video=media.find(x=>x.key==='guide_video' && x.media_type==='video' && x.public_url);
+    const card=$('customerVideo');
+    if(!video){card.style.display='none';return;}
+    $('customerVideoTitle').textContent='🎬 '+(video.title||t('guide_video'));
+    $('customerVideoPlayer').src=video.public_url;
+    $('customerVideoCaption').textContent=lang==='ru'?'Видео-инструкция для клиентов.':'Customerlar uchun video qo‘llanma.';
+    card.style.display='block';
+  }catch(error){
+    $('customerVideo').style.display='none';
+  }
+}
+
+async function loadNotifications(){
+  if(!profile){
+    $('notifications').innerHTML='<div class="empty">'+esc(t('no_notifications'))+'</div>';
+    $('notificationCount').textContent='0';
+    return;
+  }
 
   try{
+    const data=await api('/api/notifications');
+    const notifications=Array.isArray(data.notifications)?data.notifications:[];
 
-    const data =
-      await apiFetch(
-        "/api/ai",
-        {
-          method:"POST",
-          body:{
-            question,
-            language:lang
-          }
-        }
-      );
+    $('notificationCount').textContent=notifications.length;
 
-
-    loading.textContent =
-      data.answer ||
-      data.message ||
-      (
-        lang === "ru"
-          ? "Ответ не найден."
-          : "Javob topilmadi."
-      );
-
-
+    $('notifications').innerHTML=notifications.length
+      ? notifications.slice(0,8).map(x=>{
+          return '<div class="card" style="margin:8px 0;padding:12px">'+
+            '<b>'+esc(x.title || 'AVTODROM')+'</b>'+
+            '<p class="muted" style="margin:6px 0 0">'+esc(x.body || x.message || '')+'</p>'+
+            (x.created_at?'<div class="small">'+esc(formatDateTime(x.created_at))+'</div>':'')+
+          '</div>';
+        }).join('')
+      : '<div class="empty">'+esc(t('no_notifications'))+'</div>';
   }catch(error){
+    $('notifications').innerHTML='<div class="notice error">'+esc(error.message || t('api_error'))+'</div>';
+  }
+}
+
+function statusClass(status){
+  switch(status){
+    case 'pending':return 'pending';
+    case 'confirmed':return 'confirmed';
+    case 'in_progress':return 'progress';
+    case 'completed':return 'done';
+    case 'cancelled':
+    case 'no_show':
+    case 'rejected':return 'cancel';
+    default:return '';
+  }
+}
+
+function statusText(status){
+  return t(status) || status || '—';
+}
+
+function renderBookings(){
+  const box=$('bookingList');
+  if(!box) return;
+
+  if(!allBookings.length){
+    box.innerHTML='<div class="empty">'+esc(t('no_bookings'))+'</div>';
+    return;
+  }
+
+  box.innerHTML=allBookings.map(b=>{
+    const duration=Math.max(0,Math.round(
+      (new Date(b.end_at).getTime()-new Date(b.start_at).getTime())/60000
+    ));
+
+    return '<div class="card booking">'+
+      '<div class="topline">'+
+        '<div class="date">'+esc(formatDateTime(b.start_at))+'</div>'+
+        '<span class="badge '+statusClass(b.status)+'">'+esc(statusText(b.status))+'</span>'+
+      '</div>'+
+      '<div class="meta">'+
+        '<div>👨‍🏫 '+esc(instructorName(b.instructor))+'</div>'+
+        '<div>🕐 '+esc(duration)+' '+esc(lang==='ru'?'минут':'daqiqa')+'</div>'+
+        (b.customer_note?'<div>💬 '+esc(b.customer_note)+'</div>':'')+
+      '</div>'+
+    '</div>';
+  }).join('');
+}
+
+function renderNext(){
+  const box=$('nextBooking');
+  if(!box) return;
+
+  const now=Date.now();
+
+  const next=allBookings
+    .filter(b=>
+      ['pending','confirmed','in_progress'].includes(String(b.status)) &&
+      new Date(b.end_at).getTime()>now
+    )
+    .sort((a,b)=>new Date(a.start_at)-new Date(b.start_at))[0];
+
+  if(!next){
+    box.innerHTML='<div class="empty">'+esc(t('no_bookings'))+'</div>';
+    return;
+  }
+
+  box.innerHTML=
+    '<b>'+esc(formatDateTime(next.start_at))+'</b>'+
+    '<p class="muted" style="margin:6px 0">'+esc(instructorName(next.instructor))+'</p>'+
+    '<span class="badge '+statusClass(next.status)+'">'+esc(statusText(next.status))+'</span>';
+}
+
+function renderProfile(){
+  if(!profile) return;
+
+  $('first').value=profile.first_name||'';
+  $('last').value=profile.last_name||'';
+  $('phone').value=profile.phone||'';
+
+  const full=((profile.first_name||'')+' '+(profile.last_name||'')).trim();
+
+  $('profileName').textContent=full || 'Telegram';
+  $('profileUsername').textContent=profile.username
+    ? '@'+profile.username
+    : (IS_TELEGRAM ? 'Telegram' : 'Browser');
+
+  $('avatar').textContent=(profile.first_name||full||'U').slice(0,1).toUpperCase();
+
+  $('accountInfo').textContent =
+    profile.telegram_id
+      ? 'Telegram ID: '+profile.telegram_id
+      : (lang==='ru'?'Аккаунт пользователя':'Foydalanuvchi akkaunti');
+}
+
+$('bookBtn').addEventListener('click',async()=>{
+  $('bookError').innerHTML='';
+
+  if(!profile){
+    setNotice(
+      'bookError',
+      lang==='ru'
+        ? 'Сначала войдите в аккаунт.'
+        : 'Avval akkauntga kirish kerak.'
+    );
+    return;
+  }
+
+  if(!profile.first_name || !profile.last_name || !profile.phone){
+    setPage('profile');
+    alert(t('profile_required'));
+    return;
+  }
+
+  if(!$('instructor').value || !$('date').value || !selectedTime){
+    setNotice('bookError',t('choose'));
+    return;
+  }
+
+  const start=localTashkentDateTime($('date').value,selectedTime);
+  if(!start || Number.isNaN(start.getTime())){
+    setNotice('bookError',t('choose'));
+    return;
+  }
+
+  const end=new Date(start.getTime()+Number($('duration').value||30)*60000);
+  const btn=$('bookBtn');
+
+  btn.disabled=true;
+  const oldText=btn.textContent;
+  btn.textContent=lang==='ru'?'Отправка...':'Yuborilmoqda...';
+
+  try{
+    await api('/api/bookings',{
+      method:'POST',
+      body:JSON.stringify({
+        instructor_id:$('instructor').value,
+        start_at:start.toISOString(),
+        end_at:end.toISOString(),
+        customer_note:$('note').value.trim() || null
+      })
+    });
+
+    $('note').value='';
+    selectedTime='';
+    await loadBookings();
+
+    alert(t('sent'));
+    setPage('bookings');
+  }catch(error){
+    setNotice('bookError',error.message || t('api_error'));
+  }finally{
+    btn.disabled=false;
+    btn.textContent=oldText;
+  }
+});
+
+$('saveProfile').addEventListener('click',async()=>{
+  const first=$('first').value.trim();
+  const last=$('last').value.trim();
+  const phone=$('phone').value.trim();
+
+  if(!first || !last || !phone){
+    alert(t('profile_required'));
+    return;
+  }
+
+  const btn=$('saveProfile');
+  btn.disabled=true;
+  const old=btn.textContent;
+  btn.textContent=lang==='ru'?'Сохранение...':'Saqlanmoqda...';
+
+  try{
+    const data=await api('/api/me',{
+      method:'PATCH',
+      body:JSON.stringify({
+        first_name:first,
+        last_name:last,
+        phone:phone
+      })
+    });
+
+    profile=data.profile || profile;
+    renderProfile();
+    $('hello').textContent=t('welcome')+', '+(profile.first_name||'')+'!';
+    alert(t('saved'));
+  }catch(error){
+    alert(lang==='ru' ? 'Профиль не удалось сохранить. Проверьте соединение и попробуйте ещё раз.' : 'Profilni saqlab bo‘lmadi. Internetni tekshirib, qayta urinib ko‘ring.');
+  }finally{
+    btn.disabled=false;
+    btn.textContent=old;
+  }
+});
+
+function toggleAI(){
+  const chat=$('chat');
+  const open=chat.classList.toggle('open');
+  chat.setAttribute('aria-hidden',String(!open));
+  if(open) $('question').focus();
+}
+
+$('helpBtn').addEventListener('click',toggleAI);
+$('aiBtn').addEventListener('click',toggleAI);
+$('closeChat').addEventListener('click',toggleAI);
+
+function addMsg(text,mine=false){
+  const el=document.createElement('div');
+  el.className='msg'+(mine?' mine':'');
+  el.textContent=text;
+  $('messages').appendChild(el);
+  $('messages').scrollTop=$('messages').scrollHeight;
+}
+
+function sendQuestion(){
+  const input=$('question');
+  const q=input.value.trim();
+  if(!q) return;
+
+  addMsg(q,true);
+  input.value='';
+
+  const s=q.toLowerCase();
+  let answer=t('ai_default');
+
+  if(s.includes('bron') || s.includes('бро') || s.includes('booking')){
+    answer=t('ai_booking');
+  }else if(s.includes('instruk') || s.includes('инструкт')){
+    answer=t('ai_instructor');
+  }else if(s.includes('holat') || s.includes('status') || s.includes('статус')){
+    answer=t('ai_status');
+  }else if(s.includes('bekor') || s.includes('отмен')){
+    answer=t('ai_cancel');
+  }
+
+  setTimeout(()=>addMsg(answer,false),180);
+}
+
+$('sendQuestion').addEventListener('click',sendQuestion);
+$('question').addEventListener('keydown',e=>{
+  if(e.key==='Enter'){
+    e.preventDefault();
+    sendQuestion();
+  }
+});
+
+async function loadMe(){
+  try{
+    const data=await api('/api/me');
+    profile=data.profile || null;
+
+    if(profile){
+      renderProfile();
+      $('hello').textContent=t('welcome')+', '+(profile.first_name||'')+'!';
+    }
+
+    return true;
+  }catch(error){
+    profile=null;
+    $('accountInfo').textContent = '';
 
     /*
-      AI endpoint bo‘lmasa ham
-      HTTP 404 ni ko‘rsatmaymiz.
+      Muhim:
+      Bu yerda Telegram-only blok yo'q.
+      Oddiy browserda /api/me 401 bersa ham UI ishlashda davom etadi.
     */
+    $('hello').textContent=t('welcome');
+    $('notifications').innerHTML=
+      '<div class="notice info">'+
+      esc(IS_TELEGRAM
+        ? (lang==='ru'
+          ? 'Профиль пока не загружен. Попробуйте открыть Mini App из Telegram ещё раз.'
+          : 'Profil hali yuklanmadi. Mini Appni Telegram ichidan qayta ochib ko‘ring.')
+        : (lang==='ru'
+          ? 'Браузерный режим открыт. Для загрузки личных данных нужна серверная сессия аккаунта.'
+          : 'Brauzer rejimi ochildi. Shaxsiy ma’lumotlar uchun server akkaunt sessiyasi kerak.')
+      )+
+      '</div>';
 
-    loading.textContent =
-      lang === "ru"
-        ? "Сейчас AI-помощник недоступен. Попробуйте позже."
-        : "Hozir AI yordamchi vaqtincha ishlamayapti. Keyinroq urinib ko‘ring.";
-
+    return false;
   }
-
-
-  messages.scrollTop =
-    messages.scrollHeight;
-
 }
 
+async function boot(){
+  initDate();
+  applyLang();
 
-document
-  .getElementById(
-    "sendQuestion"
-  )
-  .addEventListener(
-    "click",
-    askAI
-  );
+  /*
+    OLD XATO:
+      if(!initData) { "Telegram Mini Appni bot ichidan oching." }
 
+    YANGI:
+      initData bo'lmasa ham ilova bloklanmaydi.
+      Telegram bo'lsa initData header yuboriladi.
+      Browser bo'lsa cookie/session orqali API ishlashi mumkin.
+  */
 
-document
-  .getElementById(
-    "question"
-  )
-  .addEventListener(
-    "keydown",
-    e=>{
+  const hasProfile=await loadMe();
 
-      if(e.key === "Enter"){
-        e.preventDefault();
-        askAI();
-      }
-
-    }
-  );
-
-
-/* =========================================================
-   HELPERS
-========================================================= */
-
-function escapeHtml(value){
-
-  return String(
-    value ?? ""
-  )
-  .replace(
-    /&/g,
-    "&amp;"
-  )
-  .replace(
-    /</g,
-    "&lt;"
-  )
-  .replace(
-    />/g,
-    "&gt;"
-  )
-  .replace(
-    /"/g,
-    "&quot;"
-  )
-  .replace(
-    /'/g,
-    "&#039;"
-  );
-
+  if(hasProfile){
+    await Promise.allSettled([
+      loadBookings(),
+      loadInstructors(),
+      loadNotifications(),
+      loadCustomerVideo()
+    ]);
+  }else{
+    allBookings=[];
+    renderBookings();
+    renderNext();
+    renderTimes();
+  }
 }
 
-
-function formatDate(value){
-
-  if(!value){
-    return "";
-  }
-
-
-  const d =
-    new Date(value);
-
-
-  if(
-    Number.isNaN(
-      d.getTime()
-    )
-  ){
-    return "";
-  }
-
-
-  return d.toLocaleDateString(
-    "uz-UZ",
-    {
-      timeZone:
-        "Asia/Tashkent"
-    }
-  );
-
-}
-
-
-function formatTime(value){
-
-  if(!value){
-    return "";
-  }
-
-
-  const d =
-    new Date(value);
-
-
-  if(
-    Number.isNaN(
-      d.getTime()
-    )
-  ){
-    return "";
-  }
-
-
-  return d.toLocaleTimeString(
-    "uz-UZ",
-    {
-      hour:"2-digit",
-      minute:"2-digit",
-      timeZone:
-        "Asia/Tashkent"
-    }
-  );
-
-}
-
-
-function getStatusText(status){
-
-  if(
-    status.includes("confirm") ||
-    status === "approved"
-  ){
-    return lang === "ru"
-      ? "Подтверждено"
-      : "Tasdiqlangan";
-  }
-
-
-  if(
-    status.includes("progress") ||
-    status === "active"
-  ){
-    return lang === "ru"
-      ? "В процессе"
-      : "Jarayonda";
-  }
-
-
-  if(
-    status.includes("complete") ||
-    status === "done"
-  ){
-    return lang === "ru"
-      ? "Завершено"
-      : "Yakunlangan";
-  }
-
-
-  if(
-    status.includes("cancel")
-  ){
-    return lang === "ru"
-      ? "Отменено"
-      : "Bekor qilingan";
-  }
-
-
-  return lang === "ru"
-    ? "Ожидает"
-    : "Kutilmoqda";
-
-}
-
-
-/* =========================================================
-   DATE DEFAULT
-========================================================= */
-
-function setDefaultDate(){
-
-  const input =
-    document.getElementById(
-      "date"
-    );
-
-
-  const now =
-    new Date();
-
-
-  const local =
-    new Intl.DateTimeFormat(
-      "en-CA",
-      {
-        timeZone:
-          "Asia/Tashkent"
-      }
-    ).format(now);
-
-
-  input.min =
-    local;
-
-
-  if(!input.value){
-    input.value =
-      local;
-  }
-
-}
-
-
-/* =========================================================
-   INIT
-========================================================= */
-
-async function init(){
-
-  setDefaultDate();
-
-  await loadMe();
-
-  loadMedia();
-
-  loadResults();
-
-  loadNotifications();
-
-  loadNextBooking();
-
-  loadBookings();
-
-  loadInstructors();
-
-}
-
-
-init();
-
-
-/* =========================================================
-   AUTO REFRESH
-========================================================= */
-
-setInterval(
-  ()=>{
+/* Foydalanuvchi sahifada turib Admin tasdiqlasa, statusni yangilab turadi. */
+setInterval(()=>{
+  if(profile){
+    loadBookings();
     loadNotifications();
-    loadNextBooking();
-  },
-  30000
-);
+    loadCustomerVideo();
+  }
+},15000);
 
-
-setInterval(
-  ()=>{
-    loadMedia();
-    loadResults();
-  },
-  60000
-);
-
+boot();
 </script>
-
 </body>
 </html>
