@@ -1,5 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 import { supabaseRest } from './supabase.js';
+import { sendBookingNotification } from './telegram.js';
 import type { TelegramWebAppUser } from './telegram.js';
 
 function q(value: string) { return encodeURIComponent(value); }
@@ -26,6 +27,49 @@ async function getOwnedBooking(id: string, instructorId: string) {
   return rows[0] || null;
 }
 
+async function notifyBookingStatus(booking: any, status: 'in_progress' | 'completed') {
+  try {
+    const customerId = booking?.customer_id;
+    if (!customerId) return;
+
+    const title = status === 'in_progress' ? 'Instruktor: mijoz KELDI' : 'Dars yakunlandi';
+    const body = status === 'in_progress'
+      ? `Bron #${booking.id}: instruktor sizni kutib oldi. Dars boshlandi.`
+      : `Bron #${booking.id}: dars yakunlandi. Instruktor bilan dars tugadi.`;
+
+    await supabaseRest('notifications', {
+      method: 'POST',
+      body: JSON.stringify({
+        profile_id: customerId,
+        booking_id: booking.id,
+        title,
+        body,
+        channel: 'in_app',
+      }),
+    });
+
+    const customerRows = await supabaseRest<any[]>('profiles', {
+      query: `?id=eq.${q(String(customerId))}&select=telegram_id`,
+    });
+    const chatId = Number(customerRows[0]?.telegram_id);
+    const token = String(process.env.CUSTOMER_BOT_TOKEN || process.env.TELEGRAM_CUSTOMER_BOT_TOKEN || '');
+    const miniAppUrl = String(process.env.CUSTOMER_MINI_APP_URL || process.env.MINI_APP_URL || '');
+
+    if (token && Number.isSafeInteger(chatId) && chatId > 0) {
+      await sendBookingNotification(
+        token,
+        chatId,
+        `🚗 AVTODROM INDEX\n\n${title}\n${body}`,
+        miniAppUrl,
+        '🚗 Foydalanuvchi panelini ochish',
+      );
+    }
+  } catch (e) {
+    // Statusning o‘zi saqlanib qoladi; xabarnoma xatosi asosiy amalni bekor qilmaydi.
+    console.error('Instructor -> customer notification failed:', e);
+  }
+}
+
 export async function registerInstructorRoutes(
   app: FastifyInstance,
   authenticate: (request: any) => Promise<TelegramWebAppUser>,
@@ -48,8 +92,6 @@ export async function registerInstructorRoutes(
     }
   });
 
-  // Foydalanuvchi yaratgan va Admin tasdiqlagan bronlar shu yerda ko‘rinadi.
-  // Bu endpoint customer/admin ishlatadigan aynan `bookings` jadvalidan o‘qiydi.
   app.get('/api/instructor/bookings', async (request, reply) => {
     try {
       const user = await authenticate(request);
@@ -79,7 +121,6 @@ export async function registerInstructorRoutes(
     }
   });
 
-  // KELDI: confirmed -> in_progress
   app.post('/api/instructor/bookings/:id/arrived', async (request, reply) => {
     try {
       const user = await authenticate(request);
@@ -100,13 +141,14 @@ export async function registerInstructorRoutes(
         query: `?id=eq.${q(id)}&instructor_id=eq.${q(String(instructor.id))}`,
         body: JSON.stringify({ status: 'in_progress', updated_at: new Date().toISOString() }),
       });
-      return { ok: true, booking: rows[0] || null };
+      const updated = rows[0] || null;
+      await notifyBookingStatus(updated || booking, 'in_progress');
+      return { ok: true, booking: updated };
     } catch (e) {
       return reply.code(400).send({ ok: false, error: e instanceof Error ? e.message : 'KELDI amalini bajarib bo‘lmadi' });
     }
   });
 
-  // KETDI: in_progress -> completed
   app.post('/api/instructor/bookings/:id/departed', async (request, reply) => {
     try {
       const user = await authenticate(request);
@@ -127,7 +169,9 @@ export async function registerInstructorRoutes(
         query: `?id=eq.${q(id)}&instructor_id=eq.${q(String(instructor.id))}`,
         body: JSON.stringify({ status: 'completed', updated_at: new Date().toISOString() }),
       });
-      return { ok: true, booking: rows[0] || null };
+      const updated = rows[0] || null;
+      await notifyBookingStatus(updated || booking, 'completed');
+      return { ok: true, booking: updated };
     } catch (e) {
       return reply.code(400).send({ ok: false, error: e instanceof Error ? e.message : 'KETDI amalini bajarib bo‘lmadi' });
     }
