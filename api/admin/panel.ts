@@ -16,20 +16,33 @@ async function safe(table:string,q:string){try{return await rest(table,q)}catch{
 const publicUrl=(p:string)=>`${SUPA()}/storage/v1/object/public/${BUCKET}/${p.split('/').map(encodeURIComponent).join('/')}`;
 function body(req:any){if(req.body&&typeof req.body==='object'&&!Buffer.isBuffer(req.body))return req.body;try{return JSON.parse(typeof req.body==='string'?req.body:'{}')}catch{return {}}}
 async function rpc(fn:string,args:any){const r=await supa().rpc(fn,args);if(r.error)throw new Error(r.error.message||'Supabase RPC xatosi');return r.data}
+async function getInstructorRows(){
+ const [users,profiles]=await Promise.all([
+  rest('users','?role=eq.instructor&select=id,telegram_id,phone,full_name,is_active,is_blocked,created_at,updated_at&order=created_at.desc'),
+  rest('instructor_profiles','?select=user_id,experience_years,is_verified,is_available,bio,rating,total_reviews')
+ ]);
+ const byUser=new Map(profiles.map((p:any)=>[String(p.user_id),p]));
+ return users.map((u:any)=>{const p=byUser.get(String(u.id))||{};const names=String(u.full_name||'').trim().split(/\s+/);return {...u,...p,id:u.id,first_name:names[0]||'',last_name:names.slice(1).join(' '),approved:Boolean(p.is_verified),active:Boolean(u.is_active&&!u.is_blocked),is_available:Boolean(p.is_available)}});
+}
 
 export default async function handler(req:any,res:any){
  try{
   auth(req); const action=String(req.query?.action||'dashboard');
   if(req.method==='GET'&&action==='dashboard'){
-   const [users,instructors,bookings,media,applications]=await Promise.all([safe('tg_users','?select=tg_id'),safe('instructors','?select=id&approved=eq.true&active=eq.true'),safe('bookings','?select=id,instructor_id,customer_id,date,time,duration,status,price,payment_status,tg_user_id,created_at&order=created_at.desc'),safe('admin_media','?select=*'),safe('instructor_applications','?status=eq.PENDING&select=id')]);
+   const [users,instructors,bookings,media,applications]=await Promise.all([
+    safe('tg_users','?select=tg_id'),
+    safe('users','?role=eq.instructor&is_active=eq.true&is_blocked=eq.false&select=id'),
+    safe('bookings','?select=id,instructor_id,customer_id,date,time,duration,status,price,payment_status,tg_user_id,created_at&order=created_at.desc'),
+    safe('admin_media','?select=id'),
+    safe('instructor_applications','?status=eq.PENDING&select=id')
+   ]);
    const today=new Date().toISOString().slice(0,10),todayRows=bookings.filter((x:any)=>String(x.date||'')===today),revenue=todayRows.reduce((s:number,x:any)=>['paid','completed'].includes(String(x.payment_status||'').toLowerCase())?s+Number(x.price||0):s,0);
    return json(res,200,{ok:true,dashboard:{users:users.length,activeInstructors:instructors.length,pendingBookings:bookings.filter((x:any)=>x.status==='pending').length,todayBookings:todayRows.length,todayRevenue:revenue,media:media.length,pendingInstructorApplications:applications.length}})
   }
   if(req.method==='GET'&&action==='bookings')return json(res,200,{ok:true,bookings:await safe('bookings','?select=*&order=created_at.desc')});
   if(req.method==='GET'&&action==='users')return json(res,200,{ok:true,users:await safe('tg_users','?select=tg_id,first_name,username,customer_id,created_at&order=created_at.desc')});
   if(req.method==='GET'&&action==='instructor-applications'){
-   const status=String(req.query?.status||'').trim().toUpperCase();const q=status&&['PENDING','APPROVED','REJECTED'].includes(status)?`?status=eq.${status}&select=*&order=created_at.desc`:'?select=*&order=created_at.desc';
-   return json(res,200,{ok:true,applications:await rest('instructor_applications',q)});
+   const status=String(req.query?.status||'').trim().toUpperCase();const q=status&&['PENDING','APPROVED','REJECTED'].includes(status)?`?status=eq.${status}&select=*&order=created_at.desc`:'?select=*&order=created_at.desc';return json(res,200,{ok:true,applications:await rest('instructor_applications',q)});
   }
   if(req.method==='POST'&&action==='approve-instructor'){
    const id=String(body(req).id||'').trim();if(!id)return json(res,400,{ok:false,error:'Ariza ID kerak'});const result=await rpc('admin_approve_instructor_service',{p_application_id:id});return json(res,200,{ok:true,application:Array.isArray(result)?result[0]:result});
@@ -37,11 +50,16 @@ export default async function handler(req:any,res:any){
   if(req.method==='POST'&&action==='reject-instructor'){
    const b=body(req),id=String(b.id||'').trim(),reason=String(b.reason||'').trim();if(!id)return json(res,400,{ok:false,error:'Ariza ID kerak'});const result=await rpc('admin_reject_instructor_service',{p_application_id:id,p_reason:reason||null});return json(res,200,{ok:true,application:Array.isArray(result)?result[0]:result});
   }
-  if(req.method==='GET'&&action==='instructors')return json(res,200,{ok:true,instructors:await safe('instructors','?select=*&order=created_at.desc')});
+  if(req.method==='GET'&&action==='instructors')return json(res,200,{ok:true,instructors:await getInstructorRows()});
   if(req.method==='PATCH'&&action==='instructor-status'){
-   const b=body(req),id=encodeURIComponent(String(b.id||''));if(!id)return json(res,400,{ok:false,error:'Instructor ID kerak'});const active=Boolean(b.active);const rows=await rest('instructors',`?id=eq.${id}`,{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify({active,approved:active,updated_at:new Date().toISOString()})});return json(res,200,{ok:true,instructor:rows[0]});
+   const b=body(req),id=encodeURIComponent(String(b.id||''));if(!id)return json(res,400,{ok:false,error:'Instructor ID kerak'});const active=Boolean(b.active);
+   await rest('users',`?id=eq.${id}`,{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify({is_active:active,is_blocked:!active,updated_at:new Date().toISOString()})});
+   await rest('instructor_profiles',`?user_id=eq.${id}`,{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify({is_available:active,is_verified:active,updated_at:new Date().toISOString()})});
+   return json(res,200,{ok:true});
   }
-  if(req.method==='GET'&&action==='media'){const rows=await safe('admin_media','?select=*&order=sort_order.asc,created_at.desc');return json(res,200,{ok:true,media:rows.map((x:any)=>({...x,id:String(x.id),url:x.public_url||publicUrl(x.storage_path||'')}))})}
+  if(req.method==='GET'&&action==='media'){
+   const rows=await safe('admin_media','?select=*&order=sort_order.asc,created_at.desc');return json(res,200,{ok:true,media:rows.map((x:any)=>({...x,id:String(x.id),storage_path:x.path,url:x.public_url||publicUrl(x.path||'')}))});
+  }
   if(req.method==='GET'&&action==='results'){const rows=await safe('bookings','?select=*&order=created_at.desc');return json(res,200,{ok:true,results:rows,summary:{total:rows.length,completed:rows.filter((x:any)=>x.status==='completed').length,revenue:rows.reduce((s:number,x:any)=>s+Number(x.price||0),0)}})}
   if(req.method==='GET'&&action==='prices'){const s=(await safe('app_state','?id=eq.main&select=data'))[0]?.data||{};return json(res,200,{ok:true,prices:Array.isArray(s.prices)?s.prices:[]})}
   if(req.method==='GET'&&action==='settings'){const s=(await safe('app_state','?id=eq.main&select=data'))[0]?.data||{};return json(res,200,{ok:true,settings:s.settings||{}})}
@@ -54,7 +72,6 @@ export default async function handler(req:any,res:any){
   if(req.method==='PATCH'&&action==='settings'){
    const s=(await safe('app_state','?id=eq.main&select=data'))[0]||{data:{}},settings={...(s.data?.settings||{}),...body(req)};await rest('app_state','?id=eq.main',{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify({data:{...(s.data||{}),settings},updated_at:new Date().toISOString()})});return json(res,200,{ok:true,settings})
   }
-  // Direct signed upload: the video bytes never pass through Vercel.
   if(req.method==='POST'&&action==='sign'){
    const b=body(req),original=String(b.file_name||'video.mp4').trim(),name=original.replace(/[^a-zA-Z0-9._-]/g,'_').slice(-180)||'video.mp4',type=String(b.content_type||'video/mp4').toLowerCase().split(';')[0].trim(),size=Number(b.file_size||0);
    if(!type.startsWith('video/'))return json(res,400,{ok:false,error:'Faqat video fayl yuklang'});if(size>0&&size>500*1024*1024)return json(res,413,{ok:false,error:'Video 500 MB dan katta bo‘lishi mumkin emas'});
@@ -63,10 +80,10 @@ export default async function handler(req:any,res:any){
   }
   if(req.method==='POST'&&action==='commit'){
    const b=body(req),storagePath=String(b.storage_path||b.path||'').trim(),title=String(b.title||'Video qo‘llanma').trim().slice(0,200),public_url=String(b.public_url||publicUrl(storagePath)).trim();
-   if(!storagePath||!storagePath.startsWith('customer/'))return json(res,400,{ok:false,error:'Video storage yo‘li noto‘g‘ri'});const rows=await rest('admin_media','',{method:'POST',headers:{Prefer:'return=representation'},body:JSON.stringify({key:`admin_${Date.now()}_${Math.random().toString(36).slice(2,8)}`,title,media_type:'video',storage_path:storagePath,public_url,is_active:true,sort_order:0,updated_at:new Date().toISOString()})});return json(res,200,{ok:true,media:rows[0]});
+   if(!storagePath||!storagePath.startsWith('customer/'))return json(res,400,{ok:false,error:'Video storage yo‘li noto‘g‘ri'});const rows=await rest('admin_media','',{method:'POST',headers:{Prefer:'return=representation'},body:JSON.stringify({key:`admin_${Date.now()}_${Math.random().toString(36).slice(2,8)}`,title,media_type:'video',path:storagePath,public_url,is_active:true,sort_order:0,updated_at:new Date().toISOString()})});return json(res,200,{ok:true,media:rows[0]});
   }
   if(req.method==='DELETE'&&action==='media'){
-   const id=encodeURIComponent(String(req.query?.id||''));if(!id)return json(res,400,{ok:false,error:'Media ID kerak'});const rows=await rest('admin_media',`?id=eq.${id}&select=storage_path`,{method:'GET'}),path=rows[0]?.storage_path;if(path){try{await supa().storage.from(BUCKET).remove([path])}catch{}}await rest('admin_media',`?id=eq.${id}`,{method:'DELETE'});return json(res,200,{ok:true});
+   const id=encodeURIComponent(String(req.query?.id||''));if(!id)return json(res,400,{ok:false,error:'Media ID kerak'});const rows=await rest('admin_media',`?id=eq.${id}&select=path`,{method:'GET'}),path=rows[0]?.path;if(path){try{await supa().storage.from(BUCKET).remove([path])}catch{}}await rest('admin_media',`?id=eq.${id}`,{method:'DELETE'});return json(res,200,{ok:true});
   }
   return json(res,404,{ok:false,error:'Admin action topilmadi'});
  }catch(e:any){const msg=e?.message||'Server xatosi';return json(res,msg==='Unauthorized'?401:500,{ok:false,error:msg});}
