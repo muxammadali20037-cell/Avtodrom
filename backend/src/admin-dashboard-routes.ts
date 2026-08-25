@@ -2,6 +2,7 @@ import type { FastifyInstance } from 'fastify';
 import { createHmac, timingSafeEqual } from 'node:crypto';
 import { createClient } from '@supabase/supabase-js';
 import { supabaseRest } from './supabase.js';
+import { sendBookingNotification } from './telegram.js';
 
 const COOKIE_NAME='avtodrom_admin_session';
 const SESSION_TTL=60*60*12;
@@ -47,6 +48,75 @@ async function saveState(data:any){
   if(rows[0])return rows[0];
   const created=await supabaseRest<any[]>('app_state',{method:'POST',headers:{Prefer:'return=representation'},body});
   return created[0];
+}
+
+async function approveApplication(applicationId:string){
+  const applications=await supabaseRest<any[]>('instructor_applications',{query:`?id=eq.${q(applicationId)}&select=*`});
+  const application=applications[0];
+  if(!application)throw new Error('Ariza topilmadi');
+
+  const updatedApplications=await supabaseRest<any[]>('instructor_applications',{
+    method:'PATCH',headers:{Prefer:'return=representation'},query:`?id=eq.${q(applicationId)}`,
+    body:JSON.stringify({status:'APPROVED',reviewed_at:new Date().toISOString(),rejection_reason:null,updated_at:new Date().toISOString()})
+  });
+
+  const existingUsers=await supabaseRest<any[]>('users',{query:`?telegram_id=eq.${q(String(application.telegram_user_id))}&select=*&limit=1`});
+  let user=existingUsers[0];
+  if(user){
+    const rows=await supabaseRest<any[]>('users',{
+      method:'PATCH',headers:{Prefer:'return=representation'},query:`?id=eq.${q(String(user.id))}`,
+      body:JSON.stringify({phone:application.phone,full_name:`${application.first_name} ${application.last_name}`.trim(),role:'instructor',is_active:true,is_blocked:false,updated_at:new Date().toISOString()})
+    });
+    user=rows[0]||user;
+  }else{
+    const rows=await supabaseRest<any[]>('users',{
+      method:'POST',headers:{Prefer:'return=representation'},
+      body:JSON.stringify({telegram_id:application.telegram_user_id,phone:application.phone,full_name:`${application.first_name} ${application.last_name}`.trim(),role:'instructor',is_active:true,is_blocked:false})
+    });
+    user=rows[0];
+  }
+  if(!user?.id)throw new Error('Instruktor foydalanuvchisi yaratilmadi');
+
+  const existingProfiles=await supabaseRest<any[]>('instructor_profiles',{query:`?user_id=eq.${q(String(user.id))}&select=*&limit=1`});
+  if(existingProfiles[0]){
+    await supabaseRest('instructor_profiles',{
+      method:'PATCH',headers:{Prefer:'return=representation'},query:`?id=eq.${q(String(existingProfiles[0].id))}`,
+      body:JSON.stringify({experience_years:Number(application.experience_years||0),bio:application.message||null,is_verified:true,is_available:true,updated_at:new Date().toISOString()})
+    });
+  }else{
+    await supabaseRest('instructor_profiles',{
+      method:'POST',headers:{Prefer:'return=representation'},
+      body:JSON.stringify({user_id:user.id,experience_years:Number(application.experience_years||0),bio:application.message||null,is_verified:true,is_available:true})
+    });
+  }
+
+  try{
+    const token=String(process.env.INSTRUCTOR_BOT_TOKEN||'');
+    const miniAppUrl=String(process.env.INSTRUCTOR_MINI_APP_URL||'https://avtodrom.vercel.app/instructor');
+    if(token&&application.telegram_user_id){
+      await sendBookingNotification(token,Number(application.telegram_user_id),'✅ Arizangiz tasdiqlandi!\n\nEndi AVTODROM Instruktor Mini Appiga kirib, bronlaringizni ko‘rishingiz va mijozlarni qabul qilishingiz mumkin.',miniAppUrl,'👨‍🏫 Instruktor panelini ochish');
+    }
+  }catch(e){console.error('Instructor approval notification failed:',e)}
+
+  return updatedApplications[0]||application;
+}
+
+async function rejectApplication(applicationId:string,reason:string|null){
+  const applications=await supabaseRest<any[]>('instructor_applications',{query:`?id=eq.${q(applicationId)}&select=*`});
+  const application=applications[0];
+  if(!application)throw new Error('Ariza topilmadi');
+  const rows=await supabaseRest<any[]>('instructor_applications',{
+    method:'PATCH',headers:{Prefer:'return=representation'},query:`?id=eq.${q(applicationId)}`,
+    body:JSON.stringify({status:'REJECTED',reviewed_at:new Date().toISOString(),rejection_reason:reason,updated_at:new Date().toISOString()})
+  });
+  try{
+    const token=String(process.env.INSTRUCTOR_BOT_TOKEN||'');
+    const miniAppUrl=String(process.env.INSTRUCTOR_MINI_APP_URL||'https://avtodrom.vercel.app/instructor');
+    if(token&&application.telegram_user_id){
+      await sendBookingNotification(token,Number(application.telegram_user_id),`❌ Arizangiz rad etildi.${reason?`\n\nSabab: ${reason}`:''}`,miniAppUrl,'📝 Qayta ariza yuborish');
+    }
+  }catch(e){console.error('Instructor rejection notification failed:',e)}
+  return rows[0]||application;
 }
 
 export function registerAdminDashboardRoutes(app:FastifyInstance){
@@ -97,9 +167,23 @@ export function registerAdminDashboardRoutes(app:FastifyInstance){
 
   app.get('/api/admin/instructors',async(r,reply)=>{try{await requireAdmin(r);return{ok:true,instructors:await safeRows('panel_users','?role=eq.instructor&select=id,instructor_id,email,created_at&order=created_at.desc')}}catch(e:any){return reply.code(500).send({ok:false,error:e?.message||'Instruktorlar yuklanmadi'})}});
 
-  app.get('/api/admin/applications',async(r,reply)=>{try{await requireAdmin(r);return{ok:true,applications:await safeRows('instructor_applications','?select=*&order=created_at.desc')}}catch{ return {ok:true,applications:[]} }});
-  app.post('/api/admin/applications/:id/approve',async(r,reply)=>{try{await requireAdmin(r);return{ok:false,error:'Instructor ariza jadvali hozircha ulanmagan'}}catch(e:any){return reply.code(401).send({ok:false,error:e?.message||'Unauthorized'})}});
-  app.post('/api/admin/applications/:id/reject',async(r,reply)=>{try{await requireAdmin(r);return{ok:false,error:'Instructor ariza jadvali hozircha ulanmagan'}}catch(e:any){return reply.code(401).send({ok:false,error:e?.message||'Unauthorized'})}});
+  app.get('/api/admin/applications',async(r,reply)=>{
+    try{
+      await requireAdmin(r);
+      const applications=await supabaseRest<any[]>('instructor_applications',{query:'?select=*&order=created_at.desc'});
+      return{ok:true,applications};
+    }catch(e:any){return reply.code(500).send({ok:false,error:e?.message||'Arizalar yuklanmadi'})}
+  });
+
+  app.post('/api/admin/applications/:id/approve',async(r,reply)=>{
+    try{await requireAdmin(r);const application=await approveApplication(String((r.params as any).id));return{ok:true,application}}
+    catch(e:any){console.error('Admin application approval failed:',e);return reply.code(400).send({ok:false,error:e?.message||'Tasdiqlash amalga oshmadi'})}
+  });
+
+  app.post('/api/admin/applications/:id/reject',async(r,reply)=>{
+    try{await requireAdmin(r);const reason=String((r.body as any)?.reason||'').trim()||null;const application=await rejectApplication(String((r.params as any).id),reason);return{ok:true,application}}
+    catch(e:any){console.error('Admin application rejection failed:',e);return reply.code(400).send({ok:false,error:e?.message||'Rad etish amalga oshmadi'})}
+  });
 
   app.get('/api/admin/reviews',async(r,reply)=>{try{await requireAdmin(r);return{ok:true,reviews:[]}}catch(e:any){return reply.code(401).send({ok:false,error:e?.message||'Unauthorized'})}});
 
