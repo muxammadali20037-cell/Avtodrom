@@ -7,7 +7,6 @@ import { registerBookingRoutes } from './booking-routes.js';
 import { registerInstructorRoutes } from './instructor-routes.js';
 import { registerInstructorRegistrationRoutes } from './instructor-registration-routes.js';
 import { registerAdminRoutes } from './admin-routes.js';
-import { registerAdminDashboardRoutes } from './admin-dashboard-routes.js';
 import { handleInstructorStart } from './instructor-start.js';
 import { registerAdminPasswordRoutes } from './admin-password-routes.js';
 import { registerContentRoutes } from './content-routes.js';
@@ -43,7 +42,6 @@ await registerBookingRoutes(app,authenticateCustomer);
 await registerInstructorRoutes(app,authenticateInstructor);
 await registerInstructorRegistrationRoutes(app,authenticateInstructor);
 await registerAdminRoutes(app,authenticateAdmin);
-await registerAdminDashboardRoutes(app);
 await registerAdminPasswordRoutes(app);
 await registerContentRoutes(app);
 
@@ -74,6 +72,5 @@ app.post('/api/telegram/admin/webhook',async(request,reply)=>handleTelegramWebho
 app.post<{Body:{chatId?:number}}>('/api/telegram/customer/start',async(request,reply)=>{const chatId=Number(request.body?.chatId);if(!CUSTOMER_BOT_TOKEN||!CUSTOMER_MINI_APP_URL)return reply.code(503).send({ok:false,error:'Customer bot is not configured'});if(!Number.isSafeInteger(chatId))return reply.code(400).send({ok:false,error:'Invalid chatId'});await sendCustomerStart(CUSTOMER_BOT_TOKEN,chatId,CUSTOMER_MINI_APP_URL);return{ok:true}});
 app.post<{Body:{chatId?:number}}>('/api/telegram/instructor/start',async(request,reply)=>{const chatId=Number(request.body?.chatId);if(!INSTRUCTOR_BOT_TOKEN)return reply.code(503).send({ok:false,error:'Instructor bot is not configured'});if(!Number.isSafeInteger(chatId))return reply.code(400).send({ok:false,error:'Invalid chatId'});await handleInstructorStart(INSTRUCTOR_BOT_TOKEN,chatId,{id:chatId},INSTRUCTOR_MINI_APP_URL);return{ok:true}});
 app.post<{Body:{chatId?:number}}>('/api/telegram/admin/start',async(request,reply)=>{const chatId=Number(request.body?.chatId);if(!ADMIN_BOT_TOKEN||!ADMIN_MINI_APP_URL)return reply.code(503).send({ok:false,error:'Admin bot is not configured'});if(!Number.isSafeInteger(chatId))return reply.code(400).send({ok:false,error:'Invalid chatId'});await sendAdminStart(ADMIN_BOT_TOKEN,chatId,ADMIN_MINI_APP_URL);return{ok:true}});
-
 export default app;
 export {app};
