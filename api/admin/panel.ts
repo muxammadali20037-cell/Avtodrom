@@ -1,4 +1,5 @@
 import { createHmac, timingSafeEqual } from 'node:crypto';
+import { createClient } from '@supabase/supabase-js';
 
 const COOKIE='avtodrom_admin_session';
 const TTL=60*60*12;
@@ -10,7 +11,8 @@ function cookie(req:any){const raw=String(req.headers?.cookie||'');const item=ra
 function valid(token:string){try{const secret=String(process.env.ADMIN_SESSION_SECRET||process.env.ADMIN_PASSWORD||'').trim();const login=String(process.env.ADMIN_LOGIN||'').trim();if(!secret||!login||!token)return false;const d=Buffer.from(token,'base64url').toString('utf8');const a=d.indexOf(':'),b=d.indexOf(':',a+1);if(a<=0||b<=a)return false;const l=d.slice(0,a),ts=Number(d.slice(a+1,b)),sig=d.slice(b+1);if(l!==login||!Number.isFinite(ts)||!sig||Date.now()-ts<0||Date.now()-ts>TTL*1000)return false;const exp=createHmac('sha256',secret).update(`${login}:${ts}`).digest('hex');const x=Buffer.from(sig),y=Buffer.from(exp);return x.length===y.length&&timingSafeEqual(x,y)}catch{return false}}
 function auth(req:any){let t=cookie(req);if(!t){const h=String(req.headers?.authorization||'');if(/^Bearer\s+/i.test(h))t=h.replace(/^Bearer\s+/i,'').trim()}if(!valid(t))throw new Error('Unauthorized')}
 function json(res:any,status:number,data:any){res.statusCode=status;res.setHeader('content-type','application/json; charset=utf-8');res.setHeader('cache-control','no-store');res.end(JSON.stringify(data))}
-async function rest(table:string,query:string,init:RequestInit={}){const url=SUPA(),key=KEY();if(!url||!key)throw new Error('Supabase server credentials are missing');const h=new Headers(init.headers);h.set('apikey',key);h.set('Authorization',`Bearer ${key}`);h.set('Content-Type','application/json');const r=await fetch(`${url}/rest/v1/${table}${query}`,{...init,headers:h});const text=await r.text();if(!r.ok)throw new Error(`Supabase ${r.status}`);return text?JSON.parse(text):[]}
+function supa(){const url=SUPA(),key=KEY();if(!url||!key)throw new Error('Supabase server credentials are missing');return createClient(url,key,{auth:{persistSession:false,autoRefreshToken:false}})}
+async function rest(table:string,query:string,init:RequestInit={}){const url=SUPA(),key=KEY();if(!url||!key)throw new Error('Supabase server credentials are missing');const h=new Headers(init.headers);h.set('apikey',key);h.set('Authorization',`Bearer ${key}`);h.set('Content-Type','application/json');const r=await fetch(`${url}/rest/v1/${table}${query}`,{...init,headers:h});const text=await r.text();if(!r.ok)throw new Error(`Supabase ${r.status}: ${text||'request failed'}`);return text?JSON.parse(text):[]}
 async function safe(table:string,q:string){try{return await rest(table,q)}catch{return []}}
 const publicUrl=(p:string)=>`${SUPA()}/storage/v1/object/public/${BUCKET}/${p.split('/').map(encodeURIComponent).join('/')}`;
 function body(req:any){if(req.body&&typeof req.body==='object'&&!Buffer.isBuffer(req.body))return req.body;try{return JSON.parse(typeof req.body==='string'?req.body:'{}')}catch{return {}}}
@@ -34,21 +36,42 @@ export default async function handler(req:any,res:any){
     if(req.method==='PATCH'&&action==='booking-status'){const b=body(req),id=encodeURIComponent(String(b.id||'')),status=String(b.status||'');if(!id||!['pending','confirmed','in_progress','completed','cancelled','no_show','rejected'].includes(status))return json(res,400,{ok:false,error:'Noto‘g‘ri bron holati'});const rows=await rest('bookings',`?id=eq.${id}`,{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify({status})});return json(res,200,{ok:true,booking:rows[0]})}
     if(req.method==='POST'&&action==='price'){const s=(await safe('app_state','?id=eq.main&select=data'))[0]||{data:{}};const prices=Array.isArray(s.data?.prices)?s.data.prices:[];const b=body(req);const item={id:`price-${Date.now()}`,name:String(b.name||'Xizmat'),duration_minutes:Number(b.duration_minutes||60),price:Number(b.price||0),status:'active'};prices.push(item);await rest('app_state','?id=eq.main',{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify({data:{...(s.data||{}),prices},updated_at:new Date().toISOString()})});return json(res,200,{ok:true,price:item})}
     if(req.method==='PATCH'&&action==='settings'){const s=(await safe('app_state','?id=eq.main&select=data'))[0]||{data:{}};const settings={...(s.data?.settings||{}),...body(req)};await rest('app_state','?id=eq.main',{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify({data:{...(s.data||{}),settings},updated_at:new Date().toISOString()})});return json(res,200,{ok:true,settings})}
+
     if(req.method==='POST'&&action==='sign'){
-      const b=body(req),name=String(b.file_name||'video.mp4').replace(/[^a-zA-Z0-9._-]/g,'_'),type=String(b.content_type||'video/mp4').toLowerCase();
+      const b=body(req);
+      const original=String(b.file_name||'video.mp4').trim();
+      const name=original.replace(/[^a-zA-Z0-9._-]/g,'_').slice(-180)||'video.mp4';
+      const type=String(b.content_type||'video/mp4').toLowerCase().split(';')[0].trim();
       if(!type.startsWith('video/'))return json(res,400,{ok:false,error:'Faqat video fayl yuklang'});
-      const path=`customer/${Date.now()}-${Math.random().toString(36).slice(2,8)}-${name}`;
-      // Supabase Storage path segments must remain path segments. Encoding the whole
-      // path turns the slash into %2F and can make Storage report "related resource does not exist".
-      const storagePath=path.split('/').map(encodeURIComponent).join('/');
-      const u=`${SUPA()}/storage/v1/object/upload/sign/${BUCKET}/${storagePath}`;
-      const r=await fetch(u,{method:'POST',headers:{apikey:KEY(),Authorization:`Bearer ${KEY()}`,'Content-Type':'application/json'},body:JSON.stringify({expiresIn:7200,upsert:true})});
-      const d=await r.json().catch(()=>({}));
-      if(!r.ok||!d.token)throw new Error(d.message||d.error||`Storage sign failed (${r.status})`);
-      return json(res,200,{ok:true,path,storage_path:path,token:d.token,upload_url:`${u}?token=${encodeURIComponent(d.token)}`,public_url:publicUrl(path)});
+      const path=`customer/${Date.now()}-${Math.random().toString(36).slice(2,9)}-${name}`;
+      const client=supa();
+      const {data,error}=await client.storage.from(BUCKET).createSignedUploadUrl(path,{upsert:true});
+      if(error||!data?.signedUrl||!data?.token)throw new Error(error?.message||'Supabase signed upload URL yaratmadi');
+      return json(res,200,{ok:true,path,storage_path:path,token:data.token,upload_url:data.signedUrl,public_url:publicUrl(path)});
     }
-    if(req.method==='POST'&&action==='commit'){const b=body(req);const rows=await rest('admin_media','',{method:'POST',headers:{Prefer:'return=representation'},body:JSON.stringify({key:`admin_${Date.now()}`,title:String(b.title||'Video'),media_type:'video',storage_path:String(b.storage_path||''),public_url:String(b.public_url||''),is_active:true,sort_order:0,updated_at:new Date().toISOString()})});return json(res,200,{ok:true,media:rows[0]})}
-    if(req.method==='DELETE'&&action==='media'){const id=encodeURIComponent(String(req.query?.id||''));if(!id)return json(res,400,{ok:false,error:'Media ID kerak'});await rest('admin_media',`?id=eq.${id}`,{method:'DELETE'});return json(res,200,{ok:true})}
+
+    if(req.method==='POST'&&action==='commit'){
+      const b=body(req);
+      const storagePath=String(b.storage_path||b.path||'').trim();
+      const title=String(b.title||'Video qo‘llanma').trim().slice(0,200);
+      const public_url=String(b.public_url||publicUrl(storagePath)).trim();
+      if(!storagePath||!storagePath.startsWith('customer/'))return json(res,400,{ok:false,error:'Video storage yo‘li noto‘g‘ri'});
+      const rows=await rest('admin_media','',{method:'POST',headers:{Prefer:'return=representation'},body:JSON.stringify({key:`admin_${Date.now()}_${Math.random().toString(36).slice(2,8)}`,title,media_type:'video',storage_path:storagePath,public_url,is_active:true,sort_order:0,updated_at:new Date().toISOString()})});
+      return json(res,200,{ok:true,media:rows[0]});
+    }
+
+    if(req.method==='DELETE'&&action==='media'){
+      const id=encodeURIComponent(String(req.query?.id||''));
+      if(!id)return json(res,400,{ok:false,error:'Media ID kerak'});
+      const rows=await rest('admin_media',`?id=eq.${id}&select=storage_path`,{method:'GET'});
+      const path=rows[0]?.storage_path;
+      if(path){try{await supa().storage.from(BUCKET).remove([path])}catch{} }
+      await rest('admin_media',`?id=eq.${id}`,{method:'DELETE'});
+      return json(res,200,{ok:true});
+    }
     return json(res,404,{ok:false,error:'Admin action topilmadi'});
-  }catch(e:any){const msg=e?.message||'Server xatosi';return json(res,msg==='Unauthorized'?401:500,{ok:false,error:msg})}
+  }catch(e:any){
+    const msg=e?.message||'Server xatosi';
+    return json(res,msg==='Unauthorized'?401:500,{ok:false,error:msg});
+  }
 }
