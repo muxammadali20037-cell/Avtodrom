@@ -1,0 +1,506 @@
+<!doctype html>
+<html lang="uz">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#087a49">
+<title>AVTODROM INDEX</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+:root{--g:#087a49;--g2:#06643d;--bg:#f5f8f6;--card:#fff;--t:#17201c;--m:#6d7772;--l:#dfe8e3;--red:#b42318;--redbg:#fff0ee;--blue:#216b9a;--shadow:0 8px 28px rgba(20,40,30,.07)}
+*{box-sizing:border-box}html,body{margin:0;background:var(--bg);color:var(--t);font:14px/1.45 Inter,Segoe UI,Arial,sans-serif}
+button,input,select,textarea{font:inherit}button{cursor:pointer}button:disabled{opacity:.55;cursor:not-allowed}
+.app{min-height:100vh}.top{height:64px;background:#fff;border-bottom:1px solid var(--l);display:flex;align-items:center;justify-content:space-between;padding:0 14px;position:sticky;top:0;z-index:20}
+.brand{font-weight:900;font-size:17px}.actions{display:flex;gap:7px;position:relative}.btn{border:1px solid var(--l);background:#fff;border-radius:11px;padding:9px 13px;font-weight:800}.btn.primary{background:var(--g);border-color:var(--g);color:#fff}.btn.full{width:100%}
+.langmenu{display:none;position:absolute;right:0;top:45px;background:#fff;border:1px solid var(--l);border-radius:12px;box-shadow:var(--shadow);overflow:hidden;min-width:150px}.langmenu.open{display:block}.langmenu button{display:block;width:100%;border:0;background:#fff;text-align:left;padding:11px}
+.content{max-width:720px;margin:auto;padding:14px}.page{display:none}.page.active{display:block}
+.hero,.card,.formcard,.notice{background:var(--card);border:1px solid var(--l);border-radius:16px;padding:16px;margin-bottom:12px}.hero{background:#eef9f3}.hero h1{margin:0 0 7px;font-size:24px}.hero p{margin:0 0 14px;color:var(--m)}
+h2{font-size:21px;margin:8px 0 14px}.muted{color:var(--m)}.small{font-size:12px;color:var(--m)}.field{margin:13px 0}.field label{display:block;font-weight:800;margin-bottom:6px}.input,.select,textarea{width:100%;border:1px solid #d5dfda;background:#fff;border-radius:11px;padding:11px;outline:none}.input:focus,.select:focus,textarea:focus{border-color:var(--g)}
+.notice{padding:11px 13px}.notice.error{background:var(--redbg);border-color:#ffd1cc;color:var(--red)}.notice.info{background:#edf7fb;border-color:#d4e8f2;color:#216b9a}.notice.ok{background:#edf8f2;color:var(--g)}
+.timegrid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}.time{border:1px solid #d5dfda;background:#fff;border-radius:10px;padding:10px 3px;font-weight:850}.time.selected{background:var(--g);border-color:var(--g);color:#fff}.time.busy{opacity:.35;text-decoration:line-through}
+.badge{display:inline-block;padding:4px 8px;border-radius:999px;font-size:11px;font-weight:800;background:#eef2f0}.badge.pending{background:#fff6d9;color:#80620b}.badge.confirmed,.badge.done{background:#e9f7ef;color:var(--g)}.badge.progress{background:#e9f2fb;color:#216b9a}.badge.cancel{background:#fff0ee;color:var(--red)}
+.booking .topline{display:flex;justify-content:space-between;gap:8px;align-items:center}.booking .meta{display:grid;gap:5px;margin-top:10px;color:#4e5a54}
+.nav{position:sticky;bottom:0;background:#fff;border-top:1px solid var(--l);display:grid;grid-template-columns:repeat(4,1fr);padding:6px 4px;z-index:30}.nav button{border:0;background:#fff;color:#52605a;padding:8px 3px;font-size:12px}.nav button.active{color:var(--g);font-weight:900}
+.ai{position:fixed;right:18px;bottom:72px;width:56px;height:56px;border-radius:50%;border:0;background:var(--g);color:#fff;font-size:22px;box-shadow:0 10px 25px #0002;z-index:40}.chat{display:none;position:fixed;right:15px;bottom:135px;width:min(350px,calc(100vw - 30px));height:430px;background:#fff;border:1px solid var(--l);border-radius:16px;box-shadow:var(--shadow);overflow:hidden;z-index:45;flex-direction:column}.chat.open{display:flex}.chathead{background:var(--g);color:#fff;padding:12px;font-weight:900}.chathead button{float:right;border:0;background:transparent;color:#fff;font-size:22px}.messages{flex:1;overflow:auto;padding:10px;background:#f7f9f8}.msg{max-width:86%;padding:9px 11px;background:#fff;border-radius:12px;margin:6px 0}.msg.mine{margin-left:auto;background:var(--g);color:#fff}.chatinput{display:flex;gap:6px;padding:8px;border-top:1px solid var(--l)}.chatinput input{min-width:0;flex:1;border:1px solid #d5dfda;border-radius:10px;padding:9px}
+video{max-width:100%;border-radius:12px}.empty{text-align:center;padding:20px;color:var(--m)}
+@media(max-width:420px){.content{padding:9px}.timegrid{grid-template-columns:repeat(3,1fr)}}
+</style>
+</head>
+<body>
+<div class="app">
+<header class="top">
+  <div class="brand">🚗 AVTODROM INDEX</div>
+  <div class="actions">
+    <button class="btn" id="langBtn">UZ</button>
+    <button class="btn" id="helpBtn">🤖 Yordam</button>
+    <div id="langMenu" class="langmenu">
+      <button data-lang="uz">🇺🇿 O‘zbekcha</button>
+      <button data-lang="ru">🇷🇺 Русский</button>
+    </div>
+  </div>
+</header>
+
+<main class="content">
+<section id="home" class="page active">
+  <div class="hero">
+    <h1 id="hello">Xush kelibsiz!</h1>
+    <p>Avtodromdagi darsingizni qulay bron qiling, holatini kuzating va instruktor bilan bog‘laning.</p>
+    <button class="btn primary full" id="heroBook">Dars bron qilish</button>
+  </div>
+  <div id="browserNotice" class="notice info" style="display:none"></div>
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center"><b>Bildirishnomalar</b><span class="badge" id="notificationCount">0</span></div>
+    <div id="notifications" class="muted" style="margin-top:10px">Yuklanmoqda...</div>
+  </div>
+  <div class="card"><b>Keyingi bron</b><div id="nextBooking" style="margin-top:10px"></div></div>
+  <div class="card" id="customerVideo" style="display:none">
+    <b id="customerVideoTitle">🎬 Video qo‘llanma</b>
+    <video id="customerVideoPlayer" controls playsinline style="width:100%;margin-top:10px"></video>
+    <div id="customerVideoCaption" class="small" style="margin-top:6px"></div>
+  </div>
+</section>
+
+<section id="book" class="page">
+  <h2>Dars bron qilish</h2>
+  <div id="bookError"></div>
+  <div class="formcard">
+    <div class="field"><label>Instruktor</label>
+      <select id="instructor" class="select"><option value="">Instruktorlar yuklanmoqda...</option></select>
+      <div id="instructorInfo" class="small" style="margin-top:6px"></div>
+    </div>
+    <div class="field"><label>Sana</label><input id="date" class="input" type="date"></div>
+    <div class="field"><label>Dars davomiyligi</label>
+      <select id="duration" class="select"><option value="30">30 daqiqa</option><option value="60">60 daqiqa</option></select>
+    </div>
+    <div class="field"><label>Bo‘sh vaqt</label><div id="times" class="timegrid"><div class="empty">Instruktor va sanani tanlang.</div></div></div>
+    <div class="field"><label>Izoh</label><textarea id="note" rows="3" placeholder="Qo‘shimcha izoh..."></textarea></div>
+    <button id="bookBtn" class="btn primary full">Bron yuborish</button>
+    <p class="small">Bron yuborilgach, Admin tasdiqlaydi. Tasdiqdan keyin bron holati shu panelda ko‘rinadi.</p>
+  </div>
+</section>
+
+<section id="bookings" class="page">
+  <h2>Bronlarim</h2>
+  <div id="bookingList"></div>
+</section>
+
+<section id="profile" class="page">
+  <h2>Profilim</h2>
+  <div class="formcard">
+    <div class="field"><label>Ism *</label><input id="first" class="input"></div>
+    <div class="field"><label>Familiya *</label><input id="last" class="input"></div>
+    <div class="field"><label>Telefon *</label><input id="phone" class="input"></div>
+    <button id="saveProfile" class="btn primary full">Saqlash</button>
+    <div id="profileName" style="font-weight:900;margin-top:14px"></div>
+    <div id="profileUsername" class="small"></div>
+    <div id="accountInfo" class="small"></div>
+  </div>
+</section>
+</main>
+
+<div class="chat" id="chat" aria-hidden="true">
+  <div class="chathead">🤖 AVTODROM AI yordamchi <button id="closeChat">×</button></div>
+  <div id="messages" class="messages"><div class="msg">Assalomu alaykum! Savolingizni yozing.</div></div>
+  <div class="chatinput"><input id="question" placeholder="Savolingiz..."><button class="btn primary" id="sendQuestion">Yuborish</button></div>
+</div>
+<button class="ai" id="aiBtn" aria-label="AI">🤖</button>
+
+<nav class="nav">
+  <button data-page="home" class="active">⌂<br>Bosh sahifa</button>
+  <button data-page="book">＋<br>Bron</button>
+  <button data-page="bookings">▣<br>Bronlarim</button>
+  <button data-page="profile">♟<br>Profil</button>
+</nav>
+</div>
+
+<script>
+'use strict';
+
+const tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
+const IS_TELEGRAM = !!tg;
+const INIT_DATA = tg?.initData || '';
+
+if(tg){ try{tg.ready();tg.expand();}catch(e){} }
+
+const $=id=>document.getElementById(id);
+const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+let profile=null, allBookings=[], selectedTime='';
+let lang=localStorage.getItem('avtodrom_lang')||'uz';
+
+/* =========================================================
+   API — bitta manzil, aniq xatolar
+   ========================================================= */
+
+/*
+  Mini App va API BIR XIL Vercel deploy'ida turadi
+  (https://<loyiha>.vercel.app/customer/ va /api/...).
+  Shuning uchun standart holatda O'Z domeniga murojaat qilamiz:
+    - cross-origin yo'q  -> CORS muammosi ham yo'q
+    - boshqa (eski) deploy'ga adashib tushib qolmaydi
+  Zarur bo'lsa index.html dan OLDIN quyidagini qo'yib bekor qilish mumkin:
+    <script>window.AVTODROM_API_URL='https://boshqa-domen.vercel.app'</script>
+*/
+const API = (window.AVTODROM_API_URL || location.origin).replace(/\/+$/,'');
+
+function requestHeaders(){
+  const h = { 'Accept':'application/json', 'Content-Type':'application/json' };
+  if (INIT_DATA) h['X-Telegram-Init-Data'] = INIT_DATA;
+  return h;
+}
+
+async function api(path, options = {}){
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 15000);
+
+  try {
+    const r = await fetch(API + path, {
+      /*
+        credentials:'include' OLIB TASHLANDI.
+        Mijoz autentifikatsiyasi cookie orqali emas, X-Telegram-Init-Data
+        sarlavhasi orqali ishlaydi. 'include' esa cross-origin CORS
+        shartlarini keraksiz qattiqlashtiradi.
+      */
+      cache: 'no-store',
+      ...options,
+      signal: controller.signal,
+      headers: { ...requestHeaders(), ...(options.headers || {}) }
+    });
+
+    const text = await r.text();
+    let data = {};
+    try {
+      data = text ? JSON.parse(text) : {};
+    } catch (_) {
+      throw new Error(
+        'Server JSON emas, HTTP ' + r.status + ' qaytardi. Javob boshi: ' +
+        text.slice(0, 80)
+      );
+    }
+
+    if (!r.ok) throw new Error(data.error || data.message || ('HTTP ' + r.status));
+    return data;
+
+  } catch (e) {
+    /* Xato turlarini ajratamiz — avval hammasi bir xil matnga aylanardi. */
+    if (e.name === 'AbortError') {
+      throw new Error('Server 15 soniyada javob bermadi (' + API + ').');
+    }
+    if (e instanceof TypeError) {
+      throw new Error('Tarmoq yoki CORS xatosi (' + API + ').');
+    }
+    throw e;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+function todayTashkent(){
+  return new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Tashkent',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
+}
+
+function localTashkentDateTime(date,time){
+  const m=String(time).match(/^(\d{2}):(\d{2})$/);
+  if(!m)return null;
+  return new Date(`${date}T${m[1]}:${m[2]}:00+05:00`);
+}
+
+function formatDateTime(v){
+  if(!v)return '—';
+  const d=new Date(v);
+  if(Number.isNaN(d.getTime()))return '—';
+  return d.toLocaleString(lang==='ru'?'ru-RU':'uz-UZ',{timeZone:'Asia/Tashkent',day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
+}
+
+function instructorName(x){
+  const p=x?.profile||x?.instructor?.profile||{};
+  return [p.first_name||x?.first_name,p.last_name||x?.last_name].filter(Boolean).join(' ')
+    || p.full_name||x?.full_name||x?.name||p.username||x?.username||'Instruktor';
+}
+
+/* Admin tasdiqlagan + faol instruktorlarni ajratish. */
+function isApprovedInstructor(x){
+  const status=String(x?.status||x?.approval_status||'').toLowerCase();
+  const hasApprovalField =
+    x?.approved!==undefined || x?.is_approved!==undefined ||
+    x?.verified!==undefined || x?.is_verified!==undefined ||
+    x?.approval_status!==undefined || x?.status!==undefined;
+
+  const approved =
+    x?.approved===true ||
+    x?.is_approved===true ||
+    x?.verified===true ||
+    x?.is_verified===true ||
+    ['approved','active','confirmed'].includes(status);
+
+  const active =
+    x?.active!==false &&
+    x?.is_active!==false &&
+    !['inactive','blocked','disabled','rejected'].includes(status);
+
+  /*
+    Agar backend /api/instructors o‘zi faqat tasdiqlangan instruktorlarni
+    qaytarsa va approved maydoni yuborilmasa, ularni yashirib qo‘ymaymiz.
+  */
+  return active && (!hasApprovalField || approved);
+}
+
+async function loadInstructors(){
+  const select=$('instructor');
+  const info=$('instructorInfo');
+  select.innerHTML='<option value="">Instruktorlar yuklanmoqda...</option>';
+  info.textContent='';
+
+  try{
+    const data=await api('/api/instructors');
+
+    let list=[];
+    if(Array.isArray(data)) list=data;
+    else if(Array.isArray(data.instructors)) list=data.instructors;
+    else if(Array.isArray(data.data)) list=data.data;
+    else if(Array.isArray(data.results)) list=data.results;
+
+    list=list.filter(isApprovedInstructor);
+
+    console.log('AVTODROM instructors:',list);
+
+    if(!list.length){
+      select.innerHTML='<option value="">Tasdiqlangan instruktorlar topilmadi</option>';
+      info.textContent='Admin panelida instruktor tasdiqlangan va faol ekanini tekshiring.';
+      renderTimes();
+      return;
+    }
+
+    select.innerHTML='<option value="">Instruktorni tanlang</option>'+
+      list.map(x=>{
+        const years=x.experience_years!=null ? ` · ${esc(x.experience_years)} yil` : '';
+        return `<option value="${esc(x.id)}">${esc(instructorName(x))}${years}</option>`;
+      }).join('');
+
+    select.dataset.loaded='1';
+    renderTimes();
+  }catch(e){
+    console.error('INSTRUCTOR ERROR',e);
+    select.innerHTML='<option value="">Instruktorlar yuklanmadi</option>';
+    info.textContent=e.message;
+    $('bookError').innerHTML='<div class="notice error">'+esc(e.message)+'</div>';
+    renderTimes();
+  }
+}
+
+function slots(){
+  const a=[];
+  for(let h=8;h<21;h++)for(let m=0;m<60;m+=30)a.push(String(h).padStart(2,'0')+':'+String(m).padStart(2,'0'));
+  return a;
+}
+
+function renderTimes(){
+  const box=$('times');
+  if(!box)return;
+
+  const date=$('date').value;
+  const instructorId=$('instructor').value;
+  const duration=Number($('duration').value||30);
+
+  if(!date||!instructorId){
+    box.innerHTML='<div class="empty">Instruktor va sanani tanlang.</div>';
+    return;
+  }
+
+  const busy=allBookings.filter(b=>
+    String(b.instructor_id)===String(instructorId) &&
+    ['pending','confirmed','in_progress'].includes(String(b.status))
+  );
+
+  const now=Date.now();
+  const html=slots().map(tm=>{
+    const start=localTashkentDateTime(date,tm);
+    const end=new Date(start.getTime()+duration*60000);
+
+    const conflict=busy.some(b=>{
+      const bs=new Date(b.start_at).getTime(),be=new Date(b.end_at).getTime();
+      return bs<end.getTime()&&be>start.getTime();
+    });
+
+    const past=start.getTime()<now;
+    const disabled=conflict||past;
+    return `<button type="button" class="time ${selectedTime===tm?'selected ':''}${disabled?'busy':''}" ${disabled?'disabled':''} data-time="${tm}">${tm}${conflict?' · Band':''}</button>`;
+  }).join('');
+
+  box.innerHTML=html||'<div class="empty">Bu sana uchun vaqtlar mavjud emas.</div>';
+
+  box.querySelectorAll('.time:not([disabled])').forEach(b=>{
+    b.onclick=()=>{selectedTime=b.dataset.time;renderTimes()};
+  });
+}
+
+async function loadBookings(){
+  try{
+    const data=await api('/api/bookings');
+    allBookings=Array.isArray(data)?data:(Array.isArray(data.bookings)?data.bookings:[]);
+    renderBookings();renderNext();renderTimes();
+  }catch(e){
+    $('bookingList').innerHTML='<div class="notice error">'+esc(e.message)+'</div>';
+    $('nextBooking').innerHTML='<div class="empty">—</div>';
+  }
+}
+
+function statusText(s){
+  return ({pending:'Tasdiqlash kutilmoqda',confirmed:'Tasdiqlangan',in_progress:'Dars jarayonida',completed:'Tugagan',cancelled:'Bekor qilingan',no_show:'Kelmagan'})[s]||s||'—';
+}
+function statusClass(s){
+  return s==='confirmed'?'confirmed':s==='in_progress'?'progress':s==='completed'?'done':(['cancelled','no_show','rejected'].includes(s)?'cancel':'pending');
+}
+
+function renderBookings(){
+  const box=$('bookingList');
+  if(!allBookings.length){box.innerHTML='<div class="empty">Hozircha bronlar yo‘q.</div>';return;}
+  box.innerHTML=allBookings.map(b=>{
+    const mins=Math.max(0,Math.round((new Date(b.end_at)-new Date(b.start_at))/60000));
+    return `<div class="card booking">
+      <div class="topline"><b>${esc(formatDateTime(b.start_at))}</b><span class="badge ${statusClass(b.status)}">${esc(statusText(b.status))}</span></div>
+      <div class="meta">
+        <div>👨‍🏫 ${esc(instructorName(b.instructor||b))}</div>
+        <div>🕐 ${mins} daqiqa</div>
+        ${b.customer_note?`<div>💬 ${esc(b.customer_note)}</div>`:''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderNext(){
+  const box=$('nextBooking');
+  const now=Date.now();
+  const next=allBookings.filter(b=>['pending','confirmed','in_progress'].includes(String(b.status))&&new Date(b.end_at)>now)
+    .sort((a,b)=>new Date(a.start_at)-new Date(b.start_at))[0];
+
+  box.innerHTML=next
+    ? `<b>${esc(formatDateTime(next.start_at))}</b><div class="muted" style="margin:5px 0">${esc(instructorName(next.instructor||next))}</div><span class="badge ${statusClass(next.status)}">${esc(statusText(next.status))}</span>`
+    : '<div class="empty">Hozircha keyingi bron yo‘q.</div>';
+}
+
+async function loadMe(){
+  try{
+    const d=await api('/api/me');
+    profile=d.profile||d.user||null;
+    if(profile)renderProfile();
+    return !!profile;
+  }catch(e){
+    profile=null;
+    if(IS_TELEGRAM){
+      $('browserNotice').style.display='block';
+      $('browserNotice').textContent='Telegram profilini yuklashda muammo: '+e.message;
+    }
+    return false;
+  }
+}
+
+function renderProfile(){
+  if(!profile)return;
+  $('first').value=profile.first_name||'';
+  $('last').value=profile.last_name||'';
+  $('phone').value=profile.phone||'';
+  const full=[profile.first_name,profile.last_name].filter(Boolean).join(' ');
+  $('profileName').textContent=full||'Telegram';
+  $('profileUsername').textContent=profile.username?'@'+profile.username:'Telegram';
+  $('accountInfo').textContent=profile.telegram_id?'Telegram ID: '+profile.telegram_id:'Foydalanuvchi akkaunti';
+  $('hello').textContent='Xush kelibsiz'+(profile.first_name?', '+profile.first_name:'')+'!';
+}
+
+async function loadNotifications(){
+  try{
+    const d=await api('/api/notifications');
+    const a=Array.isArray(d)?d:(d.notifications||[]);
+    $('notificationCount').textContent=a.length;
+    $('notifications').innerHTML=a.length?a.slice(0,8).map(x=>`<div class="card"><b>${esc(x.title||'AVTODROM')}</b><p class="muted">${esc(x.body||x.message||'')}</p></div>`).join(''):'<div class="empty">Hozircha bildirishnoma yo‘q.</div>';
+  }catch(e){
+    $('notifications').innerHTML='<div class="notice error">'+esc(e.message)+'</div>';
+  }
+}
+
+async function loadCustomerVideo(){
+  try{
+    const d=await api('/api/content');
+    const a=Array.isArray(d)?d:(d.media||[]);
+    const v=a.find(x=>x.key==='guide_video'&&x.public_url);
+    if(!v){$('customerVideo').style.display='none';return}
+    $('customerVideo').style.display='block';
+    $('customerVideoTitle').textContent='🎬 '+(v.title||'Video qo‘llanma');
+    $('customerVideoPlayer').src=v.public_url;
+  }catch(e){$('customerVideo').style.display='none'}
+}
+
+function setPage(id){
+  document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));
+  $(id).classList.add('active');
+  document.querySelectorAll('.nav button').forEach(x=>x.classList.toggle('active',x.dataset.page===id));
+  if(id==='book')loadInstructors();
+  if(id==='bookings')loadBookings();
+  if(id==='home'){loadNotifications();loadBookings()}
+}
+
+document.querySelectorAll('.nav button').forEach(b=>b.onclick=()=>setPage(b.dataset.page));
+$('heroBook').onclick=()=>setPage('book');
+$('langBtn').onclick=()=>$('langMenu').classList.toggle('open');
+document.querySelectorAll('[data-lang]').forEach(b=>b.onclick=()=>{lang=b.dataset.lang;localStorage.setItem('avtodrom_lang',lang);$('langMenu').classList.remove('open')});
+document.addEventListener('click',e=>{if(!e.target.closest('.actions'))$('langMenu').classList.remove('open')});
+
+$('date').min=todayTashkent();$('date').value=todayTashkent();
+$('date').onchange=()=>{selectedTime='';renderTimes()};
+$('instructor').onchange=()=>{selectedTime='';renderTimes()};
+$('duration').onchange=renderTimes;
+
+$('bookBtn').onclick=async()=>{
+  $('bookError').innerHTML='';
+  if(!profile){$('bookError').innerHTML='<div class="notice error">Avval Telegram akkauntingizni oching.</div>';return}
+  if(!profile.first_name||!profile.last_name||!profile.phone){setPage('profile');alert('Avval ism, familiya va telefonni to‘ldiring.');return}
+  if(!$('instructor').value||!$('date').value||!selectedTime){$('bookError').innerHTML='<div class="notice error">Instruktor, sana va vaqtni tanlang.</div>';return}
+
+  const start=localTashkentDateTime($('date').value,selectedTime);
+  const end=new Date(start.getTime()+Number($('duration').value||30)*60000);
+  const btn=$('bookBtn');btn.disabled=true;btn.textContent='Yuborilmoqda...';
+
+  try{
+    await api('/api/bookings',{method:'POST',body:JSON.stringify({
+      instructor_id:$('instructor').value,start_at:start.toISOString(),end_at:end.toISOString(),customer_note:$('note').value.trim()||null
+    })});
+    $('note').value='';selectedTime='';await loadBookings();alert('Bron yuborildi. Admin tasdiqlashini kuting.');setPage('bookings');
+  }catch(e){
+    $('bookError').innerHTML='<div class="notice error">'+esc(e.message)+'</div>';
+  }finally{btn.disabled=false;btn.textContent='Bron yuborish'}
+};
+
+$('saveProfile').onclick=async()=>{
+  const first=$('first').value.trim(),last=$('last').value.trim(),phone=$('phone').value.trim();
+  if(!first||!last||!phone){alert('Ism, familiya va telefon majburiy.');return}
+  try{
+    const d=await api('/api/me',{method:'PATCH',body:JSON.stringify({first_name:first,last_name:last,phone})});
+    profile=d.profile||profile;renderProfile();alert('Profil saqlandi.');
+  }catch(e){alert(e.message)}
+};
+
+function toggleAI(){const open=$('chat').classList.toggle('open');$('chat').setAttribute('aria-hidden',String(!open));if(open)$('question').focus()}
+$('helpBtn').onclick=toggleAI;$('aiBtn').onclick=toggleAI;$('closeChat').onclick=toggleAI;
+function addMsg(text,mine=false){const e=document.createElement('div');e.className='msg'+(mine?' mine':'');e.textContent=text;$('messages').appendChild(e);$('messages').scrollTop=$('messages').scrollHeight}
+function sendQuestion(){
+  const q=$('question').value.trim();if(!q)return;addMsg(q,true);$('question').value='';
+  const s=q.toLowerCase();let a='Savolingiz qabul qilindi.';
+  if(s.includes('bron'))a='Bron bo‘limidan tasdiqlangan instruktor, sana va bo‘sh vaqtni tanlang.';
+  else if(s.includes('instruk'))a='Faqat Admin tasdiqlagan va faol instruktorlar chiqadi.';
+  else if(s.includes('holat')||s.includes('status'))a='Bronlarim bo‘limida bron holatini ko‘rasiz.';
+  setTimeout(()=>addMsg(a),180);
+}
+$('sendQuestion').onclick=sendQuestion;
+$('question').onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();sendQuestion()}};
+
+async function boot(){
+  $('browserNotice').style.display=IS_TELEGRAM?'none':'block';
+  if(!IS_TELEGRAM)$('browserNotice').textContent='Brauzer rejimi. Eng to‘g‘ri ishlashi uchun Mini Appni Telegram bot ichidan oching.';
+  await loadMe();
+  await Promise.allSettled([loadInstructors(),loadBookings(),loadNotifications(),loadCustomerVideo()]);
+}
+setInterval(()=>{if(profile){loadInstructors();loadBookings();loadNotifications()}},15000);
+boot();
+</script>
+</body>
+</html>
