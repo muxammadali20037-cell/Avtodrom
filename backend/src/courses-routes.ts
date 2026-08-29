@@ -29,7 +29,7 @@ export async function registerCourseRoutes(
    * admin_settings ichida boshqa (maxfiy) kalitlar bo'lishi mumkin,
    * shuning uchun butun jadval qaytarilmaydi.
    */
-  const PUBLIC_KEYS = ['system_name', 'contact_phone', 'address', 'working_hours', 'booking_enabled'];
+  const PUBLIC_KEYS = ['system_name', 'contact_phone', 'address', 'working_hours', 'booking_enabled', 'location'];
 
   app.get('/api/settings', async (_request, reply) => {
     try {
