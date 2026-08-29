@@ -2,23 +2,19 @@ import type { FastifyInstance } from 'fastify';
 import { supabaseRest } from './supabase.js';
 import { sendBookingNotification } from './telegram.js';
 import type { TelegramWebAppUser } from './telegram.js';
+import { q, toProfile, findUserByTelegram, instructorProfileForUser, notifyUser } from './identity.js';
 
-function q(value: string) { return encodeURIComponent(value); }
-
+/** `profiles` view o'rniga kanonik `users` jadvali. */
 async function profileForTelegram(user: TelegramWebAppUser) {
-  const rows = await supabaseRest<any[]>('profiles', {
-    query: `?telegram_id=eq.${q(String(user.id))}&select=*&limit=1`,
-  });
-  return rows[0] || null;
+  return await findUserByTelegram(user.id);
 }
 
-async function approvedInstructor(profile: any) {
-  if (!profile || String(profile.role || '').toLowerCase() !== 'instructor') return null;
-  if (profile.active === false) return null;
-  const rows = await supabaseRest<any[]>('instructors', {
-    query: `?profile_id=eq.${q(String(profile.id))}&approved=eq.true&active=eq.true&select=*&limit=1`,
-  });
-  return rows[0] || null;
+/** `instructors` view o'rniga kanonik `instructor_profiles`. */
+async function approvedInstructor(user: any) {
+  if (!user) return null;
+  if (String(user.role || '').toLowerCase() !== 'instructor') return null;
+  if (user.is_active === false || user.is_blocked === true) return null;
+  return await instructorProfileForUser(String(user.id), true);
 }
 
 async function getOwnedBooking(id: string, instructorId: string) {
@@ -29,8 +25,8 @@ async function getOwnedBooking(id: string, instructorId: string) {
 }
 
 async function getCustomer(customerId: string) {
-  const rows = await supabaseRest<any[]>('profiles', {
-    query: `?id=eq.${q(customerId)}&select=id,first_name,last_name,username,phone,telegram_id&limit=1`,
+  const rows = await supabaseRest<any[]>('users', {
+    query: `?id=eq.${q(customerId)}&select=id,full_name,phone,telegram_id&limit=1`,
   });
   return rows[0] || null;
 }
@@ -44,10 +40,7 @@ async function notifyBookingStatus(booking: any, status: 'in_progress' | 'comple
       ? `Bron #${booking.id}: instruktor sizni kutib oldi. Dars boshlandi.`
       : `Bron #${booking.id}: dars yakunlandi. Instruktor va Avtodromni baholashingiz mumkin.`;
 
-    await supabaseRest('notifications', {
-      method: 'POST',
-      body: JSON.stringify({ profile_id: customerId, booking_id: booking.id, title, body, channel: 'in_app' }),
-    });
+    await notifyUser(String(customerId), 'booking', title, body);
 
     const customer = await getCustomer(String(customerId));
     const chatId = Number(customer?.telegram_id);
@@ -73,7 +66,7 @@ export async function registerInstructorRoutes(
       if (!profile || !instructor) {
         return reply.code(403).send({ ok: false, error: 'Instructor hali Admin tomonidan tasdiqlanmagan', status: 'PENDING' });
       }
-      return { ok: true, profile, instructor };
+      return { ok: true, profile: toProfile(profile), instructor };
     } catch (e) {
       return reply.code(401).send({ ok: false, error: e instanceof Error ? e.message : 'Unauthorized' });
     }
@@ -87,12 +80,12 @@ export async function registerInstructorRoutes(
       if (!profile || !instructor) return reply.code(403).send({ ok: false, error: 'Instructor hali Admin tomonidan tasdiqlanmagan', status: 'PENDING' });
       const query = request.query as { from?: string; to?: string };
       const parts = [
-        'select=*,customer:customer_id(id,first_name,last_name,username,phone,telegram_id)',
+        'select=*,customer:customer_id(id,full_name,phone,telegram_id)',
         `instructor_id=eq.${q(String(instructor.id))}`,
-        'order=start_at.asc',
+        'order=booking_date.asc',
       ];
-      if (query.from) parts.push(`start_at=gte.${q(query.from)}`);
-      if (query.to) parts.push(`start_at=lt.${q(query.to)}`);
+      if (query.from) parts.push(`booking_date=gte.${q(query.from)}`);
+      if (query.to) parts.push(`booking_date=lt.${q(query.to)}`);
       return { ok: true, bookings: await supabaseRest<any[]>('bookings', { query: `?${parts.join('&')}` }) };
     } catch (e) {
       return reply.code(400).send({ ok: false, error: e instanceof Error ? e.message : 'Failed to load instructor bookings' });
