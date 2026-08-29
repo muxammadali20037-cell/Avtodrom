@@ -2,211 +2,143 @@
 <html lang="uz">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>AVTODROM — Instructor</title>
-<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AVTODROM — Instructor Panel</title>
 <style>
-*{box-sizing:border-box}html,body{margin:0;background:#f4f7f5;color:#14221b;font:14px Arial,sans-serif}body{min-height:100vh}.app{max-width:650px;margin:auto;min-height:100vh;background:#fff;box-shadow:0 0 25px #00000008}.top{position:sticky;top:0;z-index:5;height:62px;padding:0 16px;border-bottom:1px solid #e3eae6;background:#fff;display:flex;align-items:center;justify-content:space-between;font-weight:900}.top small{display:block;color:#718078;font-size:11px;margin-top:3px}.content{padding:16px 16px 90px}.page{display:none}.page.active{display:block}.hero,.card,.booking{border:1px solid #e0e8e3;border-radius:18px;padding:16px;margin-bottom:12px;background:#fff}.hero{background:#eaf7f0;border-color:#cce8d9}.hero h2,.card h2{margin:0 0 8px}.muted{color:#718078;line-height:1.5}.btn{width:100%;border:1px solid #d7e2dc;background:#fff;color:#14221b;border-radius:11px;padding:12px 14px;font-weight:800;cursor:pointer}.btn:disabled{opacity:.55}.primary{background:#087443;color:#fff;border-color:#087443}.secondary{background:#f4f7f5}.danger{background:#fff0f0;color:#a31d1d;border-color:#ffd2d2}.actions{display:flex;gap:8px;margin-top:12px}.actions>*{flex:1}.status{display:inline-block;padding:6px 9px;border-radius:999px;font-size:11px;font-weight:900}.wait{background:#fff4d8;color:#8a6500}.run{background:#eaf1ff;color:#2457a6}.ok{background:#eaf7f0;color:#087443}.field{display:grid;gap:6px;margin:12px 0}.field label{font-size:12px;font-weight:900}.field input,.field textarea{width:100%;padding:12px;border:1px solid #d7e2dc;border-radius:10px;background:#fff;color:#14221b;font:inherit;outline:none}.field input:focus,.field textarea:focus{border-color:#087443;box-shadow:0 0 0 3px #08744312}.required{color:#c62828}.error{background:#fff0f0;color:#a31d1d;border:1px solid #ffd4d4;border-radius:11px;padding:12px;margin-bottom:12px;line-height:1.45}.success{background:#eaf7f0;color:#087443;border:1px solid #cce8d9;border-radius:11px;padding:12px;margin-bottom:12px;line-height:1.45}.info{background:#f4f7f5;border-radius:12px;padding:12px;line-height:1.5}.stat{display:grid;grid-template-columns:1fr 1fr;gap:10px}.stat .card{margin:0}.num{font-size:28px;font-weight:900;margin-top:6px}.nav{position:fixed;left:50%;bottom:0;transform:translateX(-50%);width:min(650px,100%);background:#fff;border-top:1px solid #e1e8e4;display:grid;grid-template-columns:repeat(3,1fr);padding:7px;z-index:10}.nav button{border:0;background:none;padding:7px 3px;color:#718078;font-size:11px;font-weight:800;cursor:pointer}.nav button.active{color:#087443}.toast{position:fixed;left:50%;bottom:76px;transform:translateX(-50%);background:#14221b;color:#fff;padding:11px 14px;border-radius:10px;display:none;z-index:20;max-width:90%;text-align:center}.loading{padding:20px;text-align:center;color:#718078}.check{display:flex;gap:9px;align-items:flex-start;margin:12px 0;font-size:12px;color:#56645d}.check input{margin-top:2px}.top-actions{display:flex;gap:8px}.top-actions button{border:0;background:#f4f7f5;border-radius:9px;padding:8px}.hidden{display:none!important}
+:root{--g:#087443;--g2:#0b8a50;--dark:#10231b;--bg:#f4f7f5;--card:#fff;--text:#142019;--muted:#718079;--line:#e1e9e4;--red:#c93232;--orange:#b77a00;--blue:#2e5da8;--shadow:0 10px 30px rgba(20,40,30,.07)}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui,-apple-system,"Segoe UI",Arial,sans-serif}
+button,input,select{font:inherit}button{cursor:pointer}.app{min-height:100vh}.side{position:fixed;inset:0 auto 0 0;width:250px;background:var(--dark);color:#fff;padding:18px 13px;z-index:10}.brand{font-size:20px;font-weight:900;padding:8px 12px 24px}.brand small{display:block;color:#82ae9a;font-size:10px;letter-spacing:.12em;margin-top:5px}.nav{display:grid;gap:5px}.nav button{border:0;background:transparent;color:#c8d8d0;text-align:left;padding:12px;border-radius:10px;font-weight:800}.nav button.active,.nav button:hover{background:#174f39;color:#fff}
+.main{margin-left:250px;padding:26px;max-width:1500px}.top{display:flex;justify-content:space-between;align-items:center;gap:15px;margin-bottom:20px}.title h1{margin:0;font-size:28px}.title p{margin:5px 0;color:var(--muted)}.logout,.secondary{border:1px solid var(--line);background:#fff;border-radius:9px;padding:10px 13px;font-weight:800}.primary{border:0;background:var(--g);color:#fff;border-radius:9px;padding:10px 14px;font-weight:850}.primary:hover{background:var(--g2)}.danger{border:1px solid #ffd0d0;background:#fff0f0;color:var(--red);border-radius:9px;padding:9px 12px;font-weight:850}.section{display:none}.section.active{display:block}.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:13px}.stat,.card{background:var(--card);border:1px solid var(--line);border-radius:15px;box-shadow:var(--shadow)}.stat{padding:17px}.stat span{display:block;color:var(--muted);font-size:12px}.stat strong{display:block;font-size:26px;margin-top:8px}.card{overflow:hidden;margin-bottom:16px}.head{padding:17px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:12px}.head h2{margin:0;font-size:17px}.pad{padding:17px}.actions{display:flex;gap:8px;flex-wrap:wrap}.table-wrap{overflow:auto}.table{width:100%;border-collapse:collapse;min-width:900px}.table th,.table td{padding:13px 14px;border-bottom:1px solid var(--line);text-align:left;font-size:13px}.table th{background:#fafcfb;color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:.07em}.badge{display:inline-flex;padding:5px 9px;border-radius:999px;font-size:10px;font-weight:900}.pending{background:#fff5d8;color:#9b6900}.confirmed{background:#eaf2ff;color:#315c9b}.arrived{background:#e9f8ef;color:#087443}.left{background:#f0f2f1;color:#68746e}.cancelled,.rejected{background:#fff0f0;color:#b42e2e}.completed{background:#e9f8ef;color:#087443}.empty,.loading{text-align:center;padding:30px;color:var(--muted)}.error{padding:13px;margin:13px;background:#fff0f0;color:#b42e2e;border-radius:9px}.profile{display:flex;align-items:center;gap:14px}.avatar{width:58px;height:58px;border-radius:50%;display:grid;place-items:center;background:#e9f4ef;color:var(--g);font-size:24px;font-weight:900}.hero{background:linear-gradient(135deg,#0f2b20,#176b48);color:#fff;border-radius:16px;padding:20px;margin-bottom:16px}.hero h2{margin:0 0 5px}.hero p{margin:0;color:#c8ded4}.filters{display:flex;gap:9px;flex-wrap:wrap}.filters button{border:1px solid var(--line);background:#fff;border-radius:9px;padding:9px 13px;font-weight:800}.filters button.active{background:var(--dark);color:#fff}.student{font-weight:850}.muted{color:var(--muted)}.mobile{display:none}
+@media(max-width:850px){.side{display:none}.main{margin:0;padding:14px}.mobile{display:flex;background:var(--dark);color:#fff;padding:12px;border-radius:12px;margin-bottom:14px;justify-content:space-between;align-items:center}.top{align-items:flex-start}.grid{grid-template-columns:repeat(2,1fr)}.title h1{font-size:23px}}
+@media(max-width:500px){.grid{grid-template-columns:1fr}.top .logout{display:none}}
 </style>
 </head>
 <body>
-<div class="app">
-  <header class="top">
-    <div>👨‍🏫 AVTODROM<small>INSTRUKTOR MINI APP</small></div>
-    <span id="name">Tekshirilmoqda...</span>
-  </header>
-
-  <main class="content">
-    <div id="error" class="error hidden"></div>
-    <div id="success" class="success hidden"></div>
-
-    <!-- 1. REGISTRATION -->
-    <section id="register" class="page active">
-      <div class="hero">
-        <h2>👋 Instructor bo‘lish</h2>
-        <p class="muted">Avval ro‘yxatdan o‘ting. Arizangiz Admin paneliga tushadi. Admin tasdiqlagandan keyingina Instructor paneli ochiladi.</p>
-      </div>
-      <div class="card">
-        <h2>📝 Ro‘yxatdan o‘tish</h2>
-        <div class="field"><label>Ism <span class="required">*</span></label><input id="firstName" autocomplete="given-name" placeholder="Ismingiz"></div>
-        <div class="field"><label>Familiya <span class="required">*</span></label><input id="lastName" autocomplete="family-name" placeholder="Familiyangiz"></div>
-        <div class="field"><label>Telefon raqami <span class="required">*</span></label><input id="phone" inputmode="tel" autocomplete="tel" placeholder="+998 90 123 45 67"></div>
-        <div class="field"><label>Tajriba (yil)</label><input id="experienceYears" type="number" min="0" max="60" placeholder="Masalan: 3"></div>
-        <div class="field"><label>Qo‘shimcha ma’lumot</label><textarea id="message" rows="4" placeholder="O‘zingiz haqingizda qisqacha..."></textarea></div>
-        <label class="check"><input id="agree" type="checkbox"> <span>Ma’lumotlarimni Admin ko‘rib chiqishiga roziman.</span></label>
-        <button id="submitBtn" class="btn primary" onclick="submitApplication()">📝 ARIZA YUBORISH</button>
-      </div>
-      <div class="info">ℹ️ <b>Muhim:</b> ariza yuborilgach <b>“Kutilmoqda”</b> holati chiqadi. Admin tasdiqlasa Telegram botga xabar keladi va Mini Appni qayta ochganingizda panel avtomatik ochiladi.</div>
-    </section>
-
-    <!-- 2. PENDING -->
-    <section id="pending" class="page">
-      <div class="hero"><h2>⏳ Ariza ko‘rib chiqilmoqda</h2><p>Arizangiz Admin paneliga yuborildi. Hozircha Instructor paneliga kirish yopiq.</p></div>
-      <div class="card"><b>Holat</b><p><span class="status wait">PENDING — KUTILMOQDA</span></p><p class="muted">Admin tasdiqlaganidan so‘ng bot orqali xabar yuboriladi.</p><button class="btn secondary" onclick="checkRegistration()">🔄 Holatni tekshirish</button></div>
-    </section>
-
-    <!-- 3. REJECTED -->
-    <section id="rejected" class="page">
-      <div class="card"><h2>❌ Ariza rad etildi</h2><p class="muted">Admin izohi:</p><div class="info" id="reason">Sabab ko‘rsatilmagan.</div><br><button class="btn primary" onclick="resetRegistrationForm()">📝 QAYTA ARIZA YUBORISH</button></div>
-    </section>
-
-    <!-- 4. APPROVED PANEL -->
-    <section id="home" class="page">
-      <div class="hero"><h2>👋 Xush kelibsiz, <span id="welcome"></span>!</h2><p class="muted">Sizning Instructor hisobingiz Admin tomonidan tasdiqlangan.</p></div>
-      <div class="stat"><div class="card"><span class="muted">Bugungi bronlar</span><div class="num" id="count">0</div></div><div class="card"><span class="muted">Holat</span><div class="num" style="font-size:17px">✅ Faol</div></div></div>
-      <div class="card"><h2>📋 Bugungi ishlar</h2><p class="muted">Bronni oching va mijoz kelganda <b>KELDI</b>, dars tugaganda <b>KETDI</b> tugmasini bosing.</p><button class="btn primary" onclick="showPage('bookings',this);loadBookings()">📋 BRONLARNI KO‘RISH</button></div>
-    </section>
-
-    <section id="bookings" class="page"><h2>📋 Bronlar</h2><div id="list" class="loading">Yuklanmoqda...</div></section>
-
-    <section id="profile" class="page">
-      <h2>👤 Profilim</h2>
-      <div class="card"><p><b id="pname"></b></p><p id="pphone"></p><p id="pstatus"></p></div>
-    </section>
-  </main>
-
-  <nav id="nav" class="nav hidden">
-    <button class="active" onclick="showPage('home',this)">🏠<br>Bosh sahifa</button>
-    <button onclick="showPage('bookings',this);loadBookings()">📋<br>Bronlar</button>
-    <button onclick="showPage('profile',this)">👤<br>Profil</button>
+<aside class="side">
+  <div class="brand">🚗 AVTODROM<small>INSTRUCTOR CONTROL</small></div>
+  <nav class="nav">
+    <button class="active" data-section="dashboard">📊 Bosh sahifa</button>
+    <button data-section="bookings">📅 Mening bronlarim</button>
+    <button data-section="statistics">📈 Statistikam</button>
+    <button data-section="profile">👤 Profil</button>
   </nav>
+</aside>
+<main class="main">
+<div class="mobile"><b>🚗 AVTODROM INSTRUKTOR</b><button class="logout" id="logoutMobile">Chiqish</button></div>
+<header class="top"><div class="title"><h1 id="pageTitle">Instruktor paneli</h1><p id="welcome">Bronlar va o‘quvchilar jarayonini boshqarish</p></div><button class="logout" id="logout">Chiqish</button></header>
+
+<section id="dashboard" class="section active">
+<div class="hero"><div class="profile"><div class="avatar" id="avatar">I</div><div><h2 id="instructorName">Yuklanmoqda...</h2><p id="approval">Tasdiqlash holati tekshirilmoqda...</p></div></div></div>
+<div class="grid">
+<div class="stat"><span>Bugungi bronlar</span><strong id="today">—</strong></div>
+<div class="stat"><span>Haftalik qabul qilingan</span><strong id="week">—</strong></div>
+<div class="stat"><span>Oylik qabul qilingan</span><strong id="month">—</strong></div>
+<div class="stat"><span>Yillik qabul qilingan</span><strong id="year">—</strong></div>
 </div>
-<div id="toast" class="toast"></div>
+<div class="card" style="margin-top:16px"><div class="head"><h2>Bugungi bronlar</h2><button class="secondary" id="refresh1">Yangilash</button></div><div id="todayBox" class="loading">Yuklanmoqda...</div></div>
+</section>
 
+<section id="bookings" class="section">
+<div class="card"><div class="head"><h2>Mening bronlarim</h2><button class="secondary" id="refresh2">Yangilash</button></div>
+<div class="pad"><div class="filters" id="filters"><button class="active" data-filter="all">Barchasi</button><button data-filter="pending">Kutilmoqda</button><button data-filter="confirmed">Qabul qilingan</button><button data-filter="arrived">Kelgan</button><button data-filter="left">Ketgan</button><button data-filter="cancelled">Bekor</button></div></div>
+<div id="bookingsBox" class="loading">Yuklanmoqda...</div></div>
+</section>
+
+<section id="statistics" class="section">
+<div class="grid">
+<div class="stat"><span>1 hafta</span><strong id="sWeek">—</strong><small class="muted">qabul qilingan bron</small></div>
+<div class="stat"><span>1 oy</span><strong id="sMonth">—</strong><small class="muted">qabul qilingan bron</small></div>
+<div class="stat"><span>1 yil</span><strong id="sYear">—</strong><small class="muted">qabul qilingan bron</small></div>
+<div class="stat"><span>Kelgan o‘quvchilar</span><strong id="sArrived">—</strong></div>
+</div>
+<div class="card" style="margin-top:16px"><div class="head"><h2>Davrlar bo‘yicha statistika</h2></div><div class="pad"><p class="muted">Hisob-kitob backenddagi bron sanasi va bron holatlari asosida amalga oshiriladi. Frontend vaqtni o‘zi hisoblab, statistikani o‘zgartirmaydi.</p><div id="statDetails"></div></div></div>
+</section>
+
+<section id="profile" class="section">
+<div class="card"><div class="head"><h2>Mening profilim</h2><button class="secondary" id="refreshProfile">Yangilash</button></div><div id="profileBox" class="pad loading">Yuklanmoqda...</div></div>
+</section>
+</main>
+
+<div id="toast" style="position:fixed;right:18px;bottom:18px;background:#10231b;color:#fff;padding:12px 15px;border-radius:10px;display:none;z-index:50"></div>
 <script>
-const tg=window.Telegram?.WebApp;
-tg?.ready();
-tg?.expand();
-const API=(window.API_BASE_URL||window.location.origin).replace(/\/$/,'');
-const initData=()=>tg?.initData||'';
-
-function $(id){return document.getElementById(id)}
-function showPage(id,button){document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));$(id)?.classList.add('active');document.querySelectorAll('.nav button').forEach(x=>x.classList.remove('active'));if(button)button.classList.add('active')}
-function showError(t){$('error').textContent=t;$('error').classList.remove('hidden');$('success').classList.add('hidden')}
-function showSuccess(t){$('success').textContent=t;$('success').classList.remove('hidden');$('error').classList.add('hidden')}
-function clearMessages(){$('error').classList.add('hidden');$('success').classList.add('hidden')}
-function toast(t){const x=$('toast');x.textContent='✅ '+t;x.style.display='block';setTimeout(()=>x.style.display='none',2500)}
-
-async function api(path,opt={}){
-  const data=initData();
-  if(!data) throw new Error('Telegram Mini App initData topilmadi. Bot ichidagi Mini App tugmasidan oching.');
-  const headers={'Content-Type':'application/json','X-Telegram-Init-Data':data,...(opt.headers||{})};
-  const r=await fetch(API+path,{...opt,headers});
-  const text=await r.text();
-  let d={};try{d=text?JSON.parse(text):{}}catch{d={error:text||'Server noto‘g‘ri javob qaytardi'}}
-  if(!r.ok) throw new Error(d.error||`Server xatosi (${r.status})`);
-  return d;
-}
-
-function fillFromTelegram(){
-  const u=tg?.initDataUnsafe?.user;
-  if(!u)return;
-  if(!$('firstName').value)$('firstName').value=u.first_name||'';
-  if(!$('lastName').value)$('lastName').value=u.last_name||'';
-  if(!$('name').textContent||$('name').textContent.includes('Tekshirilmoqda'))$('name').textContent=u.first_name||'Instructor';
-}
-
-async function boot(){
-  clearMessages();
-  fillFromTelegram();
-  if(!initData()){showError('Bu sahifani oddiy Chrome orqali emas, @index_instruktor_bot ichidagi Mini App orqali oching.');showPage('register');return}
-  // ENG MUHIM: /me ni birinchi chaqirmaymiz. Avval registration status tekshiriladi.
-  await checkRegistration(true);
-}
-
-async function checkRegistration(silent=false){
-  try{
-    const d=await api('/api/instructor/registration');
-    const r=d.registration||{};
-    const status=String(r.status||'NOT_REGISTERED').toUpperCase();
-    clearMessages();
-    if(status==='APPROVED'){
-      await openApprovedPanel();
-    }else if(status==='PENDING'){
-      showPage('pending');
-    }else if(status==='REJECTED'){
-      $('reason').textContent=r.rejection_reason||'Sabab ko‘rsatilmagan.';showPage('rejected');
-    }else{
-      showPage('register');
-    }
-  }catch(e){
-    // Agar status endpoint xato bersa ham registration formani yashirib qo‘ymaymiz.
-    showPage('register');
-    if(!silent)showError(e.message);
-    else showError('Ro‘yxatdan o‘tish serveri bilan aloqa bo‘lmadi: '+e.message);
-  }
-}
-
-async function openApprovedPanel(){
-  try{
-    const d=await api('/api/instructor/me');
-    const p=d.profile||{};
-    $('name').textContent=((p.first_name||'')+' '+(p.last_name||'')).trim()||'Instructor';
-    $('welcome').textContent=p.first_name||'Instructor';
-    $('pname').textContent=((p.first_name||'')+' '+(p.last_name||'')).trim();
-    $('pphone').textContent='📞 '+(p.phone||'Telefon ko‘rsatilmagan');
-    $('pstatus').textContent='✅ Admin tomonidan tasdiqlangan';
-    $('nav').classList.remove('hidden');
-    showPage('home');
-    await loadBookings();
-  }catch(e){
-    $('nav').classList.add('hidden');
-    // Admin hali instructor_profiles.is_verified/is_available ni yoqmagan bo‘lishi mumkin.
-    showPage('pending');
-    showError(e.message);
-  }
-}
-
-function resetRegistrationForm(){
-  clearMessages();
-  showPage('register');
-  window.scrollTo({top:0,behavior:'smooth'});
-}
-
-async function submitApplication(){
-  clearMessages();
-  const first=$('firstName').value.trim(),last=$('lastName').value.trim(),phone=$('phone').value.trim();
-  if(!first||!last||!phone){showError('Ism, familiya va telefon raqami majburiy.');return}
-  if(!$('agree').checked){showError('Ariza yuborishdan oldin rozilik katagiga belgi qo‘ying.');return}
-  const btn=$('submitBtn');btn.disabled=true;btn.textContent='⏳ Yuborilmoqda...';
-  try{
-    const d=await api('/api/instructor/registration',{method:'POST',body:JSON.stringify({firstName:first,lastName:last,phone,experienceYears:Number($('experienceYears').value||0),message:$('message').value.trim()})});
-    $('name').textContent=first+' '+last;
-    showSuccess('Arizangiz muvaffaqiyatli yuborildi.');
-    showPage('pending');
-    toast('Ariza yuborildi');
-  }catch(e){showError(e.message)}
-  finally{btn.disabled=false;btn.textContent='📝 ARIZA YUBORISH'}
-}
-
-async function loadBookings(){
-  try{
-    const d=await api('/api/instructor/bookings');
-    const bookings=Array.isArray(d.bookings)?d.bookings:[];
-    $('count').textContent=bookings.length;
-    if(!bookings.length){$('list').innerHTML='<div class="card"><p class="muted">📭 Hozircha sizga biriktirilgan bron yo‘q.</p></div>';return}
-    $('list').innerHTML=bookings.map(b=>{
-      const c=b.customer||{};
-      const fullName=c.full_name||[c.first_name,c.last_name].filter(Boolean).join(' ')||'Mijoz';
-      const date=b.booking_date||b.start_at||b.start_time||b.created_at;
-      const status=String(b.status||'').toLowerCase();
-      let action='';
-      if(status==='confirmed'||status==='approved')action='<button class="btn primary" onclick="arrive('+JSON.stringify(String(b.id))+')">✅ KELDI</button>';
-      if(status==='in_progress'||status==='arrived')action='<button class="btn primary" onclick="depart('+JSON.stringify(String(b.id))+')">🚪 KETDI</button>';
-      const cls=status==='confirmed'||status==='approved'?'wait':status==='in_progress'||status==='arrived'?'run':'ok';
-      return '<div class="booking"><b>📅 '+(date?new Date(date).toLocaleString('uz-UZ'):'Vaqt ko‘rsatilmagan')+'</b><p>👤 '+esc(fullName)+'</p><p>📞 '+esc(c.phone||'Telefon yo‘q')+'</p><span class="status '+cls+'">'+esc(status||'unknown')+'</span><div class="actions">'+action+'</div></div>';
-    }).join('');
-  }catch(e){$('list').innerHTML='';showError(e.message)}
-}
-
-async function arrive(id){
-  try{await api('/api/instructor/bookings/'+encodeURIComponent(id)+'/arrived',{method:'POST'});toast('KELDI qayd qilindi');await loadBookings()}catch(e){showError(e.message)}
-}
-async function depart(id){
-  try{await api('/api/instructor/bookings/'+encodeURIComponent(id)+'/departed',{method:'POST'});toast('KETDI qayd qilindi. Baholash jarayoni ishga tushadi.');await loadBookings()}catch(e){showError(e.message)}
-}
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+let bookings=[], currentFilter='all', me=null;
+const titles={dashboard:'Instruktor paneli',bookings:'Mening bronlarim',statistics:'Statistikam',profile:'Mening profilim'};
 function esc(v){return String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
-boot();
+function date(v){if(!v)return'—';try{return new Date(v).toLocaleString('uz-UZ',{dateStyle:'medium',timeStyle:'short'})}catch{return String(v)}}
+function day(v){if(!v)return'';return new Date(v).toLocaleDateString('en-CA')}
+function toast(t){let x=$('#toast');x.textContent=t;x.style.display='block';setTimeout(()=>x.style.display='none',2500)}
+async function api(path,opt={}){let r=await fetch(path,{credentials:'same-origin',headers:{'Content-Type':'application/json',...(opt.headers||{})},...opt});let d=null;try{d=await r.json()}catch{}if(!r.ok)throw Error(d?.error||('Server xatosi '+r.status));return d}
+function badge(s){let m={pending:'Kutilmoqda',confirmed:'Qabul qilingan',arrived:'Keldi',left:'Ketdi',completed:'Tugagan',cancelled:'Bekor qilingan',rejected:'Rad etilgan'};return '<span class="badge '+esc(s)+'">'+esc(m[s]||s||'—')+'</span>'}
+function go(section){$$('.section').forEach(x=>x.classList.toggle('active',x.id===section));$$('.nav button').forEach(x=>x.classList.toggle('active',x.dataset.section===section));$('#pageTitle').textContent=titles[section]||section;history.replaceState(null,'','#'+section);if(section==='dashboard')loadDashboard();if(section==='bookings')loadBookings();if(section==='statistics')loadStats();if(section==='profile')loadProfile()}
+$$('.nav button').forEach(b=>b.onclick=()=>go(b.dataset.section));
+
+async function loadMe(){
+ try{
+   const d=await api('/api/instructor/me'); me=d.instructor||d.user||d;
+   const name=me.profile?.full_name||me.full_name||'Instruktor';
+   $('#instructorName').textContent=name; $('#avatar').textContent=name.charAt(0).toUpperCase();
+   const approved=me.is_verified??me.approved??me.profile?.is_verified;
+   $('#approval').textContent=approved===false?'⏳ Admin tasdig‘i kutilmoqda':'✅ Admin tomonidan tasdiqlangan';
+ }catch(e){toast(e.message);setTimeout(()=>location.replace('/'),800)}
+}
+async function loadDashboard(){
+ try{
+   const d=await api('/api/instructor/dashboard'); const s=d.stats||d||{};
+   $('#today').textContent=s.today??s.todayBookings??0;
+   $('#week').textContent=s.week??s.weekBookings??s.acceptedWeek??0;
+   $('#month').textContent=s.month??s.monthBookings??s.acceptedMonth??0;
+   $('#year').textContent=s.year??s.yearBookings??s.acceptedYear??0;
+   await loadToday();
+ }catch(e){$('#todayBox').innerHTML='<div class="error">'+esc(e.message)+'</div>'}
+}
+function row(b){
+ const c=b.customer||b.user||{}; const name=c.full_name||b.customer_name||'O‘quvchi';
+ const phone=c.phone||b.phone||''; const status=b.status||'pending';
+ let actions='';
+ if(status==='pending') actions='<button class="primary" onclick="setBooking(\''+b.id+'\',\'confirmed\')">Bronni qabul qilish</button><button class="danger" onclick="setBooking(\''+b.id+'\',\'rejected\')">Rad etish</button>';
+ if(status==='confirmed') actions='<button class="primary" onclick="setBooking(\''+b.id+'\',\'arrived\')">✅ Keldi</button><button class="secondary" onclick="setBooking(\''+b.id+'\',\'cancelled\')">Bekor</button>';
+ if(status==='arrived') actions='<button class="primary" onclick="setBooking(\''+b.id+'\',\'left\')">🚪 Ketdi</button>';
+ if(status==='left') actions='<span class="muted">Mashg‘ulot yakunlandi</span>';
+ return '<tr><td><b>'+date(b.booking_date||b.start_at||b.scheduled_at)+'</b></td><td><span class="student">'+esc(name)+'</span><br><span class="muted">'+esc(phone)+'</span></td><td>'+esc(b.course?.name||b.course_name||'Amaliy mashg‘ulot')+'<br><span class="muted">'+esc(b.course?.duration_minutes||b.duration_minutes||'—')+' daqiqa</span></td><td>'+badge(status)+'</td><td><div class="actions">'+actions+'</div></td></tr>'
+}
+async function loadBookings(){
+ const box=$('#bookingsBox');box.innerHTML='<div class="loading">Yuklanmoqda...</div>';
+ try{
+  const d=await api('/api/instructor/bookings');bookings=d.bookings||[];
+  const rows=currentFilter==='all'?bookings:bookings.filter(x=>x.status===currentFilter);
+  box.innerHTML=rows.length?'<div class="table-wrap"><table class="table"><thead><tr><th>Vaqt</th><th>O‘quvchi</th><th>Mashg‘ulot</th><th>Holat</th><th>Amal</th></tr></thead><tbody>'+rows.map(row).join('')+'</tbody></table></div>':'<div class="empty">Bu bo‘limda bronlar yo‘q.</div>';
+ }catch(e){box.innerHTML='<div class="error">'+esc(e.message)+'</div>'}
+}
+async function loadToday(){
+ try{
+  const d=await api('/api/instructor/bookings?date=today');const rows=d.bookings||[];
+  $('#todayBox').innerHTML=rows.length?'<div class="table-wrap"><table class="table"><thead><tr><th>Vaqt</th><th>O‘quvchi</th><th>Mashg‘ulot</th><th>Holat</th><th>Amal</th></tr></thead><tbody>'+rows.map(row).join('')+'</tbody></table></div>':'<div class="empty">Bugun bron yo‘q.</div>';
+ }catch(e){$('#todayBox').innerHTML='<div class="error">'+esc(e.message)+'</div>'}
+}
+async function setBooking(id,status){
+ try{
+  await api('/api/instructor/bookings/'+id+'/status',{method:'PATCH',body:JSON.stringify({status})});
+  toast(status==='confirmed'?'Bron qabul qilindi':status==='arrived'?'O‘quvchi keldi deb belgilandi':status==='left'?'O‘quvchi ketdi deb belgilandi':'Bron yangilandi');
+  await loadBookings();await loadDashboard();
+ }catch(e){toast(e.message)}
+}
+async function loadStats(){
+ try{
+  const d=await api('/api/instructor/statistics'),s=d.stats||d;
+  $('#sWeek').textContent=s.week??s.acceptedWeek??0;$('#sMonth').textContent=s.month??s.acceptedMonth??0;$('#sYear').textContent=s.year??s.acceptedYear??0;$('#sArrived').textContent=s.arrived??s.arrivedStudents??0;
+  $('#statDetails').innerHTML='<div class="mini-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px"><div class="stat"><span>7 kunlik</span><strong>'+esc(s.week??0)+'</strong></div><div class="stat"><span>30 kunlik</span><strong>'+esc(s.month??0)+'</strong></div><div class="stat"><span>365 kunlik</span><strong>'+esc(s.year??0)+'</strong></div></div>';
+ }catch(e){toast(e.message)}
+}
+async function loadProfile(){
+ const b=$('#profileBox');b.innerHTML='Yuklanmoqda...';
+ try{const d=await api('/api/instructor/profile');const x=d.instructor||d.profile||d;const p=x.profile||x;b.innerHTML='<div class="profile"><div class="avatar">'+esc((p.full_name||'I').charAt(0))+'</div><div><h2>'+esc(p.full_name||'Instruktor')+'</h2><p>'+esc(p.phone||'Telefon kiritilmagan')+'</p><p class="muted">Tajriba: '+esc(x.experience_years??p.experience_years??0)+' yil · Reyting: ★ '+esc(x.rating??0)+'</p></div></div><hr style="border:0;border-top:1px solid var(--line);margin:20px 0"><p>'+esc(x.bio||p.bio||'Bio kiritilmagan')+'</p>'}catch(e){b.innerHTML='<div class="error">'+esc(e.message)+'</div>'}
+}
+$$('#filters button').forEach(b=>b.onclick=()=>{$$('#filters button').forEach(x=>x.classList.remove('active'));b.classList.add('active');currentFilter=b.dataset.filter;loadBookings()});
+$('#refresh1').onclick=loadDashboard;$('#refresh2').onclick=loadBookings;$('#refreshProfile').onclick=loadProfile;
+async function logout(){try{await api('/api/instructor/logout',{method:'POST'})}finally{location.replace('/')}}
+$('#logout').onclick=logout;$('#logoutMobile').onclick=logout;
+(async()=>{await loadMe();const s=location.hash.slice(1);go(titles[s]?s:'dashboard')})();
 </script>
 </body>
 </html>
