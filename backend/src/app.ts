@@ -9,6 +9,8 @@ import { registerInstructorRegistrationRoutes } from './instructor-registration-
 import { handleInstructorStart } from './instructor-start.js';
 import { registerAdminPasswordRoutes } from './admin-password-routes.js';
 import { registerContentRoutes } from './content-routes.js';
+import { registerCourseRoutes } from './courses-routes.js';
+import { registerReviewRoutes } from './review-routes.js';
 
 const app = Fastify({ logger: true });
 const CUSTOMER_BOT_TOKEN = process.env.CUSTOMER_BOT_TOKEN || process.env.TELEGRAM_CUSTOMER_BOT_TOKEN || '';
@@ -59,6 +61,8 @@ export const authenticateAnyBot = async (request: any) => {
 await registerBookingRoutes(app, authenticateCustomer, authenticateAnyBot);
 await registerInstructorRoutes(app, authenticateInstructor);
 await registerInstructorRegistrationRoutes(app, authenticateInstructor);
+await registerCourseRoutes(app, authenticateCustomer);
+await registerReviewRoutes(app, authenticateCustomer);
 
 // IMPORTANT: admin-password-routes.ts is the single owner of the canonical
 // /api/admin/* endpoints. Do not register admin-routes.ts or
