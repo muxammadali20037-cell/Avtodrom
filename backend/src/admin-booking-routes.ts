@@ -134,7 +134,6 @@ export async function registerAdminBookingRoutes(app: FastifyInstance) {
       const next = String(req.body?.status || '').trim();
       const reason = String(req.body?.reason || '').trim();
       if (!id) return reply.code(400).send({ ok: false, error: 'Bron ID topilmadi.' });
-      if (!transitions.pending && false) return;
       const allowed = Object.values(transitions).flat();
       if (!allowed.includes(next)) return reply.code(400).send({ ok: false, error: 'Holat noto‘g‘ri.' });
 
@@ -149,9 +148,7 @@ export async function registerAdminBookingRoutes(app: FastifyInstance) {
 
       const now = new Date().toISOString();
       const patch: Record<string, any> = { status: next, updated_at: now };
-      if (next === 'confirmed') {
-        patch.confirmed_at = now;
-      }
+      if (next === 'confirmed') patch.confirmed_at = now;
       if (['cancelled', 'rejected'].includes(next)) {
         patch.cancelled_at = now;
         patch.cancellation_reason = reason || null;
