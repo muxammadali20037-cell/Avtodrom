@@ -31,14 +31,23 @@ async function getCustomer(customerId: string) {
   return rows[0] || null;
 }
 
-async function notifyBookingStatus(booking: any, status: 'in_progress' | 'completed') {
+type NotifyStatus = 'confirmed' | 'rejected' | 'in_progress' | 'completed' | 'no_show';
+
+const NOTIFY_TEXT: Record<NotifyStatus, { title: string; body: (id: string) => string }> = {
+  confirmed:   { title: 'Bron tasdiqlandi',      body: (id) => `Bron #${id}: instruktor bronni qabul qildi.` },
+  rejected:    { title: 'Bron rad etildi',       body: (id) => `Bron #${id}: instruktor bronni rad etdi. Boshqa vaqt tanlashingiz mumkin.` },
+  in_progress: { title: 'Instruktor: mijoz KELDI', body: (id) => `Bron #${id}: instruktor sizni kutib oldi. Dars boshlandi.` },
+  completed:   { title: 'Dars yakunlandi',       body: (id) => `Bron #${id}: dars yakunlandi. Instruktorni baholashingiz mumkin.` },
+  no_show:     { title: 'Mijoz kelmadi',         body: (id) => `Bron #${id}: instruktor sizni kelmagan deb belgiladi.` },
+};
+
+async function notifyBookingStatus(booking: any, status: NotifyStatus) {
   try {
     const customerId = booking?.customer_id;
     if (!customerId) return;
-    const title = status === 'in_progress' ? 'Instruktor: mijoz KELDI' : 'Dars yakunlandi';
-    const body = status === 'in_progress'
-      ? `Bron #${booking.id}: instruktor sizni kutib oldi. Dars boshlandi.`
-      : `Bron #${booking.id}: dars yakunlandi. Instruktor va Avtodromni baholashingiz mumkin.`;
+    const t = NOTIFY_TEXT[status];
+    const title = t.title;
+    const body = t.body(String(booking.id));
 
     await notifyUser(String(customerId), 'booking', title, body);
 
@@ -80,7 +89,7 @@ export async function registerInstructorRoutes(
       if (!profile || !instructor) return reply.code(403).send({ ok: false, error: 'Instructor hali Admin tomonidan tasdiqlanmagan', status: 'PENDING' });
       const query = request.query as { from?: string; to?: string };
       const parts = [
-        'select=*,customer:customer_id(id,full_name,phone,telegram_id)',
+        'select=*,customer:customer_id(id,full_name,phone,telegram_id),course:course_id(id,name,duration_minutes,price)',
         `instructor_id=eq.${q(String(instructor.id))}`,
         'order=booking_date.asc',
       ];
@@ -131,6 +140,145 @@ export async function registerInstructorRoutes(
       if (/BOOKING_NOT_FOUND/i.test(message)) return reply.code(404).send({ ok: false, error: 'Bron topilmadi yoki bu instruktorga biriktirilmagan' });
       if (/BOOKING_NOT_IN_PROGRESS/i.test(message)) return reply.code(409).send({ ok: false, error: 'KETDI faqat boshlangan bron uchun mumkin.' });
       return reply.code(400).send({ ok: false, error: message });
+    }
+  });
+
+  /**
+   * Bron holatini o'zgartirish — instruktor uchun.
+   * Ruxsat etilgan o'tishlar qat'iy cheklangan; boshqasi 409 beradi.
+   * arrived/departed alohida RPC orqali ketadi (atomik), bu esa
+   * qabul qilish / rad etish / kelmadi uchun.
+   */
+  const INSTRUCTOR_TRANSITIONS: Record<string, string[]> = {
+    pending:   ['confirmed', 'rejected'],
+    confirmed: ['no_show'],
+  };
+
+  async function changeStatus(request: any, reply: any, target: NotifyStatus) {
+    try {
+      const tgUser = await authenticate(request);
+      const profile = await profileForTelegram(tgUser);
+      const instructor = await approvedInstructor(profile);
+      if (!profile || !instructor) return reply.code(403).send({ ok: false, error: 'Instructor tasdiqlanmagan' });
+
+      const id = String(request.params.id);
+      const booking = await getOwnedBooking(id, String(instructor.id));
+      if (!booking) return reply.code(404).send({ ok: false, error: 'Bron topilmadi yoki bu instruktorga biriktirilmagan' });
+
+      const from = String(booking.status);
+      if (!(INSTRUCTOR_TRANSITIONS[from] || []).includes(target)) {
+        return reply.code(409).send({ ok: false, error: `"${from}" holatidagi bronni bu amalga o'tkazib bo'lmaydi` });
+      }
+
+      const now = new Date().toISOString();
+      const patch: any = { status: target, updated_at: now };
+      if (target === 'confirmed') { patch.confirmed_at = now; patch.confirmed_by = profile.id; }
+      if (target === 'rejected') {
+        patch.cancelled_at = now;
+        patch.cancelled_by = profile.id;
+        patch.cancellation_reason = String(request.body?.reason || '').trim() || null;
+      }
+
+      const rows = await supabaseRest<any[]>('bookings', {
+        method: 'PATCH',
+        headers: { Prefer: 'return=representation' },
+        query: `?id=eq.${q(id)}`,
+        body: JSON.stringify(patch),
+      });
+      const updated = rows[0] || { ...booking, ...patch };
+      await notifyBookingStatus(updated, target);
+      return { ok: true, booking: updated };
+    } catch (e) {
+      return reply.code(400).send({ ok: false, error: e instanceof Error ? e.message : 'Amal bajarilmadi' });
+    }
+  }
+
+  app.post('/api/instructor/bookings/:id/accept', (req, reply) => changeStatus(req, reply, 'confirmed'));
+  app.post('/api/instructor/bookings/:id/reject', (req, reply) => changeStatus(req, reply, 'rejected'));
+  app.post('/api/instructor/bookings/:id/no-show', (req, reply) => changeStatus(req, reply, 'no_show'));
+
+  /** Instruktorning o'z sharhlari — faqat admin tasdiqlaganlari ko'rinadi. */
+  app.get('/api/instructor/reviews', async (request, reply) => {
+    try {
+      const tgUser = await authenticate(request);
+      const profile = await profileForTelegram(tgUser);
+      const instructor = await approvedInstructor(profile);
+      if (!profile || !instructor) return reply.code(403).send({ ok: false, error: 'Instructor tasdiqlanmagan' });
+
+      const rows = await supabaseRest<any[]>('reviews', {
+        query: `?instructor_id=eq.${q(String(instructor.id))}&status=eq.approved` +
+               '&select=id,rating,comment,created_at,customer:customer_id(id,full_name)' +
+               '&order=created_at.desc',
+      });
+      return { ok: true, reviews: rows };
+    } catch (e) {
+      return reply.code(400).send({ ok: false, error: e instanceof Error ? e.message : 'Sharhlar yuklanmadi' });
+    }
+  });
+
+  /** Dashboard ko'rsatkichlari — bugungi, kutilayotgan, tugagan, reyting. */
+  app.get('/api/instructor/stats', async (request, reply) => {
+    try {
+      const tgUser = await authenticate(request);
+      const profile = await profileForTelegram(tgUser);
+      const instructor = await approvedInstructor(profile);
+      if (!profile || !instructor) return reply.code(403).send({ ok: false, error: 'Instructor tasdiqlanmagan' });
+
+      const rows = await supabaseRest<any[]>('bookings', {
+        query: `?instructor_id=eq.${q(String(instructor.id))}&select=id,status,booking_date,start_at`,
+      });
+
+      // Bugun — Asia/Tashkent bo'yicha
+      const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Tashkent' }).format(new Date());
+      const dayOf = (v: any) => v ? new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Tashkent' }).format(new Date(v)) : '';
+      const todays = rows.filter((b) => dayOf(b.start_at || b.booking_date) === today);
+
+      return {
+        ok: true,
+        stats: {
+          today: todays.length,
+          todayCompleted: todays.filter((b) => b.status === 'completed').length,
+          pending: rows.filter((b) => b.status === 'pending').length,
+          confirmed: rows.filter((b) => b.status === 'confirmed').length,
+          inProgress: rows.filter((b) => b.status === 'in_progress').length,
+          completed: rows.filter((b) => b.status === 'completed').length,
+          noShow: rows.filter((b) => b.status === 'no_show').length,
+          total: rows.length,
+          rating: Number(instructor.rating || 0),
+          totalReviews: Number(instructor.total_reviews || 0),
+          isAvailable: instructor.is_available !== false,
+        },
+      };
+    } catch (e) {
+      return reply.code(400).send({ ok: false, error: e instanceof Error ? e.message : 'Statistika yuklanmadi' });
+    }
+  });
+
+  /**
+   * Bandlik holati — instruktor o'zini vaqtincha "mavjud emas" qila oladi.
+   * DIQQAT: is_verified ga TEGILMAYDI — uni faqat admin boshqaradi.
+   */
+  app.patch('/api/instructor/availability', async (request, reply) => {
+    try {
+      const tgUser = await authenticate(request);
+      const profile = await profileForTelegram(tgUser);
+      const instructor = await approvedInstructor(profile);
+      if (!profile || !instructor) return reply.code(403).send({ ok: false, error: 'Instructor tasdiqlanmagan' });
+
+      const available = (request.body as any)?.is_available;
+      if (typeof available !== 'boolean') {
+        return reply.code(400).send({ ok: false, error: 'is_available true yoki false bo\u2018lishi kerak' });
+      }
+
+      const rows = await supabaseRest<any[]>('instructor_profiles', {
+        method: 'PATCH',
+        headers: { Prefer: 'return=representation' },
+        query: `?id=eq.${q(String(instructor.id))}`,
+        body: JSON.stringify({ is_available: available, updated_at: new Date().toISOString() }),
+      });
+      return { ok: true, instructor: rows[0] || { ...instructor, is_available: available } };
+    } catch (e) {
+      return reply.code(400).send({ ok: false, error: e instanceof Error ? e.message : 'Holat saqlanmadi' });
     }
   });
 }
