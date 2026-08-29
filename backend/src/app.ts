@@ -7,10 +7,11 @@ import { registerBookingRoutes } from './booking-routes.js';
 import { registerInstructorRoutes } from './instructor-routes.js';
 import { registerInstructorRegistrationRoutes } from './instructor-registration-routes.js';
 import { handleInstructorStart } from './instructor-start.js';
-import { registerAdminPasswordRoutes } from './admin-password-routes.js';
+import { registerAdminPasswordRoutes, guard as requireAdmin, adminUser } from './admin-password-routes.js';
 import { registerContentRoutes } from './content-routes.js';
 import { registerCourseRoutes } from './courses-routes.js';
 import { registerReviewRoutes } from './review-routes.js';
+import { registerSupportRoutes } from './support-routes.js';
 
 const app = Fastify({ logger: true });
 const CUSTOMER_BOT_TOKEN = process.env.CUSTOMER_BOT_TOKEN || process.env.TELEGRAM_CUSTOMER_BOT_TOKEN || '';
@@ -44,6 +45,11 @@ export const authenticateCustomer = authenticateWithToken(CUSTOMER_BOT_TOKEN);
 export const authenticateInstructor = authenticateWithToken(INSTRUCTOR_BOT_TOKEN);
 export const authenticateAdmin = authenticateWithToken(ADMIN_BOT_TOKEN);
 
+/**
+ * Uch botning istalgan biri imzolagan initData'ni qabul qiladi.
+ * Kerak, chunki bron holatini instruktor ham, admin ham o'zgartiradi —
+ * ular turli botlardan keladi, bitta token bilan tekshirib bo'lmaydi.
+ */
 export const authenticateAnyBot = async (request: any) => {
   const tokens = [CUSTOMER_BOT_TOKEN, INSTRUCTOR_BOT_TOKEN, ADMIN_BOT_TOKEN].filter(Boolean);
   let last: unknown = null;
@@ -58,12 +64,12 @@ await registerInstructorRoutes(app, authenticateInstructor);
 await registerInstructorRegistrationRoutes(app, authenticateInstructor);
 await registerCourseRoutes(app, authenticateCustomer);
 await registerReviewRoutes(app, authenticateCustomer);
+await registerSupportRoutes(app, authenticateCustomer, requireAdmin, adminUser);
 
-// Canonical admin API owner: admin-password-routes.ts.
-// Do NOT register the legacy admin-booking-routes.ts here because it
-// duplicates /api/admin/bookings and /api/admin/bookings/:id/status and makes
-// Fastify fail at startup with FST_ERR_DUPLICATED_ROUTE, turning every API
-// request into HTTP 500 on Vercel.
+// IMPORTANT: admin-password-routes.ts is the single owner of the canonical
+// /api/admin/* endpoints. Do not register admin-routes.ts or
+// admin-dashboard-routes.ts here: they contain overlapping routes and cause
+// Fastify FST_ERR_DUPLICATED_ROUTE during Vercel cold starts.
 await registerAdminPasswordRoutes(app);
 await registerContentRoutes(app);
 
