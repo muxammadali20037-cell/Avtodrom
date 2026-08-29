@@ -26,10 +26,60 @@ button,input,select{font:inherit}button{cursor:pointer}.app{min-height:100vh}.si
 .action-row{display:flex;gap:6px;flex-wrap:wrap}
 .btn-small{border:0;border-radius:8px;padding:7px 10px;font-weight:700;cursor:pointer}
 
+
+/* Telegram Mini App responsive override: never let the fixed desktop sidebar hide the panel */
+body.telegram-mini .side{
+  position:relative;
+  inset:auto;
+  width:100%;
+  height:auto;
+  min-height:0;
+  padding:10px;
+}
+body.telegram-mini .brand{
+  padding:4px 8px 10px;
+  font-size:18px;
+}
+body.telegram-mini .brand small{font-size:9px}
+body.telegram-mini .nav{
+  display:flex;
+  gap:6px;
+  overflow-x:auto;
+  -webkit-overflow-scrolling:touch;
+  scrollbar-width:none;
+}
+body.telegram-mini .nav::-webkit-scrollbar{display:none}
+body.telegram-mini .nav button{
+  flex:0 0 auto;
+  white-space:nowrap;
+  padding:9px 10px;
+  font-size:12px;
+}
+body.telegram-mini .main{
+  margin-left:0;
+  width:100%;
+  max-width:none;
+  padding:12px;
+}
+body.telegram-mini .top{
+  margin-bottom:12px;
+}
+body.telegram-mini .title h1{font-size:21px}
+body.telegram-mini .title p{font-size:13px}
+body.telegram-mini .grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+body.telegram-mini .table-wrap{overflow-x:auto}
+@media(max-width:420px){
+  body.telegram-mini .grid{grid-template-columns:1fr}
+  body.telegram-mini .card{border-radius:13px}
+  body.telegram-mini .head{padding:13px}
+  body.telegram-mini .pad{padding:13px}
+  body.telegram-mini .top .logout{display:none}
+}
+
 </style>
 <script src="https://telegram.org/js/telegram-web-app.js?57"></script>
 </head>
-<body>
+<body class="telegram-mini">
 <aside class="side">
   <div class="brand">🚗 AVTODROM<small>INSTRUCTOR CONTROL</small></div>
   <nav class="nav">
