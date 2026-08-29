@@ -2,6 +2,7 @@ import type { FastifyInstance } from 'fastify';
 import { supabaseRest } from './supabase.js';
 import type { TelegramWebAppUser } from './telegram.js';
 import { q, findUserByTelegram } from './identity.js';
+import { humanizeDbError } from './booking-routes.js';
 
 /**
  * Review qoidalari (talab 11-bo'lim):
@@ -74,7 +75,7 @@ export async function registerReviewRoutes(
       });
       return reply.code(201).send({ ok: true, review: rows[0] });
     } catch (e) {
-      return reply.code(400).send({ ok: false, error: e instanceof Error ? e.message : 'Sharh yuborilmadi' });
+      return reply.code(400).send({ ok: false, error: humanizeDbError(e, 'Sharh yuborilmadi') });
     }
   });
 }
