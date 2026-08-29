@@ -47,7 +47,8 @@ export default async function handler(req: any, res: any) {
   const cookie = getCookie(req);
   if (!validSession(cookie)) return json(res, 401, { ok: false, error: 'Admin sessiyasi tugagan. Qayta kiring.' });
 
-  const key = String(req.query?.key || '').trim();
+  const rawKey = req.query?.key;
+  const key = String(Array.isArray(rawKey) ? rawKey[0] : rawKey || '').trim();
   if (!ALLOWED_KEYS.has(key)) return json(res, 404, { ok: false, error: 'Sozlama topilmadi' });
 
   if (req.method === 'GET') {
@@ -69,24 +70,29 @@ export default async function handler(req: any, res: any) {
 
   try {
     const body = req.body || {};
-    const value = body.value !== undefined ? body.value : body;
-    if (value === undefined || value === null) return json(res, 400, { ok: false, error: 'Saqlanadigan qiymat yuborilmadi' });
+    const rawValue = body.value !== undefined ? body.value : body;
+    if (rawValue === undefined || rawValue === null) return json(res, 400, { ok: false, error: 'Saqlanadigan qiymat yuborilmadi' });
 
+    let value: any = rawValue;
     if (key === 'location') {
-      const v = value || {};
+      const v = rawValue && typeof rawValue === 'object' ? rawValue : {};
       const latitude = Number(v.latitude ?? v.lat);
       const longitude = Number(v.longitude ?? v.lng);
-      if (!String(v.name || '').trim()) return json(res, 400, { ok: false, error: 'Lokatsiya nomi majburiy' });
-      if (!String(v.address || '').trim()) return json(res, 400, { ok: false, error: 'Manzilni kiriting.' });
+      const name = String(v.name || '').trim();
+      const address = String(v.address || '').trim();
+      if (!name) return json(res, 400, { ok: false, error: 'Lokatsiya nomi majburiy' });
+      if (!address) return json(res, 400, { ok: false, error: 'Manzilni kiriting.' });
       if (!Number.isFinite(latitude) || latitude < -90 || latitude > 90) return json(res, 400, { ok: false, error: 'Latitude noto‘g‘ri.' });
       if (!Number.isFinite(longitude) || longitude < -180 || longitude > 180) return json(res, 400, { ok: false, error: 'Longitude noto‘g‘ri.' });
-      value.name = String(v.name).trim();
-      value.address = String(v.address).trim();
-      value.latitude = latitude;
-      value.longitude = longitude;
-      value.google_url = String(v.google_url || '').trim();
-      value.yandex_url = String(v.yandex_url || '').trim();
-      value.two_gis_url = String(v.two_gis_url || '').trim();
+      value = {
+        name,
+        address,
+        latitude,
+        longitude,
+        google_url: String(v.google_url || v.google || '').trim(),
+        yandex_url: String(v.yandex_url || v.yandex || '').trim(),
+        two_gis_url: String(v.two_gis_url || v['2gis'] || '').trim(),
+      };
     }
 
     const oldRows = await supabaseRest<any[]>('admin_settings', {
