@@ -1,40 +1,172 @@
-import type { FastifyInstance } from 'fastify';
+/**
+ * AVTODROM — kanonik identifikatsiya qatlami.
+ *
+ * Bazada YAGONA haqiqat manbai:
+ *   users               (id, telegram_id, full_name, phone, role, is_active, is_blocked)
+ *   instructor_profiles (id, user_id -> users.id, is_verified, is_available, ...)
+ *
+ * `profiles` va `instructors` — faqat O'QISH uchun view'lar (INSTEAD OF trigger yo'q),
+ * shuning uchun ularga hech qachon INSERT/PATCH qilinmaydi.
+ *
+ * Frontend `first_name` / `last_name` kutadi, bazada esa `full_name` bor —
+ * konversiya shu yerda, bitta joyda bajariladi.
+ */
 import { supabaseRest } from './supabase.js';
-import { sendBookingNotification } from './telegram.js';
 import type { TelegramWebAppUser } from './telegram.js';
-function q(value: string) { return encodeURIComponent(value); }
-async function profileForTelegram(user: TelegramWebAppUser) {
-  const rows = await supabaseRest<any[]>('profiles', { query: `?telegram_id=eq.${q(String(user.id))}&select=*` });
-  if (rows[0]) return rows[0];
-  const created = await supabaseRest<any[]>('profiles', { method: 'POST', headers: { Prefer: 'return=representation' }, body: JSON.stringify({ telegram_id: user.id, first_name: user.first_name || null, last_name: user.last_name || null, username: user.username || null, role: 'customer' }) });
-  return created[0];
+
+export function q(value: string) { return encodeURIComponent(value); }
+
+export function splitName(fullName?: string | null) {
+  const s = String(fullName ?? '').trim();
+  if (!s) return { first_name: '', last_name: '' };
+  const i = s.indexOf(' ');
+  if (i < 0) return { first_name: s, last_name: '' };
+  return { first_name: s.slice(0, i), last_name: s.slice(i + 1).trim() };
 }
-async function notifyBookingParties(booking: any, title: string, body: string) {
+
+export function joinName(first?: string | null, last?: string | null) {
+  return [String(first ?? '').trim(), String(last ?? '').trim()].filter(Boolean).join(' ');
+}
+
+/** users satrini frontend kutadigan shaklga o'giradi. */
+export function toProfile(user: any, extra: { username?: string | null } = {}) {
+  if (!user) return null;
+  const { first_name, last_name } = splitName(user.full_name);
+  return {
+    id: user.id,
+    telegram_id: user.telegram_id ?? null,
+    first_name,
+    last_name,
+    full_name: user.full_name ?? '',
+    phone: user.phone ?? null,
+    username: extra.username ?? null,
+    role: user.role ?? 'customer',
+    active: user.is_active !== false && user.is_blocked !== true,
+    is_active: user.is_active !== false,
+    is_blocked: user.is_blocked === true,
+  };
+}
+
+/** Telegram registri — bot uchun username/til saqlanadi. Xato bo'lsa oqim to'xtamaydi. */
+export async function rememberTelegramUser(u: TelegramWebAppUser, role: string) {
   try {
-    const customer = booking.customer_id ? await supabaseRest<any[]>('profiles', { query:`?id=eq.${q(String(booking.customer_id))}&select=telegram_id` }) : [];
-    if (customer[0]?.telegram_id) {
-      await supabaseRest('notifications', { method:'POST', body:JSON.stringify({profile_id:booking.customer_id,booking_id:booking.id,title,body,channel:'telegram'}) });
-      const token=String(process.env.CUSTOMER_BOT_TOKEN||''); const url=String(process.env.CUSTOMER_MINI_APP_URL||process.env.MINI_APP_URL||'');
-      if(token) await sendBookingNotification(token,Number(customer[0].telegram_id),`🚗 AVTODROM\n\n${title}\n${body}`,url,'🚗 Customer panelini ochish');
-    }
-    if (booking.instructor_id) {
-      const instructor = await supabaseRest<any[]>('instructors', { query:`?id=eq.${q(String(booking.instructor_id))}&select=telegram_user_id,profile_id` });
-      if (instructor[0]?.profile_id) await supabaseRest('notifications', { method:'POST', body:JSON.stringify({profile_id:instructor[0].profile_id,booking_id:booking.id,title,body,channel:'in_app'}) });
-      const token=String(process.env.INSTRUCTOR_BOT_TOKEN||''); const url=String(process.env.INSTRUCTOR_MINI_APP_URL||'');
-      if(token && instructor[0]?.telegram_user_id) await sendBookingNotification(token,Number(instructor[0].telegram_user_id),`👨‍🏫 AVTODROM\n\n${title}\n${body}`,url,'👨‍🏫 Instruktor panelini ochish');
-    }
-  } catch (e) { console.error('Booking party notification failed:', e); }
+    await supabaseRest('telegram_users', {
+      method: 'POST',
+      headers: { Prefer: 'resolution=merge-duplicates,return=minimal' },
+      body: JSON.stringify({
+        telegram_id: u.id,
+        first_name: u.first_name ?? null,
+        last_name: u.last_name ?? null,
+        username: (u as any).username ?? null,
+        language_code: (u as any).language_code ?? null,
+        role,
+        updated_at: new Date().toISOString(),
+      }),
+    });
+  } catch (e) {
+    console.error('telegram_users upsert skipped:', e);
+  }
 }
-export async function registerBookingRoutes(app: FastifyInstance, authenticate: (request: any) => Promise<TelegramWebAppUser>) {
-  app.get('/api/me', async (request, reply) => { try { return { ok: true, profile: await profileForTelegram(await authenticate(request)) }; } catch { return reply.code(401).send({ ok: false, error: 'Unauthorized' }); } });
-  app.patch('/api/me', async (request, reply) => {
-    try { const profile = await profileForTelegram(await authenticate(request)); const body = request.body as { first_name?: string; last_name?: string; phone?: string }; if (!body.first_name?.trim() || !body.last_name?.trim() || !body.phone?.trim()) return reply.code(400).send({ok:false,error:'Ism, familiya va telefon majburiy'}); const rows = await supabaseRest<any[]>('profiles',{method:'PATCH',headers:{Prefer:'return=representation'},query:`?id=eq.${q(profile.id)}`,body:JSON.stringify({first_name:body.first_name.trim(),last_name:body.last_name.trim(),phone:body.phone.trim(),updated_at:new Date().toISOString()})}); return {ok:true,profile:rows[0]}; }
-    catch(e){return reply.code(400).send({ok:false,error:e instanceof Error?e.message:'Profile update failed'});}
+
+export async function findUserByTelegram(telegramId: number | string) {
+  const rows = await supabaseRest<any[]>('users', {
+    query: `?telegram_id=eq.${q(String(telegramId))}&select=*&limit=1`,
   });
-  app.get('/api/instructors', async (request, reply) => { try { await authenticate(request); const rows=await supabaseRest<any[]>('instructors',{query:'?active=eq.true&approved=eq.true&select=id,profile_id,active,approved,category,experience_years,bio,profile:profile_id(id,first_name,last_name,phone,avatar_url)&order=created_at.desc'}); return {ok:true,instructors:rows}; } catch { return reply.code(401).send({ok:false,error:'Unauthorized'}); } });
-  app.get('/api/bookings', async (request, reply) => { try { const profile=await profileForTelegram(await authenticate(request)); const query=request.query as {from?:string;to?:string;status?:string}; const parts=['select=*,customer:customer_id(id,first_name,last_name,username,phone),instructor:instructor_id(id,profile_id,active,approved,profile:profile_id(id,first_name,last_name,phone)),car:car_id(id,plate_number,model,active)','order=start_at.asc']; if(query.from)parts.push(`start_at=gte.${q(query.from)}`);if(query.to)parts.push(`start_at=lt.${q(query.to)}`);if(query.status)parts.push(`status=eq.${q(query.status)}`);if(profile.role==='customer')parts.push(`customer_id=eq.${q(profile.id)}`);if(profile.role==='instructor'){const ins=await supabaseRest<any[]>('instructors',{query:`?profile_id=eq.${q(profile.id)}&select=id`});if(!ins[0])return{ok:true,bookings:[]};parts.push(`instructor_id=eq.${q(ins[0].id)}`);}return{ok:true,bookings:await supabaseRest<any[]>('bookings',{query:`?${parts.join('&')}`})}; } catch(e){return reply.code(400).send({ok:false,error:e instanceof Error?e.message:'Failed to load bookings'});} });
-  app.post('/api/bookings', async (request, reply) => {
-    try { const profile=await profileForTelegram(await authenticate(request)); const body=request.body as {instructor_id?:string;car_id?:string;start_at:string;end_at:string;customer_note?:string}; if(profile.role!=='customer')return reply.code(403).send({ok:false,error:'Faqat foydalanuvchi bron qila oladi'});if(!body.start_at||!body.end_at)return reply.code(400).send({ok:false,error:'start_at and end_at are required'});const start=new Date(body.start_at),end=new Date(body.end_at);if(!(start<end)||start<new Date())return reply.code(400).send({ok:false,error:'Invalid booking time'});if(body.instructor_id){const ins=await supabaseRest<any[]>('instructors',{query:`?id=eq.${q(body.instructor_id)}&active=eq.true&approved=eq.true&select=id`});if(!ins[0])return reply.code(400).send({ok:false,error:'Tanlangan instruktor faol emas yoki tasdiqlanmagan'});}const conflicts=await supabaseRest<any[]>('bookings',{query:`?start_at=lt.${q(body.end_at)}&end_at=gt.${q(body.start_at)}&status=in.(pending,confirmed,in_progress)&select=id,customer_id,instructor_id,car_id`});if(conflicts.some(x=>x.customer_id===profile.id))return reply.code(409).send({ok:false,error:'Sizda shu vaqtda boshqa bron bor'});if(body.instructor_id&&conflicts.some(x=>x.instructor_id===body.instructor_id))return reply.code(409).send({ok:false,error:'Instruktor bu vaqtda band'});if(body.car_id&&conflicts.some(x=>x.car_id===body.car_id))return reply.code(409).send({ok:false,error:'Avtomobil bu vaqtda band'});const rows=await supabaseRest<any[]>('bookings',{method:'POST',headers:{Prefer:'return=representation'},body:JSON.stringify({customer_id:profile.id,instructor_id:body.instructor_id||null,car_id:body.car_id||null,start_at:body.start_at,end_at:body.end_at,customer_note:body.customer_note||null,status:'pending'})});const booking=rows[0];if(booking){await supabaseRest('notifications',{method:'POST',body:JSON.stringify({profile_id:profile.id,booking_id:booking.id,title:'Bron yaratildi',body:'Broningiz qabul qilindi. Admin tasdiqlashini kuting.',channel:'in_app'})});await notifyBookingParties(booking,'Yangi bron yaratildi',`Bron #${booking.id} yaratildi. Admin tasdiqlashini kutmoqda.`);}return reply.code(201).send({ok:true,booking}); } catch(e){return reply.code(400).send({ok:false,error:e instanceof Error?e.message:'Booking failed'});} });
-  app.patch('/api/bookings/:id/status', async (request, reply) => { try { const profile=await profileForTelegram(await authenticate(request));if(!['admin','instructor'].includes(profile.role))return reply.code(403).send({ok:false,error:'Forbidden'});const id=(request.params as any).id as string;const body=request.body as {status:string;reason?:string};if(!['confirmed','cancelled','in_progress','completed','no_show'].includes(body.status))return reply.code(400).send({ok:false,error:'Invalid status'});const current=await supabaseRest<any[]>('bookings',{query:`?id=eq.${q(id)}&select=*`});if(!current[0])return reply.code(404).send({ok:false,error:'Booking not found'});if(profile.role==='instructor'){const ins=await supabaseRest<any[]>('instructors',{query:`?profile_id=eq.${q(profile.id)}&select=id`});if(!ins[0]||current[0].instructor_id!==ins[0].id)return reply.code(403).send({ok:false,error:'Booking is not assigned to this instructor'});}const rows=await supabaseRest<any[]>('bookings',{method:'PATCH',headers:{Prefer:'return=representation'},query:`?id=eq.${q(id)}`,body:JSON.stringify({status:body.status,cancelled_reason:body.reason||null,updated_at:new Date().toISOString()})});const booking=rows[0];await notifyBookingParties(booking,'Bron holati o‘zgardi',`Bron #${booking.id} holati: ${body.status}`);return{ok:true,booking}; }catch(e){return reply.code(400).send({ok:false,error:e instanceof Error?e.message:'Status update failed'});} });
-  app.get('/api/notifications',async(request,reply)=>{try{const profile=await profileForTelegram(await authenticate(request));return{ok:true,notifications:await supabaseRest<any[]>('notifications',{query:`?profile_id=eq.${q(profile.id)}&select=*&order=created_at.desc&limit=100`})};}catch{return reply.code(401).send({ok:false,error:'Unauthorized'});}});
+  return rows[0] ?? null;
+}
+
+/**
+ * Telegram foydalanuvchisi uchun `users` yozuvini topadi, bo'lmasa yaratadi.
+ * MUHIM: eski kod `profiles` view'iga INSERT qilardi — u yozib bo'lmaydigan view,
+ * shuning uchun har bir yangi mijoz shu yerda yiqilardi.
+ */
+export async function userForTelegram(
+  u: TelegramWebAppUser,
+  options: { create?: boolean; role?: 'customer' | 'instructor' } = {},
+) {
+  const { create = true, role = 'customer' } = options;
+
+  const existing = await findUserByTelegram(u.id);
+  if (existing) { void rememberTelegramUser(u, existing.role ?? role); return existing; }
+  if (!create) return null;
+
+  // full_name NOT NULL — hech qachon bo'sh qoldirmaymiz.
+  const fullName =
+    joinName(u.first_name, u.last_name) ||
+    String((u as any).username ?? '').trim() ||
+    `Telegram ${u.id}`;
+
+  try {
+    const created = await supabaseRest<any[]>('users', {
+      method: 'POST',
+      headers: { Prefer: 'return=representation' },
+      body: JSON.stringify({ telegram_id: u.id, full_name: fullName, role }),
+    });
+    if (created[0]) { void rememberTelegramUser(u, role); return created[0]; }
+  } catch (error) {
+    // Parallel so'rovlar bir vaqtda yaratmoqchi bo'lsa — qayta o'qiymiz.
+    const retry = await findUserByTelegram(u.id);
+    if (retry) return retry;
+    throw error;
+  }
+
+  const retry = await findUserByTelegram(u.id);
+  if (retry) return retry;
+  throw new Error('Foydalanuvchi yaratilmadi');
+}
+
+/** user_id bo'yicha instruktor profili. approvedOnly=true bo'lsa faqat tasdiqlangan+faol. */
+export async function instructorProfileForUser(userId: string, approvedOnly = true) {
+  const filters = [`user_id=eq.${q(String(userId))}`, 'select=*', 'limit=1'];
+  if (approvedOnly) filters.push('is_verified=eq.true', 'is_available=eq.true');
+  const rows = await supabaseRest<any[]>('instructor_profiles', { query: `?${filters.join('&')}` });
+  return rows[0] ?? null;
+}
+
+/**
+ * Bildirishnoma yozadi.
+ * Bazadagi ustunlar: user_id, type, title, message (hammasi NOT NULL, `type` ham).
+ * Eski kod profile_id/body/channel/booking_id yozardi — bunday ustunlar yo'q.
+ */
+export async function notifyUser(
+  userId: string | null | undefined,
+  type: string,
+  title: string,
+  message: string,
+) {
+  if (!userId) return;
+  try {
+    await supabaseRest('notifications', {
+      method: 'POST',
+      headers: { Prefer: 'return=minimal' },
+      body: JSON.stringify({ user_id: userId, type, title, message }),
+    });
+  } catch (e) {
+    console.error('notification insert failed:', e);
+  }
+}
+
+/** instructor_profiles + embed qilingan user'ni frontend shakliga o'giradi. */
+export function toInstructorCard(row: any) {
+  const user = row?.user ?? row?.users ?? null;
+  const { first_name, last_name } = splitName(user?.full_name);
+  return {
+    id: row.id,
+    user_id: row.user_id,
+    profile_id: row.user_id,
+    telegram_id: user?.telegram_id ?? null,
+    first_name,
+    last_name,
+    full_name: user?.full_name ?? '',
+    phone: user?.phone ?? null,
+    bio: row.bio ?? null,
+    experience_years: row.experience_years ?? 0,
+    rating: row.rating ?? 0,
+    total_reviews: row.total_reviews ?? 0,
+    approved: row.is_verified === true,
+    is_verified: row.is_verified === true,
+    active: row.is_available === true && user?.is_active !== false && user?.is_blocked !== true,
+    is_available: row.is_available === true,
+    profile: { id: user?.id ?? null, first_name, last_name, phone: user?.phone ?? null },
+  };
 }
