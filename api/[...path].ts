@@ -14,8 +14,6 @@ export default async function handler(request: any, response: any) {
     if (!pathname.startsWith('/api')) pathname = `/api${pathname.startsWith('/') ? pathname : `/${pathname}`}`;
     const url = `${pathname}${parsed.search}`;
 
-    // Keep the catch-all as the single Vercel entry point for every nested
-    // /api/* route, including /api/instructors/:id/availability.
     const result = await app.inject({
       method: request.method || 'GET',
       url,
@@ -29,11 +27,28 @@ export default async function handler(request: any, response: any) {
             : JSON.stringify(request.body),
     });
 
+    let body = result.body;
+    const contentType = String(result.headers['content-type'] || '');
+
+    // Customer frontend historically reads /api/me.user while the canonical
+    // backend returns /api/me.profile. Keep both names during the migration.
+    if (pathname === '/api/me' && result.statusCode >= 200 && result.statusCode < 300 && contentType.includes('application/json')) {
+      try {
+        const parsedBody = JSON.parse(body || '{}');
+        if (parsedBody?.profile && !parsedBody.user) {
+          body = JSON.stringify({ ...parsedBody, user: parsedBody.profile });
+          result.headers['content-length'] = String(Buffer.byteLength(body));
+        }
+      } catch {
+        // Leave a non-JSON response untouched.
+      }
+    }
+
     response.statusCode = result.statusCode;
     for (const [key, value] of Object.entries(result.headers)) {
       if (value !== undefined) response.setHeader(key, value as string);
     }
-    response.end(result.body);
+    response.end(body);
   } catch (error) {
     console.error('Vercel API catch-all failed:', error);
     response.statusCode = 500;
