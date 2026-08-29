@@ -42,7 +42,21 @@ export const authenticateCustomer = authenticateWithToken(CUSTOMER_BOT_TOKEN);
 export const authenticateInstructor = authenticateWithToken(INSTRUCTOR_BOT_TOKEN);
 export const authenticateAdmin = authenticateWithToken(ADMIN_BOT_TOKEN);
 
-await registerBookingRoutes(app, authenticateCustomer);
+/**
+ * Uch botning istalgan biri imzolagan initData'ni qabul qiladi.
+ * Kerak, chunki bron holatini instruktor ham, admin ham o'zgartiradi —
+ * ular turli botlardan keladi, bitta token bilan tekshirib bo'lmaydi.
+ */
+export const authenticateAnyBot = async (request: any) => {
+  const tokens = [CUSTOMER_BOT_TOKEN, INSTRUCTOR_BOT_TOKEN, ADMIN_BOT_TOKEN].filter(Boolean);
+  let last: unknown = null;
+  for (const token of tokens) {
+    try { return await authenticateWithToken(token)(request); } catch (e) { last = e; }
+  }
+  throw last instanceof Error ? last : new Error('Telegram authentication failed');
+};
+
+await registerBookingRoutes(app, authenticateCustomer, authenticateAnyBot);
 await registerInstructorRoutes(app, authenticateInstructor);
 await registerInstructorRegistrationRoutes(app, authenticateInstructor);
 
