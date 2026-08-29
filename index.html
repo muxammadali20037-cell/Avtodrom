@@ -9,295 +9,70 @@
 <meta name="apple-mobile-web-app-title" content="AVTODROM">
 <meta name="description" content="AVTODROM — professional customer mini app">
 <title>AVTODROM — Customer Mini App</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
 <style>
-:root{
- --green:#087443;--green2:#0b9254;--green3:#eaf8f1;--dark:#0d2119;
- --bg:#f4f7f5;--card:#fff;--text:#142019;--muted:#718079;--line:#e1e9e4;
- --danger:#c93232;--warning:#b77a00;--blue:#2f63a8;--shadow:0 12px 35px rgba(20,40,30,.08);
- --radius:18px;
-}
-*{box-sizing:border-box}
-html{scroll-behavior:smooth}
-body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui,-apple-system,"Segoe UI",Arial,sans-serif}
-button,input,textarea,select{font:inherit}
-button{cursor:pointer}
-button:disabled{opacity:.55;cursor:not-allowed}
-a{text-decoration:none;color:inherit}
-.app{min-height:100vh;padding-bottom:86px}
-.topbar{position:sticky;top:0;z-index:40;background:rgba(255,255,255,.92);backdrop-filter:blur(18px);border-bottom:1px solid var(--line)}
-.topbar-inner{max-width:1180px;margin:auto;height:68px;padding:0 18px;display:flex;align-items:center;justify-content:space-between;gap:12px}
-.logo{display:flex;align-items:center;gap:10px;font-weight:950;letter-spacing:.02em}
-.logo-mark{width:40px;height:40px;border-radius:13px;background:linear-gradient(145deg,var(--green),#075b37);display:grid;place-items:center;color:#fff;font-size:20px;box-shadow:0 7px 18px rgba(8,116,67,.25)}
-.top-actions{display:flex;align-items:center;gap:8px}
-.icon-btn{width:42px;height:42px;border:1px solid var(--line);background:#fff;border-radius:12px;display:grid;place-items:center;position:relative}
-.dot{position:absolute;right:7px;top:6px;width:8px;height:8px;border-radius:50%;background:#e43c3c;border:2px solid #fff}
-.container{max-width:1180px;margin:auto;padding:18px}
-.hero{position:relative;overflow:hidden;border-radius:26px;min-height:310px;background:linear-gradient(125deg,#0c271c,#0c6844 55%,#0b8d51);color:#fff;box-shadow:var(--shadow);margin-bottom:18px}
-.hero-image{position:absolute;inset:0;background:linear-gradient(90deg,rgba(7,28,19,.9),rgba(7,28,19,.45),rgba(7,28,19,.15)),url("https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=1600&q=85") center/cover}
-.hero-content{position:relative;padding:38px;max-width:650px}
-.eyebrow{font-size:11px;text-transform:uppercase;letter-spacing:.16em;font-weight:900;opacity:.8}
-.hero h1{font-size:clamp(30px,5vw,52px);line-height:1.02;margin:10px 0}
-.hero p{color:#d4e8df;max-width:580px;font-size:15px;line-height:1.6}
-.hero-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:22px}
-.primary{border:0;background:#fff;color:var(--green);border-radius:13px;padding:12px 17px;font-weight:900}
-.primary.green{background:var(--green);color:#fff}
-.secondary{border:1px solid var(--line);background:#fff;color:var(--text);border-radius:13px;padding:11px 15px;font-weight:800}
-.ghost{border:1px solid rgba(255,255,255,.3);background:rgba(255,255,255,.1);color:#fff;border-radius:13px;padding:11px 15px;font-weight:800}
-.section{margin:25px 0}
-.section-head{display:flex;justify-content:space-between;align-items:end;gap:15px;margin-bottom:13px}
-.section-head h2{margin:0;font-size:21px}
-.section-head p{margin:5px 0 0;color:var(--muted);font-size:13px}
-.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:13px}
-.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:13px}
-.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
-.feature{padding:17px}
-.feature-icon{width:44px;height:44px;border-radius:13px;background:var(--green3);display:grid;place-items:center;font-size:20px;margin-bottom:13px}
-.feature b{font-size:15px}.feature p{color:var(--muted);font-size:12px;line-height:1.5;margin-bottom:0}
-.instructor-card{overflow:hidden}
-.instructor-photo{height:185px;background:#dfe8e3 center/cover no-repeat}
-.instructor-body{padding:15px}
-.instructor-name{font-size:17px;font-weight:900}
-.rating{font-weight:900;color:#a16a00}
-.meta{font-size:12px;color:var(--muted);margin-top:5px;line-height:1.5}
-.tags{display:flex;flex-wrap:wrap;gap:6px;margin:11px 0}
-.tag{background:#f1f5f3;color:#496057;border-radius:999px;padding:5px 8px;font-size:10px;font-weight:800}
-.card-actions{display:flex;gap:7px;margin-top:13px}
-.card-actions>*{flex:1}
-.booking-box{padding:18px}
-.steps{display:flex;gap:6px;margin-bottom:18px}
-.step{flex:1;text-align:center;font-size:10px;font-weight:900;color:var(--muted);padding:8px;border-radius:9px;background:#f3f6f4}
-.step.active{background:var(--green3);color:var(--green)}
-.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.field label{display:block;font-size:11px;font-weight:900;color:#53635b;margin-bottom:6px}
-.field input,.field textarea,.field select,.search{width:100%;border:1px solid #d7e1dc;background:#fff;border-radius:12px;padding:12px;outline:none}
-.field input:focus,.field textarea:focus,.field select:focus,.search:focus{border-color:var(--green);box-shadow:0 0 0 3px rgba(8,116,67,.08)}
-.full{grid-column:1/-1}
-.time-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
-.time{border:1px solid var(--line);background:#fff;border-radius:11px;padding:10px 5px;text-align:center;font-size:12px;font-weight:900}
-.time.selected{background:var(--green);color:#fff;border-color:var(--green)}
-.time.busy{text-decoration:line-through;color:#a5aea9;background:#f4f5f5}
-.booking-summary{background:#f5faf7;border:1px solid #d8eee2;border-radius:14px;padding:14px;margin-top:14px;font-size:13px;line-height:1.7}
-.tabs{display:flex;gap:7px;overflow:auto;padding-bottom:4px}
-.tab{white-space:nowrap;border:1px solid var(--line);background:#fff;border-radius:999px;padding:9px 13px;font-size:11px;font-weight:900}
-.tab.active{background:var(--dark);color:#fff;border-color:var(--dark)}
-.booking-card{padding:15px}
-.booking-row{display:flex;justify-content:space-between;gap:12px}
-.status{display:inline-flex;border-radius:999px;padding:5px 8px;font-size:10px;font-weight:900;background:#edf4f0;color:#216548}
-.status.pending{background:#fff5d8;color:#9b6900}
-.status.confirmed{background:#eaf2ff;color:#315c9b}
-.status.cancelled,.status.rejected{background:#fff0f0;color:#b42e2e}
-.booking-card h3{font-size:15px;margin:5px 0}
-.booking-info{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:13px}
-.info{background:#f7f9f8;border-radius:10px;padding:9px}
-.info span{display:block;font-size:9px;color:var(--muted);text-transform:uppercase;font-weight:900}
-.info b{display:block;font-size:12px;margin-top:3px}
-.chat-shell{display:grid;grid-template-columns:300px 1fr;min-height:520px;overflow:hidden}
-.chat-list{border-right:1px solid var(--line);background:#fbfcfb}
-.chat-list-head{padding:14px;border-bottom:1px solid var(--line)}
-.chat-item{display:flex;gap:10px;padding:13px;border:0;background:transparent;width:100%;text-align:left;border-bottom:1px solid #edf1ef}
-.chat-item.active{background:#eaf6f0}
-.avatar{width:42px;height:42px;border-radius:13px;background:#dcece3;display:grid;place-items:center;font-weight:900;flex:none;overflow:hidden}
-.avatar img{width:100%;height:100%;object-fit:cover}
-.chat-preview{min-width:0}
-.chat-preview b{display:block;font-size:12px}
-.chat-preview span{display:block;color:var(--muted);font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:3px}
-.chat-main{display:flex;flex-direction:column;min-width:0}
-.chat-head{padding:14px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px}
-.messages{flex:1;padding:15px;background:#f7faf8;min-height:350px;max-height:430px;overflow:auto}
-.msg{max-width:75%;margin:7px 0;padding:9px 11px;border-radius:14px;background:#fff;border:1px solid var(--line);font-size:12px;line-height:1.45}
-.msg.mine{margin-left:auto;background:var(--green);color:#fff;border-color:var(--green)}
-.msg small{display:block;opacity:.65;font-size:9px;margin-top:4px}
-.chat-compose{display:flex;gap:7px;padding:11px;border-top:1px solid var(--line)}
-.chat-compose input{flex:1;border:1px solid var(--line);border-radius:12px;padding:11px}
-.profile{padding:20px;display:grid;grid-template-columns:110px 1fr;gap:18px}
-.profile-avatar{width:100px;height:100px;border-radius:28px;background:#e3eee8;display:grid;place-items:center;font-size:32px;font-weight:950;overflow:hidden}
-.profile-avatar img{width:100%;height:100%;object-fit:cover}
-.profile h2{margin:4px 0}
-.profile-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:13px}
-.profile-field{background:#f6f8f7;border-radius:11px;padding:10px}
-.profile-field span{display:block;color:var(--muted);font-size:9px;font-weight:900;text-transform:uppercase}
-.profile-field b{display:block;font-size:12px;margin-top:3px}
-.gallery{display:grid;grid-template-columns:2fr 1fr 1fr;grid-auto-rows:140px;gap:8px}
-.gallery div{border-radius:15px;background:#ddd center/cover no-repeat}
-.gallery .big{grid-row:span 2}
-.location{padding:18px;display:grid;grid-template-columns:1fr 1fr;gap:18px}
-.map{min-height:230px;border-radius:16px;background:linear-gradient(135deg,#dfeae4,#eef5f1);display:grid;place-items:center;color:#527067;font-weight:900}
-.bottom-nav{position:fixed;left:0;right:0;bottom:0;z-index:60;background:rgba(255,255,255,.96);backdrop-filter:blur(16px);border-top:1px solid var(--line);padding:8px max(8px,env(safe-area-inset-left)) max(8px,env(safe-area-inset-bottom))}
-.bottom-inner{max-width:620px;margin:auto;display:grid;grid-template-columns:repeat(5,1fr)}
-.bottom-btn{border:0;background:transparent;color:#718079;padding:7px 2px;font-size:9px;font-weight:900}
-.bottom-btn span{display:block;font-size:19px;margin-bottom:2px}
-.bottom-btn.active{color:var(--green)}
-.modal{display:none;position:fixed;inset:0;background:rgba(5,20,13,.55);z-index:100;align-items:flex-end;justify-content:center}
-.modal.show{display:flex}
-.modal-box{width:min(680px,100%);max-height:92vh;overflow:auto;background:#fff;border-radius:22px 22px 0 0}
-.modal-head{padding:15px 18px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center}
-.modal-head h3{margin:0;font-size:16px}
-.modal-body{padding:18px}
-.close{border:0;background:#eef3f0;border-radius:9px;width:36px;height:36px;font-size:20px}
-.toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%) translateY(15px);background:var(--dark);color:#fff;padding:11px 15px;border-radius:12px;font-size:12px;font-weight:800;z-index:130;opacity:0;pointer-events:none;transition:.25s}
-.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
-.drawer{position:fixed;inset:0;background:rgba(5,20,13,.45);z-index:90;display:none}
-.drawer.show{display:block}
-.drawer-box{position:absolute;right:0;top:0;bottom:0;width:min(360px,92%);background:#fff;padding:18px;overflow:auto}
-.notification{padding:12px;border:1px solid var(--line);border-radius:13px;margin:8px 0}
-.notification.unread{background:#eef8f2;border-color:#cfe8da}
-.notification b{font-size:12px}
-.notification p{font-size:11px;color:var(--muted);margin:5px 0}
-.empty{text-align:center;padding:35px;color:var(--muted);font-size:13px}
-.skeleton{height:120px;border-radius:15px;background:linear-gradient(90deg,#eef2ef 25%,#f7f9f8 50%,#eef2ef 75%);background-size:200% 100%;animation:load 1.2s infinite}
-@keyframes load{to{background-position:-200% 0}}
-.hide{display:none!important}
-@media(max-width:900px){.grid4{grid-template-columns:repeat(2,1fr)}.grid{grid-template-columns:repeat(2,1fr)}}
-@media(max-width:680px){
- .container{padding:12px}.hero{min-height:390px;border-radius:20px}.hero-content{padding:27px 22px}.hero h1{font-size:36px}
- .grid,.grid4{grid-template-columns:1fr}.form-grid,.location{grid-template-columns:1fr}.full{grid-column:auto}
- .time-grid{grid-template-columns:repeat(3,1fr)}.booking-info{grid-template-columns:1fr 1fr}
- .chat-shell{grid-template-columns:1fr;min-height:0}.chat-list{display:none}.chat-main{min-height:500px}
- .profile{grid-template-columns:80px 1fr;padding:15px}.profile-avatar{width:75px;height:75px;border-radius:22px}.profile-grid{grid-template-columns:1fr}
- .gallery{grid-template-columns:1fr 1fr;grid-auto-rows:120px}.gallery .big{grid-row:span 1}
-}
+:root{--green:#087443;--green2:#0b9254;--green3:#eaf8f1;--dark:#0d2119;--bg:#f4f7f5;--card:#fff;--text:#142019;--muted:#718079;--line:#e1e9e4;--danger:#c93232;--warning:#b77a00;--blue:#2f63a8;--shadow:0 12px 35px rgba(20,40,30,.08);--radius:18px}
+*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui,-apple-system,"Segoe UI",Arial,sans-serif}button,input,textarea,select{font:inherit}button{cursor:pointer}button:disabled{opacity:.55;cursor:not-allowed}a{text-decoration:none;color:inherit}.app{min-height:100vh;padding-bottom:86px}
+.topbar{position:sticky;top:0;z-index:40;background:rgba(255,255,255,.92);backdrop-filter:blur(18px);border-bottom:1px solid var(--line)}.topbar-inner{max-width:1180px;margin:auto;height:68px;padding:0 18px;display:flex;align-items:center;justify-content:space-between;gap:12px}.logo{display:flex;align-items:center;gap:10px;font-weight:950;letter-spacing:.02em}.logo-mark{width:40px;height:40px;border-radius:13px;background:linear-gradient(145deg,var(--green),#075b37);display:grid;place-items:center;color:#fff;font-size:20px;box-shadow:0 7px 18px rgba(8,116,67,.25)}.top-actions{display:flex;align-items:center;gap:8px}.icon-btn{width:42px;height:42px;border:1px solid var(--line);background:#fff;border-radius:12px;display:grid;place-items:center;position:relative}.dot{position:absolute;right:7px;top:6px;width:8px;height:8px;border-radius:50%;background:#e43c3c;border:2px solid #fff}
+.container{max-width:1180px;margin:auto;padding:18px}.hero{position:relative;overflow:hidden;border-radius:26px;min-height:310px;background:#0c271c;color:#fff;box-shadow:var(--shadow);margin-bottom:18px}.hero-image{position:absolute;inset:0;background:linear-gradient(90deg,rgba(7,28,19,.9),rgba(7,28,19,.45),rgba(7,28,19,.15)),url("https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=1600&q=85") center/cover}.hero-content{position:relative;padding:38px;max-width:650px}.eyebrow{font-size:11px;text-transform:uppercase;letter-spacing:.16em;font-weight:900;opacity:.8}.hero h1{font-size:clamp(30px,5vw,52px);line-height:1.02;margin:10px 0}.hero p{color:#d4e8df;max-width:580px;font-size:15px;line-height:1.6}.hero-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:22px}
+.primary{border:0;background:#fff;color:var(--green);border-radius:13px;padding:12px 17px;font-weight:900}.primary.green{background:var(--green);color:#fff}.secondary{border:1px solid var(--line);background:#fff;color:var(--text);border-radius:13px;padding:11px 15px;font-weight:800}.ghost{border:1px solid rgba(255,255,255,.3);background:rgba(255,255,255,.1);color:#fff;border-radius:13px;padding:11px 15px;font-weight:800}.section{margin:25px 0}.section-head{display:flex;justify-content:space-between;align-items:end;gap:15px;margin-bottom:13px}.section-head h2{margin:0;font-size:21px}.section-head p{margin:5px 0 0;color:var(--muted);font-size:13px}.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:13px}.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:13px}.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}.feature{padding:17px}.feature-icon{width:44px;height:44px;border-radius:13px;background:var(--green3);display:grid;place-items:center;font-size:20px;margin-bottom:13px}.feature b{font-size:15px}.feature p{color:var(--muted);font-size:12px;line-height:1.5;margin-bottom:0}
+.instructor-card{overflow:hidden}.instructor-photo{height:185px;background:#dfe8e3 center/cover no-repeat}.instructor-body{padding:15px}.instructor-name{font-size:17px;font-weight:900}.rating{font-weight:900;color:#a16a00}.meta{font-size:12px;color:var(--muted);margin-top:5px;line-height:1.5}.tags{display:flex;flex-wrap:wrap;gap:6px;margin:11px 0}.tag{background:#f1f5f3;color:#496057;border-radius:999px;padding:5px 8px;font-size:10px;font-weight:800}.card-actions{display:flex;gap:7px;margin-top:13px}.card-actions>*{flex:1}
+.booking-box{padding:18px}.steps{display:flex;gap:6px;margin-bottom:18px}.step{flex:1;text-align:center;font-size:10px;font-weight:900;color:var(--muted);padding:8px;border-radius:9px;background:#f3f6f4}.step.active{background:var(--green3);color:var(--green)}.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.field label{display:block;font-size:11px;font-weight:900;color:#53635b;margin-bottom:6px}.field input,.field textarea,.field select,.search{width:100%;border:1px solid #d7e1dc;background:#fff;border-radius:12px;padding:12px;outline:none}.field input:focus,.field textarea:focus,.field select:focus,.search:focus{border-color:var(--green);box-shadow:0 0 0 3px rgba(8,116,67,.08)}.full{grid-column:1/-1}.time-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}.time{border:1px solid var(--line);background:#fff;border-radius:11px;padding:10px 5px;text-align:center;font-size:12px;font-weight:900}.time.selected{background:var(--green);color:#fff;border-color:var(--green)}.time.busy{text-decoration:line-through;color:#a5aea9;background:#f4f5f5}.booking-summary{background:#f5faf7;border:1px solid #d8eee2;border-radius:14px;padding:14px;margin-top:14px;font-size:13px;line-height:1.7}
+.tabs{display:flex;gap:7px;overflow:auto;padding-bottom:4px}.tab{white-space:nowrap;border:1px solid var(--line);background:#fff;border-radius:999px;padding:9px 13px;font-size:11px;font-weight:900}.tab.active{background:var(--dark);color:#fff;border-color:var(--dark)}.booking-card{padding:15px}.booking-row{display:flex;justify-content:space-between;gap:12px}.status{display:inline-flex;border-radius:999px;padding:5px 8px;font-size:10px;font-weight:900;background:#edf4f0;color:#216548}.status.pending{background:#fff5d8;color:#9b6900}.status.confirmed{background:#eaf2ff;color:#315c9b}.status.in_progress{background:#e9f7ff;color:#176b91}.status.completed{background:#eaf8f1;color:#176b4a}.status.cancelled,.status.rejected{background:#fff0f0;color:#b42e2e}.status.no_show{background:#f3eeee;color:#7b5555}.booking-card h3{font-size:15px;margin:5px 0}.booking-info{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:13px}.info{background:#f7f9f8;border-radius:10px;padding:9px}.info span{display:block;font-size:9px;color:var(--muted);text-transform:uppercase;font-weight:900}.info b{display:block;font-size:12px;margin-top:3px}
+.chat-shell{display:grid;grid-template-columns:300px 1fr;min-height:520px;overflow:hidden}.chat-list{border-right:1px solid var(--line);background:#fbfcfb}.chat-list-head{padding:14px;border-bottom:1px solid var(--line)}.chat-item{display:flex;gap:10px;padding:13px;border:0;background:transparent;width:100%;text-align:left;border-bottom:1px solid #edf1ef}.chat-item.active{background:#eaf6f0}.avatar{width:42px;height:42px;border-radius:13px;background:#dcece3;display:grid;place-items:center;font-weight:900;flex:none;overflow:hidden}.avatar img{width:100%;height:100%;object-fit:cover}.chat-preview{min-width:0}.chat-preview b{display:block;font-size:12px}.chat-preview span{display:block;color:var(--muted);font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:3px}.chat-main{display:flex;flex-direction:column;min-width:0}.chat-head{padding:14px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px}.messages{flex:1;padding:15px;background:#f7faf8;min-height:350px;max-height:430px;overflow:auto}.msg{max-width:75%;margin:7px 0;padding:9px 11px;border-radius:14px;background:#fff;border:1px solid var(--line);font-size:12px;line-height:1.45}.msg.mine{margin-left:auto;background:var(--green);color:#fff;border-color:var(--green)}.msg small{display:block;opacity:.65;font-size:9px;margin-top:4px}.chat-compose{display:flex;gap:7px;padding:11px;border-top:1px solid var(--line)}.chat-compose input{flex:1;border:1px solid var(--line);border-radius:12px;padding:11px}
+.profile{padding:20px;display:grid;grid-template-columns:110px 1fr;gap:18px}.profile-avatar{width:100px;height:100px;border-radius:28px;background:#e3eee8;display:grid;place-items:center;font-size:32px;font-weight:950;overflow:hidden}.profile-avatar img{width:100%;height:100%;object-fit:cover}.profile h2{margin:4px 0}.profile-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:13px}.profile-field{background:#f6f8f7;border-radius:11px;padding:10px}.profile-field span{display:block;color:var(--muted);font-size:9px;font-weight:900;text-transform:uppercase}.profile-field b{display:block;font-size:12px;margin-top:3px}.location{padding:18px;display:grid;grid-template-columns:1fr 1fr;gap:18px}.map{min-height:230px;border-radius:16px;background:linear-gradient(135deg,#dfeae4,#eef5f1);display:grid;place-items:center;color:#527067;font-weight:900}
+.bottom-nav{position:fixed;left:0;right:0;bottom:0;z-index:60;background:rgba(255,255,255,.96);backdrop-filter:blur(16px);border-top:1px solid var(--line);padding:8px max(8px,env(safe-area-inset-left)) max(8px,env(safe-area-inset-bottom))}.bottom-inner{max-width:620px;margin:auto;display:grid;grid-template-columns:repeat(5,1fr)}.bottom-btn{border:0;background:transparent;color:#718079;padding:7px 2px;font-size:9px;font-weight:900}.bottom-btn span{display:block;font-size:19px;margin-bottom:2px}.bottom-btn.active{color:var(--green)}
+.modal{display:none;position:fixed;inset:0;background:rgba(5,20,13,.55);z-index:100;align-items:flex-end;justify-content:center}.modal.show{display:flex}.modal-box{width:min(680px,100%);max-height:92vh;overflow:auto;background:#fff;border-radius:22px 22px 0 0}.modal-head{padding:15px 18px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center}.modal-head h3{margin:0;font-size:16px}.modal-body{padding:18px}.close{border:0;background:#eef3f0;border-radius:9px;width:36px;height:36px;font-size:20px}.toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%) translateY(15px);background:var(--dark);color:#fff;padding:11px 15px;border-radius:12px;font-size:12px;font-weight:800;z-index:130;opacity:0;pointer-events:none;transition:.25s}.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}.drawer{position:fixed;inset:0;background:rgba(5,20,13,.45);z-index:90;display:none}.drawer.show{display:block}.drawer-box{position:absolute;right:0;top:0;bottom:0;width:min(360px,92%);background:#fff;padding:18px;overflow:auto}.notification{padding:12px;border:1px solid var(--line);border-radius:13px;margin:8px 0}.notification.unread{background:#eef8f2;border-color:#cfe8da}.notification b{font-size:12px}.notification p{font-size:11px;color:var(--muted);margin:5px 0}.empty{text-align:center;padding:35px;color:var(--muted);font-size:13px}.error-box{padding:14px;border:1px solid #f1caca;background:#fff4f4;border-radius:14px;color:#9c2e2e;font-size:12px}.success-box{padding:14px;border:1px solid #cce9d8;background:#f0faf4;border-radius:14px;color:#176b4a;font-size:12px}.hide{display:none!important}
+@media(max-width:900px){.grid4{grid-template-columns:repeat(2,1fr)}.grid{grid-template-columns:repeat(2,1fr)}}@media(max-width:680px){.container{padding:12px}.hero{min-height:390px;border-radius:20px}.hero-content{padding:27px 22px}.hero h1{font-size:36px}.grid,.grid4{grid-template-columns:1fr}.form-grid,.location{grid-template-columns:1fr}.full{grid-column:auto}.time-grid{grid-template-columns:repeat(3,1fr)}.booking-info{grid-template-columns:1fr 1fr}.chat-shell{grid-template-columns:1fr;min-height:0}.chat-list{display:none}.chat-main{min-height:500px}.profile{grid-template-columns:80px 1fr;padding:15px}.profile-avatar{width:75px;height:75px;border-radius:22px}.profile-grid{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
 <div class="app">
-<header class="topbar">
- <div class="topbar-inner">
-  <button class="logo" onclick="App.go('home')" style="border:0;background:transparent;padding:0">
-   <span class="logo-mark">🚗</span><span>AVTODROM</span>
-  </button>
-  <div class="top-actions">
-   <button class="icon-btn" onclick="App.openNotifications()" aria-label="Bildirishnomalar">🔔<i id="notifDot" class="dot"></i></button>
-   <button class="icon-btn" onclick="App.go('profile')" aria-label="Profil">👤</button>
-  </div>
- </div>
-</header>
+<header class="topbar"><div class="topbar-inner">
+<button class="logo" onclick="App.go('home')" style="border:0;background:transparent;padding:0"><span class="logo-mark">🚗</span><span>AVTODROM</span></button>
+<div class="top-actions"><button class="icon-btn" onclick="App.openNotifications()" aria-label="Bildirishnomalar">🔔<i id="notifDot" class="dot hide"></i></button><button class="icon-btn" onclick="App.go('profile')" aria-label="Profil">👤</button></div>
+</div></header>
 
 <main class="container">
 <section id="home" class="view">
- <div class="hero">
-  <div class="hero-image"></div>
-  <div class="hero-content">
-   <div class="eyebrow">Professional haydash tajribasi</div>
-   <h1>Haydashni ishonch bilan o‘rganing.</h1>
-   <p>Instruktorni tanlang, o‘zingizga qulay vaqtni bron qiling va barcha jarayonni bitta qulay mini app orqali boshqaring.</p>
-   <div class="hero-actions">
-    <button class="primary" onclick="App.go('book')">📅 Hozir bron qilish</button>
-    <button class="ghost" onclick="App.go('instructors')">👨‍🏫 Instruktorlarni ko‘rish</button>
-   </div>
-  </div>
- </div>
-
- <div class="section">
-  <div class="section-head"><div><h2>Nega AVTODROM?</h2><p>O‘quvchi uchun eng kerakli xizmatlar bir joyda.</p></div></div>
-  <div class="grid">
-   <article class="card feature"><div class="feature-icon">👨‍🏫</div><b>Professional instruktorlar</b><p>Tajriba, reyting va avtomobil ma’lumotlari orqali o‘zingizga mos instruktorni tanlang.</p></article>
-   <article class="card feature"><div class="feature-icon">⚡</div><b>Tez bron qilish</b><p>Bo‘sh kun va vaqtlarni ko‘ring. Band vaqtlar avtomatik yopiladi.</p></article>
-   <article class="card feature"><div class="feature-icon">💬</div><b>Jonli aloqa</b><p>Instruktor yoki admin bilan yozishing va community chat orqali savol bering.</p></article>
-  </div>
- </div>
-
- <div class="section">
-  <div class="section-head"><div><h2>Instruktorlarimiz</h2><p>Admin paneldan boshqariladigan real ro‘yxat.</p></div><button class="secondary" onclick="App.go('instructors')">Barchasi →</button></div>
-  <div id="homeInstructors" class="grid"><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div></div>
- </div>
-
- <div class="section">
-  <div class="section-head"><div><h2>AVTODROM</h2><p>Bizning muhitimiz bilan tanishing.</p></div></div>
-  <div class="gallery">
-   <div class="big" style="background-image:url('https://images.unsplash.com/photo-1542282088-72c9c27ed0cd?auto=format&fit=crop&w=1000&q=85')"></div>
-   <div style="background-image:url('https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?auto=format&fit=crop&w=700&q=85')"></div>
-   <div style="background-image:url('https://images.unsplash.com/photo-1504215680853-026ed2a45def?auto=format&fit=crop&w=700&q=85')"></div>
-   <div style="background-image:url('https://images.unsplash.com/photo-1511919884226-fd3cad34687c?auto=format&fit=crop&w=700&q=85')"></div>
-   <div style="background-image:url('https://images.unsplash.com/photo-1449965408869-eaa3f722e40d?auto=format&fit=crop&w=700&q=85')"></div>
-  </div>
- </div>
-
- <div class="section card location">
-  <div><div class="eyebrow" style="color:var(--green)">Bizning manzil</div><h2>AVTODROM o‘quv maydoni</h2><p class="muted">Toshkent shahri. Aniq manzilni Admin Panel orqali boshqarish mumkin.</p><div class="card-actions"><button class="primary green" onclick="App.openMap()">🗺 Yo‘lni ko‘rsatish</button><button class="secondary" onclick="App.call()">📞 Bog‘lanish</button></div></div>
-  <div class="map">📍 AVTODROM<br><small>Interaktiv xarita uchun API URL konfiguratsiyasi</small></div>
- </div>
+<div class="hero"><div class="hero-image"></div><div class="hero-content"><div class="eyebrow">PROFESSIONAL HAYDASH TAJRIBASI</div><h1>Haydashni ishonch bilan o‘rganing.</h1><p>Instruktorni tanlang, o‘zingizga qulay vaqtni bron qiling va barcha jarayonni bitta qulay mini app orqali boshqaring.</p><div class="hero-actions"><button class="primary" onclick="App.go('book')">📅 Hozir bron qilish</button><button class="ghost" onclick="App.go('instructors')">👨‍🏫 Instruktorlarni ko‘rish</button></div></div></div>
+<div class="section"><div class="section-head"><div><h2>Nega AVTODROM?</h2><p>O‘quvchi uchun eng kerakli xizmatlar bir joyda.</p></div></div><div class="grid">
+<div class="card feature"><div class="feature-icon">👨‍🏫</div><b>Professional instruktorlar</b><p>Tajriba, reyting va avtomobil ma’lumotlari orqali o‘zingizga mos instruktorni tanlang.</p></div>
+<div class="card feature"><div class="feature-icon">⚡</div><b>Tez bron qilish</b><p>Bo‘sh kun va vaqtni ko‘ring. Band vaqtlar avtomatik yopiladi.</p></div>
+<div class="card feature"><div class="feature-icon">💬</div><b>Jonli aloqa</b><p>Admin va xizmatlar bilan aloqa uchun chat bo‘limidan foydalaning.</p></div>
+</div></div>
+<div class="section"><div class="section-head"><div><h2>Instruktorlarimiz</h2><p>Admin paneldan boshqariladigan real ro‘yxat.</p></div><button class="secondary" onclick="App.go('instructors')">Barchasi →</button></div><div id="homeInstructors" class="grid"></div></div>
+<div class="section"><div class="card location"><div><h3>AVTODROM INDEX</h3><p class="meta">Toshkentdagi haydash mashg‘ulotlari uchun qulay xizmat.</p><button class="primary green" onclick="App.openMap()">📍 Joylashuvni ochish</button></div><div class="map">📍 AVTODROM TOSHKENT</div></div></div>
 </section>
 
-<section id="instructors" class="view hide">
- <div class="section-head"><div><h2>Instruktorlar</h2><p>O‘zingizga mos instruktorni tanlang.</p></div></div>
- <input id="instructorSearch" class="search" placeholder="🔎 Ism, telefon yoki avtomobil bo‘yicha qidirish..." oninput="App.renderInstructors()">
- <div id="instructorList" class="grid" style="margin-top:13px"></div>
-</section>
+<section id="instructors" class="view hide"><div class="section-head"><div><h2>Instruktorlar</h2><p>O‘zingizga mos instruktorni tanlang.</p></div></div><input id="instructorSearch" class="search" placeholder="Ism, telefon yoki avtomobil bo‘yicha qidirish..." oninput="App.renderInstructors()"><div id="instructorList" class="grid" style="margin-top:13px"></div></section>
 
-<section id="book" class="view hide">
- <div class="section-head"><div><h2>Bron qilish</h2><p>4 bosqichda mashg‘ulot vaqtini belgilang.</p></div></div>
- <div class="card booking-box">
-  <div class="steps"><div id="step1" class="step active">1. Instruktor</div><div id="step2" class="step">2. Sana</div><div id="step3" class="step">3. Vaqt</div><div id="step4" class="step">4. Tasdiqlash</div></div>
-  <div id="bookingStep1">
-   <div class="form-grid">
-    <div class="field full"><label>Instruktor</label><select id="bookInstructor" onchange="App.onInstructorChange()"></select></div>
-    <div class="field"><label>Sana</label><input id="bookDate" type="date" onchange="App.loadTimes()"></div>
-    <div class="field"><label>Mashg‘ulot</label><select id="bookCourse"></select></div>
-    <div class="field full"><label>Izoh (ixtiyoriy)</label><textarea id="bookNote" rows="3" placeholder="Masalan: birinchi mashg‘ulotim..."></textarea></div>
-   </div>
-   <div style="margin-top:15px"><button class="primary green" onclick="App.loadTimes()">Bo‘sh vaqtlarni ko‘rish →</button></div>
-  </div>
-  <div id="bookingStep2" class="hide">
-   <h3>Bo‘sh vaqtlar</h3><p class="muted" id="availabilityHint"></p>
-   <div id="timeGrid" class="time-grid"></div>
-   <div class="booking-summary" id="bookingSummary"></div>
-   <div style="margin-top:13px"><button class="primary green" onclick="App.confirmBooking()">✓ Bronni yuborish</button></div>
-  </div>
- </div>
-</section>
+<section id="book" class="view hide"><div class="section-head"><div><h2>Bron qilish</h2><p>4 bosqichda mashg‘ulot vaqtini belgilang.</p></div></div><div class="card booking-box">
+<div class="steps"><div id="step1" class="step active">1. Instruktor</div><div id="step2" class="step">2. Sana</div><div id="step3" class="step">3. Vaqt</div><div id="step4" class="step">4. Tasdiqlash</div></div>
+<div id="bookingStep1"><div class="form-grid">
+<div class="field full"><label>Instruktor</label><select id="bookInstructor" onchange="App.onInstructorChange()"></select></div>
+<div class="field"><label>Sana</label><input id="bookDate" type="date" onchange="App.loadTimes()"></div>
+<div class="field"><label>Mashg‘ulot</label><select id="bookCourse" onchange="App.updateBookingSummary()"></select></div>
+<div class="field full"><label>Izoh (ixtiyoriy)</label><textarea id="bookNote" rows="3" placeholder="Masalan: birinchi mashg‘ulotim..."></textarea></div>
+</div><div style="margin-top:15px"><button class="primary green" onclick="App.loadTimes()">Bo‘sh vaqtlarni ko‘rish →</button></div></div>
+<div id="bookingStep2" class="hide"><h3>Bo‘sh vaqtlar</h3><p class="muted" id="availabilityHint"></p><div id="timeGrid" class="time-grid"></div><div class="booking-summary" id="bookingSummary"></div><div style="margin-top:13px"><button id="confirmBookingBtn" class="primary green" onclick="App.confirmBooking()">✓ Bronni yuborish</button></div></div>
+</div></section>
 
-<section id="bookings" class="view hide">
- <div class="section-head"><div><h2>Mening bronlarim</h2><p>Barcha mashg‘ulotlaringiz shu yerda.</p></div><button class="secondary" onclick="App.loadBookings()">↻ Yangilash</button></div>
- <div class="tabs">
-  <button class="tab active" data-filter="" onclick="App.filterBookings(this,'')">Barchasi</button>
-  <button class="tab" data-filter="pending" onclick="App.filterBookings(this,'pending')">Kutilmoqda</button>
-  <button class="tab" data-filter="confirmed" onclick="App.filterBookings(this,'confirmed')">Tasdiqlangan</button>
-  <button class="tab" data-filter="completed" onclick="App.filterBookings(this,'completed')">Tugagan</button>
- </div>
- <div id="bookingList" style="display:grid;gap:10px;margin-top:13px"></div>
-</section>
+<section id="bookings" class="view hide"><div class="section-head"><div><h2>Mening bronlarim</h2><p>Barcha mashg‘ulotlaringiz shu yerda.</p></div><button class="secondary" onclick="App.loadBookings()">↻ Yangilash</button></div>
+<div class="tabs"><button class="tab active" onclick="App.filterBookings(this,'')">Barchasi</button><button class="tab" onclick="App.filterBookings(this,'pending')">Kutilmoqda</button><button class="tab" onclick="App.filterBookings(this,'confirmed')">Tasdiqlangan</button><button class="tab" onclick="App.filterBookings(this,'in_progress')">Jarayonda</button><button class="tab" onclick="App.filterBookings(this,'completed')">Tugagan</button></div>
+<div id="bookingList" style="display:grid;gap:10px;margin-top:12px"></div></section>
 
-<section id="chat" class="view hide">
- <div class="section-head"><div><h2>Chat</h2><p>Instruktor, admin va community bilan aloqa.</p></div></div>
- <div class="card chat-shell">
-  <aside class="chat-list">
-   <div class="chat-list-head"><input class="search" id="chatSearch" placeholder="🔎 Chat qidirish" oninput="App.renderChats()"></div>
-   <button class="chat-item active" onclick="App.selectChat('community')"><div class="avatar">👥</div><div class="chat-preview"><b>AVTODROM Community</b><span>Hamma o‘quvchilar uchun umumiy chat</span></div></button>
-   <div id="privateChats"></div>
-  </aside>
-  <div class="chat-main">
-   <div class="chat-head"><div class="avatar">👥</div><div><b id="chatTitle">AVTODROM Community</b><div class="muted" style="font-size:10px">Savollar, maslahatlar va tajriba almashish</div></div></div>
-   <div id="messages" class="messages"></div>
-   <div class="chat-compose"><input id="chatInput" placeholder="Xabar yozing..." maxlength="1000" onkeydown="if(event.key==='Enter')App.sendMessage()"><button class="primary green" onclick="App.sendMessage()">➤</button></div>
-  </div>
- </div>
-</section>
+<section id="chat" class="view hide"><div class="section-head"><div><h2>Chat</h2><p>AVTODROM bilan aloqa.</p></div></div><div class="card chat-shell"><div class="chat-list"><div class="chat-list-head"><b>Suhbatlar</b></div><button class="chat-item active" onclick="App.selectChat('community')"><div class="avatar">🚗</div><div class="chat-preview"><b>AVTODROM Admin</b><span>Umumiy suhbat</span></div></button></div><div class="chat-main"><div class="chat-head"><div class="avatar">🚗</div><div><b>AVTODROM Admin</b><div class="meta">Umumiy suhbat</div></div></div><div id="messages" class="messages"></div><div class="chat-compose"><input id="chatInput" placeholder="Xabar yozing..." onkeydown="if(event.key==='Enter')App.sendMessage()"><button class="primary green" onclick="App.sendMessage()">➤</button></div></div></div></section>
 
-<section id="profile" class="view hide">
- <div class="section-head"><div><h2>Profilim</h2><p>Shaxsiy ma’lumotlaringiz.</p></div><button class="secondary" onclick="App.editProfile()">✎ Tahrirlash</button></div>
- <div class="card profile">
-  <div class="profile-avatar" id="profileAvatar">👤</div>
-  <div><div class="eyebrow" style="color:var(--green)">Customer</div><h2 id="profileName">Mehmon foydalanuvchi</h2><div class="muted" id="profileSub">Telefon ulanmagan</div>
-   <div class="profile-grid"><div class="profile-field"><span>Telefon</span><b id="profilePhone">—</b></div><div class="profile-field"><span>Telegram</span><b id="profileTelegram">—</b></div></div>
-  </div>
- </div>
- <div class="section card" style="padding:18px">
-  <h3 style="margin-top:0">Til</h3>
-  <div class="actions" style="display:flex;gap:8px"><button class="secondary" onclick="App.setLang('uz')">🇺🇿 O‘zbek</button><button class="secondary" onclick="App.setLang('ru')">🇷🇺 Русский</button><button class="secondary" onclick="App.setLang('en')">🇬🇧 English</button></div>
- </div>
- <div class="section card" style="padding:18px">
-  <h3 style="margin-top:0">Tezkor</h3>
-  <div class="actions" style="display:flex;gap:8px;flex-wrap:wrap"><button class="secondary" onclick="App.go('book')">📅 Bron qilish</button><button class="secondary" onclick="App.go('bookings')">📋 Bronlarim</button><button class="secondary" onclick="App.openNotifications()">🔔 Bildirishnomalar</button></div>
- </div>
-</section>
+<section id="profile" class="view hide"><div class="section-head"><div><h2>Profil</h2><p>Shaxsiy ma’lumotlaringiz.</p></div><button class="secondary" onclick="App.editProfile()">✎ Tahrirlash</button></div><div class="card profile"><div id="profileAvatar" class="profile-avatar">👤</div><div><h2 id="profileName">Foydalanuvchi</h2><div id="profileSub" class="meta">Profil ma’lumotlari yuklanmoqda...</div><div class="profile-grid"><div class="profile-field"><span>Telefon</span><b id="profilePhone">—</b></div><div class="profile-field"><span>Telegram ID</span><b id="profileTelegram">—</b></div></div></div></div></section>
 </main>
 
 <nav class="bottom-nav"><div class="bottom-inner">
- <button class="bottom-btn active" data-nav="home" onclick="App.go('home')"><span>⌂</span>Asosiy</button>
- <button class="bottom-btn" data-nav="instructors" onclick="App.go('instructors')"><span>👨‍🏫</span>Instruktor</button>
- <button class="bottom-btn" data-nav="book" onclick="App.go('book')"><span>＋</span>Bron</button>
- <button class="bottom-btn" data-nav="bookings" onclick="App.go('bookings')"><span>📋</span>Bronlarim</button>
- <button class="bottom-btn" data-nav="chat" onclick="App.go('chat')"><span>💬</span>Chat</button>
+<button class="bottom-btn active" data-nav="home" onclick="App.go('home')"><span>⌂</span>Asosiy</button>
+<button class="bottom-btn" data-nav="instructors" onclick="App.go('instructors')"><span>👨‍🏫</span>Instruktor</button>
+<button class="bottom-btn" data-nav="book" onclick="App.go('book')"><span>＋</span>Bron</button>
+<button class="bottom-btn" data-nav="bookings" onclick="App.go('bookings')"><span>📋</span>Bronlarim</button>
+<button class="bottom-btn" data-nav="chat" onclick="App.go('chat')"><span>💬</span>Chat</button>
 </div></nav>
 </div>
 
@@ -306,79 +81,35 @@ a{text-decoration:none;color:inherit}
 <div id="toast" class="toast"></div>
 
 <script>
-/*
- AVTODROM CUSTOMER MINI APP
- --------------------------------
- Frontend responsibilities:
- - customer UX, instructor discovery, booking wizard, bookings, chat, profile
- Backend responsibilities (production):
- - authentication, authorization, Supabase queries, booking conflict prevention,
-   realtime messages, instructor availability, admin moderation.
- Payments are intentionally not included.
- "Natijalarim" is intentionally not included.
-
- Integration:
- window.AVTODROM_CONFIG = {
-   apiBase: '',
-   telegramWebApp: true,
-   realtime: true
- };
- All network calls go through API.request(), so the UI can be connected
- to the existing Fastify/Supabase backend without rewriting the UI.
-*/
-const AVTODROM_CONFIG=window.AVTODROM_CONFIG||{apiBase:'',telegramWebApp:true,realtime:true};
-const I18N={
- uz:{home:'Asosiy',instructors:'Instruktor',book:'Bron',bookings:'Bronlarim',chat:'Chat',profile:'Profil'},
- ru:{home:'Главная',instructors:'Инструкторы',book:'Бронь',bookings:'Мои брони',chat:'Чат',profile:'Профиль'},
- en:{home:'Home',instructors:'Instructors',book:'Book',bookings:'My bookings',chat:'Chat',profile:'Profile'}
-};
-
-const Store={
- state:{
-  lang:localStorage.getItem('av_lang')||'uz',
-  user:null,instructors:[],courses:[],bookings:[],messages:[],notifications:[],
-  selectedChat:'community',bookingFilter:''
- },
- get(){return this.state},
- set(k,v){this.state[k]=v},
- saveUser(u){this.state.user=u;localStorage.setItem('av_user',JSON.stringify(u||null))},
- load(){try{this.state.user=JSON.parse(localStorage.getItem('av_user')||'null')}catch{}}
-};
-
+window.AVTODROM_CONFIG=window.AVTODROM_CONFIG||{apiBase:'',telegramWebApp:true,realtime:true};
+const AVTODROM_CONFIG=window.AVTODROM_CONFIG;
 const API={
  async request(path,opt={}){
   const base=String(AVTODROM_CONFIG.apiBase||'').replace(/\/$/,'');
-  const url=base+path;
-  try{
-   const res=await fetch(url,{credentials:'include',headers:{'Content-Type':'application/json',...(opt.headers||{})},...opt});
-   let data=null;try{data=await res.json()}catch{}
-   if(!res.ok)throw new Error(data?.error||`Server xatosi ${res.status}`);
-   return data;
-  }catch(e){
-   if(AVTODROM_CONFIG.apiBase)throw e;
-   return null;
-  }
+  const tg=window.Telegram?.WebApp;
+  const initData=String(tg?.initData||'').trim();
+  const headers={'Content-Type':'application/json',...(initData?{'X-Telegram-Init-Data':initData}:{}),...(opt.headers||{})};
+  const res=await fetch(base+path,{credentials:'include',...opt,headers});
+  let data=null;try{data=await res.json()}catch{}
+  if(!res.ok)throw new Error(data?.error||data?.message||('Server xatosi: '+res.status));
+  return data;
  },
- async me(){return await this.request('/api/customer/me')},
- async instructors(){return await this.request('/api/customer/instructors')},
- async courses(){return await this.request('/api/customer/courses')},
- async availability(params){
-  const qs=new URLSearchParams(params).toString();
-  return await this.request('/api/customer/availability?'+qs);
- },
- async createBooking(body){return await this.request('/api/customer/bookings',{method:'POST',body:JSON.stringify(body)})},
- async bookings(){return await this.request('/api/customer/bookings')},
- async messages(chat){return await this.request('/api/customer/chats/'+encodeURIComponent(chat)+'/messages')},
- async sendMessage(chat,body){return await this.request('/api/customer/chats/'+encodeURIComponent(chat)+'/messages',{method:'POST',body:JSON.stringify(body)})},
- async notifications(){return await this.request('/api/customer/notifications')},
- async profile(){return await this.request('/api/customer/profile')}
+ async me(){return this.request('/api/me')},
+ async instructors(){return this.request('/api/instructors')},
+ async courses(){return this.request('/api/courses')},
+ async availability({instructor_id,date}){return this.request('/api/instructors/'+encodeURIComponent(instructor_id)+'/availability?date='+encodeURIComponent(date))},
+ async createBooking(body){return this.request('/api/bookings',{method:'POST',body:JSON.stringify(body)})},
+ async bookings(){return this.request('/api/bookings')},
+ async messages(){return {ok:true,messages:[]}},
+ async sendMessage(){return {ok:false}},
+ async notifications(){return {ok:true,notifications:[]}}
 };
 
 const Demo={
  instructors:[
-  {id:'demo-1',name:'Azizbek Karimov',phone:'+998 90 123 45 67',experience:7,rating:4.9,reviews:126,car:'Chevrolet Cobalt',bio:'Sokin, tushunarli va amaliy yondashuv. Yangi boshlovchilar bilan ko‘p ishlaydi.',photo:'https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=700&q=85',tags:['B toifa','Avtomat','Boshlovchilar']},
-  {id:'demo-2',name:'Sardor Ismoilov',phone:'+998 91 234 56 78',experience:5,rating:4.8,reviews:98,car:'Chevrolet Gentra',bio:'Avtodrom mashqlarini bosqichma-bosqich o‘rgatadi.',photo:'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=700&q=85',tags:['B toifa','Mexanika','Parkovka']},
-  {id:'demo-3',name:'Madina Abdullayeva',phone:'+998 93 345 67 89',experience:6,rating:5,reviews:141,car:'Chevrolet Onix',bio:'Ayol o‘quvchilar va haydashdan qo‘rqadiganlar bilan yumshoq metodika.',photo:'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=700&q=85',tags:['B toifa','Avtomat','Individual']}
+  {id:'demo-1',name:'Azizbek Karimov',phone:'+998 90 123 45 67',experience:7,rating:4.9,reviews:126,car:'Chevrolet Cobalt',bio:'Sokin, tushunarli va amaliy yondashuv.',photo:'https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=700&q=85',tags:['B toifa','Avtomat']},
+  {id:'demo-2',name:'Sardor Ismoilov',phone:'+998 91 234 56 78',experience:5,rating:4.8,reviews:98,car:'Chevrolet Gentra',bio:'Avtodrom mashqlarini bosqichma-bosqich o‘rgatadi.',photo:'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=700&q=85',tags:['B toifa','Mexanika']},
+  {id:'demo-3',name:'Madina Abdullayeva',phone:'+998 93 345 67 89',experience:6,rating:5,reviews:141,car:'Chevrolet Onix',bio:'Individual va yumshoq metodika.',photo:'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=700&q=85',tags:['B toifa','Avtomat']}
  ],
  courses:[
   {id:'course-1',name:'Amaliy haydash',duration_minutes:60,price:0},
@@ -387,38 +118,44 @@ const Demo={
  timeSlots:['08:00','09:00','10:00','11:00','12:00','14:00','15:00','16:00','17:00','18:00']
 };
 
+const Store={
+ state:{lang:localStorage.getItem('av_lang')||'uz',user:null,instructors:[],courses:[],bookings:[],messages:[],notifications:[],selectedChat:'community',selectedTime:'',bookingFilter:''},
+ get(){return this.state},
+ set(k,v){this.state[k]=v},
+ saveUser(u){this.state.user=u;localStorage.setItem('av_user',JSON.stringify(u||null))},
+ load(){try{this.state.user=JSON.parse(localStorage.getItem('av_user')||'null')}catch{}}
+};
+
 const App={
- init(){
-  Store.load();
-  this.setMinDate();
-  this.bindTelegram();
-  this.loadData();
-  this.go(location.hash.slice(1)||'home',false);
- },
- async loadData(){
-  const [i,c,b,n,m,p]=await Promise.all([API.instructors(),API.courses(),API.bookings(),API.notifications(),API.messages('community'),API.profile()]);
-  const ins=i?.instructors||i?.data||null;
-  const courses=c?.courses||null;
-  Store.set('instructors',ins?.length?ins:Demo.instructors);
-  Store.set('courses',courses?.length?courses:Demo.courses);
-  Store.set('bookings',b?.bookings||[]);
-  Store.set('notifications',n?.notifications||[]);
-  Store.set('messages',m?.messages||this.localMessages());
-  if(p?.user)Store.saveUser(p.user);
-  this.renderHomeInstructors();this.renderInstructors();this.populateBookingSelects();this.renderBookings();this.renderProfile();this.renderMessages();this.updateNotifDot();
+ async init(){
+  Store.load();this.bindTelegram();this.setMinDate();this.go(location.hash.slice(1)||'home',false);
+  await this.loadData();
  },
  bindTelegram(){
   const tg=window.Telegram?.WebApp;
   if(tg&&AVTODROM_CONFIG.telegramWebApp){try{tg.ready();tg.expand();}catch{}}
  },
  setMinDate(){
-  const d=new Date();const pad=n=>String(n).padStart(2,'0');
-  const value=`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
-  const el=document.getElementById('bookDate');if(el)el.min=value;if(el&&!el.value)el.value=value;
+  const el=document.getElementById('bookDate');if(!el)return;
+  const d=new Date(),pad=n=>String(n).padStart(2,'0');
+  el.min=d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+  if(!el.value)el.value=el.min;
  },
+ async loadData(){
+  const results=await Promise.allSettled([API.instructors(),API.courses(),API.bookings(),API.notifications(),API.me()]);
+  const [i,c,b,n,p]=results.map(x=>x.status==='fulfilled'?x.value:null);
+  const ins=i?.instructors||i?.data||[];
+  const courses=c?.courses||[];
+  Store.set('instructors',ins.length?ins:Demo.instructors);
+  Store.set('courses',courses.length?courses:Demo.courses);
+  Store.set('bookings',b?.bookings||[]);
+  Store.set('notifications',n?.notifications||[]);
+  if(p?.user)Store.saveUser(p.user);
+  this.renderAll();
+ },
+ renderAll(){this.renderHomeInstructors();this.renderInstructors();this.populateBookingSelects();this.renderBookings();this.renderProfile();this.renderMessages();this.updateNotifDot()},
  go(section,push=true){
-  const valid=['home','instructors','book','bookings','chat','profile'];
-  if(!valid.includes(section))section='home';
+  const valid=['home','instructors','book','bookings','chat','profile'];if(!valid.includes(section))section='home';
   document.querySelectorAll('.view').forEach(v=>v.classList.toggle('hide',v.id!==section));
   document.querySelectorAll('.bottom-btn').forEach(b=>b.classList.toggle('active',b.dataset.nav===section));
   if(push)history.replaceState(null,'','#'+section);
@@ -427,145 +164,59 @@ const App={
   if(section==='chat')this.loadChat();
   if(section==='profile')this.renderProfile();
  },
- renderHomeInstructors(){
-  const box=document.getElementById('homeInstructors');if(!box)return;
-  const rows=Store.get().instructors.slice(0,3);
-  box.innerHTML=rows.map(x=>this.instructorCard(x)).join('');
- },
- renderInstructors(){
-  const box=document.getElementById('instructorList');if(!box)return;
-  const q=(document.getElementById('instructorSearch')?.value||'').toLowerCase();
-  const rows=Store.get().instructors.filter(x=>`${x.name||x.full_name||''} ${x.phone||''} ${x.car||x.vehicle_model||''}`.toLowerCase().includes(q));
-  box.innerHTML=rows.length?rows.map(x=>this.instructorCard(x)).join(''):'<div class="card empty">Instruktor topilmadi.</div>';
- },
+ renderHomeInstructors(){const box=document.getElementById('homeInstructors');if(!box)return;box.innerHTML=Store.get().instructors.slice(0,3).map(x=>this.instructorCard(x)).join('')||'<div class="card empty">Hozircha instruktorlar yo‘q.</div>'},
+ renderInstructors(){const box=document.getElementById('instructorList');if(!box)return;const q=(document.getElementById('instructorSearch')?.value||'').toLowerCase();const rows=Store.get().instructors.filter(x=>`${x.name||x.full_name||''} ${x.phone||''} ${x.car||x.vehicle_model||''}`.toLowerCase().includes(q));box.innerHTML=rows.length?rows.map(x=>this.instructorCard(x)).join(''):'<div class="card empty">Instruktor topilmadi.</div>'},
  instructorCard(x){
-  const name=x.name||x.full_name||x.profile?.full_name||'Instruktor';
-  const photo=x.photo||x.avatar_url||x.profile?.avatar_url||'';
-  const tags=x.tags||['B toifa'];
-  return `<article class="card instructor-card">
-   <div class="instructor-photo" style="background-image:url('${this.esc(photo)}')"></div>
-   <div class="instructor-body">
-    <div class="instructor-name">${this.esc(name)}</div>
-    <div class="rating">★ ${this.esc(x.rating??0)} <span class="muted">(${this.esc(x.reviews??x.total_reviews??0)} sharh)</span></div>
-    <div class="meta">🚗 ${this.esc(x.car||x.vehicle_model||'Avtomobil')} · ${this.esc(x.experience??x.experience_years??0)} yil tajriba</div>
-    <div class="tags">${tags.map(t=>`<span class="tag">${this.esc(t)}</span>`).join('')}</div>
-    <div class="meta">${this.esc(x.bio||'Professional instruktor. Batafsil ma’lumot bron qilish jarayonida.')}</div>
-    <div class="card-actions"><button class="secondary" onclick="App.showInstructor('${this.escAttr(x.id)}')">Batafsil</button><button class="primary green" onclick="App.startBooking('${this.escAttr(x.id)}')">Bron qilish</button></div>
-   </div>
-  </article>`;
+  const name=x.name||x.full_name||x.profile?.full_name||'Instruktor',photo=x.photo||x.avatar_url||x.profile?.avatar_url||'',tags=x.tags||['B toifa'];
+  return `<article class="card instructor-card"><div class="instructor-photo" style="background-image:url('${this.escAttr(photo)}')"></div><div class="instructor-body"><div class="instructor-name">${this.esc(name)}</div><div class="rating">★ ${this.esc(x.rating??0)} <span class="meta">(${this.esc(x.reviews??x.total_reviews??0)} sharh)</span></div><div class="meta">🚗 ${this.esc(x.car||x.vehicle_model||'Avtomobil')} · ${this.esc(x.experience??x.experience_years??0)} yil tajriba</div><div class="tags">${tags.map(t=>`<span class="tag">${this.esc(t)}</span>`).join('')}</div><div class="meta">${this.esc(x.bio||'Professional instruktor.')}</div><div class="card-actions"><button class="secondary" onclick="App.showInstructor('${this.escAttr(x.id)}')">Batafsil</button><button class="primary green" onclick="App.startBooking('${this.escAttr(x.id)}')">Bron qilish</button></div></div></article>`;
  },
- showInstructor(id){
-  const x=Store.get().instructors.find(v=>String(v.id)===String(id));if(!x)return;
-  const name=x.name||x.full_name||'Instruktor';
-  this.openModal(name,`<div class="instructor-photo" style="border-radius:15px;background-image:url('${this.esc(x.photo||x.avatar_url||'')}')"></div>
-   <h3>${this.esc(name)}</h3><div class="rating">★ ${this.esc(x.rating??0)} · ${this.esc(x.reviews??x.total_reviews??0)} sharh</div>
-   <p class="muted">${this.esc(x.bio||'')}</p><p><b>Avtomobil:</b> ${this.esc(x.car||x.vehicle_model||'—')}<br><b>Tajriba:</b> ${this.esc(x.experience??x.experience_years??0)} yil<br><b>Telefon:</b> ${this.esc(x.phone||'—')}</p>
-   <button class="primary green" style="width:100%" onclick="App.closeModal();App.startBooking('${this.escAttr(x.id)}')">📅 Shu instruktorni tanlash</button>`);
- },
- startBooking(id){
-  this.go('book');const s=document.getElementById('bookInstructor');if(s){s.value=id;this.onInstructorChange()}
- },
- populateBookingSelects(){
-  const s=document.getElementById('bookInstructor'),c=document.getElementById('bookCourse');if(!s||!c)return;
-  s.innerHTML=Store.get().instructors.map(x=>`<option value="${this.escAttr(x.id)}">${this.esc(x.name||x.full_name||'Instruktor')}</option>`).join('');
-  c.innerHTML=Store.get().courses.map(x=>`<option value="${this.escAttr(x.id)}">${this.esc(x.name)} · ${this.esc(x.duration_minutes)} daqiqa</option>`).join('');
- },
- onInstructorChange(){this.loadTimes()},
+ showInstructor(id){const x=Store.get().instructors.find(v=>String(v.id)===String(id));if(!x)return;const name=x.name||x.full_name||'Instruktor';this.openModal(name,`<div class="instructor-photo" style="border-radius:15px;background-image:url('${this.escAttr(x.photo||x.avatar_url||'')}')"></div><h3>${this.esc(name)}</h3><div class="rating">★ ${this.esc(x.rating??0)} · ${this.esc(x.reviews??x.total_reviews??0)} sharh</div><p class="meta">${this.esc(x.bio||'')}</p><p><b>Avtomobil:</b> ${this.esc(x.car||x.vehicle_model||'—')}<br><b>Tajriba:</b> ${this.esc(x.experience??x.experience_years??0)} yil<br><b>Telefon:</b> ${this.esc(x.phone||'—')}</p><button class="primary green" style="width:100%" onclick="App.closeModal();App.startBooking('${this.escAttr(x.id)}')">📅 Shu instruktorni tanlash</button>`)},
+ startBooking(id){this.go('book');const s=document.getElementById('bookInstructor');if(s){s.value=id;this.onInstructorChange()}},
+ populateBookingSelects(){const s=document.getElementById('bookInstructor'),c=document.getElementById('bookCourse');if(!s||!c)return;s.innerHTML=Store.get().instructors.map(x=>`<option value="${this.escAttr(x.id)}">${this.esc(x.name||x.full_name||'Instruktor')}</option>`).join('');c.innerHTML=Store.get().courses.map(x=>`<option value="${this.escAttr(x.id)}">${this.esc(x.name)} · ${this.esc(x.duration_minutes||0)} daqiqa</option>`).join('');this.updateBookingSummary()},
+ onInstructorChange(){Store.set('selectedTime','');document.querySelectorAll('.time').forEach(x=>x.classList.remove('selected'));this.loadTimes()},
  async loadTimes(){
-  const instructor=document.getElementById('bookInstructor')?.value,date=document.getElementById('bookDate')?.value;
-  if(!instructor||!date)return;
-  document.getElementById('bookingStep2').classList.remove('hide');
-  document.getElementById('step2').classList.add('active');document.getElementById('step3').classList.add('active');
-  const r=await API.availability({instructor_id:instructor,date});
-  const busy=new Set(r?.busy||r?.booked||[]);
-  const box=document.getElementById('timeGrid');
-  box.innerHTML=Demo.timeSlots.map(t=>`<button class="time ${busy.has(t)?'busy':''}" ${busy.has(t)?'disabled':''} onclick="App.selectTime(this,'${t}')">${t}</button>`).join('');
-  document.getElementById('availabilityHint').textContent=`${date} uchun bo‘sh vaqtlar. Band vaqtlar avtomatik yopiladi.`;
-  this.updateBookingSummary();
+  const instructor=document.getElementById('bookInstructor')?.value,date=document.getElementById('bookDate')?.value;if(!instructor||!date)return;
+  document.getElementById('bookingStep2')?.classList.remove('hide');document.getElementById('step2')?.classList.add('active');document.getElementById('step3')?.classList.add('active');
+  const box=document.getElementById('timeGrid'),hint=document.getElementById('availabilityHint');if(box)box.innerHTML='<div class="card empty">⏳ Bo‘sh vaqtlar tekshirilmoqda...</div>';
+  try{
+   const r=await API.availability({instructor_id:instructor,date}),busy=Array.isArray(r?.busy)?r.busy:[];
+   const cid=document.getElementById('bookCourse')?.value,course=Store.get().courses.find(x=>String(x.id)===String(cid)),duration=Number(course?.duration_minutes||60);
+   const isBusy=time=>{const start=new Date(`${date}T${time}:00+05:00`),end=new Date(start.getTime()+duration*60000);return busy.some(b=>{const bs=new Date(b.start_at),be=new Date(b.end_at);return !Number.isNaN(bs.getTime())&&!Number.isNaN(be.getTime())&&start<be&&end>bs})};
+   if(box)box.innerHTML=Demo.timeSlots.map(t=>{const blocked=isBusy(t);return `<button class="time ${blocked?'busy':''}" ${blocked?'disabled':''} onclick="App.selectTime(this,'${t}')">${t}</button>`}).join('');
+   const free=Demo.timeSlots.filter(t=>!isBusy(t)).length;if(hint)hint.textContent=free?`${date} uchun ${free} ta bo‘sh vaqt mavjud.`:`${date} uchun bo‘sh vaqt qolmagan.`;
+   this.updateBookingSummary();
+  }catch(e){console.error(e);if(box)box.innerHTML='<div class="error-box">Bo‘sh vaqtlarni yuklashda xatolik. Keyinroq qayta urinib ko‘ring.</div>';if(hint)hint.textContent=e.message||'Server bilan aloqa xatosi.'}
  },
- selectTime(el,time){
-  document.querySelectorAll('.time').forEach(x=>x.classList.remove('selected'));el.classList.add('selected');
-  Store.set('selectedTime',time);document.getElementById('step4').classList.add('active');this.updateBookingSummary();
- },
- updateBookingSummary(){
-  const st=Store.get(),iid=document.getElementById('bookInstructor')?.value,cid=document.getElementById('bookCourse')?.value;
-  const ins=st.instructors.find(x=>String(x.id)===String(iid)),course=st.courses.find(x=>String(x.id)===String(cid));
-  document.getElementById('bookingSummary').innerHTML=`<b>Bron xulosasi</b><br>👨‍🏫 ${this.esc(ins?.name||ins?.full_name||'—')}<br>📅 ${this.esc(document.getElementById('bookDate')?.value||'—')} · 🕐 ${this.esc(st.selectedTime||'Vaqt tanlanmagan')}<br>📚 ${this.esc(course?.name||'—')} · ${this.esc(course?.duration_minutes||0)} daqiqa`;
- },
+ selectTime(el,time){document.querySelectorAll('.time').forEach(x=>x.classList.remove('selected'));el.classList.add('selected');Store.set('selectedTime',time);document.getElementById('step4')?.classList.add('active');this.updateBookingSummary()},
+ updateBookingSummary(){const st=Store.get(),iid=document.getElementById('bookInstructor')?.value,cid=document.getElementById('bookCourse')?.value,ins=st.instructors.find(x=>String(x.id)===String(iid)),course=st.courses.find(x=>String(x.id)===String(cid)),box=document.getElementById('bookingSummary');if(box)box.innerHTML=`<b>Bron xulosasi</b><br>👨‍🏫 ${this.esc(ins?.name||ins?.full_name||'—')}<br>📅 ${this.esc(document.getElementById('bookDate')?.value||'—')} · 🕐 ${this.esc(st.selectedTime||'Vaqt tanlanmagan')}<br>📚 ${this.esc(course?.name||'—')} · ${this.esc(course?.duration_minutes||0)} daqiqa`},
  async confirmBooking(){
-  const s=Store.get(),instructor_id=document.getElementById('bookInstructor').value,date=document.getElementById('bookDate').value,course_id=document.getElementById('bookCourse').value,time=s.selectedTime,note=document.getElementById('bookNote').value.trim();
-  if(!time)return this.toast('Avval bo‘sh vaqtni tanlang');
-  const body={instructor_id,course_id,booking_date:`${date}T${time}:00`,customer_note:note};
-  const r=await API.createBooking(body);
-  if(AVTODROM_CONFIG.apiBase&&!r)return this.toast('Bron yaratishda server bilan aloqa yo‘q');
-  const booking=r?.booking||{id:'local-'+Date.now(),...body,status:'pending',created_at:new Date().toISOString()};
-  s.bookings.unshift(booking);localStorage.setItem('av_bookings',JSON.stringify(s.bookings));
-  this.toast('Bron muvaffaqiyatli yuborildi ✓');this.go('bookings');
+  const s=Store.get(),instructor_id=document.getElementById('bookInstructor')?.value,date=document.getElementById('bookDate')?.value,course_id=document.getElementById('bookCourse')?.value,time=s.selectedTime,note=document.getElementById('bookNote')?.value.trim()||'',btn=document.getElementById('confirmBookingBtn');
+  if(!instructor_id)return this.toast('Instruktorni tanlang');if(!date)return this.toast('Sanani tanlang');if(!course_id)return this.toast('Mashg‘ulotni tanlang');if(!time)return this.toast('Avval bo‘sh vaqtni tanlang');
+  const start_at=`${date}T${time}:00+05:00`;if(btn)btn.disabled=true;
+  try{const r=await API.createBooking({instructor_id,course_id,start_at,customer_note:note});if(!r?.ok)throw new Error(r?.error||'Bron yaratilmadi');this.toast('Bron muvaffaqiyatli yuborildi ✓');s.selectedTime='';this.go('bookings');await this.loadBookings()}catch(e){console.error(e);this.toast(e.message||'Bron yaratishda xatolik')}finally{if(btn)btn.disabled=false}
  },
- async loadBookings(){
-  const r=await API.bookings();if(r?.bookings)Store.set('bookings',r.bookings);
-  else{try{Store.set('bookings',JSON.parse(localStorage.getItem('av_bookings')||'[]'))}catch{}}
-  this.renderBookings();
- },
- filterBookings(btn,f){
-  document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));btn.classList.add('active');Store.set('bookingFilter',f);this.renderBookings();
- },
+ async loadBookings(){try{const r=await API.bookings();if(r?.bookings)Store.set('bookings',r.bookings)}catch(e){console.error('bookings',e)}this.renderBookings()},
+ filterBookings(btn,f){document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));btn.classList.add('active');Store.set('bookingFilter',f);this.renderBookings()},
  renderBookings(){
-  const box=document.getElementById('bookingList');if(!box)return;
-  const f=Store.get().bookingFilter||'',rows=Store.get().bookings.filter(x=>!f||x.status===f);
-  if(!rows.length){box.innerHTML='<div class="card empty">Hozircha bronlar yo‘q.<br><br><button class="primary green" onclick="App.go(\'book\')">Birinchi bronni qilish</button></div>';return}
-  box.innerHTML=rows.map(b=>{
-   const ins=Store.get().instructors.find(x=>String(x.id)===String(b.instructor_id));const course=Store.get().courses.find(x=>String(x.id)===String(b.course_id));
-   const status=b.status||'pending',labels={pending:'Kutilmoqda',confirmed:'Tasdiqlangan',completed:'Tugagan',cancelled:'Bekor qilingan',rejected:'Rad etilgan',no_show:'Kelmagan'};
-   return `<article class="card booking-card"><div class="booking-row"><div><span class="status ${this.esc(status)}">${labels[status]||status}</span><h3>${this.esc(course?.name||b.course?.name||'Mashg‘ulot')}</h3></div><b>#${this.esc(String(b.id).slice(0,8))}</b></div>
-    <div class="booking-info"><div class="info"><span>Instruktor</span><b>${this.esc(ins?.name||b.instructor?.profile?.full_name||'—')}</b></div><div class="info"><span>Sana</span><b>${this.esc(this.date(b.booking_date))}</b></div><div class="info"><span>Vaqt</span><b>${this.esc(this.time(b.booking_date))}</b></div></div>
-    ${b.customer_note?`<p class="muted">Izoh: ${this.esc(b.customer_note)}</p>`:''}
-   </article>`;
-  }).join('');
+  const box=document.getElementById('bookingList');if(!box)return;const st=Store.get(),f=st.bookingFilter||'',rows=st.bookings.filter(x=>!f||x.status===f);
+  if(!rows.length){box.innerHTML='<div class="card empty">Hozircha bronlar yo‘q.<br><br><button class="primary green" onclick="App.go(\\'book\\')">Birinchi bronni qilish</button></div>';return}
+  const labels={pending:'Kutilmoqda',confirmed:'Tasdiqlangan',in_progress:'Jarayonda',completed:'Tugagan',cancelled:'Bekor qilingan',rejected:'Rad etilgan',no_show:'Kelmagan'};
+  box.innerHTML=rows.map(b=>{const ins=st.instructors.find(x=>String(x.id)===String(b.instructor_id)),course=st.courses.find(x=>String(x.id)===String(b.course_id)),dt=b.start_at||b.booking_date||b.end_at;return `<article class="card booking-card"><div class="booking-row"><div><span class="status ${this.escAttr(b.status||'pending')}">${this.esc(labels[b.status]||b.status||'pending')}</span><h3>${this.esc(course?.name||b.course?.name||'Mashg‘ulot')}</h3></div><b>#${this.esc(String(b.id||'').slice(0,8))}</b></div><div class="booking-info"><div class="info"><span>Instruktor</span><b>${this.esc(ins?.name||b.instructor?.profile?.full_name||'—')}</b></div><div class="info"><span>Sana</span><b>${this.esc(this.date(dt))}</b></div><div class="info"><span>Vaqt</span><b>${this.esc(this.time(dt))}</b></div></div>${b.customer_note?`<p class="meta">Izoh: ${this.esc(b.customer_note)}</p>`:''}</article>`}).join('')
  },
- async loadChat(){
-  const r=await API.messages(Store.get().selectedChat);if(r?.messages)Store.set('messages',r.messages);
-  else Store.set('messages',this.localMessages());
-  this.renderMessages();this.renderChats();
- },
- renderChats(){},
- renderMessages(){
-  const box=document.getElementById('messages');if(!box)return;
-  const rows=Store.get().messages||[];
-  box.innerHTML=rows.length?rows.map(m=>`<div class="msg ${m.mine||m.sender_id==='me'?'mine':''}"><b>${this.esc(m.sender_name||'Foydalanuvchi')}</b><br>${this.esc(m.text||m.message||'')}<small>${this.time(m.created_at||new Date())}</small></div>`).join(''):'<div class="empty">Hali xabarlar yo‘q. Birinchi bo‘lib yozing 👋</div>';
-  box.scrollTop=box.scrollHeight;
- },
- async sendMessage(){
-  const input=document.getElementById('chatInput'),text=input.value.trim();if(!text)return;
-  const body={text};const r=await API.sendMessage(Store.get().selectedChat,body);
-  const msg=r?.message||{id:'m-'+Date.now(),sender_id:'me',sender_name:Store.get().user?.full_name||'Siz',text,created_at:new Date().toISOString(),mine:true};
-  Store.get().messages.push(msg);input.value='';this.renderMessages();
- },
- localMessages(){return [{id:'welcome',sender_name:'AVTODROM Admin',text:'Assalomu alaykum! Savollaringiz bo‘lsa shu yerda yozishingiz mumkin.',created_at:new Date().toISOString()}]},
- async renderProfile(){
-  const u=Store.get().user||{full_name:'Mehmon foydalanuvchi',phone:'—',telegram_id:'—'};
-  document.getElementById('profileName').textContent=u.full_name||'Foydalanuvchi';
-  document.getElementById('profilePhone').textContent=u.phone||'—';
-  document.getElementById('profileTelegram').textContent=u.telegram_id||'—';
-  document.getElementById('profileSub').textContent=u.phone?'Telefon tasdiqlangan':'Profil ma’lumotlarini to‘ldiring';
-  const av=document.getElementById('profileAvatar');av.innerHTML=u.avatar_url?`<img src="${this.esc(u.avatar_url)}">`:'👤';
- },
- editProfile(){
-  const u=Store.get().user||{};
-  this.openModal('Profilni tahrirlash',`<form id="profileForm"><div class="field"><label>Ism familiya</label><input name="full_name" value="${this.escAttr(u.full_name||'')}"></div><br><div class="field"><label>Telefon</label><input name="phone" value="${this.escAttr(u.phone||'')}" placeholder="+998..."></div><br><button class="primary green" style="width:100%">Saqlash</button></form>`);
-  document.getElementById('profileForm').onsubmit=e=>{e.preventDefault();const f=new FormData(e.target);const n={...u,full_name:f.get('full_name'),phone:f.get('phone')};Store.saveUser(n);this.renderProfile();this.closeModal();this.toast('Profil saqlandi')};
- },
- setLang(lang){Store.set('lang',lang);localStorage.setItem('av_lang',lang);this.toast(lang==='uz'?'Til o‘zgartirildi':'Language changed')},
- openNotifications(){
-  const rows=Store.get().notifications;document.getElementById('notifications').innerHTML=rows.length?rows.map(n=>`<div class="notification ${!n.read?'unread':''}"><b>${this.esc(n.title||'Bildirishnoma')}</b><p>${this.esc(n.body||n.message||'')}</p><small class="muted">${this.date(n.created_at)}</small></div>`).join(''):'<div class="empty">Yangi bildirishnomalar yo‘q.</div>';
-  document.getElementById('drawer').classList.add('show');
- },
+ async loadChat(){Store.set('messages',this.localMessages());this.renderMessages()},
+ renderMessages(){const box=document.getElementById('messages');if(!box)return;const rows=Store.get().messages||[];box.innerHTML=rows.map(m=>`<div class="msg ${m.mine?'mine':''}"><b>${this.esc(m.sender_name||'AVTODROM')}</b><br>${this.esc(m.text||'')}<small>${this.time(m.created_at)}</small></div>`).join('');box.scrollTop=box.scrollHeight},
+ async sendMessage(){const input=document.getElementById('chatInput'),text=input?.value.trim();if(!text)return;Store.get().messages.push({id:'m-'+Date.now(),sender_name:Store.get().user?.full_name||'Siz',text,created_at:new Date().toISOString(),mine:true});input.value='';this.renderMessages();this.toast('Xabar qo‘shildi')},
+ localMessages(){return[{id:'welcome',sender_name:'AVTODROM Admin',text:'Assalomu alaykum! Savollaringiz bo‘lsa shu yerda yozishingiz mumkin.',created_at:new Date().toISOString(),mine:false}]},
+ selectChat(){this.loadChat()},
+ renderProfile(){const u=Store.get().user||{full_name:'Mehmon foydalanuvchi',phone:'—',telegram_id:'—'};document.getElementById('profileName').textContent=u.full_name||'Foydalanuvchi';document.getElementById('profilePhone').textContent=u.phone||'—';document.getElementById('profileTelegram').textContent=u.telegram_id||'—';document.getElementById('profileSub').textContent=u.phone?'Telefon tasdiqlangan':'Profil ma’lumotlarini to‘ldiring';const av=document.getElementById('profileAvatar');av.innerHTML=u.avatar_url?`<img src="${this.escAttr(u.avatar_url)}">`:'👤'},
+ editProfile(){const u=Store.get().user||{};this.openModal('Profilni tahrirlash',`<form id="profileForm"><div class="field"><label>Ism familiya</label><input name="full_name" value="${this.escAttr(u.full_name||'')}"></div><br><div class="field"><label>Telefon</label><input name="phone" value="${this.escAttr(u.phone||'')}" placeholder="+998..."></div><br><button class="primary green" style="width:100%">Saqlash</button></form>`);document.getElementById('profileForm').onsubmit=e=>{e.preventDefault();const f=new FormData(e.target);const n={...u,full_name:String(f.get('full_name')||'').trim(),phone:String(f.get('phone')||'').trim()};Store.saveUser(n);this.renderProfile();this.closeModal();this.toast('Profil saqlandi')}},
+ openNotifications(){const rows=Store.get().notifications,box=document.getElementById('notifications');box.innerHTML=rows.length?rows.map(n=>`<div class="notification ${!n.read?'unread':''}"><b>${this.esc(n.title||'Bildirishnoma')}</b><p>${this.esc(n.body||n.message||'')}</p><small class="meta">${this.date(n.created_at)}</small></div>`).join(''):'<div class="empty">Yangi bildirishnomalar yo‘q.</div>';document.getElementById('drawer').classList.add('show')},
  closeDrawer(){document.getElementById('drawer').classList.remove('show')},
  openMap(){window.open('https://www.google.com/maps/search/?api=1&query=Avtodrom+Tashkent','_blank')},
  call(){window.location.href='tel:+998000000000'},
  openModal(title,html){document.getElementById('modalTitle').textContent=title;document.getElementById('modalBody').innerHTML=html;document.getElementById('modal').classList.add('show')},
  closeModal(){document.getElementById('modal').classList.remove('show')},
- toast(text){const x=document.getElementById('toast');x.textContent=text;x.classList.add('show');clearTimeout(this._toast);this._toast=setTimeout(()=>x.classList.remove('show'),2500)},
+ toast(text){const x=document.getElementById('toast');if(!x)return;x.textContent=text;x.classList.add('show');clearTimeout(this._toast);this._toast=setTimeout(()=>x.classList.remove('show'),2600)},
  updateNotifDot(){const unread=Store.get().notifications.some(x=>!x.read);document.getElementById('notifDot')?.classList.toggle('hide',!unread)},
  date(v){if(!v)return'—';try{return new Date(v).toLocaleDateString('uz-UZ',{day:'2-digit',month:'short',year:'numeric'})}catch{return String(v)}},
  time(v){if(!v)return'—';try{return new Date(v).toLocaleTimeString('uz-UZ',{hour:'2-digit',minute:'2-digit'})}catch{return'—'}},
