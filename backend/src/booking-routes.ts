@@ -14,6 +14,24 @@ import {
 
 const ACTIVE_STATUSES = 'pending,confirmed,in_progress';
 
+/**
+ * Postgres constraint xatolarini foydalanuvchi tushunadigan xabarga aylantiradi.
+ * Phase 4 migratsiyasi qo'shgan EXCLUDE constraint'lar xom holda
+ * "conflicting key value violates exclusion constraint ..." deb chiqadi.
+ */
+export function humanizeDbError(e: unknown, fallback: string): string {
+  const m = e instanceof Error ? e.message : String(e ?? '');
+  if (/bookings_no_instructor_overlap/.test(m)) return 'Bu vaqt allaqachon band. Boshqa vaqtni tanlang.';
+  if (/bookings_no_customer_overlap/.test(m))   return 'Sizda shu vaqtda boshqa bron bor.';
+  if (/bookings_time_valid/.test(m))            return 'Vaqt oralig‘i noto‘g‘ri.';
+  if (/BOOKING_NOT_COMPLETED/.test(m))          return 'Faqat tugagan mashg‘ulot uchun sharh qoldirish mumkin.';
+  if (/BOOKING_NOT_FOUND/.test(m))              return 'Bron topilmadi.';
+  if (/REVIEW_CUSTOMER_MISMATCH/.test(m))       return 'Bu bron sizga tegishli emas.';
+  if (/reviews_booking_id_key/.test(m))         return 'Bu mashg‘ulot uchun sharh allaqachon yuborilgan.';
+  if (/users_phone_key/.test(m))                return 'Bu telefon raqami boshqa foydalanuvchida ro‘yxatdan o‘tgan.';
+  return m || fallback;
+}
+
 const BOOKING_SELECT =
   'select=*,' +
   'customer:customer_id(id,full_name,phone,telegram_id),' +
@@ -288,7 +306,9 @@ export async function registerBookingRoutes(
       }
       return reply.code(201).send({ ok: true, booking: shapeBooking(booking) });
     } catch (e) {
-      return reply.code(400).send({ ok: false, error: e instanceof Error ? e.message : 'Bron yaratilmadi' });
+      const msg = humanizeDbError(e, 'Bron yaratilmadi');
+      const code = /band|boshqa bron/.test(msg) ? 409 : 400;
+      return reply.code(code).send({ ok: false, error: msg });
     }
   });
 
@@ -325,7 +345,7 @@ export async function registerBookingRoutes(
       await notifyBookingParties(booking, 'Bron bekor qilindi', 'Mijoz bronni bekor qildi.');
       return { ok: true, booking: shapeBooking(booking) };
     } catch (e) {
-      return reply.code(400).send({ ok: false, error: e instanceof Error ? e.message : 'Bron bekor qilinmadi' });
+      return reply.code(400).send({ ok: false, error: humanizeDbError(e, 'Bron bekor qilinmadi') });
     }
   });
 
