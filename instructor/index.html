@@ -25,7 +25,7 @@ button,input,select{font:inherit}button{cursor:pointer}.app{min-height:100vh}.si
 </aside>
 <main class="main">
 <div class="mobile"><b>🚗 AVTODROM INSTRUKTOR</b><button class="logout" id="logoutMobile">Chiqish</button></div>
-<header class="top"><div class="title"><h1 id="pageTitle">Instruktor paneli</h1><p id="welcome">Bronlar va o‘quvchilar jarayonini boshqarish</p></div><button class="logout" id="logout">Chiqish</button></header>
+<header class="top"><div class="title"><h1 id="pageTitle">👨‍🏫 Instruktor paneli</h1><p id="welcome">Bronlar va o‘quvchilar jarayonini boshqarish</p></div><button class="logout" id="logout">Chiqish</button></header>
 
 <section id="dashboard" class="section active">
 <div class="hero"><div class="profile"><div class="avatar" id="avatar">I</div><div><h2 id="instructorName">Yuklanmoqda...</h2><p id="approval">Tasdiqlash holati tekshirilmoqda...</p></div></div></div>
@@ -61,6 +61,16 @@ button,input,select{font:inherit}button{cursor:pointer}.app{min-height:100vh}.si
 
 <div id="toast" style="position:fixed;right:18px;bottom:18px;background:#10231b;color:#fff;padding:12px 15px;border-radius:10px;display:none;z-index:50"></div>
 <script>
+/*
+  IMPORTANT:
+  This page is the INSTRUCTOR Mini App only.
+  It intentionally NEVER redirects to "/" because "/" belongs to Customer.
+  Telegram must open this exact page as a Web App URL.
+*/
+const TELEGRAM_WEBAPP = window.Telegram?.WebApp || null;
+if (TELEGRAM_WEBAPP) {
+  try { TELEGRAM_WEBAPP.ready(); TELEGRAM_WEBAPP.expand(); } catch {}
+}
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
 let bookings=[], currentFilter='all', me=null;
 const titles={dashboard:'Instruktor paneli',bookings:'Mening bronlarim',statistics:'Statistikam',profile:'Mening profilim'};
@@ -68,7 +78,23 @@ function esc(v){return String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&l
 function date(v){if(!v)return'—';try{return new Date(v).toLocaleString('uz-UZ',{dateStyle:'medium',timeStyle:'short'})}catch{return String(v)}}
 function day(v){if(!v)return'';return new Date(v).toLocaleDateString('en-CA')}
 function toast(t){let x=$('#toast');x.textContent=t;x.style.display='block';setTimeout(()=>x.style.display='none',2500)}
-async function api(path,opt={}){let r=await fetch(path,{credentials:'same-origin',headers:{'Content-Type':'application/json',...(opt.headers||{})},...opt});let d=null;try{d=await r.json()}catch{}if(!r.ok)throw Error(d?.error||('Server xatosi '+r.status));return d}
+async function api(path,opt={}){
+  let r;
+  try{
+    r=await fetch(path,{credentials:'include',headers:{
+      'Content-Type':'application/json',
+      ...(opt.headers||{})
+    },...opt});
+  }catch(e){
+    throw Error('Serverga ulanib bo‘lmadi. Instructor backend URL va /api/instructor endpointlarini tekshiring.');
+  }
+  let d=null; try{d=await r.json()}catch{}
+  if(!r.ok){
+    if(r.status===401) throw Error('Instruktor sessiyasi topilmadi. Telegram bot ichidagi Instruktor Mini App tugmasidan kiring.');
+    throw Error(d?.error||('Server xatosi '+r.status));
+  }
+  return d;
+}
 function badge(s){let m={pending:'Kutilmoqda',confirmed:'Qabul qilingan',arrived:'Keldi',left:'Ketdi',completed:'Tugagan',cancelled:'Bekor qilingan',rejected:'Rad etilgan'};return '<span class="badge '+esc(s)+'">'+esc(m[s]||s||'—')+'</span>'}
 function go(section){$$('.section').forEach(x=>x.classList.toggle('active',x.id===section));$$('.nav button').forEach(x=>x.classList.toggle('active',x.dataset.section===section));$('#pageTitle').textContent=titles[section]||section;history.replaceState(null,'','#'+section);if(section==='dashboard')loadDashboard();if(section==='bookings')loadBookings();if(section==='statistics')loadStats();if(section==='profile')loadProfile()}
 $$('.nav button').forEach(b=>b.onclick=()=>go(b.dataset.section));
@@ -80,7 +106,12 @@ async function loadMe(){
    $('#instructorName').textContent=name; $('#avatar').textContent=name.charAt(0).toUpperCase();
    const approved=me.is_verified??me.approved??me.profile?.is_verified;
    $('#approval').textContent=approved===false?'⏳ Admin tasdig‘i kutilmoqda':'✅ Admin tomonidan tasdiqlangan';
- }catch(e){toast(e.message);setTimeout(()=>location.replace('/'),800)}
+ }catch(e){
+      $('#instructorName').textContent='Instruktor sessiyasi topilmadi';
+      $('#approval').textContent='⚠️ '+e.message;
+      $('#todayBox').innerHTML='<div class="error"><b>Instruktor Mini App ulanishi:</b><br>'+esc(e.message)+'<br><br>Bu sahifa Customer panelga yo‘naltirmaydi. Telegram botdagi “Instruktor panelini ochish” tugmasidan qayta oching.</div>';
+      $('#today').textContent='—'; $('#week').textContent='—'; $('#month').textContent='—'; $('#year').textContent='—';
+    }
 }
 async function loadDashboard(){
  try{
@@ -136,7 +167,14 @@ async function loadProfile(){
 }
 $$('#filters button').forEach(b=>b.onclick=()=>{$$('#filters button').forEach(x=>x.classList.remove('active'));b.classList.add('active');currentFilter=b.dataset.filter;loadBookings()});
 $('#refresh1').onclick=loadDashboard;$('#refresh2').onclick=loadBookings;$('#refreshProfile').onclick=loadProfile;
-async function logout(){try{await api('/api/instructor/logout',{method:'POST'})}finally{location.replace('/')}}
+async function logout(){
+  try{await api('/api/instructor/logout',{method:'POST'})}
+  finally{
+    // Do NOT redirect to "/" — that route is Customer.
+    $('#approval').textContent='Sessiya yakunlandi. Telegram botdan qayta kiring.';
+    document.querySelectorAll('button').forEach(b=>b.disabled=true);
+  }
+}
 $('#logout').onclick=logout;$('#logoutMobile').onclick=logout;
 (async()=>{await loadMe();const s=location.hash.slice(1);go(titles[s]?s:'dashboard')})();
 </script>
