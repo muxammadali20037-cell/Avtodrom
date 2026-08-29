@@ -83,9 +83,11 @@ export default async function handler(req: any, res: any) {
       address,
       latitude,
       longitude,
-      google_url: String(v.google_url || '').trim(),
-      yandex_url: String(v.yandex_url || '').trim(),
-      two_gis_url: String(v.two_gis_url || '').trim(),
+      // Keep both the new canonical names and the old aliases so existing
+      // customer/admin clients continue to work without a breaking change.
+      google_url: String(v.google_url || v.google || '').trim(),
+      yandex_url: String(v.yandex_url || v.yandex || '').trim(),
+      two_gis_url: String(v.two_gis_url || v['2gis'] || '').trim(),
     };
 
     const oldRows = await supabaseRest<any[]>('admin_settings', {
