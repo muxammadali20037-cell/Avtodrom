@@ -1,172 +1,398 @@
 /**
- * AVTODROM — kanonik identifikatsiya qatlami.
- *
- * Bazada YAGONA haqiqat manbai:
- *   users               (id, telegram_id, full_name, phone, role, is_active, is_blocked)
- *   instructor_profiles (id, user_id -> users.id, is_verified, is_available, ...)
- *
- * `profiles` va `instructors` — faqat O'QISH uchun view'lar (INSTEAD OF trigger yo'q),
- * shuning uchun ularga hech qachon INSERT/PATCH qilinmaydi.
- *
- * Frontend `first_name` / `last_name` kutadi, bazada esa `full_name` bor —
- * konversiya shu yerda, bitta joyda bajariladi.
+ * AVTODROM — mijoz (customer) endpointlari.
+ * Kanonik jadvallar: users, instructor_profiles, bookings, notifications.
+ * `profiles` / `instructors` view'lariga MUROJAAT QILINMAYDI (ular read-only).
  */
+import type { FastifyInstance } from 'fastify';
 import { supabaseRest } from './supabase.js';
+import { sendBookingNotification } from './telegram.js';
 import type { TelegramWebAppUser } from './telegram.js';
+import {
+  q, joinName, splitName, toProfile, toInstructorCard,
+  userForTelegram, instructorProfileForUser, notifyUser,
+} from './identity.js';
 
-export function q(value: string) { return encodeURIComponent(value); }
+const ACTIVE_STATUSES = 'pending,confirmed,in_progress';
 
-export function splitName(fullName?: string | null) {
-  const s = String(fullName ?? '').trim();
-  if (!s) return { first_name: '', last_name: '' };
-  const i = s.indexOf(' ');
-  if (i < 0) return { first_name: s, last_name: '' };
-  return { first_name: s.slice(0, i), last_name: s.slice(i + 1).trim() };
-}
+const BOOKING_SELECT =
+  'select=*,' +
+  'customer:customer_id(id,full_name,phone,telegram_id),' +
+  'instructor:instructor_id(id,user_id,rating,total_reviews,user:user_id(id,full_name,phone,telegram_id)),' +
+  'course:course_id(id,name,duration_minutes,price)';
 
-export function joinName(first?: string | null, last?: string | null) {
-  return [String(first ?? '').trim(), String(last ?? '').trim()].filter(Boolean).join(' ');
-}
+/** Ruxsat etilgan status o'tishlari. Bu yerda bo'lmagan o'tish har doim rad etiladi. */
+const STATUS_TRANSITIONS: Record<string, string[]> = {
+  pending: ['confirmed', 'rejected', 'cancelled'],
+  confirmed: ['in_progress', 'cancelled', 'no_show'],
+  in_progress: ['completed'],
+  completed: [],
+  cancelled: [],
+  rejected: [],
+  no_show: [],
+};
 
-/** users satrini frontend kutadigan shaklga o'giradi. */
-export function toProfile(user: any, extra: { username?: string | null } = {}) {
-  if (!user) return null;
-  const { first_name, last_name } = splitName(user.full_name);
+function shapeBooking(row: any) {
+  if (!row) return row;
+  const insUser = row.instructor?.user ?? null;
+  const { first_name, last_name } = splitName(insUser?.full_name);
   return {
-    id: user.id,
-    telegram_id: user.telegram_id ?? null,
-    first_name,
-    last_name,
-    full_name: user.full_name ?? '',
-    phone: user.phone ?? null,
-    username: extra.username ?? null,
-    role: user.role ?? 'customer',
-    active: user.is_active !== false && user.is_blocked !== true,
-    is_active: user.is_active !== false,
-    is_blocked: user.is_blocked === true,
+    ...row,
+    // Frontend start_at/end_at ko'rsatadi; admin yaratgan bronlarda bo'sh
+    // bo'lishi mumkin — shunda booking_date ga tushamiz.
+    start_at: row.start_at ?? row.booking_date ?? null,
+    end_at: row.end_at ?? null,
+    instructor: row.instructor
+      ? { ...row.instructor, profile: { first_name, last_name, phone: insUser?.phone ?? null } }
+      : null,
   };
 }
 
-/** Telegram registri — bot uchun username/til saqlanadi. Xato bo'lsa oqim to'xtamaydi. */
-export async function rememberTelegramUser(u: TelegramWebAppUser, role: string) {
-  try {
-    await supabaseRest('telegram_users', {
-      method: 'POST',
-      headers: { Prefer: 'resolution=merge-duplicates,return=minimal' },
-      body: JSON.stringify({
-        telegram_id: u.id,
-        first_name: u.first_name ?? null,
-        last_name: u.last_name ?? null,
-        username: (u as any).username ?? null,
-        language_code: (u as any).language_code ?? null,
-        role,
-        updated_at: new Date().toISOString(),
-      }),
-    });
-  } catch (e) {
-    console.error('telegram_users upsert skipped:', e);
-  }
-}
-
-export async function findUserByTelegram(telegramId: number | string) {
+async function telegramOf(userId?: string | null) {
+  if (!userId) return null;
   const rows = await supabaseRest<any[]>('users', {
-    query: `?telegram_id=eq.${q(String(telegramId))}&select=*&limit=1`,
+    query: `?id=eq.${q(String(userId))}&select=telegram_id,full_name&limit=1`,
   });
   return rows[0] ?? null;
 }
 
-/**
- * Telegram foydalanuvchisi uchun `users` yozuvini topadi, bo'lmasa yaratadi.
- * MUHIM: eski kod `profiles` view'iga INSERT qilardi — u yozib bo'lmaydigan view,
- * shuning uchun har bir yangi mijoz shu yerda yiqilardi.
- */
-export async function userForTelegram(
-  u: TelegramWebAppUser,
-  options: { create?: boolean; role?: 'customer' | 'instructor' } = {},
-) {
-  const { create = true, role = 'customer' } = options;
-
-  const existing = await findUserByTelegram(u.id);
-  if (existing) { void rememberTelegramUser(u, existing.role ?? role); return existing; }
-  if (!create) return null;
-
-  // full_name NOT NULL — hech qachon bo'sh qoldirmaymiz.
-  const fullName =
-    joinName(u.first_name, u.last_name) ||
-    String((u as any).username ?? '').trim() ||
-    `Telegram ${u.id}`;
-
+async function notifyBookingParties(booking: any, title: string, message: string) {
   try {
-    const created = await supabaseRest<any[]>('users', {
-      method: 'POST',
-      headers: { Prefer: 'return=representation' },
-      body: JSON.stringify({ telegram_id: u.id, full_name: fullName, role }),
-    });
-    if (created[0]) { void rememberTelegramUser(u, role); return created[0]; }
-  } catch (error) {
-    // Parallel so'rovlar bir vaqtda yaratmoqchi bo'lsa — qayta o'qiymiz.
-    const retry = await findUserByTelegram(u.id);
-    if (retry) return retry;
-    throw error;
-  }
+    await notifyUser(booking?.customer_id, 'booking', title, message);
+    const customer = await telegramOf(booking?.customer_id);
+    const cToken = String(process.env.CUSTOMER_BOT_TOKEN || process.env.TELEGRAM_CUSTOMER_BOT_TOKEN || '');
+    const cUrl = String(process.env.CUSTOMER_MINI_APP_URL || process.env.MINI_APP_URL || '');
+    if (cToken && Number.isSafeInteger(Number(customer?.telegram_id))) {
+      await sendBookingNotification(cToken, Number(customer.telegram_id),
+        `🚗 AVTODROM\n\n${title}\n${message}`, cUrl, '🚗 Panelni ochish');
+    }
 
-  const retry = await findUserByTelegram(u.id);
-  if (retry) return retry;
-  throw new Error('Foydalanuvchi yaratilmadi');
-}
-
-/** user_id bo'yicha instruktor profili. approvedOnly=true bo'lsa faqat tasdiqlangan+faol. */
-export async function instructorProfileForUser(userId: string, approvedOnly = true) {
-  const filters = [`user_id=eq.${q(String(userId))}`, 'select=*', 'limit=1'];
-  if (approvedOnly) filters.push('is_verified=eq.true', 'is_available=eq.true');
-  const rows = await supabaseRest<any[]>('instructor_profiles', { query: `?${filters.join('&')}` });
-  return rows[0] ?? null;
-}
-
-/**
- * Bildirishnoma yozadi.
- * Bazadagi ustunlar: user_id, type, title, message (hammasi NOT NULL, `type` ham).
- * Eski kod profile_id/body/channel/booking_id yozardi — bunday ustunlar yo'q.
- */
-export async function notifyUser(
-  userId: string | null | undefined,
-  type: string,
-  title: string,
-  message: string,
-) {
-  if (!userId) return;
-  try {
-    await supabaseRest('notifications', {
-      method: 'POST',
-      headers: { Prefer: 'return=minimal' },
-      body: JSON.stringify({ user_id: userId, type, title, message }),
-    });
+    if (booking?.instructor_id) {
+      const ip = await supabaseRest<any[]>('instructor_profiles', {
+        query: `?id=eq.${q(String(booking.instructor_id))}&select=user_id&limit=1`,
+      });
+      const instructorUserId = ip[0]?.user_id;
+      await notifyUser(instructorUserId, 'booking', title, message);
+      const instructor = await telegramOf(instructorUserId);
+      const iToken = String(process.env.INSTRUCTOR_BOT_TOKEN || process.env.TELEGRAM_INSTRUCTOR_BOT_TOKEN || '');
+      const iUrl = String(process.env.INSTRUCTOR_MINI_APP_URL || '');
+      if (iToken && Number.isSafeInteger(Number(instructor?.telegram_id))) {
+        await sendBookingNotification(iToken, Number(instructor.telegram_id),
+          `👨‍🏫 AVTODROM\n\n${title}\n${message}`, iUrl, '👨‍🏫 Instruktor panelini ochish');
+      }
+    }
   } catch (e) {
-    console.error('notification insert failed:', e);
+    console.error('Booking notification failed:', e);
   }
 }
 
-/** instructor_profiles + embed qilingan user'ni frontend shakliga o'giradi. */
-export function toInstructorCard(row: any) {
-  const user = row?.user ?? row?.users ?? null;
-  const { first_name, last_name } = splitName(user?.full_name);
-  return {
-    id: row.id,
-    user_id: row.user_id,
-    profile_id: row.user_id,
-    telegram_id: user?.telegram_id ?? null,
-    first_name,
-    last_name,
-    full_name: user?.full_name ?? '',
-    phone: user?.phone ?? null,
-    bio: row.bio ?? null,
-    experience_years: row.experience_years ?? 0,
-    rating: row.rating ?? 0,
-    total_reviews: row.total_reviews ?? 0,
-    approved: row.is_verified === true,
-    is_verified: row.is_verified === true,
-    active: row.is_available === true && user?.is_active !== false && user?.is_blocked !== true,
-    is_available: row.is_available === true,
-    profile: { id: user?.id ?? null, first_name, last_name, phone: user?.phone ?? null },
-  };
+export async function registerBookingRoutes(
+  app: FastifyInstance,
+  authenticate: (request: any) => Promise<TelegramWebAppUser>,
+  /** Bron holatini o'zgartirish uchun: instruktor/admin boshqa botdan keladi. */
+  authenticateAny: (request: any) => Promise<TelegramWebAppUser> = authenticate,
+) {
+  app.get('/api/me', async (request, reply) => {
+    try {
+      const tg = await authenticate(request);
+      const user = await userForTelegram(tg);
+      return { ok: true, profile: toProfile(user, { username: (tg as any).username ?? null }) };
+    } catch (e) {
+      return reply.code(401).send({ ok: false, error: e instanceof Error ? e.message : 'Unauthorized' });
+    }
+  });
+
+  app.patch('/api/me', async (request, reply) => {
+    try {
+      const tg = await authenticate(request);
+      const user = await userForTelegram(tg);
+      const body = (request.body ?? {}) as { first_name?: string; last_name?: string; phone?: string };
+      const current = splitName(user.full_name);
+
+      const patch: Record<string, unknown> = { updated_at: new Date().toISOString() };
+      if (body.first_name !== undefined || body.last_name !== undefined) {
+        const full = joinName(
+          body.first_name ?? current.first_name,
+          body.last_name ?? current.last_name,
+        );
+        if (!full) return reply.code(400).send({ ok: false, error: 'Ism majburiy' });
+        patch.full_name = full;
+      }
+      if (body.phone !== undefined) patch.phone = String(body.phone).trim() || null;
+
+      const rows = await supabaseRest<any[]>('users', {
+        method: 'PATCH',
+        headers: { Prefer: 'return=representation' },
+        query: `?id=eq.${q(String(user.id))}`,
+        body: JSON.stringify(patch),
+      });
+      return { ok: true, profile: toProfile(rows[0] ?? user, { username: (tg as any).username ?? null }) };
+    } catch (e) {
+      return reply.code(400).send({ ok: false, error: e instanceof Error ? e.message : 'Profil saqlanmadi' });
+    }
+  });
+
+  /** Faqat admin tasdiqlagan (is_verified) va faol (is_available) instruktorlar. */
+  app.get('/api/instructors', async (request, reply) => {
+    try {
+      await authenticate(request);
+      const rows = await supabaseRest<any[]>('instructor_profiles', {
+        query:
+          '?is_verified=eq.true&is_available=eq.true' +
+          '&select=id,user_id,bio,experience_years,rating,total_reviews,is_verified,is_available,' +
+          'user:user_id(id,full_name,phone,telegram_id,is_active,is_blocked)' +
+          '&order=created_at.desc',
+      });
+      const instructors = rows.map(toInstructorCard).filter((x) => x.active);
+      return { ok: true, instructors };
+    } catch (e) {
+      return reply.code(400).send({ ok: false, error: e instanceof Error ? e.message : 'Instruktorlar yuklanmadi' });
+    }
+  });
+
+  /**
+   * Instruktorning bir kunlik band vaqtlari — customer_id/ism/telefon FOSH QILINMAYDI,
+   * faqat vaqt oralig'i. Eski kod bo'sh vaqtni /api/bookings orqali hisoblardi,
+   * u esa faqat SO'ROVCHINING o'z bronlarini qaytaradi — boshqa mijozlarning
+   * bandligi umuman ko'rinmasdi.
+   */
+  app.get('/api/instructors/:id/availability', async (request, reply) => {
+    try {
+      await authenticate(request);
+      const instructorId = String((request.params as any).id);
+      const date = String((request.query as any)?.date || '');
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+        return reply.code(400).send({ ok: false, error: 'date=YYYY-MM-DD formatida bo‘lishi kerak' });
+      }
+      const dayStart = new Date(`${date}T00:00:00+05:00`);
+      const dayEnd = new Date(dayStart.getTime() + 24 * 60 * 60 * 1000);
+      const rows = await supabaseRest<any[]>('bookings', {
+        query:
+          `?instructor_id=eq.${q(instructorId)}` +
+          `&start_at=lt.${q(dayEnd.toISOString())}&end_at=gt.${q(dayStart.toISOString())}` +
+          `&status=in.(${ACTIVE_STATUSES})&select=start_at,end_at`,
+      });
+      return { ok: true, busy: rows };
+    } catch (e) {
+      return reply.code(400).send({ ok: false, error: e instanceof Error ? e.message : 'Band vaqtlar yuklanmadi' });
+    }
+  });
+
+  app.get('/api/bookings', async (request, reply) => {
+    try {
+      const tg = await authenticate(request);
+      const user = await userForTelegram(tg);
+      const query = request.query as { from?: string; to?: string; status?: string };
+
+      const parts = [BOOKING_SELECT, 'order=booking_date.asc'];
+      if (query.from) parts.push(`booking_date=gte.${q(query.from)}`);
+      if (query.to) parts.push(`booking_date=lt.${q(query.to)}`);
+      if (query.status) parts.push(`status=eq.${q(query.status)}`);
+
+      if (user.role === 'instructor') {
+        const ip = await instructorProfileForUser(String(user.id), false);
+        if (!ip) return { ok: true, bookings: [] };
+        parts.push(`instructor_id=eq.${q(String(ip.id))}`);
+      } else if (user.role !== 'admin') {
+        parts.push(`customer_id=eq.${q(String(user.id))}`);
+      }
+
+      const rows = await supabaseRest<any[]>('bookings', { query: `?${parts.join('&')}` });
+      const completedIds = rows.filter((b) => b.status === 'completed').map((b) => String(b.id));
+      const reviewed = new Set<string>();
+      if (completedIds.length) {
+        const reviews = await supabaseRest<any[]>('reviews', {
+          query: `?booking_id=in.(${completedIds.map(q).join(',')})&select=booking_id`,
+        });
+        reviews.forEach((r) => reviewed.add(String(r.booking_id)));
+      }
+      return { ok: true, bookings: rows.map((b) => ({ ...shapeBooking(b), reviewed: reviewed.has(String(b.id)) })) };
+    } catch (e) {
+      return reply.code(400).send({ ok: false, error: e instanceof Error ? e.message : 'Bronlar yuklanmadi' });
+    }
+  });
+
+  app.post('/api/bookings', async (request, reply) => {
+    try {
+      const tg = await authenticate(request);
+      const user = await userForTelegram(tg);
+      if (user.is_blocked) return reply.code(403).send({ ok: false, error: 'Hisobingiz bloklangan' });
+
+      const body = (request.body ?? {}) as {
+        instructor_id?: string; course_id?: string;
+        start_at?: string; end_at?: string; customer_note?: string;
+      };
+      if (!body.instructor_id) return reply.code(400).send({ ok: false, error: 'Instruktorni tanlang' });
+      if (!body.course_id) return reply.code(400).send({ ok: false, error: 'Mashg‘ulot turini tanlang' });
+      if (!body.start_at) return reply.code(400).send({ ok: false, error: 'start_at majburiy' });
+
+      const start = new Date(body.start_at);
+      if (Number.isNaN(start.getTime())) {
+        return reply.code(400).send({ ok: false, error: 'Sana/vaqt noto‘g‘ri' });
+      }
+      if (start.getTime() < Date.now()) {
+        return reply.code(400).send({ ok: false, error: 'O‘tgan vaqtga bron qilib bo‘lmaydi' });
+      }
+
+      const courses = await supabaseRest<any[]>('courses', {
+        query: `?id=eq.${q(body.course_id)}&is_active=eq.true&select=id,duration_minutes,price&limit=1`,
+      });
+      const course = courses[0];
+      if (!course) return reply.code(400).send({ ok: false, error: 'Mashg‘ulot topilmadi yoki faol emas' });
+
+      // end_at har doim serverda, kurs davomiyligidan hisoblanadi —
+      // frontend o'zi hisoblab yuborsa ham ishonilmaydi (narx/vaqt authoritative = backend).
+      const end = body.end_at ? new Date(body.end_at) : new Date(start.getTime() + course.duration_minutes * 60000);
+      if (Number.isNaN(end.getTime()) || !(start < end)) {
+        return reply.code(400).send({ ok: false, error: 'Vaqt oralig‘i noto‘g‘ri' });
+      }
+
+      const ip = await supabaseRest<any[]>('instructor_profiles', {
+        query: `?id=eq.${q(body.instructor_id)}&is_verified=eq.true&is_available=eq.true&select=id&limit=1`,
+      });
+      if (!ip[0]) {
+        return reply.code(400).send({ ok: false, error: 'Instruktor tasdiqlanmagan yoki faol emas' });
+      }
+
+      // Race condition'ga to'liq chidamli emas (DB-level EXCLUDE constraint hali qo'yilmagan —
+      // Phase 3 migration), lekin oddiy holatlarning aksariyatini shu yerda tutamiz.
+      const conflicts = await supabaseRest<any[]>('bookings', {
+        query:
+          `?start_at=lt.${q(end.toISOString())}&end_at=gt.${q(start.toISOString())}` +
+          `&status=in.(${ACTIVE_STATUSES})&select=id,customer_id,instructor_id`,
+      });
+      if (conflicts.some((x) => String(x.customer_id) === String(user.id))) {
+        return reply.code(409).send({ ok: false, error: 'Sizda shu vaqtda boshqa bron bor' });
+      }
+      if (conflicts.some((x) => String(x.instructor_id) === String(body.instructor_id))) {
+        return reply.code(409).send({ ok: false, error: 'Instruktor bu vaqtda band' });
+      }
+
+      const rows = await supabaseRest<any[]>('bookings', {
+        method: 'POST',
+        headers: { Prefer: 'return=representation' },
+        body: JSON.stringify({
+          customer_id: user.id,
+          instructor_id: body.instructor_id,
+          course_id: course.id,
+          booking_date: start.toISOString(),   // NOT NULL, default yo'q — majburiy
+          start_at: start.toISOString(),
+          end_at: end.toISOString(),
+          customer_note: body.customer_note?.trim() || null,
+          status: 'pending',
+        }),
+      });
+
+      const booking = rows[0];
+      if (booking) {
+        await notifyBookingParties(booking, 'Yangi bron yaratildi', 'Admin tasdiqlashini kuting.');
+      }
+      return reply.code(201).send({ ok: true, booking: shapeBooking(booking) });
+    } catch (e) {
+      return reply.code(400).send({ ok: false, error: e instanceof Error ? e.message : 'Bron yaratilmadi' });
+    }
+  });
+
+  /** Mijoz o'z bronini bekor qiladi — faqat hali boshlanmagan (pending/confirmed) bronlar. */
+  app.patch('/api/bookings/:id/cancel', async (request, reply) => {
+    try {
+      const tg = await authenticate(request);
+      const user = await userForTelegram(tg);
+      const id = String((request.params as any).id);
+      const body = (request.body ?? {}) as { reason?: string };
+
+      const current = await supabaseRest<any[]>('bookings', {
+        query: `?id=eq.${q(id)}&customer_id=eq.${q(String(user.id))}&select=*&limit=1`,
+      });
+      if (!current[0]) return reply.code(404).send({ ok: false, error: 'Bron topilmadi' });
+      if (!['pending', 'confirmed'].includes(String(current[0].status))) {
+        return reply.code(409).send({ ok: false, error: 'Bu bronni endi bekor qilib bo‘lmaydi' });
+      }
+
+      const now = new Date().toISOString();
+      const rows = await supabaseRest<any[]>('bookings', {
+        method: 'PATCH',
+        headers: { Prefer: 'return=representation' },
+        query: `?id=eq.${q(id)}`,
+        body: JSON.stringify({
+          status: 'cancelled',
+          cancelled_at: now,
+          cancelled_by: user.id,
+          cancellation_reason: body.reason?.trim() || null,
+          updated_at: now,
+        }),
+      });
+      const booking = rows[0] ?? current[0];
+      await notifyBookingParties(booking, 'Bron bekor qilindi', 'Mijoz bronni bekor qildi.');
+      return { ok: true, booking: shapeBooking(booking) };
+    } catch (e) {
+      return reply.code(400).send({ ok: false, error: e instanceof Error ? e.message : 'Bron bekor qilinmadi' });
+    }
+  });
+
+  app.patch('/api/bookings/:id/status', async (request, reply) => {
+    try {
+      const tg = await authenticateAny(request);
+      const user = await userForTelegram(tg);
+      if (!['admin', 'instructor'].includes(String(user.role))) {
+        return reply.code(403).send({ ok: false, error: 'Ruxsat yo‘q' });
+      }
+
+      const id = String((request.params as any).id);
+      const body = (request.body ?? {}) as { status?: string; reason?: string };
+      const allowed = ['confirmed', 'rejected', 'cancelled', 'in_progress', 'completed', 'no_show'];
+      if (!allowed.includes(String(body.status))) {
+        return reply.code(400).send({ ok: false, error: 'Holat noto‘g‘ri' });
+      }
+
+      const current = await supabaseRest<any[]>('bookings', { query: `?id=eq.${q(id)}&select=*` });
+      if (!current[0]) return reply.code(404).send({ ok: false, error: 'Bron topilmadi' });
+
+      const from = String(current[0].status);
+      if (!(STATUS_TRANSITIONS[from] || []).includes(String(body.status))) {
+        return reply.code(409).send({ ok: false, error: `"${from}" holatidan "${body.status}" ga o‘tib bo‘lmaydi` });
+      }
+
+      if (user.role === 'instructor') {
+        const ip = await instructorProfileForUser(String(user.id), false);
+        if (!ip || String(current[0].instructor_id) !== String(ip.id)) {
+          return reply.code(403).send({ ok: false, error: 'Bu bron sizga biriktirilmagan' });
+        }
+      }
+
+      const now = new Date().toISOString();
+      const patch: Record<string, unknown> = { status: body.status, updated_at: now };
+      if (body.status === 'confirmed') { patch.confirmed_at = now; patch.confirmed_by = user.id; }
+      if (['cancelled', 'rejected'].includes(String(body.status))) {
+        patch.cancelled_at = now;
+        patch.cancelled_by = user.id;
+        patch.cancellation_reason = body.reason?.trim() || null;   // `cancelled_reason` EMAS
+      }
+
+      const rows = await supabaseRest<any[]>('bookings', {
+        method: 'PATCH',
+        headers: { Prefer: 'return=representation' },
+        query: `?id=eq.${q(id)}`,
+        body: JSON.stringify(patch),
+      });
+      const booking = rows[0] ?? current[0];
+      await notifyBookingParties(booking, 'Bron holati o‘zgardi', `Yangi holat: ${body.status}`);
+      return { ok: true, booking: shapeBooking(booking) };
+    } catch (e) {
+      return reply.code(400).send({ ok: false, error: e instanceof Error ? e.message : 'Holat yangilanmadi' });
+    }
+  });
+
+  app.get('/api/notifications', async (request, reply) => {
+    try {
+      const tg = await authenticate(request);
+      const user = await userForTelegram(tg);
+      const rows = await supabaseRest<any[]>('notifications', {
+        query: `?user_id=eq.${q(String(user.id))}&select=*&order=created_at.desc&limit=100`,
+      });
+      // Frontend `body` yoki `message` ni o'qiydi — ikkalasini ham beramiz.
+      return { ok: true, notifications: rows.map((r) => ({ ...r, body: r.message })) };
+    } catch (e) {
+      return reply.code(401).send({ ok: false, error: e instanceof Error ? e.message : 'Unauthorized' });
+    }
+  });
 }
