@@ -1,84 +1,30 @@
 {
+  "$schema": "https://openapi.vercel.sh/vercel.json",
   "cleanUrls": true,
   "trailingSlash": false,
   "functions": {
-    "api/**/*.mjs": {
-      "runtime": "@vercel/node@5.0.0",
-      "maxDuration": 60
-    },
-    "api/**/*.ts": {
-      "runtime": "@vercel/node@5.0.0",
-      "maxDuration": 60
-    }
+    "api/**/*.mjs": { "runtime": "@vercel/node@5.0.0", "maxDuration": 60 },
+    "api/**/*.ts": { "runtime": "@vercel/node@5.0.0", "maxDuration": 60 }
   },
   "rewrites": [
-    {
-      "source": "/api/health",
-      "destination": "/api/health.mjs"
-    },
-    {
-      "source": "/admin",
-      "destination": "/admin/index.html"
-    },
-    {
-      "source": "/admin/",
-      "destination": "/admin/index.html"
-    },
-    {
-      "source": "/admin/login",
-      "destination": "/admin/index.html"
-    },
-    {
-      "source": "/admin/login.html",
-      "destination": "/admin/index.html"
-    },
-    {
-      "source": "/admin/dashboard",
-      "destination": "/admin/index.html"
-    },
-    {
-      "source": "/admin/dashboard/",
-      "destination": "/admin/index.html"
-    },
-    {
-      "source": "/admin/dashboard-v2",
-      "destination": "/admin/index.html"
-    },
-    {
-      "source": "/admin/dashboard-v2/",
-      "destination": "/admin/index.html"
-    },
-    {
-      "source": "/admin/dashboard-v3",
-      "destination": "/admin/index.html"
-    },
-    {
-      "source": "/admin/dashboard-v3/",
-      "destination": "/admin/index.html"
-    },
-    {
-      "source": "/admin/media",
-      "destination": "/admin/index.html"
-    },
-    {
-      "source": "/admin/media/",
-      "destination": "/admin/index.html"
-    },
-    {
-      "source": "/instructor",
-      "destination": "/instructor/index.html"
-    },
-    {
-      "source": "/instructor/",
-      "destination": "/instructor/index.html"
-    },
-    {
-      "source": "/customer",
-      "destination": "/index.html"
-    },
-    {
-      "source": "/customer/",
-      "destination": "/index.html"
-    }
+    { "source": "/api/health", "destination": "/api/health.mjs" },
+    { "source": "/", "destination": "/customer/index" },
+    { "source": "/index", "destination": "/customer/index" },
+    { "source": "/admin", "destination": "/admin/index.html" },
+    { "source": "/admin/", "destination": "/admin/index.html" },
+    { "source": "/admin/login", "destination": "/admin/index.html" },
+    { "source": "/admin/login.html", "destination": "/admin/index.html" },
+    { "source": "/admin/dashboard", "destination": "/admin/index.html" },
+    { "source": "/admin/dashboard/", "destination": "/admin/index.html" },
+    { "source": "/admin/dashboard-v2", "destination": "/admin/index.html" },
+    { "source": "/admin/dashboard-v2/", "destination": "/admin/index.html" },
+    { "source": "/admin/dashboard-v3", "destination": "/admin/index.html" },
+    { "source": "/admin/dashboard-v3/", "destination": "/admin/index.html" },
+    { "source": "/admin/media", "destination": "/admin/index.html" },
+    { "source": "/admin/media/", "destination": "/admin/index.html" },
+    { "source": "/instructor", "destination": "/instructor/index.html" },
+    { "source": "/instructor/", "destination": "/instructor/index.html" },
+    { "source": "/customer", "destination": "/customer/index" },
+    { "source": "/customer/", "destination": "/customer/index" }
   ]
 }
