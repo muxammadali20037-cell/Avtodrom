@@ -26,7 +26,7 @@ button,input,select,textarea{font:inherit}button{cursor:pointer}.hidden{display:
     <br>
     <div class="field"><label>Parol</label><input id="password" type="password" autocomplete="current-password" required></div>
     <br>
-    <button id="loginBtn" class="btn primary" style="width:100%">Kirish</button>
+    <button type="button" id="loginBtn" class="btn primary" style="width:100%">Kirish</button>
     <div id="loginError" class="notice hidden" style="margin-top:12px"></div>
   </form>
 </div>
@@ -34,46 +34,46 @@ button,input,select,textarea{font:inherit}button{cursor:pointer}.hidden{display:
 <div id="app" class="hidden">
 <header class="top"><div class="topin">
   <div class="brand"><div class="logo">AI</div><div><b>AVTODROM — ADMIN</b><small>ARIZA · BRON · INSTRUKTOR · HISOBOT · MEDIA</small></div></div>
-  <div class="tools"><span id="lastUpdate" class="muted"></span><button class="btn" id="refreshBtn">↻ Yangilash</button><button class="btn red" id="logoutBtn">Chiqish</button></div>
+  <div class="tools"><span id="lastUpdate" class="muted"></span><button type="button" class="btn" id="refreshBtn">↻ Yangilash</button><button type="button" class="btn red" id="logoutBtn">Chiqish</button></div>
 </div></header>
 
 <div class="layout">
 <aside class="side">
-<button class="nav on" data-page="dashboard">⌂ Umumiy</button>
-<button class="nav" data-page="applications">📝 Instruktor arizalari <span id="appCount" class="badgeCount">0</span></button>
-<button class="nav" data-page="bookings">📋 Bronlar <span id="bookCount" class="badgeCount">0</span></button>
-<button class="nav" data-page="instructors">👨‍🏫 Instruktorlar</button>
-<button class="nav" data-page="users">👤 Foydalanuvchilar</button>
-<button class="nav" data-page="reviews">⭐ Sharhlar</button>
-<button class="nav" data-page="reports">📊 Kunlik hisobot</button>
-<button class="nav" data-page="media">🎬 Media / Video</button>
-<button class="nav" data-page="settings">⚙️ Sozlamalar</button>
+<button type="button" class="nav on" data-page="dashboard">⌂ Umumiy</button>
+<button type="button" class="nav" data-page="applications">📝 Instruktor arizalari <span id="appCount" class="badgeCount">0</span></button>
+<button type="button" class="nav" data-page="bookings">📋 Bronlar <span id="bookCount" class="badgeCount">0</span></button>
+<button type="button" class="nav" data-page="instructors">👨‍🏫 Instruktorlar</button>
+<button type="button" class="nav" data-page="users">👤 Foydalanuvchilar</button>
+<button type="button" class="nav" data-page="reviews">⭐ Sharhlar</button>
+<button type="button" class="nav" data-page="reports">📊 Kunlik hisobot</button>
+<button type="button" class="nav" data-page="media">🎬 Media / Video</button>
+<button type="button" class="nav" data-page="settings">⚙️ Sozlamalar</button>
 </aside>
 
 <main>
 <div id="notice"></div>
 
 <section id="dashboard" class="page on">
-<div class="head"><div><h1>Umumiy boshqaruv</h1><p>Instruktor arizalari, bronlar, foydalanuvchilar, sharhlar va tushum.</p></div><button class="btn primary" onclick="showPage('reports')">📊 Hisobot</button></div>
+<div class="head"><div><h1>Umumiy boshqaruv</h1><p>Instruktor arizalari, bronlar, foydalanuvchilar, sharhlar va tushum.</p></div><button type="button" class="btn primary" onclick="showPage('reports')">📊 Hisobot</button></div>
 <div class="stats">
 <div class="stat"><span>FOYDALANUVCHILAR</span><b id="sUsers">0</b></div><div class="stat"><span>FAOL INSTRUKTOR</span><b id="sInst">0</b></div>
 <div class="stat"><span>ARIZA KUTILMOQDA</span><b id="sApps">0</b></div><div class="stat"><span>BUGUNGI BRON</span><b id="sToday">0</b></div>
 <div class="stat"><span>TUGAGAN BRON</span><b id="sDone">0</b></div><div class="stat"><span>BUGUNGI TUSHUM</span><b id="sRevenue">0 so‘m</b></div>
 </div>
 <div class="grid2" style="margin-top:14px">
-<div class="card"><div class="head"><div><h3>📝 Yangi instruktor arizalari</h3><p>Telegram botdan kelgan arizalar.</p></div><button class="btn small" onclick="showPage('applications')">Barchasi</button></div><div id="dashApps" class="loading">Yuklanmoqda...</div></div>
-<div class="card"><div class="head"><div><h3>📋 So‘nggi bronlar</h3><p>Foydalanuvchilardan kelgan bronlar.</p></div><button class="btn small" onclick="showPage('bookings')">Barchasi</button></div><div id="dashBookings" class="loading">Yuklanmoqda...</div></div>
+<div class="card"><div class="head"><div><h3>📝 Yangi instruktor arizalari</h3><p>Telegram botdan kelgan arizalar.</p></div><button type="button" class="btn small" onclick="showPage('applications')">Barchasi</button></div><div id="dashApps" class="loading">Yuklanmoqda...</div></div>
+<div class="card"><div class="head"><div><h3>📋 So‘nggi bronlar</h3><p>Foydalanuvchilardan kelgan bronlar.</p></div><button type="button" class="btn small" onclick="showPage('bookings')">Barchasi</button></div><div id="dashBookings" class="loading">Yuklanmoqda...</div></div>
 </div>
 </section>
 
 <section id="applications" class="page">
-<div class="head"><div><h1>📝 Instruktor arizalari</h1><p>Ariza shu yerda saqlanadi. Tasdiqlanganda instruktor faol bo‘ladi.</p></div><button class="btn" onclick="loadAll(true)">↻ Yangilash</button></div>
+<div class="head"><div><h1>📝 Instruktor arizalari</h1><p>Ariza shu yerda saqlanadi. Tasdiqlanganda instruktor faol bo‘ladi.</p></div><button type="button" class="btn" onclick="loadAll(true)">↻ Yangilash</button></div>
 <div class="card"><div class="toolbar"><input id="appSearch" class="search" placeholder="Ism, telefon, Telegram..."><select id="appFilter" class="field select"><option value="">Barcha holatlar</option><option value="PENDING">Kutilayotgan</option><option value="APPROVED">Tasdiqlangan</option><option value="REJECTED">Rad etilgan</option></select></div></div>
 <div class="card"><div class="tableWrap"><table><thead><tr><th>Ism</th><th>Telefon</th><th>Telegram</th><th>Tajriba</th><th>Izoh</th><th>Sana</th><th>Holat</th><th>Amal</th></tr></thead><tbody id="applicationRows"></tbody></table></div></div>
 </section>
 
 <section id="bookings" class="page">
-<div class="head"><div><h1>📋 Bronlar</h1><p>Foydalanuvchi yuborgan barcha bronlar.</p></div><button class="btn" onclick="loadAll(true)">↻ Yangilash</button></div>
+<div class="head"><div><h1>📋 Bronlar</h1><p>Foydalanuvchi yuborgan barcha bronlar.</p></div><button type="button" class="btn" onclick="loadAll(true)">↻ Yangilash</button></div>
 <div class="card"><div class="toolbar"><input id="bookingSearch" class="search" placeholder="Mijoz, telefon, instruktor..."><select id="bookingFilter"><option value="">Barcha holatlar</option><option value="pending">Kutilmoqda</option><option value="confirmed">Tasdiqlangan</option><option value="completed">Tugagan</option><option value="cancelled">Bekor qilingan</option><option value="rejected">Rad etilgan</option><option value="no_show">Kelmagan</option></select></div></div>
 <div class="card"><div class="tableWrap"><table><thead><tr><th>Sana</th><th>Mijoz</th><th>Telefon</th><th>Instruktor</th><th>Izoh</th><th>Status</th><th>Amal</th></tr></thead><tbody id="bookingRows"></tbody></table></div></div>
 </section>
@@ -96,7 +96,7 @@ button,input,select,textarea{font:inherit}button{cursor:pointer}.hidden{display:
 </section>
 
 <section id="reports" class="page">
-<div class="head"><div><h1>📊 Kunlik hisobot</h1><p>Bronlar, kelishlar, bekor qilishlar va tushum.</p></div><div><button class="btn" onclick="setTodayReport()">Bugun</button> <button class="btn" onclick="setWeekReport()">7 kun</button> <button class="btn primary" onclick="exportReport()">Excel/CSV</button></div></div>
+<div class="head"><div><h1>📊 Kunlik hisobot</h1><p>Bronlar, kelishlar, bekor qilishlar va tushum.</p></div><div><button type="button" class="btn" onclick="setTodayReport()">Bugun</button> <button type="button" class="btn" onclick="setWeekReport()">7 kun</button> <button type="button" class="btn primary" onclick="exportReport()">Excel/CSV</button></div></div>
 <div class="card"><div class="grid2"><div class="field"><label>Dan</label><input type="date" id="fromDate"></div><div class="field"><label>Gacha</label><input type="date" id="toDate"></div><div class="field"><label>Instruktor</label><select id="reportInst"></select></div><div class="field"><label>Status</label><select id="reportStatus"><option value="">Barchasi</option><option value="pending">Kutilmoqda</option><option value="confirmed">Tasdiqlangan</option><option value="completed">Tugagan</option><option value="cancelled">Bekor qilingan</option><option value="no_show">Kelmagan</option></select></div></div><div style="margin-top:12px"><input id="reportSearch" class="search" placeholder="Mijoz, telefon, instruktor..."></div></div>
 <div class="grid2"><div class="card"><h3>📅 Kunlar bo‘yicha</h3><div class="tableWrap"><table><thead><tr><th>Sana</th><th>Jami</th><th>Keldi</th><th>Kelmagan</th><th>Bekor</th><th>Tugadi</th><th>Tushum</th></tr></thead><tbody id="dailyRows"></tbody></table></div></div>
 <div class="card"><h3>👨‍🏫 Instruktorlar bo‘yicha</h3><div class="tableWrap"><table><thead><tr><th>Instruktor</th><th>Jami</th><th>Keldi</th><th>Kelmagan</th><th>Bekor</th><th>Tugadi</th><th>Tushum</th><th>Reyting</th></tr></thead><tbody id="reportInstRows"></tbody></table></div></div></div>
@@ -115,8 +115,8 @@ button,input,select,textarea{font:inherit}button{cursor:pointer}.hidden{display:
 <h2 style="margin-top:0">🏢 AVTODROM lokatsiyasi</h2>
 <p class="locationHint">Bu ma'lumot Customer Mini App'dagi “Lokatsiyani ochish” tugmasida ishlatiladi. Inputga yozayotgan paytingizda avtomatik reload/render bo‘lmaydi.</p>
 <div class="grid2">
-<div class="field"><label>NOMI</label><input id="locationName" value="AVTODROM INDEX" autocomplete="off"></div>
-<div class="field"><label>MANZIL</label><input id="locationAddress" value="TASHKENT" autocomplete="off"></div>
+<div class="field"><label>NOMI</label><input id="locationName" value="TASH INDEX AVTODROM" autocomplete="off"></div>
+<div class="field"><label>MANZIL</label><input id="locationAddress" value="Toshkent shahri, Yangihayot tumani, Fayzli MFY, Rayxon ko‘chasi, 107-uy" autocomplete="off"></div>
 <div class="field"><label>LATITUDE</label><input id="locationLat" type="number" step="any" value="41.2995" autocomplete="off"></div>
 <div class="field"><label>LONGITUDE</label><input id="locationLng" type="number" step="any" value="69.2401" autocomplete="off"></div>
 <div class="field"><label>GOOGLE MAPS URL</label><input id="googleMapsUrl" placeholder="https://maps.google.com/?q=..." autocomplete="off"></div>
@@ -124,7 +124,7 @@ button,input,select,textarea{font:inherit}button{cursor:pointer}.hidden{display:
 <div class="field"><label>2GIS URL</label><input id="twoGisUrl" placeholder="https://2gis.uz/..." autocomplete="off"></div>
 </div>
 <div class="location-actions">
-<button id="saveLocationBtn" class="btn primary">📍 Lokatsiyani saqlash</button>
+<button type="button" id="saveLocationBtn" class="btn primary">📍 Lokatsiyani saqlash</button>
 <button class="btn" type="button" onclick="previewLocation('google')">Google Maps</button>
 <button class="btn" type="button" onclick="previewLocation('yandex')">Yandex</button>
 <button class="btn" type="button" onclick="previewLocation('2gis')">2GIS</button>
@@ -134,7 +134,7 @@ button,input,select,textarea{font:inherit}button{cursor:pointer}.hidden{display:
 <div class="card">
 <h2 style="margin-top:0">⚙️ Tizim</h2>
 <div class="grid2"><div class="field"><label>TIZIM NOMI</label><input id="systemName" value="AVTODROM INDEX" autocomplete="off"></div><div class="field"><label>BRONLAR</label><select id="bookingEnabled"><option value="true">Yoqilgan</option><option value="false">O‘chirilgan</option></select></div></div>
-<button class="btn primary" style="margin-top:12px" onclick="saveSettings()">Saqlash</button>
+<button type="button" class="btn primary" style="margin-top:12px" onclick="saveSettings()">Saqlash</button>
 </div>
 </section>
 </main>
@@ -142,7 +142,7 @@ button,input,select,textarea{font:inherit}button{cursor:pointer}.hidden{display:
 </div>
 
 <div id="toast" class="notice hidden" style="position:fixed;right:18px;bottom:18px;z-index:200;box-shadow:var(--shadow)"></div>
-<div id="modalBg" class="modalBg"><div class="modal"><div class="modalHead"><h3 id="modalTitle">Ma'lumot</h3><button class="x" onclick="closeModal()">×</button></div><div id="modalBody"></div></div></div>
+<div id="modalBg" class="modalBg"><div class="modal"><div class="modalHead"><h3 id="modalTitle">Ma'lumot</h3><button type="button" class="x" onclick="closeModal()">×</button></div><div id="modalBody"></div></div></div>
 
 <script>
 'use strict';
@@ -208,8 +208,8 @@ async function loadAll(show=false){
 function renderAll(){
  renderStats();renderDash();renderApplications();renderBookings();renderInstructors();
  renderUsers();renderReviews();fillReportInstructors();renderReport();renderMedia();
- // Never overwrite settings/location inputs while the admin is typing.
- if(!settingsDirty){renderSettings();renderLocation()}
+ // IMPORTANT: Never render settings/location as part of global refresh.
+ // This prevents every API refresh from replacing what is currently typed.
 }
 
 function renderStats(){
@@ -225,7 +225,7 @@ function renderDash(){
 function renderApplications(){
  const q=($('appSearch')?.value||'').toLowerCase(),f=$('appFilter')?.value||'';
  const a=state.applications.filter(x=>(!f||String(x.status||'').toUpperCase()===f)&&(!q||JSON.stringify(x).toLowerCase().includes(q)));
- $('applicationRows').innerHTML=a.length?a.map(x=>'<tr><td><b>'+esc(fullName(x))+'</b></td><td>'+esc(x.phone||'—')+'</td><td>'+esc(x.username?'@'+x.username:(x.telegram_id||x.telegram_user_id||'—'))+'</td><td>'+esc(x.experience||x.experience_years||'—')+'</td><td>'+esc(x.note||x.comment||'—')+'</td><td>'+dt(x.created_at)+'</td><td>'+status(String(x.status||'').toLowerCase())+'</td><td>'+((String(x.status||'').toUpperCase()==='PENDING')?'<button class="btn small green" onclick="applicationAction(\''+esc(x.id)+'\',\'APPROVED\')">Tasdiqlash</button> <button class="btn small red" onclick="applicationAction(\''+esc(x.id)+'\',\'REJECTED\')">Rad</button>':'—')+'</td></tr>').join(''):'<tr><td colspan="8" class="empty">Arizalar topilmadi.</td></tr>';
+ $('applicationRows').innerHTML=a.length?a.map(x=>'<tr><td><b>'+esc(fullName(x))+'</b></td><td>'+esc(x.phone||'—')+'</td><td>'+esc(x.username?'@'+x.username:(x.telegram_id||x.telegram_user_id||'—'))+'</td><td>'+esc(x.experience||x.experience_years||'—')+'</td><td>'+esc(x.note||x.comment||'—')+'</td><td>'+dt(x.created_at)+'</td><td>'+status(String(x.status||'').toLowerCase())+'</td><td>'+((String(x.status||'').toUpperCase()==='PENDING')?'<button type="button" class="btn small green" onclick="applicationAction(\''+esc(x.id)+'\',\'APPROVED\')">Tasdiqlash</button> <button type="button" class="btn small red" onclick="applicationAction(\''+esc(x.id)+'\',\'REJECTED\')">Rad</button>':'—')+'</td></tr>').join(''):'<tr><td colspan="8" class="empty">Arizalar topilmadi.</td></tr>';
 }
 async function applicationAction(id,s){try{await api('/api/admin/applications/'+encodeURIComponent(id),{method:'PATCH',body:JSON.stringify({status:s})});toast('Ariza yangilandi');await loadAll()}catch(e){notice(e.message,true)}}
 function renderBookings(){
@@ -235,8 +235,8 @@ function renderBookings(){
 }
 function bookingButtons(x){
  const id=esc(x.id),s=x.status;
- if(s==='pending')return '<button class="btn small green" onclick="bookingAction(\''+id+'\',\'confirmed\')">Tasdiqlash</button> <button class="btn small red" onclick="bookingAction(\''+id+'\',\'rejected\')">Rad</button>';
- if(s==='confirmed')return '<button class="btn small" onclick="bookingAction(\''+id+'\',\'completed\')">Tugadi</button> <button class="btn small red" onclick="bookingAction(\''+id+'\',\'cancelled\')">Bekor</button>';
+ if(s==='pending')return '<button type="button" class="btn small green" onclick="bookingAction(\''+id+'\',\'confirmed\')">Tasdiqlash</button> <button type="button" class="btn small red" onclick="bookingAction(\''+id+'\',\'rejected\')">Rad</button>';
+ if(s==='confirmed')return '<button type="button" class="btn small" onclick="bookingAction(\''+id+'\',\'completed\')">Tugadi</button> <button type="button" class="btn small red" onclick="bookingAction(\''+id+'\',\'cancelled\')">Bekor</button>';
  return '—';
 }
 async function bookingAction(id,s){try{await api('/api/admin/bookings/'+encodeURIComponent(id),{method:'PATCH',body:JSON.stringify({status:s})});toast('Bron saqlandi');await loadAll()}catch(e){notice(e.message,true)}}
@@ -250,7 +250,7 @@ function instructorStats(){
 }
 function renderInstructors(){
  const q=($('instSearch')?.value||'').toLowerCase(),a=instructorStats().filter(x=>JSON.stringify(x.i).toLowerCase().includes(q));
- $('instructorRows').innerHTML=a.length?a.map(x=>'<tr><td><b>'+esc(instName(x.i))+'</b></td><td>'+esc(x.i.profile?.phone||x.i.phone||'—')+'</td><td>'+esc(x.i.profile?.username?'@'+x.i.profile.username:(x.i.profile?.telegram_id||x.i.telegram_id||'—'))+'</td><td>'+x.bs.length+'</td><td>'+x.arrived+'</td><td>'+x.noShow+'</td><td>'+x.cancel+'</td><td>'+x.done+'</td><td>'+money(x.revenue)+'</td><td>'+x.rs.length+'</td><td><span class="stars">'+('★'.repeat(Math.max(0,Math.min(5,Math.round(x.avg))))+'</span> '+Number(x.avg||0).toFixed(1)+'</td><td>'+status(x.i.active===false?'inactive':'active')+'</td><td><button class="btn small" onclick="editInstructor(\''+esc(x.i.id)+'\')">Tahrirlash</button> <button class="btn small" onclick="toggleInstructor(\''+esc(x.i.id)+'\','+(x.i.active===false)+')">'+(x.i.active===false?'Faollashtirish':'Bloklash')+'</button></td></tr>').join(''):'<tr><td colspan="13" class="empty">Instruktorlar topilmadi.</td></tr>';
+ $('instructorRows').innerHTML=a.length?a.map(x=>'<tr><td><b>'+esc(instName(x.i))+'</b></td><td>'+esc(x.i.profile?.phone||x.i.phone||'—')+'</td><td>'+esc(x.i.profile?.username?'@'+x.i.profile.username:(x.i.profile?.telegram_id||x.i.telegram_id||'—'))+'</td><td>'+x.bs.length+'</td><td>'+x.arrived+'</td><td>'+x.noShow+'</td><td>'+x.cancel+'</td><td>'+x.done+'</td><td>'+money(x.revenue)+'</td><td>'+x.rs.length+'</td><td><span class="stars">'+('★'.repeat(Math.max(0,Math.min(5,Math.round(x.avg))))+'</span> '+Number(x.avg||0).toFixed(1)+'</td><td>'+status(x.i.active===false?'inactive':'active')+'</td><td><button type="button" class="btn small" onclick="editInstructor(\''+esc(x.i.id)+'\')">Tahrirlash</button> <button type="button" class="btn small" onclick="toggleInstructor(\''+esc(x.i.id)+'\','+(x.i.active===false)+')">'+(x.i.active===false?'Faollashtirish':'Bloklash')+'</button></td></tr>').join(''):'<tr><td colspan="13" class="empty">Instruktorlar topilmadi.</td></tr>';
 }
 async function toggleInstructor(id,active){try{await api('/api/admin/instructors/'+encodeURIComponent(id),{method:'PATCH',body:JSON.stringify({active})});toast('Instruktor holati o‘zgardi');await loadAll()}catch(e){notice(e.message,true)}}
 function editInstructor(id){
@@ -265,7 +265,7 @@ function editInstructor(id){
  <div class="field"><label>Tajriba</label><input name="experience_years" type="number" min="0" value="${esc(x.experience_years??x.experience??0)}"></div>
  <div class="field"><label>Rasm URL</label><input name="avatar_url" value="${esc(p.avatar_url||x.avatar_url||x.photo||'')}"></div>
  </div><br><div class="field"><label>Bio</label><textarea name="bio">${esc(x.bio||'')}</textarea></div><br>
- <button class="btn primary" style="width:100%">Saqlash</button></form>`);
+ <button type="button" class="btn primary" style="width:100%">Saqlash</button></form>`);
  $('instEditForm').onsubmit=async e=>{e.preventDefault();const f=new FormData(e.target),body={full_name:f.get('full_name'),phone:f.get('phone'),vehicle_model:f.get('vehicle_model'),vehicle_plate:f.get('vehicle_plate'),experience_years:Number(f.get('experience_years')||0),avatar_url:f.get('avatar_url'),bio:f.get('bio')};try{await api('/api/admin/instructors/'+encodeURIComponent(id),{method:'PATCH',body:JSON.stringify(body)});closeModal();toast('Instruktor saqlandi');await loadAll()}catch(err){notice(err.message,true)}};
 }
 function renderUsers(){
@@ -273,7 +273,7 @@ function renderUsers(){
  $('userRows').innerHTML=a.length?a.map(u=>{const bs=state.bookings.filter(b=>String(b.customer_id||b.customer?.id)===String(u.id)),ns=bs.filter(b=>b.status==='no_show').length;return '<tr><td><b>'+esc(fullName(u))+'</b></td><td>'+esc(u.phone||'—')+'</td><td>'+esc(u.username?'@'+u.username:(u.telegram_id||u.telegram_user_id||'—'))+'</td><td>'+bs.length+'</td><td>'+ns+'</td><td>'+dt(u.created_at)+'</td><td>'+status(u.active===false?'inactive':'active')+'</td></tr>'}).join(''):'<tr><td colspan="7" class="empty">Foydalanuvchilar topilmadi.</td></tr>';
 }
 function renderReviews(){
- $('reviewRows').innerHTML=state.reviews.length?state.reviews.map(r=>'<tr><td>'+esc(fullName(r.customer)||r.customer_name)+'</td><td>'+esc(instName(r.instructor)||r.instructor_name)+'</td><td><span class="stars">'+('★'.repeat(Math.max(0,Math.min(5,Number(r.rating||r.stars||0)))))+'</span> '+esc(r.rating||r.stars||0)+'</td><td>'+esc(r.comment||r.text||r.review||'—')+'</td><td>'+dt(r.created_at)+'</td><td>'+status(r.status||'approved')+'</td><td>'+(r.status==='pending'?'<button class="btn small green" onclick="reviewAction(\''+esc(r.id)+'\',\'approved\')">Tasdiqlash</button>':'')+'</td></tr>').join(''):'<tr><td colspan="7" class="empty">Sharhlar yo‘q.</td></tr>';
+ $('reviewRows').innerHTML=state.reviews.length?state.reviews.map(r=>'<tr><td>'+esc(fullName(r.customer)||r.customer_name)+'</td><td>'+esc(instName(r.instructor)||r.instructor_name)+'</td><td><span class="stars">'+('★'.repeat(Math.max(0,Math.min(5,Number(r.rating||r.stars||0)))))+'</span> '+esc(r.rating||r.stars||0)+'</td><td>'+esc(r.comment||r.text||r.review||'—')+'</td><td>'+dt(r.created_at)+'</td><td>'+status(r.status||'approved')+'</td><td>'+(r.status==='pending'?'<button type="button" class="btn small green" onclick="reviewAction(\''+esc(r.id)+'\',\'approved\')">Tasdiqlash</button>':'')+'</td></tr>').join(''):'<tr><td colspan="7" class="empty">Sharhlar yo‘q.</td></tr>';
 }
 async function reviewAction(id,s){try{await api('/api/admin/reviews/'+encodeURIComponent(id),{method:'PATCH',body:JSON.stringify({status:s})});toast('Sharh moderatsiya qilindi');await loadAll()}catch(e){notice(e.message,true)}}
 
@@ -311,11 +311,27 @@ function locationFromSettings(){
 }
 function renderLocation(){
  const v=locationFromSettings();
- const set=(id,val)=>{const el=$(id);if(document.activeElement!==el && val!==undefined && val!==null)el.value=val};
- set('locationName',v.name||v.title);
- set('locationAddress',v.address||v.manzil);
- set('locationLat',v.latitude??v.lat);
- set('locationLng',v.longitude??v.lng);
+ const defaults={
+   name:'TASH INDEX AVTODROM',
+   address:'Toshkent shahri, Yangihayot tumani, Fayzli MFY, Rayxon ko‘chasi, 107-uy',
+   latitude:41.2995,
+   longitude:69.2401
+ };
+ const badAddress=['TASHKENT','Toshkent','Toshkent, ...',''];
+ const meaningfulAddress=v.address||v.manzil;
+ const finalAddress=(meaningfulAddress && !badAddress.includes(String(meaningfulAddress).trim()))
+   ? meaningfulAddress : defaults.address;
+ const finalName=(v.name||v.title||'').trim() && !['AVTODROM INDEX','TASH INDEX AVTODROM'].includes((v.name||v.title||'').trim())
+   ? (v.name||v.title) : defaults.name;
+ const set=(id,val)=>{
+   const el=$(id);
+   if(!el || document.activeElement===el || settingsDirty)return;
+   if(val!==undefined && val!==null && String(val)!=='')el.value=val;
+ };
+ set('locationName',finalName);
+ set('locationAddress',finalAddress);
+ set('locationLat',v.latitude??v.lat??defaults.latitude);
+ set('locationLng',v.longitude??v.lng??defaults.longitude);
  set('googleMapsUrl',v.google_url||v.googleMapsUrl||v.google);
  set('yandexMapsUrl',v.yandex_url||v.yandexMapsUrl||v.yandex);
  set('twoGisUrl',v.two_gis_url||v.twoGisUrl||v['2gis']||v.twogis);
@@ -339,6 +355,7 @@ async function saveLocation(){
   if(!Number.isFinite(v.latitude)||!Number.isFinite(v.longitude))throw Error('Latitude va longitude noto‘g‘ri.');
   await api('/api/admin/settings/location',{method:'PUT',body:JSON.stringify({value:v,...v})});
   toast('Lokatsiya saqlandi ✓');
+  clearLocationDraft();
   settingsDirty=false;
   await loadAll(true);
  }catch(e){notice(e.message,true)}finally{btn.disabled=false;btn.textContent='📍 Lokatsiyani saqlash'}
@@ -364,7 +381,10 @@ async function saveSettings(){
 
 $('loginForm').addEventListener('submit',login);
 $('logoutBtn').addEventListener('click',logout);
-$('refreshBtn').addEventListener('click',()=>loadAll(true));
+$('refreshBtn').addEventListener('click',()=>{
+  if(document.querySelector('#settings.on')) settingsDirty=true;
+  loadAll(true);
+});
 document.querySelectorAll('.nav').forEach(b=>b.addEventListener('click',()=>showPage(b.dataset.page)));
 ['bookingSearch','bookingFilter'].forEach(id=>$(id).addEventListener('input',renderBookings));
 ['appSearch','appFilter'].forEach(id=>$(id).addEventListener('input',renderApplications));
@@ -373,33 +393,64 @@ $('userSearch').addEventListener('input',renderUsers);
 ['fromDate','toDate','reportInst','reportStatus','reportSearch'].forEach(id=>$(id).addEventListener('input',renderReport));
 $('saveLocationBtn').addEventListener('click',saveLocation);
 
+const LOCATION_DRAFT_KEY='avtodrom_admin_location_draft_v3';
+const locationFieldIds=[
+ 'locationName','locationAddress','locationLat','locationLng',
+ 'googleMapsUrl','yandexMapsUrl','twoGisUrl'
+];
+function saveLocationDraft(){
+ const d={};
+ locationFieldIds.forEach(id=>{const el=$(id);if(el)d[id]=el.value});
+ try{localStorage.setItem(LOCATION_DRAFT_KEY,JSON.stringify(d))}catch{}
+}
+function restoreLocationDraft(){
+ try{
+   const d=JSON.parse(localStorage.getItem(LOCATION_DRAFT_KEY)||'null');
+   if(!d)return false;
+   let found=false;
+   locationFieldIds.forEach(id=>{
+     const el=$(id);
+     if(el && d[id]!==undefined && d[id]!==null && String(d[id])!==''){
+       el.value=d[id]; found=true;
+     }
+   });
+   return found;
+ }catch{return false}
+}
+function clearLocationDraft(){try{localStorage.removeItem(LOCATION_DRAFT_KEY)}catch{}}
+
 [
  'locationName','locationAddress','locationLat','locationLng',
  'googleMapsUrl','yandexMapsUrl','twoGisUrl','systemName','bookingEnabled'
 ].forEach(id=>{
  const el=$(id);
  if(el){
-   el.addEventListener('input',()=>{settingsDirty=true});
-   el.addEventListener('change',()=>{settingsDirty=true});
+   el.addEventListener('input',()=>{
+     settingsDirty=true;
+     if(locationFieldIds.includes(id))saveLocationDraft();
+   });
+   el.addEventListener('change',()=>{
+     settingsDirty=true;
+     if(locationFieldIds.includes(id))saveLocationDraft();
+   });
  }
 });
 
-async function boot(){try{await api('/api/admin/me');showApp();await loadAll()}catch{showLogin()}}
-/*
-  MUHIM TUZATISH:
-  Avvalgi kod har 15 soniyada loadAll() -> renderAll() -> renderSettings()
-  qilib input qiymatlarini qayta yozardi.
-  Endi renderSettings/renderLocation faqat o'sha input fokusda BO'LMAGANDA
-  qiymatni o'rnatadi. Shuning uchun yozayotgan matn o'chmaydi.
-*/
-setInterval(()=>{
- if(
-   !$('app').classList.contains('hidden') &&
-   !document.querySelector('.modalBg.show') &&
-   !settingsDirty &&
-   !$('settings').classList.contains('on')
- ) loadAll(false)
-},15000);
+async function boot(){
+ try{
+   await api('/api/admin/me');
+   showApp();
+   const hasDraft=restoreLocationDraft();
+   if(hasDraft)settingsDirty=true;
+   await loadAll();
+   if(!hasDraft){
+     settingsDirty=false;
+     renderLocation();
+   }
+ }catch{showLogin()}
+}
+// Automatic refresh is intentionally disabled.
+// Location form values are protected from background rendering and saved locally while typing.
 boot();
 </script>
 </body>
