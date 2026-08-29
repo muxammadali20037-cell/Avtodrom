@@ -8,7 +8,6 @@ import { registerInstructorRoutes } from './instructor-routes.js';
 import { registerInstructorRegistrationRoutes } from './instructor-registration-routes.js';
 import { handleInstructorStart } from './instructor-start.js';
 import { registerAdminPasswordRoutes } from './admin-password-routes.js';
-import { registerAdminBookingRoutes } from './admin-booking-routes.js';
 import { registerContentRoutes } from './content-routes.js';
 import { registerCourseRoutes } from './courses-routes.js';
 import { registerReviewRoutes } from './review-routes.js';
@@ -45,11 +44,6 @@ export const authenticateCustomer = authenticateWithToken(CUSTOMER_BOT_TOKEN);
 export const authenticateInstructor = authenticateWithToken(INSTRUCTOR_BOT_TOKEN);
 export const authenticateAdmin = authenticateWithToken(ADMIN_BOT_TOKEN);
 
-/**
- * Uch botning istalgan biri imzolagan initData'ni qabul qiladi.
- * Kerak, chunki bron holatini instruktor ham, admin ham o'zgartiradi —
- * ular turli botlardan keladi, bitta token bilan tekshirib bo'lmaydi.
- */
 export const authenticateAnyBot = async (request: any) => {
   const tokens = [CUSTOMER_BOT_TOKEN, INSTRUCTOR_BOT_TOKEN, ADMIN_BOT_TOKEN].filter(Boolean);
   let last: unknown = null;
@@ -65,12 +59,12 @@ await registerInstructorRegistrationRoutes(app, authenticateInstructor);
 await registerCourseRoutes(app, authenticateCustomer);
 await registerReviewRoutes(app, authenticateCustomer);
 
-// IMPORTANT: admin-password-routes.ts is the single owner of the canonical
-// /api/admin/* endpoints. Do not register admin-routes.ts or
-// admin-dashboard-routes.ts here: they contain overlapping routes and cause
-// Fastify FST_ERR_DUPLICATED_ROUTE during Vercel cold starts.
+// Canonical admin API owner: admin-password-routes.ts.
+// Do NOT register the legacy admin-booking-routes.ts here because it
+// duplicates /api/admin/bookings and /api/admin/bookings/:id/status and makes
+// Fastify fail at startup with FST_ERR_DUPLICATED_ROUTE, turning every API
+// request into HTTP 500 on Vercel.
 await registerAdminPasswordRoutes(app);
-await registerAdminBookingRoutes(app);
 await registerContentRoutes(app);
 
 async function handleTelegramWebhook(request: any, reply: any, token: string, miniAppUrl: string, role: 'customer' | 'admin') {
