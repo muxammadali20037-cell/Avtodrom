@@ -1,5 +1,11 @@
 import { requireAdmin, rest, supabaseConfig, BUCKET } from './_auth.js';
 
+/**
+ * DIQQAT: admin_media jadvalidagi ustun nomi `path`, `storage_path` EMAS
+ * (bazadan tasdiqlangan, 2026-08-29 audit). Bu fayl avval `storage_path`
+ * ga yozar/o'qirdi — har bir media yuklash "Media saqlanmadi" bilan
+ * yiqilardi.
+ */
 export default async function handler(request:any,response:any){
   try{
     requireAdmin(request);
@@ -21,14 +27,14 @@ export default async function handler(request:any,response:any){
     const prefix=`${url}/storage/v1/object/public/${BUCKET}/`;
     if(!publicUrl.startsWith(prefix))throw new Error('Media URL noto‘g‘ri');
 
-    const old=await rest('admin_media',{query:`?key=eq.${encodeURIComponent(key)}&select=id,storage_path`});
-    const patch=await rest('admin_media',{method:'PATCH',headers:{Prefer:'return=representation'},query:`?key=eq.${encodeURIComponent(key)}`,body:JSON.stringify({title,media_type:mediaType,storage_path:path,public_url:publicUrl,is_active:true,updated_at:new Date().toISOString()})});
+    const old=await rest('admin_media',{query:`?key=eq.${encodeURIComponent(key)}&select=id,path`});
+    const patch=await rest('admin_media',{method:'PATCH',headers:{Prefer:'return=representation'},query:`?key=eq.${encodeURIComponent(key)}`,body:JSON.stringify({title,media_type:mediaType,path,public_url:publicUrl,is_active:true,updated_at:new Date().toISOString()})});
     let media=Array.isArray(patch)?patch[0]:null;
     if(!media){
-      const created=await rest('admin_media',{method:'POST',headers:{Prefer:'return=representation'},body:JSON.stringify({key,title,media_type:mediaType,storage_path:path,public_url:publicUrl,is_active:true,sort_order:0})});
+      const created=await rest('admin_media',{method:'POST',headers:{Prefer:'return=representation'},body:JSON.stringify({key,title,media_type:mediaType,path,public_url:publicUrl,is_active:true,sort_order:0})});
       media=Array.isArray(created)?created[0]:null;
     }
-    const previous=Array.isArray(old)?old[0]?.storage_path:null;
+    const previous=Array.isArray(old)?old[0]?.path:null;
     if(previous&&previous!==path){
       await fetch(`${url}/storage/v1/object/${BUCKET}/${previous}`,{method:'DELETE',headers:{apikey:String(process.env.SUPABASE_SERVICE_ROLE_KEY||''),Authorization:`Bearer ${String(process.env.SUPABASE_SERVICE_ROLE_KEY||'')}`}}).catch(()=>{});
     }
