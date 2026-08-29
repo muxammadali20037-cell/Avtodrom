@@ -32,7 +32,7 @@ function valid(t: string) {
     return x.length === y.length && timingSafeEqual(x, y);
   } catch { return false; }
 }
-async function guard(req: any) {
+export async function guard(req: any) {
   if (!valid(cookie(req))) { const e: any = new Error('Admin login talab qilinadi'); e.statusCode = 401; throw e; }
 }
 function setCookie(reply: any, t: string) {
@@ -62,7 +62,7 @@ async function safe<T = any>(table: string, query: string): Promise<T[]> {
   return (await safeR<T>(table, query)).rows;
 }
 
-async function adminUser() {
+export async function adminUser() {
   const r = await supabaseRest<any[]>('users', { query: '?role=eq.admin&is_active=eq.true&is_blocked=eq.false&select=*&limit=1' });
   if (!r[0]) throw Error('Admin foydalanuvchisi topilmadi');
   return r[0];
