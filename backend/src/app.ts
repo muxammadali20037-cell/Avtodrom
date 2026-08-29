@@ -8,6 +8,7 @@ import { registerInstructorRoutes } from './instructor-routes.js';
 import { registerInstructorRegistrationRoutes } from './instructor-registration-routes.js';
 import { handleInstructorStart } from './instructor-start.js';
 import { registerAdminPasswordRoutes } from './admin-password-routes.js';
+import { registerAdminBookingRoutes } from './admin-booking-routes.js';
 import { registerContentRoutes } from './content-routes.js';
 import { registerCourseRoutes } from './courses-routes.js';
 import { registerReviewRoutes } from './review-routes.js';
@@ -69,6 +70,7 @@ await registerReviewRoutes(app, authenticateCustomer);
 // admin-dashboard-routes.ts here: they contain overlapping routes and cause
 // Fastify FST_ERR_DUPLICATED_ROUTE during Vercel cold starts.
 await registerAdminPasswordRoutes(app);
+await registerAdminBookingRoutes(app);
 await registerContentRoutes(app);
 
 async function handleTelegramWebhook(request: any, reply: any, token: string, miniAppUrl: string, role: 'customer' | 'admin') {
