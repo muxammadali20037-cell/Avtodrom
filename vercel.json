@@ -12,6 +12,8 @@
     { "source": "/index", "destination": "/customer/index" },
     { "source": "/admin", "destination": "/admin/index.html" },
     { "source": "/admin/", "destination": "/admin/index.html" },
+    { "source": "/admin/chat", "destination": "/admin/chat.html" },
+    { "source": "/admin/chat/", "destination": "/admin/chat.html" },
     { "source": "/admin/login", "destination": "/admin/index.html" },
     { "source": "/admin/login.html", "destination": "/admin/index.html" },
     { "source": "/admin/dashboard", "destination": "/admin/index.html" },
