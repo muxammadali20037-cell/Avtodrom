@@ -1,0 +1,3 @@
+import { supabaseRest } from '../../backend/src/supabase.js';
+const PUBLIC_KEYS=['system_name','contact_phone','address','working_hours','booking_enabled','location'];
+export default async function handler(_req:any,res:any){try{const rows=await supabaseRest<any[]>('admin_settings',{query:`?key=in.(${PUBLIC_KEYS.map(encodeURIComponent).join(',')})&select=key,value`});const settings:any={};for(const r of rows)settings[r.key]=r.value?.value!==undefined?r.value.value:r.value;res.statusCode=200;res.setHeader('content-type','application/json; charset=utf-8');res.setHeader('cache-control','no-store');res.end(JSON.stringify({ok:true,settings}))}catch(e:any){res.statusCode=200;res.setHeader('content-type','application/json');res.end(JSON.stringify({ok:true,settings:{}}))}}
