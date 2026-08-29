@@ -306,11 +306,31 @@ function showWarnings(list){
   $('warnings').innerHTML=all.length?`<div class="warn"><b>Diqqat — ba’zi ma’lumotlar yuklanmadi:</b><br>${all.map(esc).join('<br>')}</div>`:'';
 }
 
+/* Xato matnini har qanday shakldan chiqarib oladi.
+   Vercel 404 javobi {"error":{"code":"NOT_FOUND"}} ko'rinishida keladi —
+   avval bu "[object Object]" bo'lib ko'rinardi. */
+function errText(d,status,path){
+  const pick=v=>{
+    if(!v) return '';
+    if(typeof v==='string') return v;
+    if(typeof v==='object') return v.message||v.error||v.code||'';
+    return String(v);
+  };
+  const msg=pick(d?.error)||pick(d?.message)||pick(d?.details);
+  if(msg) return msg;
+  if(status===404) return `Endpoint topilmadi (404): ${path}. Backend serverda yangilanmagan bo‘lishi mumkin.`;
+  if(status===405) return `Bu manzil bu usulni qabul qilmaydi (405): ${path}`;
+  return `Server xatosi: ${status}`;
+}
 async function api(path,opt={}){
-  const r=await fetch(path,{...opt,credentials:'include',cache:'no-store',headers:{Accept:'application/json',...(opt.body?{'Content-Type':'application/json'}:{})}});
-  let d={};try{d=await r.json()}catch{}
-  if(r.status===401){showLogin();throw Error(d.error||'Admin sessiyasi tugagan')}
-  if(!r.ok||d.ok===false)throw Error(d.error||d.message||`Server xatosi: ${r.status}`);
+  let r;
+  try{
+    r=await fetch(path,{...opt,credentials:'include',cache:'no-store',headers:{Accept:'application/json',...(opt.body?{'Content-Type':'application/json'}:{})}});
+  }catch(e){ throw Error('Tarmoq xatosi. Internet aloqasini tekshiring.'); }
+  const raw=await r.text();
+  let d={}; try{ d=raw?JSON.parse(raw):{} }catch{ d={} }
+  if(r.status===401){ showLogin(); throw Error(errText(d,401,path)||'Admin sessiyasi tugagan'); }
+  if(!r.ok||d.ok===false) throw Error(errText(d,r.status,path));
   return d;
 }
 function showLogin(){$('login').classList.remove('hidden');$('app').classList.add('hidden')}
@@ -704,7 +724,11 @@ async function loadSupport(){
     const unread=S.threads.reduce((a,t)=>a+(t.unread||0),0);
     $('supCount').textContent=unread;
     renderThreads();
-  }catch(e){ $('supThreads').innerHTML=`<div class="empty">${esc(e.message)}</div>`; }
+  }catch(e){
+    $('supCount').textContent='0';
+    $('supThreads').innerHTML=`<div class="empty">${esc(e.message)}</div>`;
+    if(/404/.test(e.message)) $('supMessages').innerHTML='<div class="warn">Chat backendi hali yuklanmagan. <code>support-routes.ts</code> va migratsiyani joylang.</div>';
+  }
 }
 function renderThreads(){
   const q=($('supSearch').value||'').toLowerCase();
