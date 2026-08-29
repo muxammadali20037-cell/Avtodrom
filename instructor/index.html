@@ -12,6 +12,7 @@ button,input,select{font:inherit}button{cursor:pointer}.app{min-height:100vh}.si
 @media(max-width:850px){.side{display:none}.main{margin:0;padding:14px}.mobile{display:flex;background:var(--dark);color:#fff;padding:12px;border-radius:12px;margin-bottom:14px;justify-content:space-between;align-items:center}.top{align-items:flex-start}.grid{grid-template-columns:repeat(2,1fr)}.title h1{font-size:23px}}
 @media(max-width:500px){.grid{grid-template-columns:1fr}.top .logout{display:none}}
 </style>
+<script src="https://telegram.org/js/telegram-web-app.js?57"></script>
 </head>
 <body>
 <aside class="side">
@@ -68,6 +69,7 @@ button,input,select{font:inherit}button{cursor:pointer}.app{min-height:100vh}.si
   Telegram must open this exact page as a Web App URL.
 */
 const TELEGRAM_WEBAPP = window.Telegram?.WebApp || null;
+const TELEGRAM_INIT_DATA = TELEGRAM_WEBAPP?.initData || '';
 if (TELEGRAM_WEBAPP) {
   try { TELEGRAM_WEBAPP.ready(); TELEGRAM_WEBAPP.expand(); } catch {}
 }
@@ -81,10 +83,12 @@ function toast(t){let x=$('#toast');x.textContent=t;x.style.display='block';setT
 async function api(path,opt={}){
   let r;
   try{
-    r=await fetch(path,{credentials:'include',headers:{
+    const headers={
       'Content-Type':'application/json',
+      ...(TELEGRAM_INIT_DATA ? {'X-Telegram-Init-Data':TELEGRAM_INIT_DATA} : {}),
       ...(opt.headers||{})
-    },...opt});
+    };
+    r=await fetch(path,{credentials:'include',headers,...opt});
   }catch(e){
     throw Error('Serverga ulanib bo‘lmadi. Instructor backend URL va /api/instructor endpointlarini tekshiring.');
   }
@@ -99,6 +103,9 @@ function badge(s){let m={pending:'Kutilmoqda',confirmed:'Qabul qilingan',arrived
 function go(section){$$('.section').forEach(x=>x.classList.toggle('active',x.id===section));$$('.nav button').forEach(x=>x.classList.toggle('active',x.dataset.section===section));$('#pageTitle').textContent=titles[section]||section;history.replaceState(null,'','#'+section);if(section==='dashboard')loadDashboard();if(section==='bookings')loadBookings();if(section==='statistics')loadStats();if(section==='profile')loadProfile()}
 $$('.nav button').forEach(b=>b.onclick=()=>go(b.dataset.section));
 
+if (!TELEGRAM_WEBAPP || !TELEGRAM_INIT_DATA) {
+  console.warn('Instructor Mini App: Telegram initData mavjud emas.');
+}
 async function loadMe(){
  try{
    const d=await api('/api/instructor/me'); me=d.instructor||d.user||d;
