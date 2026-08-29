@@ -11,6 +11,21 @@ button,input,select{font:inherit}button{cursor:pointer}.app{min-height:100vh}.si
 .main{margin-left:250px;padding:26px;max-width:1500px}.top{display:flex;justify-content:space-between;align-items:center;gap:15px;margin-bottom:20px}.title h1{margin:0;font-size:28px}.title p{margin:5px 0;color:var(--muted)}.logout,.secondary{border:1px solid var(--line);background:#fff;border-radius:9px;padding:10px 13px;font-weight:800}.primary{border:0;background:var(--g);color:#fff;border-radius:9px;padding:10px 14px;font-weight:850}.primary:hover{background:var(--g2)}.danger{border:1px solid #ffd0d0;background:#fff0f0;color:var(--red);border-radius:9px;padding:9px 12px;font-weight:850}.section{display:none}.section.active{display:block}.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:13px}.stat,.card{background:var(--card);border:1px solid var(--line);border-radius:15px;box-shadow:var(--shadow)}.stat{padding:17px}.stat span{display:block;color:var(--muted);font-size:12px}.stat strong{display:block;font-size:26px;margin-top:8px}.card{overflow:hidden;margin-bottom:16px}.head{padding:17px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:12px}.head h2{margin:0;font-size:17px}.pad{padding:17px}.actions{display:flex;gap:8px;flex-wrap:wrap}.table-wrap{overflow:auto}.table{width:100%;border-collapse:collapse;min-width:900px}.table th,.table td{padding:13px 14px;border-bottom:1px solid var(--line);text-align:left;font-size:13px}.table th{background:#fafcfb;color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:.07em}.badge{display:inline-flex;padding:5px 9px;border-radius:999px;font-size:10px;font-weight:900}.pending{background:#fff5d8;color:#9b6900}.confirmed{background:#eaf2ff;color:#315c9b}.arrived{background:#e9f8ef;color:#087443}.left{background:#f0f2f1;color:#68746e}.cancelled,.rejected{background:#fff0f0;color:#b42e2e}.completed{background:#e9f8ef;color:#087443}.empty,.loading{text-align:center;padding:30px;color:var(--muted)}.error{padding:13px;margin:13px;background:#fff0f0;color:#b42e2e;border-radius:9px}.profile{display:flex;align-items:center;gap:14px}.avatar{width:58px;height:58px;border-radius:50%;display:grid;place-items:center;background:#e9f4ef;color:var(--g);font-size:24px;font-weight:900}.hero{background:linear-gradient(135deg,#0f2b20,#176b48);color:#fff;border-radius:16px;padding:20px;margin-bottom:16px}.hero h2{margin:0 0 5px}.hero p{margin:0;color:#c8ded4}.filters{display:flex;gap:9px;flex-wrap:wrap}.filters button{border:1px solid var(--line);background:#fff;border-radius:9px;padding:9px 13px;font-weight:800}.filters button.active{background:var(--dark);color:#fff}.student{font-weight:850}.muted{color:var(--muted)}.mobile{display:none}
 @media(max-width:850px){.side{display:none}.main{margin:0;padding:14px}.mobile{display:flex;background:var(--dark);color:#fff;padding:12px;border-radius:12px;margin-bottom:14px;justify-content:space-between;align-items:center}.top{align-items:flex-start}.grid{grid-template-columns:repeat(2,1fr)}.title h1{font-size:23px}}
 @media(max-width:500px){.grid{grid-template-columns:1fr}.top .logout{display:none}}
+
+.table-wrap{width:100%;overflow-x:auto}
+.table-wrap table{width:100%;border-collapse:collapse;min-width:850px}
+.table-wrap th,.table-wrap td{padding:13px 12px;border-bottom:1px solid #e6ece9;text-align:left;vertical-align:middle}
+.table-wrap th{font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:#6b7a74;background:#f7faf8}
+.table-wrap td{font-size:14px}
+.center{text-align:center!important}
+.status-pill{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;font-size:12px;font-weight:700}
+.status-pending{background:#fff7df;color:#8a6500}
+.status-confirmed{background:#e8f7ef;color:#12613b}
+.status-arrived{background:#e7f2ff;color:#17558d}
+.status-left{background:#edf0f2;color:#4b5961}
+.action-row{display:flex;gap:6px;flex-wrap:wrap}
+.btn-small{border:0;border-radius:8px;padding:7px 10px;font-weight:700;cursor:pointer}
+
 </style>
 <script src="https://telegram.org/js/telegram-web-app.js?57"></script>
 </head>
@@ -184,6 +199,114 @@ async function logout(){
 }
 $('#logout').onclick=logout;$('#logoutMobile').onclick=logout;
 (async()=>{await loadMe();const s=location.hash.slice(1);go(titles[s]?s:'dashboard')})();
+
+function escHtml(v){
+  return String(v ?? '').replace(/[&<>"']/g, c => ({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'
+  }[c]));
+}
+function pick(obj, keys){
+  for(const k of keys){
+    if(obj && obj[k] !== undefined && obj[k] !== null && String(obj[k]).trim() !== '') return obj[k];
+  }
+  return '';
+}
+function bookingUser(b){
+  return b.customer || b.user || b.customer_profile || b.profile || {};
+}
+function bookingCourse(b){
+  return b.course || b.lesson || {};
+}
+function bookingDateTime(b){
+  const raw = pick(b,['booking_date','start_at','scheduled_at','date']);
+  if(!raw) return {date:'—',time:'—'};
+  const d = new Date(raw);
+  if(Number.isNaN(d.getTime())) return {date:escHtml(raw),time:'—'};
+  return {
+    date:d.toLocaleDateString('uz-UZ',{timeZone:'Asia/Tashkent'}),
+    time:d.toLocaleTimeString('uz-UZ',{hour:'2-digit',minute:'2-digit',timeZone:'Asia/Tashkent'})
+  };
+}
+function statusLabel(s){
+  const x=String(s||'pending').toLowerCase();
+  return ({
+    pending:'Kutilmoqda',confirmed:'Tasdiqlangan',arrived:'Keldi',
+    in_progress:'Mashg‘ulotda',completed:'Tugagan',left:'Ketdi',
+    cancelled:'Bekor qilingan',rejected:'Rad etilgan',no_show:'Kelmagan'
+  })[x] || x;
+}
+function statusClass(s){
+  const x=String(s||'pending').toLowerCase();
+  if(['confirmed'].includes(x)) return 'status-confirmed';
+  if(['arrived','in_progress'].includes(x)) return 'status-arrived';
+  if(['completed','left','cancelled','rejected','no_show'].includes(x)) return 'status-left';
+  return 'status-pending';
+}
+function renderInstructorBookings(rows){
+  const body=document.querySelector('#bookingTable');
+  if(!body) return;
+  if(!Array.isArray(rows) || !rows.length){
+    body.innerHTML='<tr><td colspan="7" class="muted center">Hozircha bron yo‘q.</td></tr>';
+    return;
+  }
+  body.innerHTML=rows.map(b=>{
+    const u=bookingUser(b), c=bookingCourse(b), dt=bookingDateTime(b);
+    const name=pick(u,['full_name','name']) || pick(b,['customer_name','student_name']) || 'Noma’lum o‘quvchi';
+    const phone=pick(u,['phone','phone_number']) || pick(b,['phone','customer_phone']) || '—';
+    const course=pick(c,['name','title']) || pick(b,['course_name','lesson_name']) || 'Mashg‘ulot';
+    const duration=pick(c,['duration_minutes']) || pick(b,['duration_minutes']);
+    const status=String(b.status||'pending').toLowerCase();
+    const id=escHtml(b.id);
+    let actions='';
+    if(status==='confirmed' || status==='pending'){
+      actions='<button class="btn-small" data-booking-action="arrived" data-id="'+id+'">✅ Keldi</button>';
+    } else if(status==='arrived' || status==='in_progress'){
+      actions='<button class="btn-small" data-booking-action="left" data-id="'+id+'">🚪 Ketdi</button>';
+    } else {
+      actions='—';
+    }
+    return '<tr>'+
+      '<td><b>'+escHtml(name)+'</b></td>'+
+      '<td>'+escHtml(phone)+'</td>'+
+      '<td>'+escHtml(dt.date)+'</td>'+
+      '<td><b>'+escHtml(dt.time)+'</b></td>'+
+      '<td>'+escHtml(course)+(duration?' · '+escHtml(duration)+' daqiqa':'')+'</td>'+
+      '<td><span class="status-pill '+statusClass(status)+'">'+escHtml(statusLabel(status))+'</span></td>'+
+      '<td><div class="action-row">'+actions+'</div></td>'+
+      '</tr>';
+  }).join('');
+}
+async function loadInstructorBookings(){
+  try{
+    const d=await api('/api/instructor/bookings');
+    const rows=d.bookings || d.data || d.rows || [];
+    renderInstructorBookings(rows);
+  }catch(e){
+    const body=document.querySelector('#bookingTable');
+    if(body) body.innerHTML='<tr><td colspan="7" class="muted center">Bronlarni yuklashda xato: '+escHtml(e.message)+'</td></tr>';
+  }
+}
+document.addEventListener('click', async ev=>{
+  const btn=ev.target.closest?.('[data-booking-action]');
+  if(!btn) return;
+  const id=btn.dataset.id, action=btn.dataset.bookingAction;
+  btn.disabled=true;
+  try{
+    const status=action==='arrived' ? 'arrived' : 'left';
+    await api('/api/instructor/bookings/'+encodeURIComponent(id)+'/status',{
+      method:'PATCH',
+      body:JSON.stringify({status})
+    });
+    await loadInstructorBookings();
+    if(typeof loadStats==='function') await loadStats();
+  }catch(e){
+    alert(e.message);
+    btn.disabled=false;
+  }
+});
+document.querySelector('#refreshBookings')?.addEventListener('click',loadInstructorBookings);
+loadInstructorBookings();
+
 </script>
 </body>
 </html>
