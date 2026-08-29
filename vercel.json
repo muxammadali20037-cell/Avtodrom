@@ -73,20 +73,12 @@
       "destination": "/instructor/index.html"
     },
     {
-      "source": "/instructor/register",
-      "destination": "/frontend/instructor/register.html"
-    },
-    {
-      "source": "/instructor/register.html",
-      "destination": "/frontend/instructor/register.html"
-    },
-    {
       "source": "/customer",
-      "destination": "/customer/index.html"
+      "destination": "/index.html"
     },
     {
       "source": "/customer/",
-      "destination": "/customer/index.html"
+      "destination": "/index.html"
     }
   ]
 }
