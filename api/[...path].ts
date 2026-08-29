@@ -14,6 +14,8 @@ export default async function handler(request: any, response: any) {
     if (!pathname.startsWith('/api')) pathname = `/api${pathname.startsWith('/') ? pathname : `/${pathname}`}`;
     const url = `${pathname}${parsed.search}`;
 
+    // Keep the catch-all as the single Vercel entry point for every nested
+    // /api/* route, including /api/instructors/:id/availability.
     const result = await app.inject({
       method: request.method || 'GET',
       url,
