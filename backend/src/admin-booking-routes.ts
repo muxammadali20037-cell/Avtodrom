@@ -63,16 +63,19 @@ async function loadBookings() {
   });
   if (!bookings.length) return [];
 
-  const userIds = [...new Set(bookings.flatMap(b => [b.customer_id, b.instructor_id]).filter(Boolean).map(String))];
+  const customerIds = [...new Set(bookings.map(b => b.customer_id).filter(Boolean).map(String))];
   const instructorIds = [...new Set(bookings.map(b => b.instructor_id).filter(Boolean).map(String))];
   const courseIds = [...new Set(bookings.map(b => b.course_id).filter(Boolean).map(String))];
 
-  const [users, instructors, courses] = await Promise.all([
+  const instructors = instructorIds.length
+    ? await supabaseRest<any[]>('instructor_profiles', { query: `?id=in.(${instructorIds.map(q).join(',')})&select=id,user_id,rating,total_reviews,is_verified,is_available` })
+    : [];
+  const instructorUserIds = [...new Set(instructors.map(i => i.user_id).filter(Boolean).map(String))];
+  const userIds = [...new Set([...customerIds, ...instructorUserIds])];
+
+  const [users, courses] = await Promise.all([
     userIds.length
       ? supabaseRest<any[]>('users', { query: `?id=in.(${userIds.map(q).join(',')})&select=id,full_name,phone,telegram_id,username` })
-      : Promise.resolve([]),
-    instructorIds.length
-      ? supabaseRest<any[]>('instructor_profiles', { query: `?id=in.(${instructorIds.map(q).join(',')})&select=id,user_id,rating,total_reviews,is_verified,is_available` })
       : Promise.resolve([]),
     courseIds.length
       ? supabaseRest<any[]>('courses', { query: `?id=in.(${courseIds.map(q).join(',')})&select=id,name,duration_minutes,price` })
