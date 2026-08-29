@@ -1,4 +1,18 @@
 import app from '../backend/src/app.js';
+import { supabaseRest } from '../backend/src/supabase.js';
+
+async function notifyAdminsOnBooking(body: any) {
+  const token = String(process.env.ADMIN_BOT_TOKEN || process.env.TELEGRAM_ADMIN_BOT_TOKEN || '');
+  if (!token || !body?.booking?.id) return;
+  try {
+    const admins = await supabaseRest<any[]>('users', { query: '?role=eq.admin&is_active=eq.true&is_blocked=eq.false&select=telegram_id&limit=20' });
+    const id = String(body.booking.id).slice(0, 8);
+    await Promise.all(admins.filter(a => Number.isSafeInteger(Number(a.telegram_id))).map(a => fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+      method: 'POST', headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ chat_id: Number(a.telegram_id), text: `📋 AVTODROM\n\nYangi bron #${id}\nAdmin panelda tekshirib tasdiqlang.`, reply_markup: { inline_keyboard: [[{ text: '👨‍💼 Admin panel', web_app: { url: String(process.env.ADMIN_MINI_APP_URL || 'https://avtodrom.vercel.app/admin') } }]] } }),
+    }).catch(() => null)));
+  } catch (error) { console.error('Booking admin notification failed:', error); }
+}
 
 export default async function handler(request: any, response: any) {
   try {
@@ -18,20 +32,12 @@ export default async function handler(request: any, response: any) {
       method: request.method || 'GET',
       url,
       headers,
-      payload: request.method === 'GET' || request.method === 'HEAD'
-        ? undefined
-        : request.body === undefined
-          ? undefined
-          : typeof request.body === 'string'
-            ? request.body
-            : JSON.stringify(request.body),
+      payload: request.method === 'GET' || request.method === 'HEAD' ? undefined : request.body === undefined ? undefined : typeof request.body === 'string' ? request.body : JSON.stringify(request.body),
     });
 
     let body = result.body;
     const contentType = String(result.headers['content-type'] || '');
 
-    // Customer frontend historically reads /api/me.user while the canonical
-    // backend returns /api/me.profile. Keep both names during the migration.
     if (pathname === '/api/me' && result.statusCode >= 200 && result.statusCode < 300 && contentType.includes('application/json')) {
       try {
         const parsedBody = JSON.parse(body || '{}');
@@ -39,9 +45,11 @@ export default async function handler(request: any, response: any) {
           body = JSON.stringify({ ...parsedBody, user: parsedBody.profile });
           result.headers['content-length'] = String(Buffer.byteLength(body));
         }
-      } catch {
-        // Leave a non-JSON response untouched.
-      }
+      } catch {}
+    }
+
+    if (pathname === '/api/bookings' && request.method === 'POST' && result.statusCode === 201 && contentType.includes('application/json')) {
+      try { await notifyAdminsOnBooking(JSON.parse(body || '{}')); } catch {}
     }
 
     response.statusCode = result.statusCode;
