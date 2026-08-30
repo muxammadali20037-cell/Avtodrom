@@ -97,6 +97,7 @@ pre.json{background:#f7faf8;border:1px solid var(--line);border-radius:8px;paddi
   <button class="nav on" data-p="dashboard">⌂ Umumiy</button>
   <button class="nav" data-p="applications">📝 Arizalar <span id="appCount" class="count">0</span></button>
   <button class="nav" data-p="bookings">📋 Bronlar <span id="bookCount" class="count">0</span></button>
+  <button class="nav" data-p="cancels">🚫 Bekor so‘rovlari <span id="cxCount" class="count">0</span></button>
   <button class="nav" data-p="instructors">👨‍🏫 Instruktorlar</button>
   <button class="nav" data-p="users">👤 Foydalanuvchilar</button>
   <button class="nav" data-p="courses">📘 Mashg‘ulotlar</button>
@@ -149,6 +150,11 @@ pre.json{background:#f7faf8;border:1px solid var(--line);border-radius:8px;paddi
     </div>
     <div class="tableWrap"><table class="table"><thead><tr><th>Sana</th><th>Mijoz</th><th>Telefon</th><th>Instruktor</th><th>Mashg‘ulot</th><th>Narx</th><th>Izoh</th><th>Status</th><th>Amal</th></tr></thead><tbody id="bookingRows"></tbody></table></div>
   </div>
+</section>
+
+<section id="cancels" class="page">
+  <div class="head"><div><h1>🚫 Bekor qilish so‘rovlari</h1><p>Mijoz tasdiqlangan bronni bekor qilmoqchi. Sababni o‘qib, qaror qiling.</p></div><button class="btn" id="cxRefresh">↻ Yangilash</button></div>
+  <div class="card"><div id="cxList"></div></div>
 </section>
 
 <section id="instructors" class="page">
@@ -252,7 +258,13 @@ pre.json{background:#f7faf8;border:1px solid var(--line);border-radius:8px;paddi
     <div class="field"><label>TIZIM NOMI</label><input id="systemName" class="input" value="AVTODROM INDEX"></div>
     <div class="field"><label>BRONLAR</label><select id="bookingEnabled" class="select"><option value="true">Yoqilgan</option><option value="false">O‘chirilgan</option></select></div>
     <div class="field"><label>ALOQA TELEFONI <span class="muted">(mijoz panelida ko‘rinadi)</span></label><input id="contactPhone" class="input" autocomplete="off" placeholder="+998901234567"></div>
-    <div class="field"><label>ISH VAQTI</label><input id="workingHours" class="input" autocomplete="off" placeholder="Dushanba–Shanba, 08:00–21:00"></div>
+    <div class="field"><label>ISH VAQTI (matn)</label><input id="workingHours" class="input" autocomplete="off" placeholder="Dushanba–Shanba"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
+      <div class="field"><label>OCHILISH</label><input id="workStart" class="input" type="time" step="900" autocomplete="off"></div>
+      <div class="field"><label>YOPILISH</label><input id="workEnd" class="input" type="time" step="900" autocomplete="off"></div>
+      <div class="field"><label>SLOT QADAMI (DAQ)</label><input id="slotStep" class="input" type="number" min="15" step="15" autocomplete="off"></div>
+    </div>
+    <p class="muted" style="font-size:12px;margin:0 0 10px">Mijoz panelidagi bo‘sh vaqtlar shu oraliqdan hosil qilinadi. Qadam 60 = butun soatlar (07:00, 08:00 …).</p>
     <button class="btn primary" id="saveSettingsBtn">Saqlash</button>
   </div>
 
@@ -361,6 +373,7 @@ function showPage(id){
   if(id==='media')loadMedia();
   if(id==='audit')loadAudit();
   if(id==='support')loadSupport();
+  if(id==='cancels')loadCancels();
 }
 document.querySelectorAll('.nav').forEach(x=>x.addEventListener('click',()=>showPage(x.dataset.p)));
 
@@ -656,7 +669,7 @@ function renderAudit(){
    (a) avtomatik yangilanish to'xtaydi, (b) loadSettings maydonlarga tegmaydi.
    Saqlangandan yoki bekor qilingandan keyingina qulf ochiladi. */
 let editing = false;
-const SETTING_FIELDS = ['systemName','bookingEnabled','contactPhone','workingHours',
+const SETTING_FIELDS = ['systemName','bookingEnabled','contactPhone','workingHours','workStart','workEnd','slotStep',
                         'locName','locAddress','locLat','locLng','locGoogle','locYandex','loc2gis'];
 function markEditing(){ if(!editing){ editing=true; $('locDirty').classList.remove('hidden'); } }
 function clearEditing(){ editing=false; $('locDirty').classList.add('hidden'); }
@@ -673,6 +686,9 @@ function loadSettings(){
   $('bookingEnabled').value=String(val('booking_enabled')!==false);
   $('contactPhone').value=val('contact_phone');
   $('workingHours').value=val('working_hours');
+  $('workStart').value=val('work_start')||'07:00';
+  $('workEnd').value=val('work_end')||'19:00';
+  $('slotStep').value=Number(val('slot_step_min'))||60;
 
   const loc=val('location')||{};
   $('locName').value=loc.name||'';
@@ -727,6 +743,9 @@ $('saveSettingsBtn').onclick=async()=>{
     await put('booking_enabled',$('bookingEnabled').value==='true');
     await put('contact_phone',$('contactPhone').value.trim());
     await put('working_hours',$('workingHours').value.trim());
+    await put('work_start',$('workStart').value||'07:00');
+    await put('work_end',$('workEnd').value||'19:00');
+    await put('slot_step_min',Math.max(15,Number($('slotStep').value)||60));
     clearEditing();
     toast('Sozlamalar saqlandi');await loadAll();
   }catch(e){notice(e.message)}
@@ -815,13 +834,58 @@ $('supInput').onkeydown=e=>{ if(e.key==='Enter'){ e.preventDefault(); sendSuppor
 $('supRefresh').onclick=()=>{ loadSupport(); if(S.supUser) openThread(S.supUser); };
 $('supSearch').addEventListener('input',renderThreads);
 
-async function boot(){try{await api('/api/admin/me');showApp();await loadAll();await loadSupport()}catch{showLogin()}}
+
+/* ---------- Bekor qilish so'rovlari ---------- */
+S.cancels=[];
+async function loadCancels(){
+  try{
+    const d=await api('/api/admin/cancellation-requests');
+    S.cancels=d.requests||[];
+    $('cxCount').textContent=S.cancels.length;
+    renderCancels();
+  }catch(e){ $('cxList').innerHTML=`<div class="error">${esc(e.message)}</div>`; }
+}
+function renderCancels(){
+  if(!S.cancels.length){ $('cxList').innerHTML='<div class="empty">Ochiq so‘rov yo‘q.</div>'; return; }
+  $('cxList').innerHTML=S.cancels.map(b=>`
+    <div class="card" style="margin-bottom:12px">
+      <div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap">
+        <div>
+          <b style="font-size:15px">${esc(uname(b.customer))}</b>
+          <div class="muted" style="font-size:12px;margin-top:3px">${esc(b.customer?.phone||'—')}</div>
+          <div style="margin-top:8px">📚 ${esc(b.course?.name||'—')} · 👨‍🏫 ${esc(iname(b.instructor))}</div>
+          <div class="muted" style="font-size:13px;margin-top:3px">📅 ${dt(b.start_at)}</div>
+        </div>
+        <div style="text-align:right"><span class="muted" style="font-size:11px">So‘rov vaqti</span><div>${dt(b.cancel_requested_at)}</div></div>
+      </div>
+      <div class="warn" style="margin:12px 0 0">💬 <b>Sabab:</b> ${esc(b.cancel_request_reason||'—')}</div>
+      <div class="actions" style="margin-top:12px">
+        <button class="btn red" data-cx-ok="${esc(b.id)}">✓ Tasdiqlash — bronni bekor qilish</button>
+        <button class="btn" data-cx-no="${esc(b.id)}">✕ Rad etish — bron qolsin</button>
+      </div>
+    </div>`).join('');
+  document.querySelectorAll('[data-cx-ok]').forEach(x=>x.onclick=()=>cxDecide(x.dataset.cxOk,'approve'));
+  document.querySelectorAll('[data-cx-no]').forEach(x=>x.onclick=()=>cxDecide(x.dataset.cxNo,'reject'));
+}
+async function cxDecide(id,act){
+  let note='';
+  if(act==='reject'){ note=prompt('Rad etish sababi (mijozga ko‘rinadi, ixtiyoriy):','')||''; }
+  else if(!confirm('So‘rov tasdiqlansinmi? Bron bekor qilinadi.')) return;
+  try{
+    await api(`/api/admin/bookings/${encodeURIComponent(id)}/cancel-${act}`,{method:'POST',body:JSON.stringify({note})});
+    toast(act==='approve'?'Bron bekor qilindi':'So‘rov rad etildi');
+    await Promise.allSettled([loadCancels(),loadAll()]);
+  }catch(e){ notice(e.message); }
+}
+$('cxRefresh').onclick=loadCancels;
+
+async function boot(){try{await api('/api/admin/me');showApp();await loadAll();await loadSupport();await loadCancels()}catch{showLogin()}}
 // Avtomatik yangilanish: modal ochiq bo'lsa yoki sozlama tahrirlanayotgan bo'lsa TO'XTAYDI.
 setInterval(()=>{
   if($('app').classList.contains('hidden')) return;
   if($('modal').classList.contains('open')) return;
   if(editing) return;
-  loadAll(); loadSupport();
+  loadAll(); loadSupport(); loadCancels();
 },30000);
 boot();
 </script>
