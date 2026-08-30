@@ -87,12 +87,26 @@ export async function registerInstructorRoutes(
       const profile = await profileForTelegram(tgUser);
       const instructor = await approvedInstructor(profile);
       if (!profile || !instructor) return reply.code(403).send({ ok: false, error: 'Instructor hali Admin tomonidan tasdiqlanmagan', status: 'PENDING' });
-      const query = request.query as { from?: string; to?: string };
+      const query = request.query as { from?: string; to?: string; date?: string; status?: string };
       const parts = [
         'select=*,customer:customer_id(id,full_name,phone,telegram_id),course:course_id(id,name,duration_minutes,price)',
         `instructor_id=eq.${q(String(instructor.id))}`,
         'order=booking_date.asc',
       ];
+
+      // ?date=today | YYYY-MM-DD — Asia/Tashkent kuni bo'yicha
+      if (query.date) {
+        const day = query.date === 'today'
+          ? new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Tashkent' }).format(new Date())
+          : String(query.date);
+        if (/^\d{4}-\d{2}-\d{2}$/.test(day)) {
+          const start = new Date(`${day}T00:00:00+05:00`);
+          const end = new Date(start.getTime() + 24 * 60 * 60 * 1000);
+          parts.push(`booking_date=gte.${q(start.toISOString())}`);
+          parts.push(`booking_date=lt.${q(end.toISOString())}`);
+        }
+      }
+      if (query.status) parts.push(`status=eq.${q(query.status)}`);
       if (query.from) parts.push(`booking_date=gte.${q(query.from)}`);
       if (query.to) parts.push(`booking_date=lt.${q(query.to)}`);
       return { ok: true, bookings: await supabaseRest<any[]>('bookings', { query: `?${parts.join('&')}` }) };
@@ -281,4 +295,75 @@ export async function registerInstructorRoutes(
       return reply.code(400).send({ ok: false, error: e instanceof Error ? e.message : 'Holat saqlanmadi' });
     }
   });
+
+  /* ==========================================================
+     ALIAS ENDPOINTLAR
+     Instruktor paneli tarixiy sabablarga ko'ra boshqa nomlarni
+     chaqiradi (profile / statistics / dashboard / logout).
+     Panelni qayta yozish o'rniga backend shu nomlarni ham qabul
+     qiladi — mantiq takrorlanmaydi, mavjud handlerlarga uzatiladi.
+     ========================================================== */
+
+  /** /api/instructor/profile → /api/instructor/me bilan bir xil */
+  app.get('/api/instructor/profile', async (request, reply) => {
+    const res = await app.inject({
+      method: 'GET', url: '/api/instructor/me',
+      headers: request.headers as any,
+    });
+    reply.code(res.statusCode);
+    return JSON.parse(res.body || '{}');
+  });
+
+  /** /api/instructor/statistics → /api/instructor/stats bilan bir xil */
+  app.get('/api/instructor/statistics', async (request, reply) => {
+    const res = await app.inject({
+      method: 'GET', url: '/api/instructor/stats',
+      headers: request.headers as any,
+    });
+    reply.code(res.statusCode);
+    return JSON.parse(res.body || '{}');
+  });
+
+  /**
+   * /api/instructor/dashboard — profil + statistika + bugungi bronlar
+   * bitta so'rovda. Panel uch marta so'rov yubormasligi uchun.
+   */
+  app.get('/api/instructor/dashboard', async (request, reply) => {
+    try {
+      const tgUser = await authenticate(request);
+      const profile = await profileForTelegram(tgUser);
+      const instructor = await approvedInstructor(profile);
+      if (!profile || !instructor) {
+        return reply.code(403).send({ ok: false, error: 'Instructor hali Admin tomonidan tasdiqlanmagan', status: 'PENDING' });
+      }
+
+      const [statsRes, todayRes] = await Promise.all([
+        app.inject({ method: 'GET', url: '/api/instructor/stats', headers: request.headers as any }),
+        app.inject({ method: 'GET', url: '/api/instructor/bookings?date=today', headers: request.headers as any }),
+      ]);
+      const stats = JSON.parse(statsRes.body || '{}');
+      const today = JSON.parse(todayRes.body || '{}');
+
+      return {
+        ok: true,
+        profile: toProfile(profile),
+        instructor,
+        stats: stats.stats ?? {},
+        // Panel turli nomlarni kutishi mumkin — ikkalasini ham beramiz
+        today: today.bookings ?? [],
+        todayBookings: today.bookings ?? [],
+        bookings: today.bookings ?? [],
+      };
+    } catch (e) {
+      return reply.code(400).send({ ok: false, error: e instanceof Error ? e.message : 'Dashboard yuklanmadi' });
+    }
+  });
+
+  /**
+   * /api/instructor/logout — Telegram Mini App'da server sessiyasi yo'q
+   * (har so'rov initData bilan tekshiriladi), shuning uchun bu shunchaki
+   * muvaffaqiyat qaytaradi. Panel tugmasi 404 bermasligi uchun.
+   */
+  app.post('/api/instructor/logout', async () => ({ ok: true }));
+  app.get('/api/instructor/logout', async () => ({ ok: true }));
 }
