@@ -101,6 +101,30 @@ async function recalcInstructorRating(instructorId: string) {
   return { rating: avg, total_reviews: ratings.length };
 }
 
+
+/** Mijozga bildirishnoma + Telegram xabari (bekor so'rovi javobi uchun). */
+async function notifyCustomer(booking: any, event: BookingEvent, extra: string) {
+  try {
+    const d = await loadBookingDetails(booking);
+    const msg = bookingMessage(booking, event, 'customer', d);
+    const full = `${msg.title}\n\n${extra}\n\n${msg.body}`;
+
+    await supabaseRest('notifications', {
+      method: 'POST',
+      body: JSON.stringify({ user_id: booking.customer_id, type: 'booking', title: msg.title, message: extra }),
+    }).catch(() => {});
+
+    const u = (await supabaseRest<any[]>('users', {
+      query: `?id=eq.${q(String(booking.customer_id))}&select=telegram_id&limit=1`,
+    }))[0];
+    const token = String(process.env.CUSTOMER_BOT_TOKEN || process.env.TELEGRAM_CUSTOMER_BOT_TOKEN || '');
+    if (token && Number.isSafeInteger(Number(u?.telegram_id))) {
+      await sendBookingNotification(token, Number(u.telegram_id), full,
+        String(process.env.CUSTOMER_MINI_APP_URL || process.env.MINI_APP_URL || ''), '🚗 Mini Appni ochish');
+    }
+  } catch (e) { console.error('notifyCustomer failed:', e); }
+}
+
 export async function registerAdminPasswordRoutes(app: FastifyInstance) {
   app.post('/api/admin/login', async (req: any, reply: any) => {
     try {
@@ -585,6 +609,111 @@ export async function registerAdminPasswordRoutes(app: FastifyInstance) {
       await audit(admin.id, 'PAYMENT_UPDATED', 'payments', id, { status: old.status }, { status });
       return { ok: true, payment: rows[0] };
     } catch (e) { return err(reply, e, 'Payment update failed', 400); }
+  });
+
+  /* ==========================================================
+     BEKOR QILISH SO'ROVLARI
+     Mijoz `confirmed` bronni bekor qilmoqchi bo'lsa, bron darhol
+     bekor bo'lmaydi — admin ko'rib chiqadi.
+     ========================================================== */
+
+  app.get('/api/admin/cancellation-requests', async (req: any, reply: any) => {
+    try {
+      await guard(req);
+      const [rows, users, ips, courses] = await Promise.all([
+        safe<any>('bookings', '?cancel_requested_at=not.is.null&cancel_reviewed_at=is.null&select=*&order=cancel_requested_at.asc'),
+        safe<any>('users', '?select=id,full_name,phone,telegram_id'),
+        safe<any>('instructor_profiles', '?select=id,user_id'),
+        safe<any>('courses', '?select=id,name,duration_minutes,price'),
+      ]);
+      const um = new Map(users.map((u: any) => [String(u.id), u]));
+      const im = new Map(ips.map((i: any) => [String(i.id), i]));
+      const cm = new Map(courses.map((c: any) => [String(c.id), c]));
+      return {
+        ok: true,
+        requests: rows.map((b: any) => {
+          const ip = im.get(String(b.instructor_id));
+          return {
+            ...b,
+            start_at: b.start_at || b.booking_date,
+            customer: um.get(String(b.customer_id)) || null,
+            instructor: ip ? { ...ip, profile: um.get(String(ip.user_id)) || null } : null,
+            course: cm.get(String(b.course_id)) || null,
+          };
+        }),
+      };
+    } catch (e: any) {
+      return reply.code(e?.statusCode ?? 500).send({ ok: false, error: e?.message || 'So‘rovlar yuklanmadi' });
+    }
+  });
+
+  /** So'rovni tasdiqlash — bron bekor qilinadi. */
+  app.post('/api/admin/bookings/:id/cancel-approve', async (req: any, reply: any) => {
+    try {
+      await guard(req);
+      const admin = await adminUser();
+      const id = String(req.params.id);
+      const b = (await supabaseRest<any[]>('bookings', { query: `?id=eq.${q(id)}&select=*&limit=1` }))[0];
+      if (!b) return reply.code(404).send({ ok: false, error: 'Bron topilmadi' });
+      if (!b.cancel_requested_at || b.cancel_reviewed_at) {
+        return reply.code(409).send({ ok: false, error: 'Bu bron uchun ochiq so‘rov yo‘q' });
+      }
+
+      const now = new Date().toISOString();
+      const rows = await supabaseRest<any[]>('bookings', {
+        method: 'PATCH', headers: { Prefer: 'return=representation' }, query: `?id=eq.${q(id)}`,
+        body: JSON.stringify({
+          status: 'cancelled',
+          cancelled_at: now,
+          cancelled_by: b.cancel_requested_by ?? admin.id,
+          cancellation_reason: b.cancel_request_reason,
+          cancel_reviewed_at: now,
+          cancel_reviewed_by: admin.id,
+          updated_at: now,
+        }),
+      });
+      const updated = rows[0] ?? b;
+      await notifyCustomer(updated, 'cancelled', 'So‘rovingiz tasdiqlandi — bron bekor qilindi.');
+      await audit(admin.id, 'BOOKING_CANCEL_APPROVED', 'bookings', id,
+        { status: b.status, reason: b.cancel_request_reason }, { status: 'cancelled' });
+      return { ok: true, booking: updated };
+    } catch (e: any) {
+      return reply.code(e?.statusCode ?? 400).send({ ok: false, error: e?.message || 'Tasdiqlanmadi' });
+    }
+  });
+
+  /** So'rovni rad etish — bron kuchda qoladi. */
+  app.post('/api/admin/bookings/:id/cancel-reject', async (req: any, reply: any) => {
+    try {
+      await guard(req);
+      const admin = await adminUser();
+      const id = String(req.params.id);
+      const note = String(req.body?.note || '').trim();
+      const b = (await supabaseRest<any[]>('bookings', { query: `?id=eq.${q(id)}&select=*&limit=1` }))[0];
+      if (!b) return reply.code(404).send({ ok: false, error: 'Bron topilmadi' });
+      if (!b.cancel_requested_at || b.cancel_reviewed_at) {
+        return reply.code(409).send({ ok: false, error: 'Bu bron uchun ochiq so‘rov yo‘q' });
+      }
+
+      const now = new Date().toISOString();
+      const rows = await supabaseRest<any[]>('bookings', {
+        method: 'PATCH', headers: { Prefer: 'return=representation' }, query: `?id=eq.${q(id)}`,
+        body: JSON.stringify({
+          cancel_reviewed_at: now,
+          cancel_reviewed_by: admin.id,
+          admin_note: note || b.admin_note,
+          updated_at: now,
+        }),
+      });
+      const updated = rows[0] ?? b;
+      await notifyCustomer(updated, 'confirmed',
+        note ? `Bekor qilish so‘rovi rad etildi. Admin izohi: ${note}` : 'Bekor qilish so‘rovi rad etildi. Bron kuchda qoladi.');
+      await audit(admin.id, 'BOOKING_CANCEL_REJECTED', 'bookings', id,
+        { reason: b.cancel_request_reason }, { note: note || null });
+      return { ok: true, booking: updated };
+    } catch (e: any) {
+      return reply.code(e?.statusCode ?? 400).send({ ok: false, error: e?.message || 'Rad etilmadi' });
+    }
   });
 
   app.get('/api/admin/audit-logs', async (req: any, reply: any) => {
