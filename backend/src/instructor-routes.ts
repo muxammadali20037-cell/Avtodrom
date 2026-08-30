@@ -1,5 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 import { supabaseRest } from './supabase.js';
+import { loadBookingDetails, bookingMessage, inAppMessage, type BookingEvent } from './notify.js';
 import { sendBookingNotification } from './telegram.js';
 import type { TelegramWebAppUser } from './telegram.js';
 import { q, toProfile, findUserByTelegram, instructorProfileForUser, notifyUser } from './identity.js';
@@ -31,35 +32,34 @@ async function getCustomer(customerId: string) {
   return rows[0] || null;
 }
 
-type NotifyStatus = 'confirmed' | 'rejected' | 'in_progress' | 'completed' | 'no_show';
+type NotifyStatus = BookingEvent;
 
-const NOTIFY_TEXT: Record<NotifyStatus, { title: string; body: (id: string) => string }> = {
-  confirmed:   { title: 'Bron tasdiqlandi',      body: (id) => `Bron #${id}: instruktor bronni qabul qildi.` },
-  rejected:    { title: 'Bron rad etildi',       body: (id) => `Bron #${id}: instruktor bronni rad etdi. Boshqa vaqt tanlashingiz mumkin.` },
-  in_progress: { title: 'Instruktor: mijoz KELDI', body: (id) => `Bron #${id}: instruktor sizni kutib oldi. Dars boshlandi.` },
-  completed:   { title: 'Dars yakunlandi',       body: (id) => `Bron #${id}: dars yakunlandi. Instruktorni baholashingiz mumkin.` },
-  no_show:     { title: 'Mijoz kelmadi',         body: (id) => `Bron #${id}: instruktor sizni kelmagan deb belgiladi.` },
-};
-
+/** Mijozga (va DB notifications'ga) chiroyli xabar yuboradi. */
 async function notifyBookingStatus(booking: any, status: NotifyStatus) {
   try {
     const customerId = booking?.customer_id;
     if (!customerId) return;
-    const t = NOTIFY_TEXT[status];
-    const title = t.title;
-    const body = t.body(String(booking.id));
+    const d = await loadBookingDetails(booking);
+    const msg = bookingMessage(booking, status, 'customer', d);
 
-    await notifyUser(String(customerId), 'booking', title, body);
+    await supabaseRest('notifications', {
+      method: 'POST',
+      body: JSON.stringify({
+        user_id: customerId, type: 'booking',
+        title: msg.title, message: inAppMessage(status, d, booking),
+      }),
+    }).catch((e) => console.error('notification insert failed', e));
 
-    const customer = await getCustomer(String(customerId));
-    const chatId = Number(customer?.telegram_id);
+    const u = (await supabaseRest<any[]>('users', {
+      query: `?id=eq.${q(String(customerId))}&select=telegram_id&limit=1`,
+    }))[0];
     const token = String(process.env.CUSTOMER_BOT_TOKEN || process.env.TELEGRAM_CUSTOMER_BOT_TOKEN || '');
     const miniAppUrl = String(process.env.CUSTOMER_MINI_APP_URL || process.env.MINI_APP_URL || '');
-    if (token && Number.isSafeInteger(chatId) && chatId > 0) {
-      await sendBookingNotification(token, chatId, `🚗 AVTODROM INDEX\n\n${title}\n${body}`, miniAppUrl, '🚗 Foydalanuvchi panelini ochish');
+    if (token && Number.isSafeInteger(Number(u?.telegram_id))) {
+      await sendBookingNotification(token, Number(u.telegram_id), msg.full, miniAppUrl, '🚗 Mini Appni ochish');
     }
   } catch (e) {
-    console.error('Instructor -> customer notification failed:', e);
+    console.error('Instructor booking notification failed:', e);
   }
 }
 
