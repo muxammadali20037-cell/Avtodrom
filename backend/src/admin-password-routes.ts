@@ -2,6 +2,7 @@ import type { FastifyInstance } from 'fastify';
 import { createHmac, timingSafeEqual } from 'node:crypto';
 import { supabaseRest } from './supabase.js';
 import { sendBookingNotification } from './telegram.js';
+import { loadBookingDetails, bookingMessage, inAppMessage, type BookingEvent } from './notify.js';
 
 const COOKIE = 'avtodrom_admin_session', TTL = 60 * 60 * 12;
 const q = (v: string) => encodeURIComponent(v);
@@ -309,12 +310,35 @@ export async function registerAdminPasswordRoutes(app: FastifyInstance) {
         } catch (e) { console.error('Auto-payment creation failed:', e); }
       }
 
+      // Mijoz va instruktorga chiroyli bildirishnoma (xom UUID/UTC emas)
       try {
-        const ip = old.instructor_id ? (await safe<any>('instructor_profiles', `?id=eq.${q(String(old.instructor_id))}&select=user_id`))[0] : null;
-        const u = ip?.user_id ? (await safe<any>('users', `?id=eq.${q(String(ip.user_id))}&select=telegram_id`))[0] : null;
-        const t = String(process.env.INSTRUCTOR_BOT_TOKEN || '');
-        if (t && u?.telegram_id) await sendBookingNotification(t, Number(u.telegram_id), `📋 AVTODROM\n\nBron #${id}\nHolati: ${status}`, String(process.env.INSTRUCTOR_MINI_APP_URL || ''), '👨‍🏫 Instruktor paneli');
-      } catch (e) { console.error('Instructor notification failed', e); }
+        const updated = { ...old, ...body, id };
+        const ev = status as BookingEvent;
+        const d = await loadBookingDetails(updated);
+
+        const cMsg = bookingMessage(updated, ev, 'customer', d);
+        await supabaseRest('notifications', {
+          method: 'POST',
+          body: JSON.stringify({ user_id: old.customer_id, type: 'booking', title: cMsg.title, message: inAppMessage(ev, d, updated) }),
+        }).catch(() => {});
+        const cu = (await safe<any>('users', `?id=eq.${q(String(old.customer_id))}&select=telegram_id`))[0];
+        const cToken = String(process.env.CUSTOMER_BOT_TOKEN || process.env.TELEGRAM_CUSTOMER_BOT_TOKEN || '');
+        if (cToken && Number.isSafeInteger(Number(cu?.telegram_id))) {
+          await sendBookingNotification(cToken, Number(cu.telegram_id), cMsg.full,
+            String(process.env.CUSTOMER_MINI_APP_URL || process.env.MINI_APP_URL || ''), '🚗 Mini Appni ochish');
+        }
+
+        if (old.instructor_id) {
+          const ip = (await safe<any>('instructor_profiles', `?id=eq.${q(String(old.instructor_id))}&select=user_id`))[0];
+          const iu = ip?.user_id ? (await safe<any>('users', `?id=eq.${q(String(ip.user_id))}&select=telegram_id`))[0] : null;
+          const iToken = String(process.env.INSTRUCTOR_BOT_TOKEN || process.env.TELEGRAM_INSTRUCTOR_BOT_TOKEN || '');
+          if (iToken && Number.isSafeInteger(Number(iu?.telegram_id))) {
+            const iMsg = bookingMessage(updated, ev, 'instructor', d);
+            await sendBookingNotification(iToken, Number(iu.telegram_id), iMsg.full,
+              String(process.env.INSTRUCTOR_MINI_APP_URL || ''), '👨‍🏫 Instruktor paneli');
+          }
+        }
+      } catch (e) { console.error('Booking notification failed', e); }
 
       await audit(admin.id, 'BOOKING_STATUS_CHANGED', 'bookings', id, { status: old.status }, { status });
       return { ok: true, booking: rows[0] };
