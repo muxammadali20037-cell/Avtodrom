@@ -5,7 +5,7 @@
  */
 import type { FastifyInstance } from 'fastify';
 import { supabaseRest } from './supabase.js';
-import { loadBookingDetails, bookingMessage, inAppMessage, type BookingEvent } from './notify.js';
+import { loadBookingDetails, bookingMessage, inAppMessage, fmtWhen, type BookingEvent } from './notify.js';
 import { sendBookingNotification } from './telegram.js';
 import type { TelegramWebAppUser } from './telegram.js';
 import {
@@ -318,39 +318,103 @@ export async function registerBookingRoutes(
   });
 
   /** Mijoz o'z bronini bekor qiladi — faqat hali boshlanmagan (pending/confirmed) bronlar. */
+  /**
+   * Mijoz bronni bekor qilmoqchi.
+   *
+   *  pending   -> darhol bekor qilinadi (admin hali tasdiqlamagan, yo'qotadigan narsa yo'q)
+   *  confirmed -> BEKOR QILINMAYDI, admin uchun SO'ROV yaratiladi.
+   *               Bron `confirmed` holatida qoladi, admin ko'rib chiqadi.
+   *               Sabab majburiy (kamida 3 belgi) — DB constraint ham buni talab qiladi.
+   */
   app.patch('/api/bookings/:id/cancel', async (request, reply) => {
     try {
       const tg = await authenticate(request);
       const user = await userForTelegram(tg);
       const id = String((request.params as any).id);
-      const body = (request.body ?? {}) as { reason?: string };
+      const reason = String((request.body as any)?.reason ?? '').trim();
 
       const current = await supabaseRest<any[]>('bookings', {
         query: `?id=eq.${q(id)}&customer_id=eq.${q(String(user.id))}&select=*&limit=1`,
       });
-      if (!current[0]) return reply.code(404).send({ ok: false, error: 'Bron topilmadi' });
-      if (!['pending', 'confirmed'].includes(String(current[0].status))) {
+      const booking = current[0];
+      if (!booking) return reply.code(404).send({ ok: false, error: 'Bron topilmadi' });
+
+      const status = String(booking.status);
+      if (!['pending', 'confirmed'].includes(status)) {
         return reply.code(409).send({ ok: false, error: 'Bu bronni endi bekor qilib bo‘lmaydi' });
+      }
+      if (reason.length < 3) {
+        return reply.code(400).send({ ok: false, error: 'Bekor qilish sababini yozing (kamida 3 belgi)' });
       }
 
       const now = new Date().toISOString();
+
+      // --- pending: darhol bekor ---
+      if (status === 'pending') {
+        const rows = await supabaseRest<any[]>('bookings', {
+          method: 'PATCH',
+          headers: { Prefer: 'return=representation' },
+          query: `?id=eq.${q(id)}`,
+          body: JSON.stringify({
+            status: 'cancelled', cancelled_at: now, cancelled_by: user.id,
+            cancellation_reason: reason, updated_at: now,
+          }),
+        });
+        const updated = rows[0] ?? booking;
+        await notifyBookingParties(updated, 'cancelled');
+        return { ok: true, mode: 'cancelled', booking: shapeBooking(updated) };
+      }
+
+      // --- confirmed: admin uchun so'rov ---
+      if (booking.cancel_requested_at && !booking.cancel_reviewed_at) {
+        return reply.code(409).send({ ok: false, error: 'So‘rovingiz allaqachon yuborilgan. Admin javobini kuting.' });
+      }
+
       const rows = await supabaseRest<any[]>('bookings', {
         method: 'PATCH',
         headers: { Prefer: 'return=representation' },
         query: `?id=eq.${q(id)}`,
         body: JSON.stringify({
-          status: 'cancelled',
-          cancelled_at: now,
-          cancelled_by: user.id,
-          cancellation_reason: body.reason?.trim() || null,
+          cancel_requested_at: now,
+          cancel_request_reason: reason,
+          cancel_requested_by: user.id,
+          cancel_reviewed_at: null,
+          cancel_reviewed_by: null,
           updated_at: now,
         }),
       });
-      const booking = rows[0] ?? current[0];
-      await notifyBookingParties(booking, 'cancelled');
-      return { ok: true, booking: shapeBooking(booking) };
+      const updated = rows[0] ?? booking;
+
+      // Adminga xabar
+      try {
+        const d = await loadBookingDetails(updated);
+        const when = fmtWhen(updated.start_at || updated.booking_date);
+        const text =
+          `🚫 Bekor qilish so‘rovi\n\n` +
+          `👤 ${user.full_name || 'Mijoz'}\n` +
+          (d.courseName ? `📚 ${d.courseName}\n` : '') +
+          (when ? `📅 ${when}\n` : '') +
+          `\n💬 Sabab: ${reason}\n\nAdmin panelda tasdiqlang yoki rad eting.`;
+        const token = String(process.env.ADMIN_BOT_TOKEN || process.env.TELEGRAM_ADMIN_BOT_TOKEN || '');
+        if (token) {
+          const admins = await supabaseRest<any[]>('telegram_admins', { query: '?select=telegram_chat_id' });
+          for (const a of admins) {
+            const chatId = Number(a.telegram_chat_id);
+            if (Number.isSafeInteger(chatId) && chatId > 0) {
+              await sendBookingNotification(token, chatId, text, String(process.env.ADMIN_MINI_APP_URL || ''), '⚙️ Admin panel');
+            }
+          }
+        }
+      } catch (e) { console.error('Cancel-request admin notify failed:', e); }
+
+      return {
+        ok: true,
+        mode: 'requested',
+        message: 'So‘rov Adminga yuborildi. Javobni kuting.',
+        booking: shapeBooking(updated),
+      };
     } catch (e) {
-      return reply.code(400).send({ ok: false, error: humanizeDbError(e, 'Bron bekor qilinmadi') });
+      return reply.code(400).send({ ok: false, error: humanizeDbError(e, 'Bekor qilish so‘rovi yuborilmadi') });
     }
   });
 
