@@ -302,6 +302,7 @@ pre.json{background:#f7faf8;border:1px solid var(--line);border-radius:8px;paddi
 const $=id=>document.getElementById(id);
 const S={stats:{},bookings:[],applications:[],instructors:[],users:[],reviews:[],media:[],settings:[],courses:[],payments:[],audit:[]};
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmtDur=m=>{const n=Number(m)||0,h=Math.floor(n/60),r=n%60;return h?(r?`${h} soat ${r} daq`:`${h} soat`):`${r} daq`};
 const money=v=>new Intl.NumberFormat('uz-UZ').format(Number(v||0))+' so‘m';
 const dt=v=>v?new Date(v).toLocaleString('uz-UZ',{timeZone:'Asia/Tashkent',day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}):'—';
 const day=v=>v?new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Tashkent'}).format(new Date(v)):'';
@@ -424,7 +425,7 @@ function renderBookings(){
     if(b.status==='pending')act=`<button class="btn small green" data-bk="${esc(b.id)}" data-st="confirmed">Tasdiqlash</button> <button class="btn small red" data-bk="${esc(b.id)}" data-st="rejected">Rad etish</button>`;
     if(b.status==='confirmed')act=`<button class="btn small" data-bk="${esc(b.id)}" data-st="in_progress">Boshlash</button> <button class="btn small red" data-bk="${esc(b.id)}" data-st="no_show">Kelmadi</button> <button class="btn small red" data-bk="${esc(b.id)}" data-st="cancelled">Bekor</button>`;
     if(b.status==='in_progress')act=`<button class="btn small green" data-bk="${esc(b.id)}" data-st="completed">Tugatish</button>`;
-    return `<tr><td>${dt(b.start_at)}<br><span class="muted">${dt(b.end_at)}</span></td><td><b>${esc(uname(b.customer))}</b></td><td>${esc(b.customer?.phone||'—')}</td><td>${esc(iname(b.instructor))}</td><td>${esc(b.course?.name||'—')}</td><td>${money(b.price)}</td><td>${esc(b.customer_note||'—')}</td><td>${badge(b.status)}</td><td class="actions">${act}</td></tr>`;
+    return `<tr><td>${dt(b.start_at)}<br><span class="muted">${dt(b.end_at)}</span></td><td><b>${esc(uname(b.customer))}</b></td><td>${esc(b.customer?.phone||'—')}</td><td>${esc(iname(b.instructor))}</td><td>${esc(b.course?.name||'—')}${b.course?.duration_minutes?`<br><span class="muted" style="font-size:11px">${esc(fmtDur(b.course.duration_minutes))}</span>`:''}</td><td>${money(b.price)}</td><td>${esc(b.customer_note||'—')}</td><td>${badge(b.status)}</td><td class="actions">${act}</td></tr>`;
   }).join(''):'<tr><td colspan="9" class="empty">Bronlar yo‘q.</td></tr>';
   document.querySelectorAll('[data-bk]').forEach(btn=>btn.onclick=()=>bookingAction(btn.dataset.bk,btn.dataset.st));
 }
@@ -485,7 +486,7 @@ async function toggleUser(id,active){
 
 /* ---------- Mashg'ulotlar ---------- */
 function renderCourses(){
-  $('courseRows').innerHTML=S.courses.length?S.courses.map(c=>`<tr><td><b>${esc(c.name)}</b></td><td>${esc(c.description||'—')}</td><td>${esc(c.duration_minutes)} daq.</td><td><b>${money(c.price)}</b></td><td>${c.is_active?badge('active'):badge('inactive')}</td><td class="actions"><button class="btn small" data-course-edit="${esc(c.id)}">Tahrirlash</button><button class="btn small ${c.is_active?'red':''}" data-course-toggle="${esc(c.id)}" data-act="${c.is_active?'0':'1'}">${c.is_active?'O‘chirish':'Yoqish'}</button></td></tr>`).join(''):'<tr><td colspan="6" class="empty">Mashg‘ulot yo‘q. "+ Mashg‘ulot qo‘shish" tugmasini bosing.</td></tr>';
+  $('courseRows').innerHTML=S.courses.length?S.courses.map(c=>`<tr><td><b>${esc(c.name)}</b></td><td>${esc(c.description||'—')}</td><td>${esc(fmtDur(c.duration_minutes))}</td><td><b>${money(c.price)}</b></td><td>${c.is_active?badge('active'):badge('inactive')}</td><td class="actions"><button class="btn small" data-course-edit="${esc(c.id)}">Tahrirlash</button><button class="btn small ${c.is_active?'red':''}" data-course-toggle="${esc(c.id)}" data-act="${c.is_active?'0':'1'}">${c.is_active?'O‘chirish':'Yoqish'}</button></td></tr>`).join(''):'<tr><td colspan="6" class="empty">Mashg‘ulot yo‘q. "+ Mashg‘ulot qo‘shish" tugmasini bosing.</td></tr>';
   document.querySelectorAll('[data-course-edit]').forEach(b=>b.onclick=()=>courseModal(S.courses.find(c=>String(c.id)===b.dataset.courseEdit)));
   document.querySelectorAll('[data-course-toggle]').forEach(b=>b.onclick=async()=>{
     try{await api(`/api/admin/courses/${encodeURIComponent(b.dataset.courseToggle)}`,{method:'PATCH',body:JSON.stringify({is_active:b.dataset.act==='1'})});toast('Saqlandi');await loadAll()}catch(e){notice(e.message)}
@@ -496,10 +497,23 @@ function courseModal(c){
   openModal(`<h3>${isEdit?'Mashg‘ulotni tahrirlash':'Yangi mashg‘ulot'}</h3>
     <div class="field"><label>NOMI *</label><input id="cName" class="input" value="${esc(c?.name||'')}"></div>
     <div class="field"><label>TAVSIF</label><textarea id="cDesc" class="input" rows="2">${esc(c?.description||'')}</textarea></div>
-    <div class="field"><label>DAVOMIYLIK (DAQIQA) *</label><input id="cDur" class="input" type="number" min="1" value="${esc(c?.duration_minutes||60)}"></div>
+    <div class="field"><label>DAVOMIYLIK *</label>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">
+        <button type="button" class="btn small" data-dur="30">30 daq</button>
+        <button type="button" class="btn small" data-dur="60">1 soat</button>
+        <button type="button" class="btn small" data-dur="90">1.5 soat</button>
+        <button type="button" class="btn small" data-dur="120">2 soat</button>
+        <button type="button" class="btn small" data-dur="180">3 soat</button>
+      </div>
+      <input id="cDur" class="input" type="number" min="15" step="15" value="${esc(c?.duration_minutes||60)}">
+      <div class="muted" style="font-size:12px;margin-top:5px" id="cDurHint"></div></div>
     <div class="field"><label>NARX (UZS) *</label><input id="cPrice" class="input" type="number" min="0" value="${esc(c?.price||0)}"></div>
     <div id="cErr"></div>
     <div style="display:flex;gap:8px"><button class="btn" style="flex:1" id="cCancel">Bekor</button><button class="btn primary" style="flex:1" id="cSave">Saqlash</button></div>`);
+  const durHint=()=>{ $('cDurHint').textContent='= '+fmtDur($('cDur').value); };
+  durHint();
+  $('cDur').addEventListener('input',durHint);
+  document.querySelectorAll('[data-dur]').forEach(b=>b.onclick=()=>{ $('cDur').value=b.dataset.dur; durHint(); });
   $('cCancel').onclick=closeModal;
   $('cSave').onclick=async()=>{
     $('cErr').innerHTML='';$('cSave').disabled=true;
