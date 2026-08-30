@@ -5,6 +5,7 @@
  */
 import type { FastifyInstance } from 'fastify';
 import { supabaseRest } from './supabase.js';
+import { loadBookingDetails, bookingMessage, inAppMessage, type BookingEvent } from './notify.js';
 import { sendBookingNotification } from './telegram.js';
 import type { TelegramWebAppUser } from './telegram.js';
 import {
@@ -73,29 +74,33 @@ async function telegramOf(userId?: string | null) {
   return rows[0] ?? null;
 }
 
-async function notifyBookingParties(booking: any, title: string, message: string) {
+async function notifyBookingParties(booking: any, event: BookingEvent) {
   try {
-    await notifyUser(booking?.customer_id, 'booking', title, message);
+    const d = await loadBookingDetails(booking);
+
+    // --- Mijoz ---
+    const cMsg = bookingMessage(booking, event, 'customer', d);
+    await notifyUser(booking?.customer_id, 'booking', cMsg.title, inAppMessage(event, d, booking));
     const customer = await telegramOf(booking?.customer_id);
     const cToken = String(process.env.CUSTOMER_BOT_TOKEN || process.env.TELEGRAM_CUSTOMER_BOT_TOKEN || '');
     const cUrl = String(process.env.CUSTOMER_MINI_APP_URL || process.env.MINI_APP_URL || '');
     if (cToken && Number.isSafeInteger(Number(customer?.telegram_id))) {
-      await sendBookingNotification(cToken, Number(customer.telegram_id),
-        `🚗 AVTODROM\n\n${title}\n${message}`, cUrl, '🚗 Panelni ochish');
+      await sendBookingNotification(cToken, Number(customer.telegram_id), cMsg.full, cUrl, '🚗 Mini Appni ochish');
     }
 
+    // --- Instruktor ---
     if (booking?.instructor_id) {
       const ip = await supabaseRest<any[]>('instructor_profiles', {
         query: `?id=eq.${q(String(booking.instructor_id))}&select=user_id&limit=1`,
       });
       const instructorUserId = ip[0]?.user_id;
-      await notifyUser(instructorUserId, 'booking', title, message);
+      const iMsg = bookingMessage(booking, event, 'instructor', d);
+      await notifyUser(instructorUserId, 'booking', iMsg.title, inAppMessage(event, d, booking));
       const instructor = await telegramOf(instructorUserId);
       const iToken = String(process.env.INSTRUCTOR_BOT_TOKEN || process.env.TELEGRAM_INSTRUCTOR_BOT_TOKEN || '');
       const iUrl = String(process.env.INSTRUCTOR_MINI_APP_URL || '');
       if (iToken && Number.isSafeInteger(Number(instructor?.telegram_id))) {
-        await sendBookingNotification(iToken, Number(instructor.telegram_id),
-          `👨‍🏫 AVTODROM\n\n${title}\n${message}`, iUrl, '👨‍🏫 Instruktor panelini ochish');
+        await sendBookingNotification(iToken, Number(instructor.telegram_id), iMsg.full, iUrl, '👨‍🏫 Instruktor paneli');
       }
     }
   } catch (e) {
@@ -302,7 +307,7 @@ export async function registerBookingRoutes(
 
       const booking = rows[0];
       if (booking) {
-        await notifyBookingParties(booking, 'Yangi bron yaratildi', 'Admin tasdiqlashini kuting.');
+        await notifyBookingParties(booking, 'created');
       }
       return reply.code(201).send({ ok: true, booking: shapeBooking(booking) });
     } catch (e) {
@@ -342,7 +347,7 @@ export async function registerBookingRoutes(
         }),
       });
       const booking = rows[0] ?? current[0];
-      await notifyBookingParties(booking, 'Bron bekor qilindi', 'Mijoz bronni bekor qildi.');
+      await notifyBookingParties(booking, 'cancelled');
       return { ok: true, booking: shapeBooking(booking) };
     } catch (e) {
       return reply.code(400).send({ ok: false, error: humanizeDbError(e, 'Bron bekor qilinmadi') });
@@ -395,7 +400,7 @@ export async function registerBookingRoutes(
         body: JSON.stringify(patch),
       });
       const booking = rows[0] ?? current[0];
-      await notifyBookingParties(booking, 'Bron holati o‘zgardi', `Yangi holat: ${body.status}`);
+      await notifyBookingParties(booking, String(body.status) as BookingEvent);
       return { ok: true, booking: shapeBooking(booking) };
     } catch (e) {
       return reply.code(400).send({ ok: false, error: e instanceof Error ? e.message : 'Holat yangilanmadi' });
