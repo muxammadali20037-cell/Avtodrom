@@ -29,7 +29,8 @@ export async function registerCourseRoutes(
    * admin_settings ichida boshqa (maxfiy) kalitlar bo'lishi mumkin,
    * shuning uchun butun jadval qaytarilmaydi.
    */
-  const PUBLIC_KEYS = ['system_name', 'contact_phone', 'address', 'working_hours', 'booking_enabled', 'location'];
+  const PUBLIC_KEYS = ['system_name', 'contact_phone', 'address', 'working_hours', 'booking_enabled',
+                       'location', 'work_start', 'work_end', 'slot_step_min'];
 
   app.get('/api/settings', async (_request, reply) => {
     try {
@@ -41,10 +42,14 @@ export async function registerCourseRoutes(
         // value jsonb: {"value": "..."} yoki to'g'ridan-to'g'ri qiymat bo'lishi mumkin
         settings[r.key] = r.value?.value !== undefined ? r.value.value : r.value;
       }
+      // Standart ish vaqti — sozlama kiritilmagan bo'lsa
+      if (!settings.work_start) settings.work_start = '07:00';
+      if (!settings.work_end) settings.work_end = '19:00';
+      if (!settings.slot_step_min) settings.slot_step_min = 60;
       return { ok: true, settings };
     } catch (e) {
       // Sozlama bo'lmasa ham mijoz paneli ishlashi kerak
-      return reply.code(200).send({ ok: true, settings: {} });
+      return reply.code(200).send({ ok: true, settings: { work_start: '07:00', work_end: '19:00', slot_step_min: 60 } });
     }
   });
 }
