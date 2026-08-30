@@ -397,6 +397,14 @@ const I18N = {
     lesson:'Mashg‘ulot', instructor:'Instruktor', date:'Sana', time:'Vaqt',
     cancel:'Bekor qilish', rate:'⭐ Baholash',
     confirm_cancel:'Bronni bekor qilasizmi?', ok_cancelled:'Bron bekor qilindi',
+    cancel_title:'Bronni bekor qilish',
+    cancel_note_request:'Bron tasdiqlangan. Bekor qilish uchun Adminga so‘rov yuboriladi — u ko‘rib chiqadi.',
+    cancel_note_direct:'Bu bron hali tasdiqlanmagan, shuning uchun darhol bekor qilinadi.',
+    cancel_reason:'Sabab', cancel_ph:'Nima uchun bekor qilyapsiz?',
+    cancel_reason_short:'Sababni yozing (kamida 3 belgi).',
+    cancel_back:'Orqaga', cancel_send_request:'So‘rov yuborish', cancel_confirm:'Bekor qilish',
+    cancel_sent:'So‘rov Adminga yuborildi. Javobni kuting.',
+    cancel_pending:'Bekor qilish so‘rovi yuborilgan — Admin ko‘rib chiqmoqda.',
     st_pending:'Kutilmoqda', st_confirmed:'Tasdiqlangan', st_in_progress:'Jarayonda',
     st_completed:'Tugagan', st_cancelled:'Bekor qilingan', st_rejected:'Rad etilgan', st_no_show:'Kelmagan',
     rev_banner_t:'Mashg‘ulot tugadi 🎉', rev_banner_b:'⭐ Instruktorni baholash',
@@ -474,6 +482,14 @@ const I18N = {
     lesson:'Занятие', instructor:'Инструктор', date:'Дата', time:'Время',
     cancel:'Отменить', rate:'⭐ Оценить',
     confirm_cancel:'Отменить бронь?', ok_cancelled:'Бронь отменена',
+    cancel_title:'Отмена брони',
+    cancel_note_request:'Бронь подтверждена. Для отмены будет отправлен запрос администратору — он его рассмотрит.',
+    cancel_note_direct:'Эта бронь ещё не подтверждена, поэтому будет отменена сразу.',
+    cancel_reason:'Причина', cancel_ph:'Почему вы отменяете?',
+    cancel_reason_short:'Укажите причину (минимум 3 символа).',
+    cancel_back:'Назад', cancel_send_request:'Отправить запрос', cancel_confirm:'Отменить',
+    cancel_sent:'Запрос отправлен администратору. Ожидайте ответа.',
+    cancel_pending:'Запрос на отмену отправлен — администратор рассматривает.',
     st_pending:'Ожидает подтверждения', st_confirmed:'Подтверждено', st_in_progress:'Идёт занятие',
     st_completed:'Завершено', st_cancelled:'Отменено', st_rejected:'Отклонено', st_no_show:'Не явился',
     rev_banner_t:'Занятие завершено 🎉', rev_banner_b:'⭐ Оценить инструктора',
@@ -664,7 +680,21 @@ function renderCourses(){
 }
 
 /* ---------------- Bo'sh vaqt ---------------- */
-function slots(){ const a=[]; for(let h=8;h<21;h++) for(let m=0;m<60;m+=30) a.push(String(h).padStart(2,'0')+':'+String(m).padStart(2,'0')); return a; }
+/* Bo'sh vaqt jadvali — ish vaqti admin sozlamasidan (standart 07:00–19:00).
+   Qadam ham sozlanadi (standart 60 daqiqa = butun soatlar: 07:00, 08:00, …). */
+function hhmmToMin(v,def){ const m=String(v||'').match(/^(\d{1,2}):(\d{2})$/); return m?(+m[1]*60+ +m[2]):def; }
+function workRange(){
+  return {
+    start: hhmmToMin(S.settings?.work_start,7*60),
+    end:   hhmmToMin(S.settings?.work_end,19*60),
+    step:  Math.max(15, Number(S.settings?.slot_step_min)||60),
+  };
+}
+function slots(){
+  const {start,end,step}=workRange(), a=[];
+  for(let m=start;m<end;m+=step) a.push(String(Math.floor(m/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0'));
+  return a;
+}
 async function onBookingChange(){
   updateSteps();
   const date=$('bookDate').value, ins=$('bookInstructor').value;
@@ -680,10 +710,13 @@ function renderTimes(){
   const c=S.courses.find(x=>x.id===S.course);
   if(!date||!ins||!c){ box.innerHTML=''; $('availabilityHint').textContent=t('hint_pick'); return; }
   const dur=c.duration_minutes, now=Date.now();
+  const {end:closeMin}=workRange();
   box.innerHTML=slots().map(t=>{
     const st=tkDT(date,t), en=new Date(st.getTime()+dur*60000);
     const clash=S.busy.some(b=>new Date(b.start_at)<en && new Date(b.end_at)>st);
-    const off=clash||st.getTime()<now;
+    // Dars ish vaqti tugagandan keyin tugamasin
+    const startMin=hhmmToMin(t,0), pastClose=startMin+dur>closeMin;
+    const off=clash||pastClose||st.getTime()<now;
     return `<button type="button" class="time ${S.time===t?'selected':''} ${off?'busy':''}" ${off?'disabled':''} data-time="${t}">${t}</button>`;
   }).join('');
   box.querySelectorAll('.time:not([disabled])').forEach(b=>b.onclick=()=>{ S.time=b.dataset.time; renderTimes(); updateSummary(); updateSteps(); });
@@ -754,7 +787,9 @@ function renderBookings(){
   box.innerHTML=rows.map(b=>{
     const st=b.status||'pending';
     const mins=b.course?.duration_minutes||Math.round((new Date(b.end_at)-new Date(b.start_at))/60000)||0;
-    const canCancel=['pending','confirmed'].includes(st), canReview=st==='completed'&&!b.reviewed;
+    const pendingReq = !!b.cancel_requested_at && !b.cancel_reviewed_at;
+    const canCancel=['pending','confirmed'].includes(st) && !pendingReq;
+    const canReview=st==='completed'&&!b.reviewed;
     return `<article class="card booking-card">
       <div class="booking-row">
         <div><span class="status ${esc(st)}">${esc(stLabel(st))}</span><h3>${esc(b.course?.name||t('lesson'))}</h3></div>
@@ -765,6 +800,7 @@ function renderBookings(){
         <div class="info"><span>${esc(t('time'))}</span><b>${esc(fTime(b.start_at))} · ${esc(mins)}${esc(t('min_short'))}</b></div></div>
       ${b.customer_note?`<p class="meta" style="margin:11px 0 0">💬 ${esc(b.customer_note)}</p>`:''}
       ${b.cancellation_reason?`<p class="meta" style="margin:8px 0 0">ℹ️ ${esc(b.cancellation_reason)}</p>`:''}
+      ${pendingReq?`<div class="alert info" style="margin:11px 0 0">⏳ ${esc(t('cancel_pending'))}<br><span class="meta">💬 ${esc(b.cancel_request_reason||'')}</span></div>`:''}
       ${(canCancel||canReview)?`<div class="card-actions">
         ${canCancel?`<button class="danger" data-cancel="${esc(b.id)}">${esc(t('cancel'))}</button>`:''}
         ${canReview?`<button class="primary green" data-review="${esc(b.id)}">${esc(t('rate'))}</button>`:''}</div>`:''}
@@ -785,10 +821,33 @@ function renderNext(){
     : `<div class="empty">${esc(t('next_empty'))}<br><br><button class="primary green" id="nbBook">${esc(t('next_book'))}</button></div>`;
   $('nbBook')?.addEventListener('click',()=>go('book'));
 }
-async function cancelBooking(id){
-  if(!confirm(t('confirm_cancel'))) return;
-  try{ await api(`/api/bookings/${encodeURIComponent(id)}/cancel`,{method:'PATCH',body:JSON.stringify({})}); toast(t('ok_cancelled')); await loadBookings(); }
-  catch(e){ toast(e.message); }
+/* Bekor qilish — sabab MAJBURIY.
+   pending bron darhol bekor bo'ladi; confirmed bron uchun Adminga so'rov ketadi. */
+function cancelBooking(id){
+  const b=S.bookings.find(x=>x.id===id);
+  const willRequest = b && b.status==='confirmed';
+  openModal(t('cancel_title'),`
+    <div class="alert ${willRequest?'info':'err'}" style="margin-top:0">${esc(willRequest?t('cancel_note_request'):t('cancel_note_direct'))}</div>
+    <div class="field"><label>${esc(t('cancel_reason'))} *</label>
+      <textarea id="cxReason" rows="3" placeholder="${esc(t('cancel_ph'))}"></textarea></div>
+    <div id="cxAlert"></div>
+    <div style="display:flex;gap:8px;margin-top:10px">
+      <button class="secondary" style="flex:1" id="cxBack">${esc(t('cancel_back'))}</button>
+      <button class="danger" style="flex:1" id="cxSend">${esc(willRequest?t('cancel_send_request'):t('cancel_confirm'))}</button>
+    </div>`);
+  $('cxBack').onclick=closeModal;
+  $('cxSend').onclick=async()=>{
+    const reason=$('cxReason').value.trim();
+    if(reason.length<3){ alertBox('cxAlert',t('cancel_reason_short')); return; }
+    $('cxSend').disabled=true;
+    try{
+      const d=await api(`/api/bookings/${encodeURIComponent(id)}/cancel`,{method:'PATCH',body:JSON.stringify({reason})});
+      closeModal();
+      toast(d.mode==='requested'?t('cancel_sent'):t('ok_cancelled'));
+      await loadBookings();
+    }catch(e){ alertBox('cxAlert',e.message); }
+    finally{ $('cxSend').disabled=false; }
+  };
 }
 
 /* ---------------- Sharh ---------------- */
