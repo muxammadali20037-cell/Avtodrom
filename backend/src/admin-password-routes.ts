@@ -243,16 +243,21 @@ export async function registerAdminPasswordRoutes(app: FastifyInstance) {
     try {
       await guard(req);
       const st = String(req.query?.status || ''), filter = st ? `&status=eq.${q(st)}` : '';
-      const [bookingsR, usersR, ipsR, coursesR] = await Promise.all([
+      const [bookingsR, usersR, ipsR, coursesR, paymentsR] = await Promise.all([
         safeR<any>('bookings', `?select=*&order=booking_date.desc${filter}`),
         safeR<any>('users', '?select=id,telegram_id,phone,full_name,role'),
         safeR<any>('instructor_profiles', '?select=id,user_id,rating,total_reviews'),
         safeR<any>('courses', '?select=id,name,duration_minutes,price,is_active'),
+        safeR<any>('payments', '?select=booking_id,amount,status'),
       ]);
+      // To'lov yozuvi bron tasdiqlangan paytdagi narxni saqlaydi.
+      // Kurs narxi keyin o'zgarsa ham eski bron narxi o'zgarmasligi uchun
+      // avval payments.amount, faqat u yo'q bo'lsa joriy kurs narxi olinadi.
+      const pm = new Map(paymentsR.rows.map((p: any) => [String(p.booking_id), p]));
       const um = new Map(usersR.rows.map((u: any) => [String(u.id), u]));
       const im = new Map(ipsR.rows.map((i: any) => [String(i.id), i]));
       const cm = new Map(coursesR.rows.map((c: any) => [String(c.id), c]));
-      const warnings = [bookingsR.warning, usersR.warning, ipsR.warning, coursesR.warning].filter(Boolean);
+      const warnings = [bookingsR.warning, usersR.warning, ipsR.warning, coursesR.warning, paymentsR.warning].filter(Boolean);
       return {
         ok: true,
         warnings,
@@ -263,7 +268,8 @@ export async function registerAdminPasswordRoutes(app: FastifyInstance) {
             ...b,
             start_at: b.start_at || b.booking_date,
             end_at: b.end_at || ((b.booking_date && c?.duration_minutes) ? new Date(new Date(b.booking_date).getTime() + Number(c.duration_minutes) * 60000).toISOString() : null),
-            price: c?.price ?? 0,
+            price: pm.get(String(b.id))?.amount ?? c?.price ?? 0,
+            payment: pm.get(String(b.id)) || null,
             customer: um.get(String(b.customer_id)) || null,
             instructor: i ? { ...i, profile: u || null } : null,
             course: c || null,
@@ -283,6 +289,36 @@ export async function registerAdminPasswordRoutes(app: FastifyInstance) {
 
       const old = (await supabaseRest<any[]>('bookings', { query: `?id=eq.${q(id)}&select=*` }))[0];
       if (!old) return reply.code(404).send({ ok: false, error: 'Bron topilmadi' });
+
+      /**
+       * Admin uchun ruxsat etilgan o'tishlar.
+       * MUHIM: confirmed -> no_show OCHIQ. Tasdiqlangan bronga mijoz kelmasligi —
+       * normal holat va uni belgilay olish kerak. (Avvalgi versiyada bu bloklangan edi.)
+       * Yakuniy holatlardan (completed/cancelled/rejected/no_show) orqaga qaytish yopiq.
+       */
+      const ADMIN_TRANSITIONS: Record<string, string[]> = {
+        pending:     ['confirmed', 'rejected', 'cancelled'],
+        confirmed:   ['in_progress', 'completed', 'no_show', 'cancelled'],
+        in_progress: ['completed', 'no_show', 'cancelled'],
+        completed:   [],
+        cancelled:   [],
+        rejected:    [],
+        no_show:     [],
+      };
+      const from = String(old.status);
+      if (from !== status && !(ADMIN_TRANSITIONS[from] || []).includes(status)) {
+        const L: Record<string, string> = {
+          pending: 'Kutilmoqda', confirmed: 'Tasdiqlangan', in_progress: 'Jarayonda',
+          completed: 'Tugagan', cancelled: 'Bekor qilingan', rejected: 'Rad etilgan', no_show: 'Kelmagan',
+        };
+        const can = (ADMIN_TRANSITIONS[from] || []).map((x) => L[x] || x);
+        return reply.code(409).send({
+          ok: false,
+          error: can.length
+            ? `«${L[from] || from}» holatidan faqat quyidagilarga o‘tish mumkin: ${can.join(', ')}`
+            : `«${L[from] || from}» — yakuniy holat, uni o‘zgartirib bo‘lmaydi`,
+        });
+      }
 
       const body: any = { status, updated_at: new Date().toISOString() };
       if (status === 'confirmed') { body.confirmed_at = new Date().toISOString(); body.confirmed_by = admin.id; }
