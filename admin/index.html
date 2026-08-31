@@ -232,11 +232,16 @@ pre.json{background:#f7faf8;border:1px solid var(--line);border-radius:8px;paddi
 </section>
 
 <section id="media" class="page">
-  <div class="head"><div><h1>🎬 Media</h1><p><b>Video</b> — mijoz panelida "Video qo‘llanma". <b>Rasm</b> — quyidagi ro‘yxatdan tanlang: bosh sahifa foni yoki lokatsiya kartochkasi (avtodrom surati).</p></div></div>
+  <div class="head"><div><h1>🎬 Media</h1><p><b>Galereya</b> — istalgancha rasm/video, mijoz panelida «Avtodrom galereyasi» bo‘limida chiqadi. Qolganlari bitta o‘rinli: bosh sahifa foni, lokatsiya kartochkasi, video qo‘llanma.</p></div></div>
   <div class="card">
     <div class="toolbar">
       <input id="mediaTitle" class="input" placeholder="Nomi (masalan: Avtodrom maydoni)">
-      <select id="mediaSlot" class="select"><option value="home">Rasm → bosh sahifa foni</option><option value="location">Rasm → lokatsiya kartochkasi</option></select>
+      <select id="mediaSlot" class="select">
+        <option value="gallery">📸 Galereya (ko‘p rasm/video)</option>
+        <option value="home">Rasm → bosh sahifa foni</option>
+        <option value="location">Rasm → lokatsiya kartochkasi</option>
+        <option value="guide">Video → qo‘llanma</option>
+      </select>
       <input id="mediaFile" type="file" class="input" accept="video/mp4,video/webm,video/quicktime,image/jpeg,image/png,image/webp">
       <button id="uploadBtn" class="btn primary">⬆ Yuklash</button>
     </div>
@@ -598,40 +603,33 @@ $('expAudit').onclick=()=>csv('avtodrom-audit.csv',S.audit.map(l=>({Vaqt:dt(l.cr
 /* ---------- Media ---------- */
 async function loadMedia(){
   try{
-    const d=await api('/api/admin/media');S.media=d.media||[];
-    $('mediaGrid').innerHTML=S.media.length?S.media.map(m=>`<div class="media">${m.media_type==='video'?`<video controls src="${esc(m.public_url)}"></video>`:`<img src="${esc(m.public_url)}" alt="${esc(m.title||'Media')}">`}<div class="body"><b>${esc(m.title||'Media')}</b><div class="muted">${esc(m.media_type||'')}</div><button class="btn small red" style="margin-top:7px" data-media="${esc(m.id)}">O‘chirish</button></div></div>`).join(''):'<div class="empty">Media yo‘q.</div>';
+    const d=await api('/api/admin/media'); S.media=d.media||[];
+    const gal=S.media.filter(m=>String(m.key||'').startsWith('gallery_'))
+      .sort((a,b)=>(a.sort_order??0)-(b.sort_order??0));
+    const single=S.media.filter(m=>!String(m.key||'').startsWith('gallery_'));
+    const SLOT={guide_video:'Video qo‘llanma',home_image:'Bosh sahifa foni',location_image:'Lokatsiya kartochkasi'};
+    const card=(m,badge)=>`<div class="media">
+      ${m.media_type==='video'
+        ? `<video controls preload="metadata" src="${esc(m.public_url)}"></video>`
+        : `<img loading="lazy" src="${esc(m.public_url)}" alt="${esc(m.title||'Media')}">`}
+      <div class="body"><b>${esc(m.title||'Media')}</b>
+        <div class="muted">${esc(badge)}</div>
+        <button class="btn small red" style="margin-top:7px" data-media="${esc(m.id)}">O‘chirish</button>
+      </div></div>`;
+
+    $('mediaGrid').innerHTML =
+      (single.length?`<h3 style="grid-column:1/-1;margin:0">Bitta o‘rinli media</h3>`+single.map(m=>card(m,SLOT[m.key]||m.key)).join(''):'')
+      + `<h3 style="grid-column:1/-1;margin:14px 0 0">📸 Galereya <span class="count">${gal.length}</span></h3>`
+      + (gal.length?gal.map(m=>card(m,m.media_type==='video'?'video':'rasm')).join('')
+         :'<div class="empty" style="grid-column:1/-1">Galereya bo‘sh. Yuqoridan «Galereya» tanlab rasm yoki video yuklang.</div>');
+
     document.querySelectorAll('[data-media]').forEach(b=>b.onclick=async()=>{
       if(!confirm('Media o‘chirilsinmi?'))return;
-      try{await api(`/api/admin/media/${encodeURIComponent(b.dataset.media)}`,{method:'DELETE'});toast('Media o‘chirildi');await loadMedia()}catch(e){notice(e.message)}
+      try{ await api(`/api/admin/media/${encodeURIComponent(b.dataset.media)}`,{method:'DELETE'}); toast('O‘chirildi'); await loadMedia(); }
+      catch(e){ notice(e.message); }
     });
-  }catch(e){$('mediaGrid').innerHTML=`<div class="error">${esc(e.message)}</div>`}
+  }catch(e){ $('mediaGrid').innerHTML=`<div class="error">${esc(e.message)}</div>`; }
 }
-/**
- * Media yuklash — 3 bosqich:
- *   1) /api/admin/media/sign  — Supabase Storage uchun imzolangan URL
- *   2) brauzer -> Supabase    — faylning o'zi (Vercel 4.5MB limitini chetlab o'tadi)
- *   3) /api/admin/media/commit — bazaga yozuv
- *
- * fetch() o'rniga XHR: progress foizini beradi va xatoni aniqroq ajratadi.
- * fetch faqat "Failed to fetch" deydi — CORS, hajm va tarmoq farqlanmaydi.
- */
-function putWithProgress(url, file, onProgress){
-  return new Promise((resolve,reject)=>{
-    const xhr=new XMLHttpRequest();
-    xhr.open('PUT',url,true);
-    xhr.setRequestHeader('Content-Type', file.type||'application/octet-stream');
-    xhr.upload.onprogress=e=>{ if(e.lengthComputable) onProgress(Math.round(e.loaded/e.total*100)); };
-    xhr.onload=()=> (xhr.status>=200&&xhr.status<300)
-      ? resolve()
-      : reject(Object.assign(new Error(`Storage ${xhr.status}`),{status:xhr.status,body:String(xhr.responseText||'').slice(0,300)}));
-    xhr.onerror=()=>reject(Object.assign(new Error('NETWORK'),{status:0}));
-    xhr.ontimeout=()=>reject(Object.assign(new Error('TIMEOUT'),{status:0}));
-    xhr.timeout=15*60*1000;
-    xhr.send(file);
-  });
-}
-const humanSize=b=>b>=1048576?(b/1048576).toFixed(1)+' MB':(b/1024).toFixed(0)+' KB';
-
 $('uploadBtn').onclick=async()=>{
   const f=$('mediaFile').files[0], title=$('mediaTitle').value.trim();
   if(!f) return notice('Avval fayl tanlang');
@@ -667,7 +665,7 @@ $('uploadBtn').onclick=async()=>{
 
     prog('3/3 Saqlanmoqda…');
     await api('/api/admin/media/commit',{method:'POST',body:JSON.stringify({
-      title, media_type, slot, path:sign.path, public_url:sign.public_url })});
+      title, media_type, slot, key:sign.key, path:sign.path, public_url:sign.public_url })});
 
     $('mediaFile').value=''; $('mediaTitle').value=''; prog('');
     toast('Media joylandi'); await loadMedia();
