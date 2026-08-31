@@ -3,31 +3,109 @@
   "cleanUrls": true,
   "trailingSlash": false,
   "functions": {
-    "api/**/*.mjs": { "runtime": "@vercel/node@5.0.0", "maxDuration": 60 },
-    "api/**/*.ts": { "runtime": "@vercel/node@5.0.0", "maxDuration": 60 }
+    "api/**/*.mjs": {
+      "runtime": "@vercel/node@5.0.0",
+      "maxDuration": 60
+    },
+    "api/**/*.ts": {
+      "runtime": "@vercel/node@5.0.0",
+      "maxDuration": 60
+    }
   },
   "rewrites": [
-    { "source": "/api/health", "destination": "/api/health.mjs" },
-    { "source": "/", "destination": "/customer/index" },
-    { "source": "/index", "destination": "/customer/index" },
-    { "source": "/admin", "destination": "/frontend/admin/index.html" },
-    { "source": "/admin/", "destination": "/frontend/admin/index.html" },
-    { "source": "/admin/index.html", "destination": "/frontend/admin/index.html" },
-    { "source": "/admin/chat", "destination": "/admin/chat.html" },
-    { "source": "/admin/chat/", "destination": "/admin/chat.html" },
-    { "source": "/admin/login", "destination": "/frontend/admin/index.html" },
-    { "source": "/admin/login.html", "destination": "/frontend/admin/index.html" },
-    { "source": "/admin/dashboard", "destination": "/frontend/admin/index.html" },
-    { "source": "/admin/dashboard/", "destination": "/frontend/admin/index.html" },
-    { "source": "/admin/dashboard-v2", "destination": "/frontend/admin/index.html" },
-    { "source": "/admin/dashboard-v2/", "destination": "/frontend/admin/index.html" },
-    { "source": "/admin/dashboard-v3", "destination": "/frontend/admin/index.html" },
-    { "source": "/admin/dashboard-v3/", "destination": "/frontend/admin/index.html" },
-    { "source": "/admin/media", "destination": "/frontend/admin/index.html" },
-    { "source": "/admin/media/", "destination": "/frontend/admin/index.html" },
-    { "source": "/instructor", "destination": "/instructor/index.html" },
-    { "source": "/instructor/", "destination": "/instructor/index.html" },
-    { "source": "/customer", "destination": "/customer/index" },
-    { "source": "/customer/", "destination": "/customer/index" }
+    {
+      "source": "/api/health",
+      "destination": "/api/health.mjs"
+    },
+    {
+      "source": "/",
+      "destination": "/customer/index"
+    },
+    {
+      "source": "/index",
+      "destination": "/customer/index"
+    },
+    {
+      "source": "/admin",
+      "destination": "/frontend/admin/index.html"
+    },
+    {
+      "source": "/admin/",
+      "destination": "/frontend/admin/index.html"
+    },
+    {
+      "source": "/admin/index.html",
+      "destination": "/frontend/admin/index.html"
+    },
+    {
+      "source": "/admin/chat",
+      "destination": "/admin/chat.html"
+    },
+    {
+      "source": "/admin/chat/",
+      "destination": "/admin/chat.html"
+    },
+    {
+      "source": "/admin/login",
+      "destination": "/frontend/admin/index.html"
+    },
+    {
+      "source": "/admin/login.html",
+      "destination": "/frontend/admin/index.html"
+    },
+    {
+      "source": "/admin/dashboard",
+      "destination": "/frontend/admin/index.html"
+    },
+    {
+      "source": "/admin/dashboard/",
+      "destination": "/frontend/admin/index.html"
+    },
+    {
+      "source": "/admin/dashboard-v2",
+      "destination": "/frontend/admin/index.html"
+    },
+    {
+      "source": "/admin/dashboard-v2/",
+      "destination": "/frontend/admin/index.html"
+    },
+    {
+      "source": "/admin/dashboard-v3",
+      "destination": "/frontend/admin/index.html"
+    },
+    {
+      "source": "/admin/dashboard-v3/",
+      "destination": "/frontend/admin/index.html"
+    },
+    {
+      "source": "/admin/media",
+      "destination": "/frontend/admin/index.html"
+    },
+    {
+      "source": "/admin/media/",
+      "destination": "/frontend/admin/index.html"
+    },
+    {
+      "source": "/instructor",
+      "destination": "/instructor/index.html"
+    },
+    {
+      "source": "/instructor/",
+      "destination": "/instructor/index.html"
+    },
+    {
+      "source": "/customer",
+      "destination": "/customer/index"
+    },
+    {
+      "source": "/customer/",
+      "destination": "/customer/index"
+    }
+  ],
+  "crons": [
+    {
+      "path": "/api/cron/reminders",
+      "schedule": "*/5 * * * *"
+    }
   ]
 }
