@@ -12,6 +12,7 @@ import { registerContentRoutes } from './content-routes.js';
 import { registerCourseRoutes } from './courses-routes.js';
 import { registerReviewRoutes } from './review-routes.js';
 import { registerSupportRoutes } from './support-routes.js';
+import { sendDueReminders, handleReminderCallback } from './reminders.js';
 
 const app = Fastify({ logger: true });
 const CUSTOMER_BOT_TOKEN = process.env.CUSTOMER_BOT_TOKEN || process.env.TELEGRAM_CUSTOMER_BOT_TOKEN || '';
@@ -94,7 +95,19 @@ app.get('/api/telegram/instructor/webhook', async () => webhookDiagnostic(INSTRU
 app.get('/api/telegram/customer/webhook', async () => webhookDiagnostic(CUSTOMER_BOT_TOKEN, 'customer', 'https://avtodrom.vercel.app/api/telegram/customer/webhook'));
 app.get('/api/telegram/admin/webhook', async () => webhookDiagnostic(ADMIN_BOT_TOKEN, 'admin', 'https://avtodrom.vercel.app/api/telegram/admin/webhook'));
 
-app.post('/api/telegram/customer/webhook', async (request, reply) => handleTelegramWebhook(request, reply, CUSTOMER_BOT_TOKEN, CUSTOMER_MINI_APP_URL, 'customer'));
+app.post('/api/telegram/customer/webhook', async (request, reply) => {
+  // Eslatma tugmalari («Kelaman» / «Bekor qilmoqchiman») shu yerga tushadi
+  const cb = (request.body as any)?.callback_query;
+  if (cb) {
+    const secret = String(request.headers['x-telegram-bot-api-secret-token'] || '');
+    if (TELEGRAM_WEBHOOK_SECRET && secret !== TELEGRAM_WEBHOOK_SECRET) {
+      return reply.code(401).send({ ok: false, error: 'Invalid webhook secret' });
+    }
+    await handleReminderCallback(cb);
+    return { ok: true };
+  }
+  return handleTelegramWebhook(request, reply, CUSTOMER_BOT_TOKEN, CUSTOMER_MINI_APP_URL, 'customer');
+});
 app.post('/api/telegram/instructor/webhook', async (request, reply) => {
   const secret = String(request.headers['x-telegram-bot-api-secret-token'] || '');
   if (TELEGRAM_WEBHOOK_SECRET && secret !== TELEGRAM_WEBHOOK_SECRET) return reply.code(401).send({ ok: false, error: 'Invalid webhook secret' });
@@ -128,6 +141,33 @@ app.post<{ Body: { chatId?: number } }>('/api/telegram/admin/start', async (requ
   await sendAdminStart(ADMIN_BOT_TOKEN, chatId, ADMIN_MINI_APP_URL);
   return { ok: true };
 });
+
+/**
+ * Eslatma rejalashtiruvchisi.
+ * Har necha daqiqada bir marta chaqiriladi (Vercel Cron yoki tashqi cron).
+ * Idempotent — ortiqcha chaqiruv zarar qilmaydi.
+ *
+ * Himoya: CRON_SECRET o'rnatilgan bo'lsa, so'rov shu kalitsiz rad etiladi.
+ * (Vercel Cron `Authorization: Bearer <CRON_SECRET>` yuboradi.)
+ */
+async function runReminders(request: any, reply: any) {
+  const expected = String(process.env.CRON_SECRET || '').trim();
+  if (expected) {
+    const auth = String(request.headers['authorization'] || '');
+    const hdr = String(request.headers['x-cron-secret'] || '');
+    const qs = String((request.query as any)?.key || '');
+    const ok = auth === `Bearer ${expected}` || hdr === expected || qs === expected;
+    if (!ok) return reply.code(401).send({ ok: false, error: 'Unauthorized' });
+  }
+  try {
+    const result = await sendDueReminders();
+    return { ok: true, ...result };
+  } catch (e) {
+    return reply.code(500).send({ ok: false, error: e instanceof Error ? e.message : 'Reminder run failed' });
+  }
+}
+app.get('/api/cron/reminders', runReminders);
+app.post('/api/cron/reminders', runReminders);
 
 export default app;
 export { app };
