@@ -151,9 +151,24 @@ export default async function handler(request: any, response: any) {
 
     if (!signResponse.ok) throw new Error(`Storage sign ${signResponse.status}: ${signText || JSON.stringify(data)}`);
 
-    const absolute = String(data.url || '').startsWith('http') ? String(data.url) : `${url}${data.url || ''}`;
-    const token = String(data.token || (absolute ? new URL(absolute).searchParams.get('token') : '') || '');
-    if (!token) throw new Error('Storage token qaytmadi');
+    /**
+     * Token: Supabase uni `data.token` yoki `data.url` ichidagi query'da qaytaradi.
+     * `data.url` ning shakli versiyaga qarab farq qiladi — ba'zan
+     * `/object/upload/sign/...` (prefikssiz), ba'zan to'liq URL.
+     * Shuning uchun UNGA TAYANMAYMIZ: tokenni ajratib olib, yuklash manzilini
+     * hujjatlashtirilgan `/storage/v1/object/upload/sign/...` yo'lidan quramiz.
+     * (Avval prefikssiz URL hosil bo'lib, brauzer 404 ni CORS xatosi sifatida
+     *  ko'rsatardi — XHR `status 0` qaytarardi.)
+     */
+    let token = String(data.token || '');
+    if (!token) {
+      const raw = String(data.url || data.signedUrl || data.signedURL || '');
+      const qs = raw.includes('?') ? raw.slice(raw.indexOf('?') + 1) : '';
+      token = new URLSearchParams(qs).get('token') || '';
+    }
+    if (!token) throw new Error(`Storage token qaytmadi. Javob: ${signText.slice(0, 200)}`);
+
+    const absolute = `${url}/storage/v1/object/upload/sign/${BUCKET}/${path}`;
 
     const publicUrl = `${url}/storage/v1/object/public/${BUCKET}/${path}`;
 
@@ -165,7 +180,7 @@ export default async function handler(request: any, response: any) {
       path,
       storage_path: path,
       token,
-      upload_url: `${absolute}${absolute.includes('?') ? '&' : '?'}token=${encodeURIComponent(token)}`,
+      upload_url: `${absolute}?token=${encodeURIComponent(token)}`,
       signed_url: absolute,
       public_url: publicUrl,
       max_file_size: maxFileSize,
