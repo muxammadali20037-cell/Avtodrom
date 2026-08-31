@@ -259,6 +259,11 @@ pre.json{background:#f7faf8;border:1px solid var(--line);border-radius:8px;paddi
     <div class="field"><label>TIZIM NOMI</label><input id="systemName" class="input" value="AVTODROM INDEX"></div>
     <div class="field"><label>BRONLAR</label><select id="bookingEnabled" class="select"><option value="true">Yoqilgan</option><option value="false">O‘chirilgan</option></select></div>
     <div class="field"><label>ALOQA TELEFONI <span class="muted">(mijoz panelida ko‘rinadi)</span></label><input id="contactPhone" class="input" autocomplete="off" placeholder="+998901234567"></div>
+    <div class="field"><label>AVTODROM HAQIDA <span class="muted">(mijoz panelidagi «INDEX AVTODROM» bo‘limi)</span></label>
+      <textarea id="aboutText" class="input" rows="3" placeholder="Maydoncha haqida qisqacha…"></textarea></div>
+    <div class="field"><label>SHAROITLAR <span class="muted">(har qatorda bittadan)</span></label>
+      <textarea id="facilities" class="input" rows="6" placeholder="🚦 Yo‘l belgilari | Svetoforlar va STOP belgilari&#10;☕ Kutish zonasi | Issiq choy va o‘tirish joyi"></textarea>
+      <div class="muted" style="font-size:12px;margin-top:5px">Format: <code>belgi Sarlavha | Tavsif</code>. Bo‘sh qoldirsangiz standart ro‘yxat ko‘rinadi.</div></div>
     <div class="field"><label>ISH VAQTI (matn)</label><input id="workingHours" class="input" autocomplete="off" placeholder="Dushanba–Shanba"></div>
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
       <div class="field"><label>OCHILISH</label><input id="workStart" class="input" type="time" step="900" autocomplete="off"></div>
@@ -689,7 +694,7 @@ function renderAudit(){
    (a) avtomatik yangilanish to'xtaydi, (b) loadSettings maydonlarga tegmaydi.
    Saqlangandan yoki bekor qilingandan keyingina qulf ochiladi. */
 let editing = false;
-const SETTING_FIELDS = ['systemName','bookingEnabled','contactPhone','workingHours','workStart','workEnd','slotStep',
+const SETTING_FIELDS = ['systemName','bookingEnabled','contactPhone','workingHours','aboutText','facilities','workStart','workEnd','slotStep',
                         'locName','locAddress','locLat','locLng','locGoogle','locYandex','loc2gis'];
 function markEditing(){ if(!editing){ editing=true; $('locDirty').classList.remove('hidden'); } }
 function clearEditing(){ editing=false; $('locDirty').classList.add('hidden'); }
@@ -706,6 +711,8 @@ function loadSettings(){
   $('bookingEnabled').value=String(val('booking_enabled')!==false);
   $('contactPhone').value=val('contact_phone');
   $('workingHours').value=val('working_hours');
+  $('aboutText').value=val('about_text');
+  $('facilities').value=val('facilities');
   $('workStart').value=val('work_start')||'07:00';
   $('workEnd').value=val('work_end')||'19:00';
   $('slotStep').value=Number(val('slot_step_min'))||60;
@@ -763,6 +770,8 @@ $('saveSettingsBtn').onclick=async()=>{
     await put('booking_enabled',$('bookingEnabled').value==='true');
     await put('contact_phone',$('contactPhone').value.trim());
     await put('working_hours',$('workingHours').value.trim());
+    await put('about_text',$('aboutText').value.trim());
+    await put('facilities',$('facilities').value.trim());
     await put('work_start',$('workStart').value||'07:00');
     await put('work_end',$('workEnd').value||'19:00');
     await put('slot_step_min',Math.max(15,Number($('slotStep').value)||60));
