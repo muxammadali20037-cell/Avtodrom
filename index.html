@@ -105,7 +105,7 @@ button,input,textarea,select{font:inherit}button{cursor:pointer}button:disabled{
 .info{background:#f7f9f8;border-radius:10px;padding:9px}
 .info span{display:block;font-size:9px;color:var(--muted);text-transform:uppercase;font-weight:900}
 .info b{display:block;font-size:12px;margin-top:3px}
-.chat-shell{display:flex;flex-direction:column;min-height:520px;overflow:hidden}
+
 .chat-head{padding:14px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px}
 .avatar{width:42px;height:42px;border-radius:13px;background:#dcece3;display:grid;place-items:center;font-weight:900;flex:none}
 .messages{flex:1;padding:15px;background:#f7faf8;min-height:340px;max-height:440px;overflow:auto}
@@ -190,6 +190,19 @@ button,input,textarea,select{font:inherit}button{cursor:pointer}button:disabled{
 @keyframes adIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 @media(prefers-reduced-motion:reduce){.road span{animation:none;opacity:.25}.ad .slide{animation:none}}
 @media(max-width:680px){.heroTop{gap:13px}.emblem.lg{width:66px;height:66px}}
+
+.ptable{display:grid;gap:8px}
+.prow{display:flex;justify-content:space-between;align-items:center;gap:12px;background:#f7f8fd;border:1px solid var(--line);border-radius:12px;padding:11px 13px}
+.prow b{display:block;font-size:14px}
+.prow span{display:block;font-size:12px;color:var(--muted);margin-top:2px}
+.pcell{font-weight:950;color:var(--brand);white-space:nowrap;font-size:15px}
+details.faq{background:var(--card);border:1px solid var(--line);border-radius:14px;margin-bottom:9px;box-shadow:var(--shadow);overflow:hidden}
+details.faq summary{cursor:pointer;padding:14px 16px;font-weight:800;font-size:14px;list-style:none;display:flex;justify-content:space-between;gap:10px;align-items:center}
+details.faq summary::-webkit-details-marker{display:none}
+details.faq summary::after{content:"+";font-size:20px;font-weight:400;color:var(--brand);flex:none}
+details.faq[open] summary::after{content:"−"}
+details.faq[open] summary{border-bottom:1px solid var(--line)}
+.faqa{padding:13px 16px;font-size:13.5px;line-height:1.6;color:#41456e;white-space:pre-line}
 .hide{display:none!important}
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
 @media(max-width:900px){.grid{grid-template-columns:repeat(2,1fr)}}
@@ -331,7 +344,7 @@ button,input,textarea,select{font:inherit}button{cursor:pointer}button:disabled{
       <p class="meta" id="addressText" data-i18n="addr_none"></p>
       <div class="card-actions"><button class="primary solid" id="mapBtn" data-i18n="addr_map"></button><button class="secondary" id="callBtn" data-i18n="addr_call"></button></div>
     </div>
-    <div class="map">📍 AVTODROM<br><small style="font-weight:600">Toshkent</small></div>
+    <div id="locBox" class="map">📍 AVTODROM<br><small style="font-weight:600">Toshkent</small></div>
   </div>
 </section>
 
@@ -371,13 +384,15 @@ button,input,textarea,select{font:inherit}button{cursor:pointer}button:disabled{
   <div id="bookingList" style="display:grid;gap:10px;margin-top:13px"></div>
 </section>
 
-<section id="chat" class="view hide">
-  <div class="section-head"><div><h2 data-i18n="chat_h"></h2><p data-i18n="chat_p"></p></div></div>
-  <div class="card chat-shell">
-    <div class="chat-head"><div class="avatar">🚗</div><div><b data-i18n="chat_who"></b><div class="meta" data-i18n="chat_role"></div></div></div>
-    <div id="messages" class="messages"></div>
-    <div class="chat-compose"><input id="chatInput" maxlength="2000" data-i18n-ph="chat_ph"><button class="primary solid" id="chatSend">➤</button></div>
+
+
+<section id="faq" class="view hide">
+  <div class="section-head"><div><h2 data-i18n="faq_h"></h2><p data-i18n="faq_p"></p></div></div>
+  <div class="card" style="padding:16px;margin-bottom:12px">
+    <h3 style="margin:0 0 10px;font-size:16px" data-i18n="faq_prices"></h3>
+    <div id="priceTable"></div>
   </div>
+  <div id="faqList"></div>
 </section>
 
 <section id="profile" class="view hide">
@@ -408,7 +423,7 @@ button,input,textarea,select{font:inherit}button{cursor:pointer}button:disabled{
   <button class="bottom-btn" data-nav="instructors"><span>👨‍🏫</span><span data-i18n="nav_instructors"></span></button>
   <button class="bottom-btn" data-nav="book"><span>＋</span><span data-i18n="nav_book"></span></button>
   <button class="bottom-btn" data-nav="bookings"><span>📋</span><span data-i18n="nav_bookings"></span></button>
-  <button class="bottom-btn" data-nav="chat"><span>💬</span><span data-i18n="nav_chat"></span><i class="pill hide" id="chatPill">0</i></button>
+  <button class="bottom-btn" data-nav="faq"><span>❓</span><span data-i18n="nav_faq"></span></button>
 </div></nav>
 </div>
 
@@ -440,6 +455,25 @@ const TZ = 'Asia/Tashkent';
 const I18N = {
   uz: {
     brand:'AVTODROM', lang_uz:"O‘zbekcha", lang_ru:'Ruscha',
+    nav_faq:'Savollar',
+    faq_h:'Ko‘p beriladigan savollar', faq_p:'Narxlar, muddat, joylashuv va bron haqida.',
+    faq_prices:'Narxlar', faq_no_prices:'Narxlar hozircha kiritilmagan. Admin bilan bog‘laning.',
+    faq_price_note:'Narxlar Admin panelda yangilanadi va shu yerda darhol aks etadi.',
+    faq_q_cat:'Qaysi kategoriyalar bor?',
+    faq_a_cat:'A — mototsikl.\nB — yengil avtomobil.\nC — yuk avtomobili (faqat amaliy haydash).',
+    faq_q_len:'Kurs qancha davom etadi?',
+    faq_a_len:'A kategoriya — 15 kun. Shu muddatda professional darajada o‘rganib, imtihonga tayyor bo‘lasiz.\nB kategoriya — 2 oy 15 kun.\nC kategoriya — to‘liq kurs yo‘q, faqat amaliy haydash (vojdeniya) mashg‘ulotlari.',
+    faq_q_price:'Narxlar qanday?', faq_a_price:'To‘liq ro‘yxat yuqoridagi «Narxlar» jadvalida. Har bir kategoriya uchun soatlik mashg‘ulot va to‘liq kurs alohida ko‘rsatilgan.\nC kategoriya bo‘yicha faqat soatlik amaliy haydash mavjud.',
+    faq_q_hours:'Ish vaqtingiz qanday?', faq_a_hours:'Har kuni {from} dan {to} gacha.',
+    faq_q_where:'Qayerda joylashgansiz?', faq_a_where:'{addr}\nAniq yo‘nalish uchun bosh sahifadagi «Xaritada ochish» tugmasini bosing.',
+    faq_a_where_none:'Manzil hozircha kiritilmagan. Bosh sahifadagi «Bog‘lanish» orqali so‘rang.',
+    faq_q_exam:'Avtodrom imtihon markazi bilan bir joydami?',
+    faq_a_exam:'Ha. Avtodromimiz imtihon markazi bilan aynan bir maydonchada joylashgan.\nYa‘ni mashq qilgan joyingizda imtihon topshirasiz — maydoncha, belgilar va yo‘nalishlar tanish bo‘ladi.',
+    faq_q_book:'Qanday bron qilaman?', faq_a_book:'«Bron» bo‘limiga o‘ting: mashg‘ulot turini, instruktorni, sanani va bo‘sh vaqtni tanlang.\nBron Admin tasdiqlagach «Tasdiqlangan» holatiga o‘tadi.',
+    faq_q_cancel:'Bronni bekor qila olamanmi?',
+    faq_a_cancel:'Ha. Hali tasdiqlanmagan bron darhol bekor bo‘ladi.\nTasdiqlangan bron uchun sabab yozib so‘rov yuborasiz — Admin ko‘rib chiqadi va javob beradi.',
+    faq_q_pick:'Instruktorni o‘zim tanlaysanmi?', faq_a_pick:'Ha. «Instruktorlar» bo‘limida reyting, tajriba va sharhlarni ko‘rib, o‘zingizga mosini tanlaysiz.',
+    faq_q_pay:'To‘lov qanday amalga oshiriladi?', faq_a_pay:'To‘lov turlari va shartlari bo‘yicha Admin bilan bog‘laning — bosh sahifadagi «Bog‘lanish» tugmasi.',
     nav_home:'Asosiy', nav_instructors:'Instruktor', nav_book:'Bron', nav_bookings:'Bronlarim', nav_chat:'Chat', nav_profile:'Profil',
     hero_eyebrow:'Professional haydash tajribasi',
     hero_title:'Haydashni ishonch bilan o‘rganing.',
@@ -526,6 +560,25 @@ const I18N = {
   },
   ru: {
     brand:'АВТОДРОМ', lang_uz:'Узбекский', lang_ru:'Русский',
+    nav_faq:'Вопросы',
+    faq_h:'Частые вопросы', faq_p:'О ценах, сроках, расположении и бронировании.',
+    faq_prices:'Цены', faq_no_prices:'Цены пока не заданы. Свяжитесь с администратором.',
+    faq_price_note:'Цены обновляются в админ-панели и сразу отражаются здесь.',
+    faq_q_cat:'Какие категории есть?',
+    faq_a_cat:'A — мотоцикл.\nB — легковой автомобиль.\nC — грузовой автомобиль (только практическое вождение).',
+    faq_q_len:'Сколько длится курс?',
+    faq_a_len:'Категория A — 15 дней. За этот срок вы освоите вождение на профессиональном уровне и будете готовы к экзамену.\nКатегория B — 2 месяца 15 дней.\nКатегория C — полного курса нет, только практическое вождение.',
+    faq_q_price:'Какие цены?', faq_a_price:'Полный список — в таблице «Цены» выше. Для каждой категории отдельно указано занятие по часам и полный курс.\nПо категории C доступно только почасовое практическое вождение.',
+    faq_q_hours:'Какой у вас график?', faq_a_hours:'Ежедневно с {from} до {to}.',
+    faq_q_where:'Где вы находитесь?', faq_a_where:'{addr}\nДля точного маршрута нажмите «Открыть на карте» на главной странице.',
+    faq_a_where_none:'Адрес пока не указан. Уточните через кнопку «Связаться» на главной.',
+    faq_q_exam:'Автодром находится вместе с экзаменационным центром?',
+    faq_a_exam:'Да. Наш автодром расположен на той же площадке, что и экзаменационный центр.\nТо есть экзамен вы сдаёте там же, где тренировались — площадка, знаки и маршруты будут вам знакомы.',
+    faq_q_book:'Как забронировать?', faq_a_book:'Перейдите в раздел «Бронь»: выберите тип занятия, инструктора, дату и свободное время.\nПосле подтверждения администратором бронь перейдёт в статус «Подтверждено».',
+    faq_q_cancel:'Могу ли я отменить бронь?',
+    faq_a_cancel:'Да. Ещё не подтверждённая бронь отменяется сразу.\nДля подтверждённой брони вы отправляете запрос с указанием причины — администратор рассмотрит и ответит.',
+    faq_q_pick:'Могу ли я сам выбрать инструктора?', faq_a_pick:'Да. В разделе «Инструкторы» вы видите рейтинг, опыт и отзывы, и выбираете подходящего.',
+    faq_q_pay:'Как производится оплата?', faq_a_pay:'По способам и условиям оплаты свяжитесь с администратором — кнопка «Связаться» на главной странице.',
     nav_home:'Главная', nav_instructors:'Инструктор', nav_book:'Бронь', nav_bookings:'Мои брони', nav_chat:'Чат', nav_profile:'Профиль',
     hero_eyebrow:'Профессиональное обучение вождению',
     hero_title:'Учитесь водить уверенно.',
@@ -640,7 +693,7 @@ function setLang(l) {
 }
 
 const S = { profile:null, instructors:[], courses:[], bookings:[], notifications:[], settings:{},
-            messages:[], course:null, time:'', busy:[], filter:'', reviewRating:5, reviewBooking:null, lastMsgId:null };
+            course:null, time:'', busy:[], filter:'', reviewRating:5, reviewBooking:null, lastMsgId:null };
 
 /* Xato matnini har qanday shakldan chiqarib oladi.
    Vercel 404 javobi {"error":{"code":"NOT_FOUND","message":"..."}} ko'rinishida
@@ -704,7 +757,7 @@ $('drawerClose').onclick=()=>$('drawer').classList.remove('show');
 $('drawer').onclick=e=>{ if(e.target.id==='drawer') $('drawer').classList.remove('show'); };
 
 function go(sec){
-  const ok=['home','instructors','book','bookings','chat','profile'];
+  const ok=['home','instructors','book','bookings','faq','profile'];
   if(!ok.includes(sec)) sec='home';
   document.querySelectorAll('.view').forEach(v=>v.classList.toggle('hide',v.id!==sec));
   document.querySelectorAll('.bottom-btn').forEach(b=>b.classList.toggle('active',b.dataset.nav===sec));
@@ -712,7 +765,7 @@ function go(sec){
   window.scrollTo({top:0,behavior:'smooth'});
   if(sec==='bookings') loadBookings();
   if(sec==='book'){ if(!S.courses.length) loadCourses(); loadInstructors(); }
-  if(sec==='chat') loadMessages(true);
+  if(sec==='faq') renderFaq();
 }
 document.querySelectorAll('.bottom-btn').forEach(b=>b.onclick=()=>go(b.dataset.nav));
 document.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>go(b.dataset.go));
@@ -1005,36 +1058,77 @@ function openReview(id){
   };
 }
 
-/* ---------------- Chat (haqiqiy, support_messages) ---------------- */
-async function loadMessages(scroll){
-  try{
-    const d=await api('/api/support/messages'); S.messages=d.messages||[];
-    renderMessages(scroll); updateChatPill();
-  }catch(e){ $('messages').innerHTML=`<div class="alert err">${esc(e.message)}</div>`; }
+
+/* =========================================================================
+   FAQ + JONLI NARX JADVALI
+   Narxlar bazadagi `courses` dan olinadi — matnga yozilmaydi.
+   Admin narxni o'zgartirsa, bu yer ham darhol o'zgaradi.
+   Kategoriya va muddat kabi o'zgarmas faktlar tarjimada.
+   ========================================================================= */
+function renderPriceTable(){
+  const box = $('priceTable'); if (!box) return;
+  const list = S.courses || [];
+  if (!list.length) { box.innerHTML = `<div class="alert info" style="margin:0">${esc(t('faq_no_prices'))}</div>`; return; }
+  box.innerHTML = `<div class="ptable">${list.map(c => `
+    <div class="prow">
+      <div><b>${esc(c.name)}</b><span>${c.description ? esc(c.description) : esc(fmtDur(c.duration_minutes))}</span></div>
+      <div class="pcell">${esc(money(c.price))}</div>
+    </div>`).join('')}</div>
+    <p class="meta" style="margin:10px 0 0">${esc(t('faq_price_note'))}</p>`;
 }
-function renderMessages(scroll){
-  const box=$('messages');
-  box.innerHTML = S.messages.length
-    ? S.messages.map(m=>`<div class="msg ${m.sender==='customer'?'mine':''}">${esc(m.body)}<small>${esc(fTime(m.created_at))}</small></div>`).join('')
-    : `<div class="empty">${esc(t('chat_empty'))}</div>`;
-  if(scroll!==false) box.scrollTop=box.scrollHeight;
-  S.lastMsgId=S.messages.length?S.messages[S.messages.length-1].id:null;
+
+function faqItems(){
+  const ws = S.settings?.work_start || '07:00', we = S.settings?.work_end || '19:00';
+  const loc = S.settings?.location || {};
+  const addr = loc.address || S.settings?.address || '';
+  const items = [
+    ['faq_q_cat',   t('faq_a_cat')],
+    ['faq_q_len',   t('faq_a_len')],
+    ['faq_q_price', t('faq_a_price')],
+    ['faq_q_hours', t('faq_a_hours', { from: ws, to: we })],
+    ['faq_q_where', addr ? t('faq_a_where', { addr }) : t('faq_a_where_none')],
+    ['faq_q_exam',  t('faq_a_exam')],
+    ['faq_q_book',  t('faq_a_book')],
+    ['faq_q_cancel',t('faq_a_cancel')],
+    ['faq_q_pick',  t('faq_a_pick')],
+    ['faq_q_pay',   t('faq_a_pay')],
+  ];
+  return items;
 }
-function updateChatPill(){
-  const unread=S.messages.filter(m=>m.sender==='admin'&&!m.is_read).length;
-  $('chatPill').textContent=unread; $('chatPill').classList.toggle('hide',!unread);
+function renderFaq(){
+  const box = $('faqList'); if (!box) return;
+  renderPriceTable();
+  box.innerHTML = faqItems().map(([qk, a], i) => `
+    <details class="faq" ${i === 0 ? 'open' : ''}>
+      <summary>${esc(t(qk))}</summary>
+      <div class="faqa">${esc(a)}</div>
+    </details>`).join('');
 }
-async function sendMessage(){
-  const inp=$('chatInput'), body=inp.value.trim();
-  if(!body) return;
-  if(!S.profile){ toast(t('chat_needtg')); return; }
-  inp.value=''; $('chatSend').disabled=true;
-  try{ await api('/api/support/messages',{method:'POST',body:JSON.stringify({body})}); await loadMessages(true); }
-  catch(e){ inp.value=body; toast(e.message); }
-  finally{ $('chatSend').disabled=false; }
+
+/* Lokatsiya: admin rasm yuklagan bo'lsa foto, bo'lmasa koordinatadan real xarita. */
+function renderLocationBox(){
+  const box = $('locBox'); if (!box) return;
+  const loc = S.settings?.location || {};
+  const lat = Number(loc.latitude), lng = Number(loc.longitude);
+  if (S.locationPhoto) {
+    box.style.cssText = 'min-height:210px;border-radius:16px;background-size:cover;background-position:center;background-image:url("' + S.locationPhoto + '")';
+    box.innerHTML = '';
+    return;
+  }
+  if (Number.isFinite(lat) && Number.isFinite(lng)) {
+    const d = 0.004;
+    const bbox = `${lng - d},${lat - d / 2},${lng + d},${lat + d / 2}`;
+    box.style.cssText = 'min-height:210px;border-radius:16px;overflow:hidden;padding:0;display:block';
+    box.innerHTML = `<iframe title="AVTODROM" loading="lazy" style="width:100%;height:100%;min-height:210px;border:0"
+      src="https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=mapnik&marker=${lat},${lng}"></iframe>`;
+    return;
+  }
+  box.innerHTML = `📍 ${esc(loc.name || 'AVTODROM')}<br><small style="font-weight:600">${esc(addrShort())}</small>`;
 }
-$('chatSend').onclick=sendMessage;
-$('chatInput').onkeydown=e=>{ if(e.key==='Enter'){ e.preventDefault(); sendMessage(); } };
+function addrShort(){
+  const loc = S.settings?.location || {};
+  return (loc.address || S.settings?.address || 'Toshkent').split(',').slice(0, 2).join(',');
+}
 
 /* ---------------- Profil ---------------- */
 async function loadMe(){
@@ -1107,6 +1201,8 @@ async function loadMedia(){
     const img=media.find(x=>x.key==='home_image'&&x.public_url);
     if(img){ const el=$('heroPhoto'), pre=new Image();
       pre.onload=()=>{ el.style.backgroundImage=`url("${img.public_url}")`; el.classList.add('on'); }; pre.src=img.public_url; }
+    const lp=media.find(x=>x.key==='location_image'&&x.public_url);
+    if(lp){ S.locationPhoto=lp.public_url; renderLocationBox(); }
     const v=media.find(x=>x.key==='guide_video'&&x.public_url);
     if(!v) return;
     $('mediaSection').classList.remove('hide');
@@ -1193,7 +1289,7 @@ function rerenderAll(){
   if(S.courses.length) renderCourses();
   renderTimes(); updateSummary();
   renderBookings(); renderNext(); renderReviewBanner();
-  renderMessages(false); renderProfile(); adIndex=0; renderAd();
+  renderProfile(); renderFaq(); adIndex=0; renderAd();
   const loc=S.settings?.location||{};
   const parts=[loc.address||S.settings?.address, S.settings?.working_hours].filter(Boolean);
   $('addressText').textContent = parts.length ? parts.join(' · ') : t('addr_none');
@@ -1205,17 +1301,16 @@ document.addEventListener('click',e=>{ if(!e.target.closest('#langBtn,#langMenu'
 /* ---------------- Boot ---------------- */
 async function boot(){
   applyLang();
-  renderAd();                 // zaxira slayd darhol ko'rinsin, server javobini kutmasin
+  renderAd(); renderFaq();    // zaxira slayd va FAQ darhol ko'rinsin
   $('bookDate').min=todayTk(); $('bookDate').value=todayTk();
   await loadMe();
-  await Promise.allSettled([loadSettings(),loadCourses(),loadInstructors(),loadBookings(),loadNotifications(),loadMedia(),loadMessages(false)]);
+  await Promise.allSettled([loadSettings(),loadCourses(),loadInstructors(),loadBookings(),loadNotifications(),loadMedia()]);
   go(location.hash.slice(1)||'home');
 }
 setInterval(()=>{
   if(!S.profile) return;
   if($('modal').classList.contains('show')) return;
-  if(document.activeElement===$('chatInput')) return;
-  loadBookings(); loadNotifications(); loadMessages(false);
+  loadBookings(); loadNotifications();
 },25000);
 boot();
 </script>
