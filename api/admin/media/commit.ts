@@ -21,7 +21,8 @@ export default async function handler(request:any,response:any){
     if(!['video','image'].includes(mediaType))throw new Error('Media turi noto‘g‘ri');
     if(!path||!publicUrl)throw new Error('Media fayl ma’lumotlari to‘liq emas');
     if(path.startsWith(`${BUCKET}/`))path=path.slice(BUCKET.length+1);
-    const key=mediaType==='video'?'guide_video':'home_image';
+    const slot=String(body.slot||'home').trim();
+    const key=mediaType==='video'?'guide_video':(slot==='location'?'location_image':'home_image');
     if(!path.startsWith(`${key}/`))throw new Error('Media path noto‘g‘ri');
     const {url}=supabaseConfig();
     const prefix=`${url}/storage/v1/object/public/${BUCKET}/`;
