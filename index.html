@@ -203,6 +203,27 @@ details.faq summary::after{content:"+";font-size:20px;font-weight:400;color:var(
 details.faq[open] summary::after{content:"−"}
 details.faq[open] summary{border-bottom:1px solid var(--line)}
 .faqa{padding:13px 16px;font-size:13.5px;line-height:1.6;color:#41456e;white-space:pre-line}
+
+.fac{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.fac .f{display:flex;gap:11px;align-items:flex-start;background:#f7f8fd;border:1px solid var(--line);border-radius:13px;padding:12px}
+.fac .f i{font-style:normal;font-size:20px;flex:none;line-height:1.1}
+.fac .f b{display:block;font-size:13.5px;line-height:1.25}
+.fac .f span{display:block;font-size:12px;color:var(--muted);margin-top:3px;line-height:1.45}
+@media(max-width:680px){.fac{grid-template-columns:1fr}}
+/* Qo'llanma */
+.tour{display:none;position:fixed;inset:0;background:rgba(10,12,40,.72);z-index:200;align-items:center;justify-content:center;padding:16px}
+.tour.on{display:flex}
+.tbox{background:#fff;border-radius:22px;width:min(440px,100%);max-height:92vh;overflow:auto;padding:24px;text-align:center}
+.tico{font-size:52px;line-height:1;margin-bottom:14px}
+.tbox h3{margin:0 0 8px;font-size:20px}
+.tbox p{margin:0;color:var(--muted);font-size:14px;line-height:1.6;white-space:pre-line}
+.tdots{display:flex;gap:6px;justify-content:center;margin:20px 0 16px}
+.tdots i{width:7px;height:7px;border-radius:50%;background:#d7dae9;transition:.2s}
+.tdots i.on{background:var(--brand);width:20px;border-radius:4px}
+.tnav{display:flex;gap:9px}
+.tnav button{flex:1;border-radius:12px;padding:12px;font-weight:800;border:1px solid var(--line);background:#fff}
+.tnav .go{background:var(--brand);border-color:var(--brand);color:#fff}
+.tskip{border:0;background:transparent;color:var(--muted);font-size:12.5px;margin-top:12px;text-decoration:underline}
 .hide{display:none!important}
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
 @media(max-width:900px){.grid{grid-template-columns:repeat(2,1fr)}}
@@ -332,6 +353,14 @@ details.faq[open] summary{border-bottom:1px solid var(--line)}
     <div id="homeInstructors" class="grid"><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div></div>
   </div>
 
+  <div class="section" id="aboutSection">
+    <div class="section-head"><div><h2 data-i18n="about_h"></h2><p data-i18n="about_p"></p></div></div>
+    <div class="card" style="padding:18px">
+      <p id="aboutText" class="meta" style="margin:0 0 16px;font-size:14px;line-height:1.65"></p>
+      <div id="facilities" class="fac"></div>
+    </div>
+  </div>
+
   <div class="section hide" id="mediaSection">
     <div class="section-head"><div><h2 id="mediaTitle" data-i18n="media_h"></h2><p data-i18n="media_p"></p></div></div>
     <div class="card" style="padding:14px"><video id="mediaVideo" controls playsinline style="width:100%;border-radius:13px"></video></div>
@@ -393,6 +422,7 @@ details.faq[open] summary{border-bottom:1px solid var(--line)}
     <div id="priceTable"></div>
   </div>
   <div id="faqList"></div>
+  <button class="secondary" id="replayTour" style="width:100%;margin-top:6px" data-i18n="tour_replay"></button>
 </section>
 
 <section id="profile" class="view hide">
@@ -429,6 +459,17 @@ details.faq[open] summary{border-bottom:1px solid var(--line)}
 
 <div id="modal" class="modal"><div class="modal-box"><div class="modal-head"><h3 id="modalTitle"></h3><button class="close" id="modalClose">×</button></div><div id="modalBody" class="modal-body"></div></div></div>
 <div id="drawer" class="drawer"><div class="drawer-box"><div class="modal-head" style="padding:0 0 13px"><h3 data-i18n="notif_h"></h3><button class="close" id="drawerClose">×</button></div><div id="notifications"></div></div></div>
+<div class="tour" id="tour"><div class="tbox">
+  <div class="tico" id="tIco"></div>
+  <h3 id="tTitle"></h3>
+  <p id="tText"></p>
+  <div class="tdots" id="tDots"></div>
+  <div class="tnav">
+    <button id="tPrev" data-i18n="tour_prev"></button>
+    <button class="go" id="tNext" data-i18n="tour_next"></button>
+  </div>
+  <button class="tskip" id="tSkip" data-i18n="tour_skip"></button>
+</div></div>
 <div id="toast" class="toast"></div>
 <script>
 'use strict';
@@ -455,6 +496,22 @@ const TZ = 'Asia/Tashkent';
 const I18N = {
   uz: {
     brand:'AVTODROM', lang_uz:"O‘zbekcha", lang_ru:'Ruscha',
+    about_h:'INDEX AVTODROM', about_p:'Maydoncha, sharoitlar va imkoniyatlar.',
+    about_default:'TASH INDEX AVTODROM — haydashni amaliy o‘rganish uchun to‘liq jihozlangan maydoncha. Yo‘l belgilari, svetoforlar, piyoda o‘tish joylari va real yo‘l qatnovlari bilan: siz ko‘chaga chiqishdan va imtihonga borishdan oldin barcha vaziyatlarni shu yerda mashq qilasiz.',
+    fac_signs_t:'Yo‘l belgilari va svetoforlar', fac_signs_x:'Maydonchada ishlaydigan svetoforlar, STOP, yo‘l berish va yo‘nalish belgilari o‘rnatilgan.',
+    fac_marks_t:'Real yo‘l qatnovlari', fac_marks_x:'Belgilangan yo‘laklar, chorrahalar, piyoda o‘tish joylari va bordyurlar.',
+    fac_park_t:'Parkovka va manyovr zonalari', fac_park_x:'To‘xtash joylari va burilish mashqlari uchun ajratilgan maydon.',
+    fac_exam_t:'Imtihonga tayyorlov maydonchasi', fac_exam_x:'Maydoncha imtihon talablariga mos jihozlangan — mashqni shu yerda bajarib, imtihonga tayyor bo‘lasiz.',
+    fac_instr_t:'Tasdiqlangan instruktorlar', fac_instr_x:'Har bir instruktor Admin tekshiruvidan o‘tadi, reytingi real sharhlardan hisoblanadi.',
+    fac_hours_t:'Ish vaqti',
+    tour_next:'Keyingi', tour_prev:'Orqaga', tour_skip:'O‘tkazib yuborish', tour_start:'Boshlash',
+    tour_replay:'📖 Qo‘llanmani qayta ko‘rish',
+    tour1_t:'Xush kelibsiz!', tour1_x:'TASH INDEX AVTODROM — haydashni amaliy o‘rganish va imtihonga tayyorlanish maydonchasi.',
+    tour2_t:'1. Mashg‘ulotni tanlang', tour2_x:'«Bron» bo‘limida kategoriya va davomiylikni tanlaysiz.\nHar birining narxi yonida ko‘rsatilgan.',
+    tour3_t:'2. Instruktorni tanlang', tour3_x:'Reyting, tajriba va sharhlarni ko‘rib, o‘zingizga mosini tanlang.',
+    tour4_t:'3. Sana va vaqt', tour4_x:'Band vaqtlar avtomatik yopiladi — faqat bo‘sh soatlar ochiq turadi.\nBron yuborilgach Admin tasdiqlaydi.',
+    tour5_t:'4. Eslatma keladi', tour5_x:'Darsga 1 soat, 30 va 10 daqiqa qolganda Telegramga xabar keladi.\nO‘sha yerda «Kelaman» yoki «Bekor qilmoqchiman» tugmasini bosasiz.',
+    tour6_t:'5. Baholang', tour6_x:'Dars tugagach instruktorni 5 yulduzli tizimda baholaysiz.\nSharhingiz uning reytingiga qo‘shiladi.',
     nav_faq:'Savollar',
     faq_h:'Ko‘p beriladigan savollar', faq_p:'Narxlar, muddat, joylashuv va bron haqida.',
     faq_prices:'Narxlar', faq_no_prices:'Narxlar hozircha kiritilmagan. Admin bilan bog‘laning.',
@@ -467,8 +524,8 @@ const I18N = {
     faq_q_hours:'Ish vaqtingiz qanday?', faq_a_hours:'Har kuni {from} dan {to} gacha.',
     faq_q_where:'Qayerda joylashgansiz?', faq_a_where:'{addr}\nAniq yo‘nalish uchun bosh sahifadagi «Xaritada ochish» tugmasini bosing.',
     faq_a_where_none:'Manzil hozircha kiritilmagan. Bosh sahifadagi «Bog‘lanish» orqali so‘rang.',
-    faq_q_exam:'Avtodrom imtihon markazi bilan bir joydami?',
-    faq_a_exam:'Ha. Avtodromimiz imtihon markazi bilan aynan bir maydonchada joylashgan.\nYa‘ni mashq qilgan joyingizda imtihon topshirasiz — maydoncha, belgilar va yo‘nalishlar tanish bo‘ladi.',
+    faq_q_exam:'Bu yerda imtihon topshiriladimi?',
+    faq_a_exam:'Yo‘q. Bu — imtihonga TAYYORLOV maydonchasi, imtihon markazi emas.\nBu yerda mashq qilasiz: yo‘l belgilari, svetoforlar va yo‘l qatnovlari imtihon talablariga mos.\nImtihonning o‘zi rasmiy imtihon markazida topshiriladi.',
     faq_q_book:'Qanday bron qilaman?', faq_a_book:'«Bron» bo‘limiga o‘ting: mashg‘ulot turini, instruktorni, sanani va bo‘sh vaqtni tanlang.\nBron Admin tasdiqlagach «Tasdiqlangan» holatiga o‘tadi.',
     faq_q_cancel:'Bronni bekor qila olamanmi?',
     faq_a_cancel:'Ha. Hali tasdiqlanmagan bron darhol bekor bo‘ladi.\nTasdiqlangan bron uchun sabab yozib so‘rov yuborasiz — Admin ko‘rib chiqadi va javob beradi.',
@@ -560,6 +617,22 @@ const I18N = {
   },
   ru: {
     brand:'АВТОДРОМ', lang_uz:'Узбекский', lang_ru:'Русский',
+    about_h:'INDEX AVTODROM', about_p:'Площадка, условия и возможности.',
+    about_default:'TASH INDEX AVTODROM — полностью оборудованная площадка для практического обучения вождению. Дорожные знаки, светофоры, пешеходные переходы и настоящая разметка: все ситуации вы отрабатываете здесь — до выезда в город и до экзамена.',
+    fac_signs_t:'Знаки и светофоры', fac_signs_x:'На площадке установлены работающие светофоры, знаки STOP, «уступи дорогу» и указатели направления.',
+    fac_marks_t:'Настоящая разметка', fac_marks_x:'Размеченные полосы, перекрёстки, пешеходные переходы и бордюры.',
+    fac_park_t:'Парковка и зоны манёвров', fac_park_x:'Места для остановки и площадка для упражнений на разворот.',
+    fac_exam_t:'Площадка подготовки к экзамену', fac_exam_x:'Площадка оборудована по экзаменационным требованиям — отрабатываете здесь и приходите на экзамен подготовленным.',
+    fac_instr_t:'Проверенные инструкторы', fac_instr_x:'Каждый инструктор проходит проверку администратора, рейтинг считается по реальным отзывам.',
+    fac_hours_t:'Часы работы',
+    tour_next:'Далее', tour_prev:'Назад', tour_skip:'Пропустить', tour_start:'Начать',
+    tour_replay:'📖 Посмотреть руководство снова',
+    tour1_t:'Добро пожаловать!', tour1_x:'TASH INDEX AVTODROM — площадка для практического обучения вождению и подготовки к экзамену.',
+    tour2_t:'1. Выберите занятие', tour2_x:'В разделе «Бронь» выберите категорию и длительность.\nЦена указана рядом с каждым вариантом.',
+    tour3_t:'2. Выберите инструктора', tour3_x:'Посмотрите рейтинг, опыт и отзывы — и выберите подходящего.',
+    tour4_t:'3. Дата и время', tour4_x:'Занятые часы закрываются автоматически — открыты только свободные.\nПосле отправки бронь подтверждает администратор.',
+    tour5_t:'4. Придёт напоминание', tour5_x:'За 1 час, 30 и 10 минут до занятия придёт сообщение в Telegram.\nТам вы нажимаете «Приду» или «Хочу отменить».',
+    tour6_t:'5. Оцените', tour6_x:'После занятия оцените инструктора по 5-балльной шкале.\nВаш отзыв войдёт в его рейтинг.',
     nav_faq:'Вопросы',
     faq_h:'Частые вопросы', faq_p:'О ценах, сроках, расположении и бронировании.',
     faq_prices:'Цены', faq_no_prices:'Цены пока не заданы. Свяжитесь с администратором.',
@@ -572,8 +645,8 @@ const I18N = {
     faq_q_hours:'Какой у вас график?', faq_a_hours:'Ежедневно с {from} до {to}.',
     faq_q_where:'Где вы находитесь?', faq_a_where:'{addr}\nДля точного маршрута нажмите «Открыть на карте» на главной странице.',
     faq_a_where_none:'Адрес пока не указан. Уточните через кнопку «Связаться» на главной.',
-    faq_q_exam:'Автодром находится вместе с экзаменационным центром?',
-    faq_a_exam:'Да. Наш автодром расположен на той же площадке, что и экзаменационный центр.\nТо есть экзамен вы сдаёте там же, где тренировались — площадка, знаки и маршруты будут вам знакомы.',
+    faq_q_exam:'Здесь сдают экзамен?',
+    faq_a_exam:'Нет. Это площадка ПОДГОТОВКИ к экзамену, а не экзаменационный центр.\nЗдесь вы тренируетесь: знаки, светофоры и разметка соответствуют экзаменационным требованиям.\nСам экзамен сдаётся в официальном экзаменационном центре.',
     faq_q_book:'Как забронировать?', faq_a_book:'Перейдите в раздел «Бронь»: выберите тип занятия, инструктора, дату и свободное время.\nПосле подтверждения администратором бронь перейдёт в статус «Подтверждено».',
     faq_q_cancel:'Могу ли я отменить бронь?',
     faq_a_cancel:'Да. Ещё не подтверждённая бронь отменяется сразу.\nДля подтверждённой брони вы отправляете запрос с указанием причины — администратор рассмотрит и ответит.',
@@ -815,6 +888,7 @@ function renderInstructors(){
   bindIns();
 }
 $('instructorSearch').oninput=renderInstructors;
+$('replayTour').onclick=()=>openTour(0);
 function showInstructor(id){
   const x=S.instructors.find(v=>String(v.id)===String(id)); if(!x) return;
   const name=iName(x);
@@ -1130,6 +1204,89 @@ function addrShort(){
   return (loc.address || S.settings?.address || 'Toshkent').split(',').slice(0, 2).join(',');
 }
 
+
+/* =========================================================================
+   INDEX AVTODROM BO'LIMI
+   Matn va sharoitlar ro'yxati admin sozlamalaridan keladi (`about_text`,
+   `facilities`). Sozlanmagan bo'lsa — standart ro'yxat ishlatiladi.
+   Standart ro'yxatdagi har bir band tekshirilgan fakt: maydonchadagi
+   belgilar/svetoforlar, maydonchaning imtihonga tayyorlov uchun jihozlanishi va ish vaqti.
+   ========================================================================= */
+function parseFacilities(raw){
+  // Admin bir qatorda bitta band yozadi:  🚦 Sarlavha | Tavsif
+  if (Array.isArray(raw)) return raw;
+  return String(raw || '').split('\n').map(l => l.trim()).filter(Boolean).map(line => {
+    const [left, ...rest] = line.split('|');
+    const head = left.trim();
+    const m = head.match(/^(\p{Extended_Pictographic}[\uFE0F\u200D\p{Extended_Pictographic}]*)\s*(.*)$/u);
+    return { icon: m ? m[1] : '•', title: m ? m[2] : head, text: rest.join('|').trim() };
+  });
+}
+function defaultFacilities(){
+  const ws = S.settings?.work_start || '07:00', we = S.settings?.work_end || '19:00';
+  return [
+    { icon:'🚦', title:t('fac_signs_t'),  text:t('fac_signs_x') },
+    { icon:'🛣️', title:t('fac_marks_t'),  text:t('fac_marks_x') },
+    { icon:'🅿️', title:t('fac_park_t'),   text:t('fac_park_x') },
+    { icon:'🏛️', title:t('fac_exam_t'),   text:t('fac_exam_x') },
+    { icon:'👨‍🏫', title:t('fac_instr_t'), text:t('fac_instr_x') },
+    { icon:'🕖', title:t('fac_hours_t'),  text:`${ws} — ${we}` },
+  ];
+}
+function renderAbout(){
+  const txt = $('aboutText'), box = $('facilities');
+  if (!txt || !box) return;
+  txt.textContent = S.settings?.about_text || t('about_default');
+  const list = parseFacilities(S.settings?.facilities);
+  const items = list.length ? list : defaultFacilities();
+  box.innerHTML = items.map(f => `
+    <div class="f"><i>${esc(f.icon || '•')}</i>
+      <div><b>${esc(f.title || '')}</b>${f.text ? `<span>${esc(f.text)}</span>` : ''}</div>
+    </div>`).join('');
+}
+
+/* =========================================================================
+   BIRINCHI KIRISHDA QO'LLANMA
+   Video emas: interfeys o'zgarsa eskirmaydi, ikkala tilda avtomatik ishlaydi
+   va Telegram ichida darhol ochiladi. Bir marta ko'rsatiladi, keyin
+   «Savollar» bo'limidan qayta ochish mumkin.
+   ========================================================================= */
+const TOUR_KEY = 'avtodrom_tour_v1';
+const TOUR = [
+  { ico:'🚗', t:'tour1_t', x:'tour1_x' },
+  { ico:'📚', t:'tour2_t', x:'tour2_x' },
+  { ico:'👨‍🏫', t:'tour3_t', x:'tour3_x' },
+  { ico:'🕐', t:'tour4_t', x:'tour4_x' },
+  { ico:'⏰', t:'tour5_t', x:'tour5_x' },
+  { ico:'⭐', t:'tour6_t', x:'tour6_x' },
+];
+let tourStep = 0;
+
+function renderTour(){
+  const s0 = TOUR[tourStep];
+  $('tIco').textContent = s0.ico;
+  $('tTitle').textContent = t(s0.t);
+  $('tText').textContent = t(s0.x);
+  $('tDots').innerHTML = TOUR.map((_, i) => `<i class="${i === tourStep ? 'on' : ''}"></i>`).join('');
+  $('tPrev').style.visibility = tourStep === 0 ? 'hidden' : 'visible';
+  $('tNext').textContent = tourStep === TOUR.length - 1 ? t('tour_start') : t('tour_next');
+}
+function openTour(step = 0){ tourStep = step; renderTour(); $('tour').classList.add('on'); }
+function closeTour(){
+  $('tour').classList.remove('on');
+  try { localStorage.setItem(TOUR_KEY, '1'); } catch (e) {}
+}
+$('tNext').onclick = () => { if (tourStep < TOUR.length - 1) { tourStep++; renderTour(); } else { closeTour(); go('book'); } };
+$('tPrev').onclick = () => { if (tourStep > 0) { tourStep--; renderTour(); } };
+$('tSkip').onclick = closeTour;
+$('tour').onclick = e => { if (e.target.id === 'tour') closeTour(); };
+
+function maybeOpenTour(){
+  let seen = false;
+  try { seen = localStorage.getItem(TOUR_KEY) === '1'; } catch (e) {}
+  if (!seen) openTour(0);
+}
+
 /* ---------------- Profil ---------------- */
 async function loadMe(){
   try{
@@ -1289,7 +1446,7 @@ function rerenderAll(){
   if(S.courses.length) renderCourses();
   renderTimes(); updateSummary();
   renderBookings(); renderNext(); renderReviewBanner();
-  renderProfile(); renderFaq(); adIndex=0; renderAd();
+  renderProfile(); renderFaq(); renderAbout(); if($('tour').classList.contains('on')) renderTour(); adIndex=0; renderAd();
   const loc=S.settings?.location||{};
   const parts=[loc.address||S.settings?.address, S.settings?.working_hours].filter(Boolean);
   $('addressText').textContent = parts.length ? parts.join(' · ') : t('addr_none');
@@ -1301,11 +1458,12 @@ document.addEventListener('click',e=>{ if(!e.target.closest('#langBtn,#langMenu'
 /* ---------------- Boot ---------------- */
 async function boot(){
   applyLang();
-  renderAd(); renderFaq();    // zaxira slayd va FAQ darhol ko'rinsin
+  renderAd(); renderFaq(); renderAbout();   // zaxira mazmun darhol ko'rinsin
   $('bookDate').min=todayTk(); $('bookDate').value=todayTk();
   await loadMe();
   await Promise.allSettled([loadSettings(),loadCourses(),loadInstructors(),loadBookings(),loadNotifications(),loadMedia()]);
   go(location.hash.slice(1)||'home');
+  maybeOpenTour();
 }
 setInterval(()=>{
   if(!S.profile) return;
