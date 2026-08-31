@@ -30,7 +30,8 @@ export async function registerCourseRoutes(
    * shuning uchun butun jadval qaytarilmaydi.
    */
   const PUBLIC_KEYS = ['system_name', 'contact_phone', 'address', 'working_hours', 'booking_enabled',
-                       'location', 'work_start', 'work_end', 'slot_step_min'];
+                       'location', 'work_start', 'work_end', 'slot_step_min',
+                       'about_text', 'facilities'];
 
   app.get('/api/settings', async (_request, reply) => {
     try {
