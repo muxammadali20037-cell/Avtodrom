@@ -121,14 +121,27 @@ export default async function handler(request: any, response: any) {
     const allowed = mediaType === 'video' ? VIDEO_TYPES : IMAGE_TYPES;
     if (!allowed.has(contentType)) throw new Error('Bu fayl turi qo‘llab-quvvatlanmaydi');
 
-    // Rasm uchun ikki maqsad bor: bosh sahifa foni va lokatsiya kartochkasi.
-    // Admin `slot` yuboradi ('home' | 'location'); yuborilmasa 'home'.
+    /**
+     * Media uchun to'rt maqsad:
+     *   home     — bosh sahifa hero foni (bitta rasm)
+     *   location — lokatsiya kartochkasi (bitta rasm)
+     *   guide    — video qo'llanma (bitta video)
+     *   gallery  — AVTODROM galereyasi (KO'P rasm va video)
+     *
+     * `admin_media.key` UNIQUE bo'lgani uchun galereyaning har bir elementiga
+     * noyob kalit beriladi: gallery_<vaqt>_<tasodif>. Shunda cheklov buzilmaydi
+     * va istalgancha element saqlanadi.
+     */
     const slot = String(body.slot || 'home').trim();
-    const mediaKey = mediaType === 'video'
-      ? 'guide_video'
-      : (slot === 'location' ? 'location_image' : 'home_image');
+    const mediaKey =
+      slot === 'gallery' ? `gallery_${Date.now()}_${randomUUID().slice(0, 8)}`
+      : mediaType === 'video' ? 'guide_video'
+      : slot === 'location' ? 'location_image'
+      : 'home_image';
+    // Galereya fayllari bitta papkada tursin
+    const folder = slot === 'gallery' ? 'gallery' : mediaKey;
     const baseName = fileName.replace(/\.[a-z0-9]{2,6}$/i, '');
-    const path = `${mediaKey}/${Date.now()}-${randomUUID()}-${baseName}${ext(fileName, contentType)}`;
+    const path = `${folder}/${Date.now()}-${randomUUID()}-${baseName}${ext(fileName, contentType)}`;
 
     const { url, key: serviceKey } = supabaseConfig();
     const maxFileSize = await ensureBucket(url, serviceKey);
@@ -180,6 +193,8 @@ export default async function handler(request: any, response: any) {
       path,
       storage_path: path,
       token,
+      key: mediaKey,
+      slot,
       upload_url: `${absolute}?token=${encodeURIComponent(token)}`,
       signed_url: absolute,
       public_url: publicUrl,
