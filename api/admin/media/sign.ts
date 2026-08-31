@@ -121,7 +121,12 @@ export default async function handler(request: any, response: any) {
     const allowed = mediaType === 'video' ? VIDEO_TYPES : IMAGE_TYPES;
     if (!allowed.has(contentType)) throw new Error('Bu fayl turi qo‘llab-quvvatlanmaydi');
 
-    const mediaKey = mediaType === 'video' ? 'guide_video' : 'home_image';
+    // Rasm uchun ikki maqsad bor: bosh sahifa foni va lokatsiya kartochkasi.
+    // Admin `slot` yuboradi ('home' | 'location'); yuborilmasa 'home'.
+    const slot = String(body.slot || 'home').trim();
+    const mediaKey = mediaType === 'video'
+      ? 'guide_video'
+      : (slot === 'location' ? 'location_image' : 'home_image');
     const baseName = fileName.replace(/\.[a-z0-9]{2,6}$/i, '');
     const path = `${mediaKey}/${Date.now()}-${randomUUID()}-${baseName}${ext(fileName, contentType)}`;
 
