@@ -46,7 +46,7 @@ button,input,select,textarea{font:inherit}.hidden{display:none!important}
 .wait{background:#fff4d7;color:#9a6800}.ok{background:#e5f7ed;color:#087f4f}.bad{background:#ffe8e8;color:#bd2525}.run{background:#e4f0ff;color:#1769aa}
 .muted{color:var(--muted)}
 .notice{padding:11px 13px;border-radius:11px;background:#eef8f3;color:var(--g);margin-bottom:12px;font-size:13px}
-.error{padding:11px;border-radius:11px;background:#fff0f0;color:var(--red);margin-bottom:12px}
+.error{padding:11px;border-radius:11px;background:#fff0f0;color:var(--red);margin-bottom:12px;white-space:pre-line}
 .supthread{width:100%;border:0;background:#fff;text-align:left;padding:12px;border-bottom:1px solid #edf1ef;cursor:pointer}
 .supthread:hover{background:#f7faf8}.supthread.on{background:#eaf7f0}
 .supthread b{display:block;font-size:13px}.supthread span{display:block;font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:3px}
@@ -618,7 +618,7 @@ function putWithProgress(url, file, onProgress){
     xhr.upload.onprogress=e=>{ if(e.lengthComputable) onProgress(Math.round(e.loaded/e.total*100)); };
     xhr.onload=()=> (xhr.status>=200&&xhr.status<300)
       ? resolve()
-      : reject(Object.assign(new Error(`Storage ${xhr.status}`),{status:xhr.status,body:String(xhr.responseText||'').slice(0,200)}));
+      : reject(Object.assign(new Error(`Storage ${xhr.status}`),{status:xhr.status,body:String(xhr.responseText||'').slice(0,300)}));
     xhr.onerror=()=>reject(Object.assign(new Error('NETWORK'),{status:0}));
     xhr.ontimeout=()=>reject(Object.assign(new Error('TIMEOUT'),{status:0}));
     xhr.timeout=15*60*1000;
@@ -651,7 +651,11 @@ $('uploadBtn').onclick=async()=>{
     try{
       await putWithProgress(sign.upload_url||sign.signed_url, f, p=>prog(`2/3 Yuklanmoqda… ${p}% (${humanSize(f.size)})`));
     }catch(e){
-      if(e.status===0) throw Error('Fayl yuklanmadi: internet uzildi yoki Supabase Storage CORS/limit bloklab qo‘ydi. Kichikroq fayl bilan sinab ko‘ring.');
+      // status 0 = brauzer javobni umuman ko'rmadi (CORS yoki tarmoq).
+      // Ko'pincha sabab: yuklash manzili noto'g'ri yoki bucket mavjud emas.
+      if(e.status===0) throw Error('Fayl Supabase Storage\'ga yetib bormadi. Sabab: manzil noto‘g‘ri, bucket yo‘q yoki internet uzildi.\nYuklash manzili: '+String(sign.upload_url||'').split('?')[0]);
+      if(e.status===400) throw Error(`Storage rad etdi (400): ${e.body||'token eskirgan bo‘lishi mumkin, qayta urinib ko‘ring'}`);
+      if(e.status===404) throw Error(`Bucket yoki manzil topilmadi (404). Supabase Storage'da "customer-media" bucket bormi?\n${e.body||''}`);
       if(e.status===413) throw Error(`Fayl juda katta (${humanSize(f.size)}). Supabase bucket chegarasini oshiring yoki faylni siqing.`);
       throw Error(`Storage xatosi ${e.status}: ${e.body||''}`);
     }
