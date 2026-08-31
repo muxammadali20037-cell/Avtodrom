@@ -22,20 +22,36 @@ export default async function handler(request:any,response:any){
     if(!path||!publicUrl)throw new Error('Media fayl ma’lumotlari to‘liq emas');
     if(path.startsWith(`${BUCKET}/`))path=path.slice(BUCKET.length+1);
     const slot=String(body.slot||'home').trim();
-    const key=mediaType==='video'?'guide_video':(slot==='location'?'location_image':'home_image');
-    if(!path.startsWith(`${key}/`))throw new Error('Media path noto‘g‘ri');
+    const isGallery=slot==='gallery';
+    // Galereya kaliti sign.ts da yaratiladi va shu yerga qaytariladi.
+    // Ixtiyoriy kalit qabul qilinmasin — shakli qat'iy tekshiriladi.
+    const key=isGallery
+      ? String(body.key||'').trim()
+      : (mediaType==='video'?'guide_video':(slot==='location'?'location_image':'home_image'));
+    if(isGallery && !/^gallery_[0-9]+_[a-z0-9]{4,}$/i.test(key)) throw new Error('Galereya kaliti noto‘g‘ri');
+    const folder=isGallery?'gallery':key;
+    if(!path.startsWith(`${folder}/`))throw new Error('Media path noto‘g‘ri');
     const {url}=supabaseConfig();
     const prefix=`${url}/storage/v1/object/public/${BUCKET}/`;
     if(!publicUrl.startsWith(prefix))throw new Error('Media URL noto‘g‘ri');
 
-    const old=await rest('admin_media',{query:`?key=eq.${encodeURIComponent(key)}&select=id,path`});
-    const patch=await rest('admin_media',{method:'PATCH',headers:{Prefer:'return=representation'},query:`?key=eq.${encodeURIComponent(key)}`,body:JSON.stringify({title,media_type:mediaType,path,public_url:publicUrl,is_active:true,updated_at:new Date().toISOString()})});
-    let media=Array.isArray(patch)?patch[0]:null;
-    if(!media){
-      const created=await rest('admin_media',{method:'POST',headers:{Prefer:'return=representation'},body:JSON.stringify({key,title,media_type:mediaType,path,public_url:publicUrl,is_active:true,sort_order:0})});
+    let media=null, previous=null;
+    if(isGallery){
+      // Galereya: har safar YANGI yozuv, eskisi o'chirilmaydi
+      const created=await rest('admin_media',{method:'POST',headers:{Prefer:'return=representation'},
+        body:JSON.stringify({key,title,media_type:mediaType,path,public_url:publicUrl,is_active:true,sort_order:Date.now()%100000})});
       media=Array.isArray(created)?created[0]:null;
+    }else{
+      // Bitta o'rinli media: mavjudi yangilanadi, eski fayl o'chiriladi
+      const old=await rest('admin_media',{query:`?key=eq.${encodeURIComponent(key)}&select=id,path`});
+      const patch=await rest('admin_media',{method:'PATCH',headers:{Prefer:'return=representation'},query:`?key=eq.${encodeURIComponent(key)}`,body:JSON.stringify({title,media_type:mediaType,path,public_url:publicUrl,is_active:true,updated_at:new Date().toISOString()})});
+      media=Array.isArray(patch)?patch[0]:null;
+      if(!media){
+        const created=await rest('admin_media',{method:'POST',headers:{Prefer:'return=representation'},body:JSON.stringify({key,title,media_type:mediaType,path,public_url:publicUrl,is_active:true,sort_order:0})});
+        media=Array.isArray(created)?created[0]:null;
+      }
+      previous=Array.isArray(old)?old[0]?.path:null;
     }
-    const previous=Array.isArray(old)?old[0]?.path:null;
     if(previous&&previous!==path){
       await fetch(`${url}/storage/v1/object/${BUCKET}/${previous}`,{method:'DELETE',headers:{apikey:String(process.env.SUPABASE_SERVICE_ROLE_KEY||''),Authorization:`Bearer ${String(process.env.SUPABASE_SERVICE_ROLE_KEY||'')}`}}).catch(()=>{});
     }
