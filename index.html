@@ -224,6 +224,20 @@ details.faq[open] summary{border-bottom:1px solid var(--line)}
 .tnav button{flex:1;border-radius:12px;padding:12px;font-weight:800;border:1px solid var(--line);background:#fff}
 .tnav .go{background:var(--brand);border-color:var(--brand);color:#fff}
 .tskip{border:0;background:transparent;color:var(--muted);font-size:12.5px;margin-top:12px;text-decoration:underline}
+
+.gal{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.gal button{position:relative;padding:0;border:0;border-radius:13px;overflow:hidden;aspect-ratio:1;background:#e8eaf6;cursor:pointer}
+.gal img{width:100%;height:100%;object-fit:cover;display:block}
+.gal .vid::after{content:"▶";position:absolute;inset:0;display:grid;place-items:center;font-size:26px;color:#fff;background:rgba(10,12,40,.35);text-shadow:0 2px 8px rgba(0,0,0,.5)}
+@media(max-width:680px){.gal{grid-template-columns:repeat(2,1fr);gap:7px}}
+.lb{display:none;position:fixed;inset:0;background:rgba(6,8,26,.96);z-index:220;align-items:center;justify-content:center}
+.lb.on{display:flex}
+.lbwrap{max-width:96vw;max-height:82vh;display:grid;place-items:center}
+.lbwrap img,.lbwrap video{max-width:96vw;max-height:82vh;border-radius:12px;display:block}
+.lbx{position:absolute;top:14px;right:16px;z-index:2;width:44px;height:44px;border:0;border-radius:50%;background:rgba(255,255,255,.14);color:#fff;font-size:26px;line-height:1}
+.lbnav{position:absolute;top:50%;transform:translateY(-50%);z-index:2;width:46px;height:46px;border:0;border-radius:50%;background:rgba(255,255,255,.14);color:#fff;font-size:30px;line-height:1}
+.lbprev{left:10px}.lbnext{right:10px}
+.lbcap{position:absolute;bottom:22px;left:0;right:0;text-align:center;color:#dfe2f5;font-size:13px;padding:0 20px}
 .hide{display:none!important}
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
 @media(max-width:900px){.grid{grid-template-columns:repeat(2,1fr)}}
@@ -361,6 +375,11 @@ details.faq[open] summary{border-bottom:1px solid var(--line)}
     </div>
   </div>
 
+  <div class="section hide" id="gallerySection">
+    <div class="section-head"><div><h2 data-i18n="gal_h"></h2><p data-i18n="gal_p"></p></div><span class="meta" id="galCount"></span></div>
+    <div id="gallery" class="gal"></div>
+  </div>
+
   <div class="section hide" id="mediaSection">
     <div class="section-head"><div><h2 id="mediaTitle" data-i18n="media_h"></h2><p data-i18n="media_p"></p></div></div>
     <div class="card" style="padding:14px"><video id="mediaVideo" controls playsinline style="width:100%;border-radius:13px"></video></div>
@@ -459,6 +478,13 @@ details.faq[open] summary{border-bottom:1px solid var(--line)}
 
 <div id="modal" class="modal"><div class="modal-box"><div class="modal-head"><h3 id="modalTitle"></h3><button class="close" id="modalClose">×</button></div><div id="modalBody" class="modal-body"></div></div></div>
 <div id="drawer" class="drawer"><div class="drawer-box"><div class="modal-head" style="padding:0 0 13px"><h3 data-i18n="notif_h"></h3><button class="close" id="drawerClose">×</button></div><div id="notifications"></div></div></div>
+<div class="lb" id="lightbox">
+  <button class="lbx" id="lbClose" aria-label="Yopish">×</button>
+  <button class="lbnav lbprev" id="lbPrev" aria-label="Oldingi">‹</button>
+  <div class="lbwrap" id="lbWrap"></div>
+  <button class="lbnav lbnext" id="lbNext" aria-label="Keyingi">›</button>
+  <div class="lbcap" id="lbCap"></div>
+</div>
 <div class="tour" id="tour"><div class="tbox">
   <div class="tico" id="tIco"></div>
   <h3 id="tTitle"></h3>
@@ -496,6 +522,7 @@ const TZ = 'Asia/Tashkent';
 const I18N = {
   uz: {
     brand:'AVTODROM', lang_uz:"O‘zbekcha", lang_ru:'Ruscha',
+    gal_h:'Avtodrom galereyasi', gal_p:'Maydoncha rasmlari va videolari.', gal_count:'{n} ta',
     about_h:'INDEX AVTODROM', about_p:'Maydoncha, sharoitlar va imkoniyatlar.',
     about_default:'TASH INDEX AVTODROM — haydashni amaliy o‘rganish uchun to‘liq jihozlangan maydoncha. Yo‘l belgilari, svetoforlar, piyoda o‘tish joylari va real yo‘l qatnovlari bilan: siz ko‘chaga chiqishdan va imtihonga borishdan oldin barcha vaziyatlarni shu yerda mashq qilasiz.',
     fac_signs_t:'Yo‘l belgilari va svetoforlar', fac_signs_x:'Maydonchada ishlaydigan svetoforlar, STOP, yo‘l berish va yo‘nalish belgilari o‘rnatilgan.',
@@ -617,6 +644,8 @@ const I18N = {
   },
   ru: {
     brand:'АВТОДРОМ', lang_uz:'Узбекский', lang_ru:'Русский',
+    gal_h:'Avtodrom galereyasi', gal_p:'Maydoncha rasmlari va videolari.', gal_count:'{n} ta',
+    gal_h:'Галерея автодрома', gal_p:'Фото и видео площадки.', gal_count:'{n} шт.',
     about_h:'INDEX AVTODROM', about_p:'Площадка, условия и возможности.',
     about_default:'TASH INDEX AVTODROM — полностью оборудованная площадка для практического обучения вождению. Дорожные знаки, светофоры, пешеходные переходы и настоящая разметка: все ситуации вы отрабатываете здесь — до выезда в город и до экзамена.',
     fac_signs_t:'Знаки и светофоры', fac_signs_x:'На площадке установлены работающие светофоры, знаки STOP, «уступи дорогу» и указатели направления.',
@@ -766,7 +795,7 @@ function setLang(l) {
 }
 
 const S = { profile:null, instructors:[], courses:[], bookings:[], notifications:[], settings:{},
-            course:null, time:'', busy:[], filter:'', reviewRating:5, reviewBooking:null, lastMsgId:null };
+            gallery:[], course:null, time:'', busy:[], filter:'', reviewRating:5, reviewBooking:null, lastMsgId:null };
 
 /* Xato matnini har qanday shakldan chiqarib oladi.
    Vercel 404 javobi {"error":{"code":"NOT_FOUND","message":"..."}} ko'rinishida
@@ -1287,6 +1316,65 @@ function maybeOpenTour(){
   if (!seen) openTour(0);
 }
 
+
+/* =========================================================================
+   AVTODROM GALEREYASI
+   Admin yuklagan rasm va videolar (`gallery_*` kalitli media).
+   Bosilganda to'liq ekranda ochiladi; strelkalar va klaviatura bilan aylanadi.
+   Videolar faqat ochilganda yuklanadi (preload=none) — Mini App tez qolsin.
+   ========================================================================= */
+let lbIndex = 0;
+
+function renderGallery(){
+  const box = $('gallery'), sec = $('gallerySection');
+  if (!box || !sec) return;
+  const items = S.gallery || [];
+  if (!items.length) { sec.classList.add('hide'); return; }
+  sec.classList.remove('hide');
+  $('galCount').textContent = t('gal_count', { n: items.length });
+  box.innerHTML = items.map((m, i) => {
+    const isVid = m.media_type === 'video';
+    return `<button data-gi="${i}" class="${isVid ? 'vid' : ''}" aria-label="${esc(m.title || '')}">
+      ${isVid
+        ? `<video src="${esc(m.public_url)}#t=0.5" muted playsinline preload="metadata"></video>`
+        : `<img src="${esc(m.public_url)}" alt="${esc(m.title || 'AVTODROM')}" loading="lazy">`}
+    </button>`;
+  }).join('');
+  box.querySelectorAll('[data-gi]').forEach(b => b.onclick = () => openLightbox(Number(b.dataset.gi)));
+}
+
+function renderLightbox(){
+  const items = S.gallery || [];
+  const m = items[lbIndex];
+  if (!m) return;
+  $('lbWrap').innerHTML = m.media_type === 'video'
+    ? `<video src="${esc(m.public_url)}" controls autoplay playsinline preload="none"></video>`
+    : `<img src="${esc(m.public_url)}" alt="${esc(m.title || 'AVTODROM')}">`;
+  $('lbCap').textContent = `${m.title || ''}${items.length > 1 ? `  ·  ${lbIndex + 1}/${items.length}` : ''}`;
+  const many = items.length > 1;
+  $('lbPrev').style.display = many ? '' : 'none';
+  $('lbNext').style.display = many ? '' : 'none';
+}
+function openLightbox(i){ lbIndex = i; renderLightbox(); $('lightbox').classList.add('on'); }
+function closeLightbox(){
+  $('lightbox').classList.remove('on');
+  $('lbWrap').innerHTML = '';   // videoni to'xtatadi
+}
+function stepLightbox(d){
+  const n = (S.gallery || []).length; if (!n) return;
+  lbIndex = (lbIndex + d + n) % n; renderLightbox();
+}
+$('lbClose').onclick = closeLightbox;
+$('lbPrev').onclick = () => stepLightbox(-1);
+$('lbNext').onclick = () => stepLightbox(1);
+$('lightbox').onclick = e => { if (e.target.id === 'lightbox') closeLightbox(); };
+document.addEventListener('keydown', e => {
+  if (!$('lightbox').classList.contains('on')) return;
+  if (e.key === 'Escape') closeLightbox();
+  if (e.key === 'ArrowLeft') stepLightbox(-1);
+  if (e.key === 'ArrowRight') stepLightbox(1);
+});
+
 /* ---------------- Profil ---------------- */
 async function loadMe(){
   try{
@@ -1358,6 +1446,9 @@ async function loadMedia(){
     const img=media.find(x=>x.key==='home_image'&&x.public_url);
     if(img){ const el=$('heroPhoto'), pre=new Image();
       pre.onload=()=>{ el.style.backgroundImage=`url("${img.public_url}")`; el.classList.add('on'); }; pre.src=img.public_url; }
+    S.gallery=media.filter(x=>String(x.key||'').startsWith('gallery_')&&x.public_url)
+      .sort((a,b)=>(a.sort_order??0)-(b.sort_order??0));
+    renderGallery();
     const lp=media.find(x=>x.key==='location_image'&&x.public_url);
     if(lp){ S.locationPhoto=lp.public_url; renderLocationBox(); }
     const v=media.find(x=>x.key==='guide_video'&&x.public_url);
@@ -1446,7 +1537,7 @@ function rerenderAll(){
   if(S.courses.length) renderCourses();
   renderTimes(); updateSummary();
   renderBookings(); renderNext(); renderReviewBanner();
-  renderProfile(); renderFaq(); renderAbout(); if($('tour').classList.contains('on')) renderTour(); adIndex=0; renderAd();
+  renderProfile(); renderFaq(); renderAbout(); renderGallery(); if($('tour').classList.contains('on')) renderTour(); adIndex=0; renderAd();
   const loc=S.settings?.location||{};
   const parts=[loc.address||S.settings?.address, S.settings?.working_hours].filter(Boolean);
   $('addressText').textContent = parts.length ? parts.join(' · ') : t('addr_none');
