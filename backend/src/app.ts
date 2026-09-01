@@ -7,12 +7,13 @@ import { registerBookingRoutes } from './booking-routes.js';
 import { registerInstructorRoutes } from './instructor-routes.js';
 import { registerInstructorRegistrationRoutes } from './instructor-registration-routes.js';
 import { handleInstructorStart } from './instructor-start.js';
-import { registerAdminPasswordRoutes, guard as requireAdmin, adminUser } from './admin-password-routes.js';
+import { registerAdminPasswordRoutes, guard as requireAdmin, adminUser, audit } from './admin-password-routes.js';
 import { registerContentRoutes } from './content-routes.js';
 import { registerCourseRoutes } from './courses-routes.js';
 import { registerReviewRoutes } from './review-routes.js';
 import { registerSupportRoutes } from './support-routes.js';
 import { sendDueReminders, handleReminderCallback } from './reminders.js';
+import { registerCashierRoutes } from './cashier-routes.js';
 
 const app = Fastify({ logger: true });
 const CUSTOMER_BOT_TOKEN = process.env.CUSTOMER_BOT_TOKEN || process.env.TELEGRAM_CUSTOMER_BOT_TOKEN || '';
@@ -66,6 +67,7 @@ await registerInstructorRegistrationRoutes(app, authenticateInstructor);
 await registerCourseRoutes(app, authenticateCustomer);
 await registerReviewRoutes(app, authenticateCustomer);
 await registerSupportRoutes(app, authenticateCustomer, requireAdmin, adminUser);
+await registerCashierRoutes(app, requireAdmin, adminUser, audit, authenticateInstructor);
 
 // IMPORTANT: admin-password-routes.ts is the single owner of the canonical
 // /api/admin/* endpoints. Do not register admin-routes.ts or
