@@ -1115,7 +1115,7 @@ function slotHtml(b){
   return `<div class="slot ${paid?'paid':''}">
     <div>
       <b>${esc(kHour(b.start_at))} · ${esc(name)}</b>
-      <div class="meta2">${esc(b.customer?.phone||'telefon yo‘q')} · 👨‍🏫 ${esc(who)} · ${esc(b.course?.name||'—')}
+      <div class="meta2">${esc(b.customer?.phone||'telefon yo‘q')} · 👨‍🏫 ${esc(who)} · ${esc(b.course?.name||'—')}${(b.hours||1)>1?` · <b>${esc(b.hours)} soat</b>`:''}
         ${b.source==='walk_in'?' · <span class="count">bronsiz</span>':''}</div>
     </div>
     <div class="right">
@@ -1136,8 +1136,9 @@ function payModal(bookingId){
     <div class="card" style="box-shadow:none;margin-bottom:14px">
       <b style="font-size:16px">${esc(uname(b.customer))}</b>
       <div class="muted" style="font-size:13px;margin-top:4px">
-        ${esc(kHour(b.start_at))} · ${esc(b.course?.name||'—')} · 👨‍🏫 ${esc(b.instructor?.profile?.full_name||'—')}
+        ${esc(kHour(b.start_at))} · ${esc(b.course?.name||'—')}${(b.hours||1)>1?` · <b>${esc(b.hours)} soat</b>`:''} · 👨‍🏫 ${esc(b.instructor?.profile?.full_name||'—')}
       </div>
+      ${(b.hours||1)>1&&b.course?.price?`<div class="muted" style="font-size:12px;margin-top:6px">Hisob: ${esc(money(b.course.price))} × ${esc(b.hours)} = <b>${esc(money(b.price))}</b></div>`:''}
     </div>
     <div class="field"><label>SUMMA (UZS) *</label><input id="pyAmount" class="input" type="number" min="0" step="1000" value="${esc(b.price||0)}"></div>
     <div class="field"><label>TO‘LOV TURI *</label>
@@ -1195,6 +1196,11 @@ $('kWalkIn').onclick = () => {
       <div class="field"><label>SANA *</label><input id="wDate" class="input" type="date" value="${esc(date)}"></div>
       <div class="field"><label>VAQT *</label><input id="wTime" class="input" type="time" step="900" value="${esc(new Date().toLocaleTimeString('en-GB',{timeZone:'Asia/Tashkent',hour:'2-digit',minute:'2-digit'}))}"></div>
     </div>
+    <div class="field"><label>NECHA SOAT *</label>
+      <select id="wHours" class="select">
+        <option value="1">1 soat</option><option value="2">2 soat</option>
+        <option value="3">3 soat</option><option value="4">4 soat</option>
+      </select></div>
     <div id="wAlert"></div>
     <div style="display:flex;gap:8px;margin-top:6px">
       <button class="btn" style="flex:1" id="wCancel">Bekor</button>
@@ -1212,7 +1218,8 @@ $('kWalkIn').onclick = () => {
     try{
       const d = await api('/api/admin/cashier/walk-in', { method:'POST', body: JSON.stringify({
         full_name: name, phone: $('wPhone').value.trim(),
-        instructor_id: $('wIns').value, course_id: $('wCrs').value, start_at: startAt.toISOString() }) });
+        instructor_id: $('wIns').value, course_id: $('wCrs').value,
+        hours: Number($('wHours').value) || 1, start_at: startAt.toISOString() }) });
       closeModal(); toast('Bron yaratildi');
       $('kDate').value = $('wDate').value;
       await loadCashier();
@@ -1238,6 +1245,7 @@ function receiptModal(r){
       <div class="row"><span>Mijoz</span><b>${esc(r.customer_name)}</b></div>
       ${r.customer_phone?`<div class="row"><span>Telefon</span><span>${esc(r.customer_phone)}</span></div>`:''}
       <div class="row"><span>Mashg‘ulot</span><span>${esc(r.course_name)}</span></div>
+      ${(r.hours||1)>1?`<div class="row"><span>Soat</span><b>${esc(r.hours)} soat</b></div>`:''}
       ${r.instructor_name?`<div class="row"><span>Instruktor</span><span>${esc(r.instructor_name)}</span></div>`:''}
       <div class="row"><span>Vaqt</span><b>${esc(r.starts_at_text)}</b></div>
       <div class="hr"></div>
