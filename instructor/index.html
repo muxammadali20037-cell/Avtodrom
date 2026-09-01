@@ -38,6 +38,16 @@ a{color:inherit;text-decoration:none}
 .rep .nm{flex:1;min-width:0}
 .rep .nm b{display:block;font-size:14px}
 .rep .nm span{display:block;font-size:12px;color:var(--muted);margin-top:2px}
+
+.segs{display:flex;background:var(--soft);border-radius:12px;padding:4px;gap:3px}
+.seg{flex:1;border:0;background:transparent;border-radius:9px;padding:11px 6px;font-weight:800;font-size:13px;color:#5b6091}
+.seg.on{background:#fff;color:var(--brand);box-shadow:0 2px 6px rgba(20,25,80,.12)}
+.chg{display:block;font-style:normal;font-size:10px;font-weight:800;margin-top:4px}
+.chg.up{color:var(--ok)}.chg.dn{color:var(--red)}.chg.fl{color:var(--muted)}
+.mbars{display:flex;align-items:flex-end;gap:4px;height:120px}
+.mbar{flex:1;min-width:6px;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:4px;height:100%}
+.mbar .v{width:100%;border-radius:5px 5px 0 0;background:linear-gradient(180deg,#4348C4,#2E3192);min-height:3px}
+.mbar small{font-size:8.5px;color:var(--muted);white-space:nowrap}
 .hide{display:none!important}
 
 /* ---------- karkas ---------- */
@@ -246,15 +256,28 @@ h2{font-size:20px;margin:0 0 3px}
 
 <!-- ============ KUNLIK HISOBOT ============ -->
 <section id="report" class="page">
-  <h2>Kunlik hisobot</h2><p class="sub">Qaysi kuni kim bilan ishlaganingiz.</p>
-  <div class="card" style="padding:12px">
+  <h2 id="repTitle">Hisobot</h2><p class="sub" id="repSub">Kunlik ko‘rsatkichlar</p>
+  <div class="segs" id="repSegs">
+    <button class="seg on" data-per="day">Kun</button>
+    <button class="seg" data-per="week">Hafta</button>
+    <button class="seg" data-per="month">Oy</button>
+    <button class="seg" data-per="year">Yil</button>
+  </div>
+  <div class="card" style="padding:12px;margin-top:12px">
     <input id="repDate" type="date" style="width:100%;min-height:var(--tap);border:1.5px solid #d9dcee;border-radius:13px;padding:12px;font-size:16px">
   </div>
   <div class="stats">
-    <div class="st ok"><span>Uchurdim</span><b id="rDone">0</b></div>
-    <div class="st"><span>Jami soat</span><b id="rHours">0</b></div>
+    <div class="st ok"><span>Uchurdim</span><b id="rDone">0</b><i id="rDoneD" class="chg"></i></div>
+    <div class="st"><span>Soat</span><b id="rHours">0</b><i id="rHoursD" class="chg"></i></div>
     <div class="st warn"><span>Kelmagan</span><b id="rNoShow">0</b></div>
   </div>
+  <div class="stats">
+    <div class="st"><span>Mijozlar</span><b id="rCust">0</b></div>
+    <div class="st"><span>Skanerlangan</span><b id="rScan">0</b></div>
+    <div class="st"><span>Jami bron</span><b id="rAll">0</b></div>
+  </div>
+  <div class="card"><b style="font-size:14px">Dinamika</b><div id="repChart" style="margin-top:10px"></div></div>
+  <div class="card" id="repHoursCard"><b style="font-size:14px">Qaysi soatlarda ishlagansiz</b><div id="repHours" style="margin-top:10px"></div></div>
   <div id="repList"></div>
 </section>
 
@@ -365,10 +388,10 @@ function showPanel(id){
   show(id);
   document.querySelectorAll('.nb').forEach(b => b.classList.toggle('on', b.dataset.p === id));
   if (id === 'reviews') loadReviews();
-  if (id === 'report') { if (!$('repDate').value) $('repDate').value = dayOf(new Date()); renderReport(); }
+  if (id === 'report') { if (!$('repDate').value) $('repDate').value = dayOf(new Date()); loadReport(); }
 }
 document.querySelectorAll('.nb').forEach(b => b.onclick = () => showPanel(b.dataset.p));
-$('repDate').addEventListener('change', renderReport);
+$('repDate').addEventListener('change', loadReport);
 
 /* --------------------- Ro'yxatdan o'tish --------------------- */
 function prefill(){
@@ -471,7 +494,7 @@ async function loadBookings(){
   try {
     const d = await api('/api/instructor/bookings');
     S.bookings = d.bookings || [];
-    renderBookings(); renderToday(); if($('repDate').value) renderReport();
+    renderBookings(); renderToday(); if($('repDate').value && S.rep) renderRepList();
   } catch (e) {
     const html = `<div class="alert a-err">${esc(e.message)}</div>`;
     $('bkList').innerHTML = html; $('todayList').innerHTML = html;
@@ -683,30 +706,116 @@ async function startFromScan(code){
    Bronlar allaqachon yuklangan — qayta so'rov yubormaymiz, shu ma'lumotdan
    tanlangan kunni ajratamiz.
    ========================================================================= */
+S.repPeriod = 'day'; S.rep = null;
+
+/* Davr tanlash */
+document.querySelectorAll('#repSegs .seg').forEach(b => b.onclick = () => {
+  document.querySelectorAll('#repSegs .seg').forEach(x => x.classList.remove('on'));
+  b.classList.add('on'); S.repPeriod = b.dataset.per; loadReport();
+});
+
+/**
+ * Hisobot serverdan keladi — yig'indi bazada hisoblanadi.
+ * Yillik davrda minglab bron bo'lishi mumkin, ularni telefonga
+ * tortish sekin va qator chegarasi tufayli natija ham noto'g'ri chiqardi.
+ */
+async function loadReport(){
+  const date = $('repDate').value || dayOf(new Date());
+  $('repChart').innerHTML = '<div class="empty">Yuklanmoqda…</div>';
+  try{
+    const d = await api(`/api/instructor/report?period=${encodeURIComponent(S.repPeriod)}&date=${encodeURIComponent(date)}`);
+    S.rep = d; renderReport();
+  }catch(e){
+    $('repChart').innerHTML = `<div class="alert a-err">${esc(e.message)}</div>`;
+    $('repList').innerHTML = '';
+  }
+}
+
+function chg(el, v){
+  const n = Number(v || 0);
+  el.textContent = n > 0 ? `▲ ${n}%` : n < 0 ? `▼ ${Math.abs(n)}%` : '— 0%';
+  el.className = 'chg ' + (n > 0 ? 'up' : n < 0 ? 'dn' : 'fl');
+}
+
 function renderReport(){
+  const d = S.rep; if (!d) return;
+  const t = d.totals || {}, c = d.change || {};
+  $('repTitle').textContent = `${d.label} hisobot`;
+  $('repSub').textContent = periodText(d);
+
+  $('rDone').textContent  = t.completed ?? 0;
+  $('rHours').textContent = ((Number(t.minutes || 0)) / 60).toFixed(1);
+  $('rNoShow').textContent = t.no_show ?? 0;
+  $('rCust').textContent  = t.customers ?? 0;
+  $('rScan').textContent  = t.scanned ?? 0;
+  $('rAll').textContent   = t.bookings ?? 0;
+  chg($('rDoneD'), c.completed);
+  chg($('rHoursD'), c.minutes);
+
+  renderRepChart(d.series || [], d.bucket);
+  renderRepHours(d.hours || []);
+  renderRepList();
+}
+
+function periodText(d){
+  const f = new Date(d.from), t = new Date(d.to.slice ? d.to : d.to);
+  const fmt = x => x.toLocaleDateString('uz-UZ', { timeZone: TZ, day: 'numeric', month: 'short' });
+  if (d.period === 'day') return fmt(f);
+  const last = new Date(new Date(d.to).getTime() - 864e5);
+  return `${fmt(f)} — ${fmt(last)}`;
+}
+
+/** Ustunlar: tugagan darslar soni. */
+function renderRepChart(series, bucket){
+  const box = $('repChart');
+  if (!series.length) { box.innerHTML = '<div class="empty">Bu davrda dars bo‘lmagan.</div>'; return; }
+  const max = Math.max(...series.map(s => Number(s.completed || 0)), 1);
+  const short = l => bucket === 'month' ? String(l).slice(5)
+                   : bucket === 'hour'  ? String(l).slice(11, 13)
+                   : String(l).slice(8);
+  box.innerHTML = `<div class="mbars">${series.map(s => `
+    <div class="mbar" title="${esc(s.label)}: ${esc(s.completed)} dars">
+      <div class="v" style="height:${Math.round(Number(s.completed||0)/max*100)}%"></div>
+      <small>${esc(short(s.label))}</small></div>`).join('')}</div>`;
+}
+
+function renderRepHours(hours){
+  const card = $('repHoursCard'), box = $('repHours');
+  if (!hours.length) { card.classList.add('hide'); return; }
+  card.classList.remove('hide');
+  const map = new Map(hours.map(h => [Number(h.hour), Number(h.bookings)]));
+  const max = Math.max(...hours.map(h => Number(h.bookings)), 1);
+  const cells = []; for (let h = 7; h <= 19; h++) cells.push({ h, n: map.get(h) || 0 });
+  box.innerHTML = `<div class="mbars" style="height:90px">${cells.map(c => `
+    <div class="mbar" title="${c.h}:00 — ${c.n}">
+      <div class="v" style="height:${Math.round(c.n/max*100)}%;${c.n?'':'opacity:.2'}"></div>
+      <small>${String(c.h).padStart(2,'0')}</small></div>`).join('')}</div>`;
+}
+
+/** Kunlik davrda har bir dars alohida ko'rinadi. Uzoq davrda ro'yxat berkitiladi. */
+function renderRepList(){
+  const box = $('repList');
+  if (S.repPeriod !== 'day') {
+    const cs = (S.rep?.courses || []);
+    box.innerHTML = cs.length
+      ? `<div class="card"><b style="font-size:14px">Mashg‘ulotlar bo‘yicha</b>
+         ${cs.map(c => `<div class="rep" style="margin-top:9px"><div class="nm"><b>${esc(c.name)}</b></div>
+           <span class="st-pill p-completed" style="margin:0">${esc(c.bookings)} ta</span></div>`).join('')}</div>`
+      : '';
+    return;
+  }
   const day = $('repDate').value || dayOf(new Date());
   const rows = S.bookings
     .filter(b => dayOf(b.start_at || b.booking_date) === day)
     .sort((a, b) => new Date(a.start_at || a.booking_date) - new Date(b.start_at || b.booking_date));
-
-  const done = rows.filter(b => b.status === 'completed');
-  const noShow = rows.filter(b => b.status === 'no_show');
-  const minutes = done.reduce((a, b) => a + Number(b.course?.duration_minutes || 0), 0);
-
-  $('rDone').textContent = done.length;
-  $('rHours').textContent = minutes ? (minutes / 60).toFixed(minutes % 60 ? 1 : 0) : '0';
-  $('rNoShow').textContent = noShow.length;
-
-  const box = $('repList');
-  box.innerHTML = rows.length ? rows.map(b => {
+  box.innerHTML = rows.length ? `<div style="margin-top:12px">${rows.map(b => {
     const st = b.status || 'pending';
     return `<div class="rep">
       <div class="tm">${esc(hhmm(b.start_at || b.booking_date))}</div>
       <div class="nm"><b>${esc(b.customer?.full_name || 'Mijoz')}</b>
         <span>${esc(b.course?.name || 'Mashg‘ulot')}${b.course?.duration_minutes ? ' · ' + esc(fmtDur(b.course.duration_minutes)) : ''}</span></div>
       <span class="st-pill p-${esc(st)}" style="margin:0">${esc(ST[st] || st)}</span>
-    </div>`;
-  }).join('') : '<div class="empty"><span class="big">📄</span>Bu kunda bron bo‘lmagan.</div>';
+    </div>`; }).join('')}</div>` : '';
 }
 
 /* ------------------------- Sharhlar ------------------------- */
