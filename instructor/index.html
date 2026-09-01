@@ -225,7 +225,7 @@ h2{font-size:20px;margin:0 0 3px}
   </button>
   <div class="stats">
     <div class="st"><span>Bugun</span><b id="sToday">0</b></div>
-    <div class="st warn"><span>Kutmoqda</span><b id="sPending">0</b></div>
+    <div class="st warn"><span>Admin kutmoqda</span><b id="sPending">0</b></div>
     <div class="st gold"><span>Reyting</span><b id="sRating">0</b></div>
   </div>
   <div id="todayList"></div>
@@ -491,8 +491,10 @@ function card(b, opts = {}){
   const now = Date.now(), s0 = new Date(when).getTime(), e0 = new Date(b.end_at || when).getTime();
   const isNow = st === 'in_progress' || (now >= s0 - 15 * 60000 && now <= e0);
 
+  /* Bronni QABUL QILISH yoki RAD ETISH instruktorda yo'q — buni Admin qiladi.
+     Kutilayotgan bron faqat ko'rinadi, tugmasiz. */
   let acts = '';
-  if (st === 'pending')     acts = `<div class="acts two"><button class="btn ok" data-a="accept" data-id="${esc(b.id)}">✓ Qabul</button><button class="btn bad" data-a="reject" data-id="${esc(b.id)}">✕ Rad etish</button></div>`;
+  if (st === 'pending')     acts = `<div class="note" style="margin:12px 15px 15px">⏳ Admin tasdiqlashini kutmoqda</div>`;
   if (st === 'confirmed')   acts = `<div class="acts"><button class="btn go" data-a="arrived" data-id="${esc(b.id)}">🚗 Mijoz keldi — darsni boshlash</button><button class="btn bad sm" data-a="no-show" data-id="${esc(b.id)}">🚫 Mijoz kelmadi</button></div>`;
   if (st === 'in_progress') acts = `<div class="acts"><button class="btn ok" data-a="departed" data-id="${esc(b.id)}">🏁 Darsni yakunlash</button></div>`;
 
@@ -536,23 +538,11 @@ function renderToday(){
 
 /* Amal tasdig'i — pastdan chiqadigan panel (mobil uchun qulay) */
 const CONFIRM = {
-  accept:   { t:'Bronni qabul qilasizmi?', x:'Mijozga tasdiq xabari boradi.', b:'✓ Qabul qilish', c:'ok' },
   arrived:  { t:'Mijoz keldimi?',          x:'Dars boshlangan deb belgilanadi.', b:'🚗 Ha, boshlash', c:'go' },
   departed: { t:'Darsni yakunlaysizmi?',   x:'Mijozga baholash so‘rovi boradi.', b:'🏁 Yakunlash', c:'ok' },
   'no-show':{ t:'Mijoz kelmadimi?',        x:'Bu holat hisobotda qayd etiladi.', b:'🚫 Kelmadi', c:'bad' },
 };
 function act(a, id){
-  if (a === 'reject') {
-    sheet(`<h2 style="margin:0 0 4px">Bronni rad etish</h2>
-      <p class="sub">Sabab mijozga ko‘rinadi.</p>
-      <div class="field"><label>SABAB</label><textarea id="rjReason" placeholder="Masalan: shu vaqtda band bo‘lib qoldim"></textarea></div>
-      <div class="acts two" style="padding:0">
-        <button class="btn" id="rjNo">Bekor</button>
-        <button class="btn bad" id="rjYes">✕ Rad etish</button></div>`);
-    $('rjNo').onclick = closeSheet;
-    $('rjYes').onclick = () => run(a, id, { reason: $('rjReason').value.trim() });
-    return;
-  }
   const c = CONFIRM[a] || { t:'Davom etasizmi?', x:'', b:'Ha', c:'go' };
   sheet(`<h2 style="margin:0 0 4px">${esc(c.t)}</h2><p class="sub">${esc(c.x)}</p>
     <div class="acts two" style="padding:0">
@@ -562,12 +552,12 @@ function act(a, id){
   $('cYes').onclick = () => run(a, id, {});
 }
 async function run(a, id, body){
-  const btn = $('cYes') || $('rjYes'); if (btn) { btn.disabled = true; btn.textContent = '…'; }
+  const btn = $('cYes'); if (btn) { btn.disabled = true; btn.textContent = '…'; }
   try {
     await api(`/api/instructor/bookings/${encodeURIComponent(id)}/${a}`, { method:'POST', body: JSON.stringify(body) });
     closeSheet();
-    toast({ accept:'Bron qabul qilindi', reject:'Bron rad etildi', arrived:'Dars boshlandi',
-            departed:'Dars yakunlandi', 'no-show':'Kelmagan deb belgilandi' }[a] || 'Saqlandi');
+    toast({ arrived:'Dars boshlandi', departed:'Dars yakunlandi',
+            'no-show':'Kelmagan deb belgilandi' }[a] || 'Saqlandi');
     await Promise.allSettled([loadBookings(), loadStats()]);
   } catch (e) { closeSheet(); alertBox(e.message); toast(e.message); }
 }
