@@ -1,6 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import { supabaseRest } from './supabase.js';
 import { loadBookingDetails, bookingMessage, inAppMessage, type BookingEvent } from './notify.js';
+import { periodRange } from './analytics-routes.js';
 import { sendBookingNotification } from './telegram.js';
 import type { TelegramWebAppUser } from './telegram.js';
 import { q, toProfile, findUserByTelegram, instructorProfileForUser, notifyUser } from './identity.js';
@@ -379,4 +380,57 @@ export async function registerInstructorRoutes(
    */
   app.post('/api/instructor/logout', async () => ({ ok: true }));
   app.get('/api/instructor/logout', async () => ({ ok: true }));
+
+  /**
+   * Instruktorning o'z hisoboti: kunlik / haftalik / oylik / yillik.
+   * Hisob bazada bajariladi (analytics_instructor) — yillik natija
+   * qator chegarasi tufayli buzilmasin.
+   */
+  app.get('/api/instructor/report', async (request, reply) => {
+    try {
+      const tgUser = await authenticate(request);
+      const profile = await profileForTelegram(tgUser);
+      const instructor = await approvedInstructor(profile);
+      if (!profile || !instructor) return reply.code(403).send({ ok: false, error: 'Instructor tasdiqlanmagan' });
+
+      const period = String((request.query as any)?.period || 'day');
+      const { from, to, bucket, label, anchor } = periodRange(period, (request.query as any)?.date);
+
+      // Oldingi davr bilan solishtirish
+      const span = to.getTime() - from.getTime();
+      const prevFrom = new Date(from.getTime() - span);
+      const call = (f: Date, t: Date) => supabaseRest<any>('rpc/analytics_instructor', {
+        method: 'POST',
+        body: JSON.stringify({
+          p_instructor: String(instructor.id),
+          p_from: f.toISOString(), p_to: t.toISOString(), p_bucket: bucket,
+        }),
+      });
+      const [cur, prev] = await Promise.all([call(from, to), call(prevFrom, from)]);
+
+      const t0 = cur?.totals || {}, p0 = prev?.totals || {};
+      const delta = (a: any, b: any) => {
+        const x = Number(a || 0), y = Number(b || 0);
+        if (!y) return x ? 100 : 0;
+        return Math.round(((x - y) / y) * 100);
+      };
+
+      return {
+        ok: true, period, label, anchor, bucket,
+        from: from.toISOString(), to: to.toISOString(),
+        totals: t0,
+        previous: p0,
+        change: {
+          completed: delta(t0.completed, p0.completed),
+          minutes: delta(t0.minutes, p0.minutes),
+          customers: delta(t0.customers, p0.customers),
+        },
+        series: cur?.series || [],
+        courses: cur?.courses || [],
+        hours: cur?.hours || [],
+      };
+    } catch (e) {
+      return reply.code(400).send({ ok: false, error: e instanceof Error ? e.message : 'Hisobot yuklanmadi' });
+    }
+  });
 }
