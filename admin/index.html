@@ -14,6 +14,18 @@ button,input,select,textarea{font:inherit}.hidden{display:none!important}
 .supmsg{max-width:78%;padding:9px 12px;border-radius:13px;margin:7px 0;font-size:13px;line-height:1.45;white-space:pre-wrap;word-break:break-word;background:#f2f5f3}
 .supmsg.admin{margin-left:auto;background:var(--g);color:#fff}
 .supmsg small{display:block;opacity:.7;font-size:9px;margin-top:4px}
+
+.hourrow{display:grid;grid-template-columns:78px 1fr;gap:12px;border-bottom:1px solid #edf1ef;padding:10px 0}
+.hourrow:last-child{border-bottom:0}
+.hourlab{font-weight:900;font-size:15px;color:var(--g);padding-top:9px}
+.hourlab small{display:block;font-weight:600;font-size:10px;color:var(--muted)}
+.slot{display:flex;justify-content:space-between;align-items:center;gap:12px;background:#f7f9fd;border:1px solid var(--line);border-radius:12px;padding:11px 13px;margin-bottom:7px;flex-wrap:wrap}
+.slot.paid{background:#eef8f2;border-color:#cfe8da}
+.slot b{display:block;font-size:14px}
+.slot .meta2{font-size:12px;color:var(--muted);margin-top:2px}
+.slot .right{display:flex;gap:7px;align-items:center;flex-wrap:wrap}
+.free{color:var(--muted);font-size:13px;padding:9px 2px}
+.rcp{font-family:ui-monospace,Menlo,monospace;font-weight:900;letter-spacing:.06em}
 .warn{padding:11px;border-radius:11px;background:#fff8e6;color:#8a6500;border:1px solid #ffe6a8;font-size:13px}
 .top{height:70px;background:#fff;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:20}
 .topin{height:100%;max-width:1500px;margin:auto;padding:0 20px;display:flex;align-items:center;justify-content:space-between}
@@ -53,6 +65,18 @@ button,input,select,textarea{font:inherit}.hidden{display:none!important}
 .supmsg{max-width:78%;padding:9px 12px;border-radius:13px;margin:7px 0;font-size:13px;line-height:1.45;white-space:pre-wrap;word-break:break-word;background:#f2f5f3}
 .supmsg.admin{margin-left:auto;background:var(--g);color:#fff}
 .supmsg small{display:block;opacity:.7;font-size:9px;margin-top:4px}
+
+.hourrow{display:grid;grid-template-columns:78px 1fr;gap:12px;border-bottom:1px solid #edf1ef;padding:10px 0}
+.hourrow:last-child{border-bottom:0}
+.hourlab{font-weight:900;font-size:15px;color:var(--g);padding-top:9px}
+.hourlab small{display:block;font-weight:600;font-size:10px;color:var(--muted)}
+.slot{display:flex;justify-content:space-between;align-items:center;gap:12px;background:#f7f9fd;border:1px solid var(--line);border-radius:12px;padding:11px 13px;margin-bottom:7px;flex-wrap:wrap}
+.slot.paid{background:#eef8f2;border-color:#cfe8da}
+.slot b{display:block;font-size:14px}
+.slot .meta2{font-size:12px;color:var(--muted);margin-top:2px}
+.slot .right{display:flex;gap:7px;align-items:center;flex-wrap:wrap}
+.free{color:var(--muted);font-size:13px;padding:9px 2px}
+.rcp{font-family:ui-monospace,Menlo,monospace;font-weight:900;letter-spacing:.06em}
 .warn{padding:11px;border-radius:11px;background:#fff8e6;color:#8a6500;border:1px solid #ffe6a8;margin-bottom:12px;font-size:13px}
 .empty{padding:25px;text-align:center;color:var(--muted)}
 .actions{display:flex;gap:5px;flex-wrap:wrap}
@@ -72,6 +96,20 @@ button,input,select,textarea{font:inherit}.hidden{display:none!important}
 pre.json{background:#f7faf8;border:1px solid var(--line);border-radius:8px;padding:8px;font-size:11px;max-width:320px;overflow:auto;margin:0}
 @media(max-width:1100px){.layout{grid-template-columns:1fr}.side{position:static;display:flex;overflow:auto;gap:3px}.nav{white-space:nowrap;width:auto}.stats{grid-template-columns:repeat(3,1fr)}.report{grid-template-columns:repeat(3,1fr)}}
 @media(max-width:720px){.layout{padding:10px}.topin{padding:0 10px}.grid2,.mediaGrid{grid-template-columns:1fr}.stats{grid-template-columns:1fr 1fr}.report{grid-template-columns:1fr 1fr}.head h1{font-size:22px}}
+
+@media print{
+  body *{visibility:hidden!important}
+  #receiptPaper,#receiptPaper *{visibility:visible!important}
+  #receiptPaper{position:absolute;left:0;top:0;width:76mm;padding:2mm;font-family:ui-monospace,Menlo,monospace;color:#000}
+  @page{size:80mm auto;margin:3mm}
+}
+#receiptPaper{width:76mm;margin:auto;font-family:ui-monospace,Menlo,monospace;color:#111;font-size:12px;line-height:1.45}
+#receiptPaper h3{text-align:center;margin:0 0 2px;font-size:15px;letter-spacing:.04em}
+#receiptPaper .c{text-align:center}
+#receiptPaper .hr{border-top:1px dashed #999;margin:7px 0}
+#receiptPaper .row{display:flex;justify-content:space-between;gap:8px}
+#receiptPaper .big{font-size:15px;font-weight:900}
+#receiptPaper .code{text-align:center;font-size:16px;font-weight:900;letter-spacing:.12em;margin-top:4px}
 </style>
 </head>
 <body>
@@ -96,6 +134,7 @@ pre.json{background:#f7faf8;border:1px solid var(--line);border-radius:8px;paddi
 <aside class="side">
   <button class="nav on" data-p="dashboard">⌂ Umumiy</button>
   <button class="nav" data-p="applications">📝 Arizalar <span id="appCount" class="count">0</span></button>
+  <button class="nav" data-p="cashier">💵 Kassa</button>
   <button class="nav" data-p="bookings">📋 Bronlar <span id="bookCount" class="count">0</span></button>
   <button class="nav" data-p="cancels">🚫 Bekor so‘rovlari <span id="cxCount" class="count">0</span></button>
   <button class="nav" data-p="instructors">👨‍🏫 Instruktorlar</button>
@@ -138,6 +177,22 @@ pre.json{background:#f7faf8;border:1px solid var(--line);border-radius:8px;paddi
       <input id="appSearch" class="search" placeholder="Ism, telefon, Telegram...">
     </div>
     <div class="tableWrap"><table class="table"><thead><tr><th>Ism</th><th>Telefon</th><th>Telegram</th><th>Tajriba</th><th>Izoh</th><th>Sana</th><th>Holat</th><th>Amal</th></tr></thead><tbody id="applicationRows"></tbody></table></div>
+  </div>
+</section>
+
+<section id="cashier" class="page">
+  <div class="head"><div><h1>💵 Kassa</h1><p>Instruktorni tanlang — o‘sha kunning soatma-soat jadvali chiqadi. To‘lovdan keyin chek QR bilan chop etiladi.</p></div>
+    <button class="btn" id="kRefresh">↻ Yangilash</button></div>
+
+  <div class="card">
+    <div class="toolbar">
+      <input id="kDate" type="date" class="input">
+      <select id="kInstructor" class="select" style="min-width:220px"><option value="">Barcha instruktorlar</option></select>
+      <input id="kSearch" class="search" placeholder="Mijoz ismi yoki telefon...">
+      <button class="btn primary" id="kWalkIn">+ Bronsiz mijoz</button>
+    </div>
+    <div id="kAlert"></div>
+    <div id="kGrid"></div>
   </div>
 </section>
 
@@ -361,7 +416,14 @@ function showLogin(){$('login').classList.remove('hidden');$('app').classList.ad
 function showApp(){$('login').classList.add('hidden');$('app').classList.remove('hidden')}
 
 /* ---------- Modal ---------- */
-function openModal(html){$('modalBody').innerHTML=html;$('modal').classList.add('open')}
+/* Ikki shaklda chaqirish mumkin:
+     openModal(html)              — faqat mazmun
+     openModal(title, html)       — sarlavha + mazmun  */
+function openModal(a,b){
+  const [title,html] = (b===undefined) ? [null,a] : [a,b];
+  $('modalBody').innerHTML = (title ? `<h3 style="margin:0 0 14px">${esc(title)}</h3>` : '') + html;
+  $('modal').classList.add('open');
+}
 function closeModal(){$('modal').classList.remove('open')}
 $('modal').onclick=e=>{if(e.target.id==='modal')closeModal()};
 
@@ -386,6 +448,7 @@ function showPage(id){
   if(id==='audit')loadAudit();
   if(id==='support')loadSupport();
   if(id==='cancels')loadCancels();
+  if(id==='cashier'){ if(!$('kDate').value) $('kDate').value=kToday(); fillCashierInstructors(); loadCashier(); }
 }
 document.querySelectorAll('.nav').forEach(x=>x.addEventListener('click',()=>showPage(x.dataset.p)));
 
@@ -888,6 +951,246 @@ $('supRefresh').onclick=()=>{ loadSupport(); if(S.supUser) openThread(S.supUser)
 $('supSearch').addEventListener('input',renderThreads);
 
 
+
+/* =========================================================================
+   KASSA
+   Barcha to'lovlar shu yerdan. Bron bilan kelgan ham, ko'chadan kelgan ham
+   bir xil: to'lov -> chek -> QR -> instruktor skanerlaydi.
+   ========================================================================= */
+S.kday = { date: '', bookings: [] };
+
+function kToday(){ return new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Tashkent'}).format(new Date()); }
+function kHour(v){ return v ? new Date(v).toLocaleTimeString('uz-UZ',{timeZone:'Asia/Tashkent',hour:'2-digit',minute:'2-digit'}) : '—'; }
+
+async function loadCashier(){
+  const date = $('kDate').value || kToday();
+  const ins = $('kInstructor').value;
+  $('kAlert').innerHTML = '';
+  $('kGrid').innerHTML = '<div class="empty">Yuklanmoqda…</div>';
+  try{
+    const d = await api(`/api/admin/cashier/day?date=${encodeURIComponent(date)}${ins?`&instructor_id=${encodeURIComponent(ins)}`:''}`);
+    S.kday = { date: d.date, bookings: d.bookings || [] };
+    renderCashier();
+  }catch(e){ $('kGrid').innerHTML = `<div class="error">${esc(e.message)}</div>`; }
+}
+
+function renderCashier(){
+  const q = ($('kSearch').value||'').toLowerCase();
+  let rows = S.kday.bookings;
+  if (q) rows = rows.filter(b => JSON.stringify({n:b.customer?.full_name,p:b.customer?.phone}).toLowerCase().includes(q));
+
+  if (!rows.length){
+    $('kGrid').innerHTML = '<div class="empty">Bu kunda bron yo‘q. Bronsiz mijoz kelsa «+ Bronsiz mijoz» tugmasini bosing.</div>';
+    return;
+  }
+  // soatlar bo'yicha guruhlash
+  const byHour = new Map();
+  for (const b of rows){
+    const h = kHour(b.start_at).slice(0,2) + ':00';
+    if (!byHour.has(h)) byHour.set(h, []);
+    byHour.get(h).push(b);
+  }
+  const hours = [...byHour.keys()].sort();
+  $('kGrid').innerHTML = hours.map(h => {
+    const list = byHour.get(h);
+    return `<div class="hourrow">
+      <div class="hourlab">${esc(h)}<small>${list.length} ta</small></div>
+      <div>${list.map(slotHtml).join('')}</div>
+    </div>`;
+  }).join('');
+  $('kGrid').querySelectorAll('[data-pay]').forEach(b => b.onclick = () => payModal(b.dataset.pay));
+  $('kGrid').querySelectorAll('[data-rcp]').forEach(b => b.onclick = () => showReceipt(b.dataset.rcp));
+}
+
+function slotHtml(b){
+  const paid = b.is_paid;
+  const name = uname(b.customer);
+  const who = b.instructor?.profile?.full_name || '—';
+  return `<div class="slot ${paid?'paid':''}">
+    <div>
+      <b>${esc(kHour(b.start_at))} · ${esc(name)}</b>
+      <div class="meta2">${esc(b.customer?.phone||'telefon yo‘q')} · 👨‍🏫 ${esc(who)} · ${esc(b.course?.name||'—')}
+        ${b.source==='walk_in'?' · <span class="count">bronsiz</span>':''}</div>
+    </div>
+    <div class="right">
+      <b style="color:var(--g)">${esc(money(b.price))}</b>
+      ${paid
+        ? `<span class="status ok">${esc(b.payment?.method==='card'?'Karta':'Naqd')} · to‘langan</span>
+           <button class="btn small" data-rcp="${esc(b.payment?.receipt_code||'')}">🧾 Chek</button>`
+        : `<button class="btn primary small" data-pay="${esc(b.id)}">💵 To‘lov qabul qilish</button>`}
+    </div>
+  </div>`;
+}
+
+/* ---------------- To'lov oynasi ---------------- */
+function payModal(bookingId){
+  const b = S.kday.bookings.find(x => String(x.id) === String(bookingId));
+  if (!b) return;
+  openModal('To‘lov qabul qilish', `
+    <div class="card" style="box-shadow:none;margin-bottom:14px">
+      <b style="font-size:16px">${esc(uname(b.customer))}</b>
+      <div class="muted" style="font-size:13px;margin-top:4px">
+        ${esc(kHour(b.start_at))} · ${esc(b.course?.name||'—')} · 👨‍🏫 ${esc(b.instructor?.profile?.full_name||'—')}
+      </div>
+    </div>
+    <div class="field"><label>SUMMA (UZS) *</label><input id="pyAmount" class="input" type="number" min="0" step="1000" value="${esc(b.price||0)}"></div>
+    <div class="field"><label>TO‘LOV TURI *</label>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px">
+        <button type="button" class="btn" id="pyCash" style="height:52px">💵 Naqd</button>
+        <button type="button" class="btn" id="pyCard" style="height:52px">💳 Karta</button>
+      </div></div>
+    <div class="field"><label>IZOH <span class="muted">(ixtiyoriy)</span></label><input id="pyNote" class="input"></div>
+    <div id="pyAlert"></div>
+    <div style="display:flex;gap:8px;margin-top:6px">
+      <button class="btn" style="flex:1" id="pyCancel">Bekor</button>
+      <button class="btn primary" style="flex:1" id="pySave" disabled>Chek chiqarish</button>
+    </div>`);
+
+  let method = '';
+  const pick = m => {
+    method = m;
+    $('pyCash').classList.toggle('primary', m==='cash');
+    $('pyCard').classList.toggle('primary', m==='card');
+    $('pySave').disabled = false;
+  };
+  $('pyCash').onclick = () => pick('cash');
+  $('pyCard').onclick = () => pick('card');
+  $('pyCancel').onclick = closeModal;
+  $('pySave').onclick = async () => {
+    $('pyAlert').innerHTML = '';
+    const amount = Number($('pyAmount').value);
+    if (!method) { $('pyAlert').innerHTML = '<div class="error">To‘lov turini tanlang</div>'; return; }
+    if (!Number.isFinite(amount) || amount <= 0) { $('pyAlert').innerHTML = '<div class="error">Summani kiriting</div>'; return; }
+    $('pySave').disabled = true; $('pySave').textContent = 'Saqlanmoqda…';
+    try{
+      const d = await api('/api/admin/cashier/pay', { method:'POST', body: JSON.stringify({
+        booking_id: bookingId, method, amount, note: $('pyNote').value.trim() }) });
+      closeModal(); toast('To‘lov qabul qilindi');
+      await loadCashier();
+      receiptModal(d.receipt);
+    }catch(e){ $('pyAlert').innerHTML = `<div class="error">${esc(e.message)}</div>`; }
+    finally{ $('pySave').disabled = false; $('pySave').textContent = 'Chek chiqarish'; }
+  };
+}
+
+/* ---------------- Bronsiz mijoz ---------------- */
+$('kWalkIn').onclick = () => {
+  const insOpts = S.instructors.filter(i => i.active).map(i =>
+    `<option value="${esc(i.id)}">${esc(iname(i))}</option>`).join('');
+  const crsOpts = S.courses.filter(c => c.is_active).map(c =>
+    `<option value="${esc(c.id)}" data-price="${esc(c.price)}">${esc(c.name)} — ${esc(money(c.price))}</option>`).join('');
+  const date = $('kDate').value || kToday();
+  openModal('Bronsiz mijoz', `
+    <div class="field"><label>ISM FAMILIYA *</label><input id="wName" class="input" autocomplete="off"></div>
+    <div class="field"><label>TELEFON</label><input id="wPhone" class="input" placeholder="+998901234567" autocomplete="off"></div>
+    <div class="field"><label>INSTRUKTOR *</label><select id="wIns" class="select">${insOpts||'<option value="">Faol instruktor yo‘q</option>'}</select></div>
+    <div class="field"><label>MASHG‘ULOT *</label><select id="wCrs" class="select">${crsOpts||'<option value="">Mashg‘ulot yo‘q</option>'}</select></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div class="field"><label>SANA *</label><input id="wDate" class="input" type="date" value="${esc(date)}"></div>
+      <div class="field"><label>VAQT *</label><input id="wTime" class="input" type="time" step="900" value="${esc(new Date().toLocaleTimeString('en-GB',{timeZone:'Asia/Tashkent',hour:'2-digit',minute:'2-digit'}))}"></div>
+    </div>
+    <div id="wAlert"></div>
+    <div style="display:flex;gap:8px;margin-top:6px">
+      <button class="btn" style="flex:1" id="wCancel">Bekor</button>
+      <button class="btn primary" style="flex:1" id="wSave">Yaratish va to‘lovga o‘tish</button>
+    </div>`);
+  $('wCancel').onclick = closeModal;
+  $('wSave').onclick = async () => {
+    $('wAlert').innerHTML = '';
+    const name = $('wName').value.trim();
+    if (name.length < 2) { $('wAlert').innerHTML = '<div class="error">Ismni kiriting</div>'; return; }
+    if (!$('wIns').value || !$('wCrs').value) { $('wAlert').innerHTML = '<div class="error">Instruktor va mashg‘ulotni tanlang</div>'; return; }
+    const startAt = new Date(`${$('wDate').value}T${$('wTime').value}:00+05:00`);
+    if (Number.isNaN(startAt.getTime())) { $('wAlert').innerHTML = '<div class="error">Sana yoki vaqt noto‘g‘ri</div>'; return; }
+    $('wSave').disabled = true;
+    try{
+      const d = await api('/api/admin/cashier/walk-in', { method:'POST', body: JSON.stringify({
+        full_name: name, phone: $('wPhone').value.trim(),
+        instructor_id: $('wIns').value, course_id: $('wCrs').value, start_at: startAt.toISOString() }) });
+      closeModal(); toast('Bron yaratildi');
+      $('kDate').value = $('wDate').value;
+      await loadCashier();
+      payModal(d.booking.id);
+    }catch(e){ $('wAlert').innerHTML = `<div class="error">${esc(e.message)}</div>`; }
+    finally{ $('wSave').disabled = false; }
+  };
+};
+
+/* ---------------- Chek ---------------- */
+async function showReceipt(code){
+  if (!code) return;
+  try{ const d = await api(`/api/admin/cashier/receipt/${encodeURIComponent(code)}`); receiptModal(d.receipt); }
+  catch(e){ notice(e.message); }
+}
+function receiptModal(r){
+  if (!r) return;
+  openModal('Chek', `
+    <div id="receiptPaper">
+      <h3>TASH INDEX AVTODROM</h3>
+      <div class="c" style="font-size:11px">${esc(S.settings?.find?.(x=>x.key==='address')?.value?.value || '')}</div>
+      <div class="hr"></div>
+      <div class="row"><span>Mijoz</span><b>${esc(r.customer_name)}</b></div>
+      ${r.customer_phone?`<div class="row"><span>Telefon</span><span>${esc(r.customer_phone)}</span></div>`:''}
+      <div class="row"><span>Mashg‘ulot</span><span>${esc(r.course_name)}</span></div>
+      ${r.instructor_name?`<div class="row"><span>Instruktor</span><span>${esc(r.instructor_name)}</span></div>`:''}
+      <div class="row"><span>Vaqt</span><b>${esc(r.starts_at_text)}</b></div>
+      <div class="hr"></div>
+      <div class="row big"><span>Summa</span><span>${esc(r.amount_text)}</span></div>
+      <div class="row"><span>To‘lov</span><span>${esc(r.method_text)}</span></div>
+      <div class="row"><span>Sana</span><span>${esc(r.paid_at_text)}</span></div>
+      <div class="hr"></div>
+      <div class="c" id="qrBox"></div>
+      <div class="code">${esc(r.code)}</div>
+      <div class="c" style="font-size:10px;margin-top:6px">Instruktorga ushbu chekni ko‘rsating</div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:16px">
+      <button class="btn" style="flex:1" id="rcClose">Yopish</button>
+      <button class="btn primary" style="flex:1" id="rcPrint">🖨 Chop etish</button>
+    </div>`);
+  drawQR(document.getElementById('qrBox'), r.code);
+  $('rcClose').onclick = closeModal;
+  $('rcPrint').onclick = () => window.print();
+}
+
+/* ---------------- QR ----------------
+   Kutubxona cdnjs dan bir marta yuklanadi va keshlanadi.
+   Yuklanmasa chek baribir yaroqli: kod katta harflar bilan bosiladi va
+   instruktor uni qo'lda kiritadi (alifboda chalkash 0/O/1/I yo'q). */
+let qrLib = null, qrLoading = null;
+function loadQR(){
+  if (qrLib) return Promise.resolve(qrLib);
+  if (qrLoading) return qrLoading;
+  qrLoading = new Promise(resolve => {
+    const s = document.createElement('script');
+    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js';
+    s.onload = () => { qrLib = window.qrcode || null; resolve(qrLib); };
+    s.onerror = () => resolve(null);
+    document.head.appendChild(s);
+    setTimeout(() => resolve(qrLib), 6000);
+  });
+  return qrLoading;
+}
+async function drawQR(box, text){
+  if (!box) return;
+  box.innerHTML = '<div style="font-size:10px;color:#888">QR tayyorlanmoqda…</div>';
+  const lib = await loadQR();
+  if (!lib) {
+    box.innerHTML = '<div style="font-size:10px;color:#888">QR yuklanmadi — kodni qo‘lda kiriting</div>';
+    return;
+  }
+  try{
+    const qr = lib(0, 'M');       // avtomatik o'lcham, o'rtacha xato tuzatish
+    qr.addData(String(text));
+    qr.make();
+    // 4 = modul o'lchami (nuqta kattaligi), 0 = chekda joy tejash uchun kichik hoshiya
+    box.innerHTML = qr.createSvgTag({ cellSize: 4, margin: 8, scalable: false });
+    const svg = box.querySelector('svg');
+    if (svg) { svg.style.width = '46mm'; svg.style.height = 'auto'; svg.style.display = 'block'; svg.style.margin = '0 auto'; }
+  }catch(e){
+    box.innerHTML = '<div style="font-size:10px;color:#888">QR chizilmadi — kodni qo‘lda kiriting</div>';
+  }
+}
+
 /* ---------- Bekor qilish so'rovlari ---------- */
 S.cancels=[];
 async function loadCancels(){
@@ -931,6 +1234,16 @@ async function cxDecide(id,act){
   }catch(e){ notice(e.message); }
 }
 $('cxRefresh').onclick=loadCancels;
+$('kRefresh').onclick=loadCashier;
+$('kDate').addEventListener('change',loadCashier);
+$('kInstructor').addEventListener('change',loadCashier);
+$('kSearch').addEventListener('input',renderCashier);
+function fillCashierInstructors(){
+  const cur=$('kInstructor').value;
+  $('kInstructor').innerHTML='<option value="">Barcha instruktorlar</option>'+
+    S.instructors.filter(i=>i.active).map(i=>`<option value="${esc(i.id)}">${esc(iname(i))}</option>`).join('');
+  if(cur) $('kInstructor').value=cur;
+}
 
 async function boot(){try{await api('/api/admin/me');showApp();await loadAll();await loadSupport();await loadCancels()}catch{showLogin()}}
 // Avtomatik yangilanish: modal ochiq bo'lsa yoki sozlama tahrirlanayotgan bo'lsa TO'XTAYDI.
