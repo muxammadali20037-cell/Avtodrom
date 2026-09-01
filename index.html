@@ -238,6 +238,14 @@ details.faq[open] summary{border-bottom:1px solid var(--line)}
 .lbnav{position:absolute;top:50%;transform:translateY(-50%);z-index:2;width:46px;height:46px;border:0;border-radius:50%;background:rgba(255,255,255,.14);color:#fff;font-size:30px;line-height:1}
 .lbprev{left:10px}.lbnext{right:10px}
 .lbcap{position:absolute;bottom:22px;left:0;right:0;text-align:center;color:#dfe2f5;font-size:13px;padding:0 20px}
+
+.hours{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.hours button{border:1.5px solid #d7dae9;background:#fff;border-radius:13px;padding:13px 4px;font-weight:900;
+ font-size:15px;color:var(--text);display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer}
+.hours button small{font-size:10px;font-weight:700;color:var(--muted)}
+.hours button.on{border-color:var(--brand);background:#f2f4fd;color:var(--brand);box-shadow:0 0 0 3px rgba(46,49,146,.09)}
+.hours button.on small{color:var(--brand)}
+.hours button:disabled{opacity:.4;cursor:not-allowed}
 .hide{display:none!important}
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
 @media(max-width:900px){.grid{grid-template-columns:repeat(2,1fr)}}
@@ -405,9 +413,14 @@ details.faq[open] summary{border-bottom:1px solid var(--line)}
 <section id="book" class="view hide">
   <div class="section-head"><div><h2 data-i18n="book_h"></h2><p data-i18n="book_p"></p></div></div>
   <div class="card booking-box">
-    <div class="steps"><div id="step1" class="step active" data-i18n="s1"></div><div id="step2" class="step" data-i18n="s2"></div><div id="step3" class="step" data-i18n="s3"></div><div id="step4" class="step" data-i18n="s4"></div></div>
+    <div class="steps"><div id="step1" class="step active" data-i18n="s1"></div><div id="step2" class="step" data-i18n="s2h"></div><div id="step3" class="step" data-i18n="s3i"></div><div id="step4" class="step" data-i18n="s4t"></div></div>
     <div id="bookAlert"></div>
     <div class="field full" style="margin-bottom:14px"><label data-i18n="l_course"></label><div id="courseList" class="courses"><div class="skeleton" style="height:60px"></div></div></div>
+    <div class="field full" style="margin-bottom:14px">
+      <label data-i18n="l_hours"></label>
+      <div id="hourPick" class="hours"></div>
+      <p class="meta" id="hoursHint" style="margin:8px 0 0"></p>
+    </div>
     <div class="form-grid">
       <div class="field full"><label data-i18n="l_instructor"></label><select id="bookInstructor"><option value="" data-i18n="loading"></option></select></div>
       <div class="field"><label data-i18n="l_date"></label><input id="bookDate" type="date"></div>
@@ -584,7 +597,9 @@ const I18N = {
     addr_map:'🗺 Xaritada ochish', addr_call:'📞 Bog‘lanish',
     addr_nophone:'Telefon raqami Admin panel sozlamalarida kiritilmagan',
     book_h:'Bron qilish', book_p:'4 bosqichda mashg‘ulot vaqtini belgilang.',
-    s1:'1. Mashg‘ulot', s2:'2. Instruktor', s3:'3. Sana', s4:'4. Vaqt',
+    s1:'1. Mashg‘ulot', s2h:'2. Soat', s3i:'3. Instruktor', s4t:'4. Vaqt',
+    l_hours:'2. Necha soat?', hours_hint:'Jami: {dur} · {sum}', hours_pick_course:'Avval mashg‘ulot turini tanlang.',
+    s2:'2. Instruktor', s3:'3. Sana', s4:'4. Vaqt',
     l_course:'1. Mashg‘ulot turi', l_instructor:'2. Instruktor', l_date:'3. Sana',
     l_note:'Izoh (ixtiyoriy)', l_time:'4. Bo‘sh vaqt',
     ph_note:'Masalan: birinchi mashg‘ulotim',
@@ -707,7 +722,9 @@ const I18N = {
     addr_map:'🗺 Открыть на карте', addr_call:'📞 Связаться',
     addr_nophone:'Номер телефона не указан в настройках админ-панели',
     book_h:'Бронирование', book_p:'Выберите время занятия за 4 шага.',
-    s1:'1. Занятие', s2:'2. Инструктор', s3:'3. Дата', s4:'4. Время',
+    s1:'1. Занятие', s2h:'2. Часы', s3i:'3. Инструктор', s4t:'4. Время',
+    l_hours:'2. Сколько часов?', hours_hint:'Итого: {dur} · {sum}', hours_pick_course:'Сначала выберите тип занятия.',
+    s2:'2. Инструктор', s3:'3. Дата', s4:'4. Время',
     l_course:'1. Тип занятия', l_instructor:'2. Инструктор', l_date:'3. Дата',
     l_note:'Комментарий (необязательно)', l_time:'4. Свободное время',
     ph_note:'Например: моё первое занятие',
@@ -795,7 +812,7 @@ function setLang(l) {
 }
 
 const S = { profile:null, instructors:[], courses:[], bookings:[], notifications:[], settings:{},
-            gallery:[], course:null, time:'', busy:[], filter:'', reviewRating:5, reviewBooking:null, lastMsgId:null };
+            gallery:[], course:null, hours:1, time:'', busy:[], filter:'', reviewRating:5, reviewBooking:null, lastMsgId:null };
 
 /* Xato matnini har qanday shakldan chiqarib oladi.
    Vercel 404 javobi {"error":{"code":"NOT_FOUND","message":"..."}} ko'rinishida
@@ -944,7 +961,7 @@ async function loadCourses(){
   try{
     const d=await api('/api/courses'); S.courses=d.courses||[];
     if(!S.courses.length){ $('courseList').innerHTML=`<div class="alert info">${esc(t('no_courses'))}</div>`; return; }
-    renderCourses();
+    renderCourses(); renderHours();
   }catch(e){ $('courseList').innerHTML=`<div class="alert err">${esc(e.message)}</div>`; }
 }
 function renderCourses(){
@@ -952,7 +969,48 @@ function renderCourses(){
     <button type="button" class="course ${S.course===c.id?'on':''}" data-course="${esc(c.id)}">
       <span><b>${esc(c.name)}</b><span class="sub">${esc(fmtDur(c.duration_minutes))}${c.description?' · '+esc(c.description):''}</span></span>
       <span class="price">${money(c.price)}</span></button>`).join('');
-  $('courseList').querySelectorAll('[data-course]').forEach(el=>el.onclick=()=>{ S.course=el.dataset.course; S.time=''; renderCourses(); onBookingChange(); });
+  $('courseList').querySelectorAll('[data-course]').forEach(el=>el.onclick=()=>{ S.course=el.dataset.course; S.time=''; renderCourses(); renderHours(); onBookingChange(); });
+}
+
+/* -------- Necha soat? --------
+   Kurs — bir birlik (odatda 1 soat). Mijoz nechta birlik olishini tanlaydi.
+   Davomiylik ham, narx ham shu songa ko'paytiriladi. Yakuniy hisobni
+   backend qayta bajaradi — bu yer faqat ko'rsatish uchun. */
+const HOUR_OPTIONS = [1, 2, 3, 4];
+
+function unitMinutes(){
+  const c = S.courses.find(x => x.id === S.course);
+  return Number(c?.duration_minutes || 60);
+}
+function totalMinutes(){ return unitMinutes() * (S.hours || 1); }
+function totalPrice(){
+  const c = S.courses.find(x => x.id === S.course);
+  return Number(c?.price || 0) * (S.hours || 1);
+}
+/** Ish vaqtidan uzun variantlar o'chiriladi. */
+function maxHoursAllowed(){
+  const { start, end } = workRange();
+  const unit = unitMinutes();
+  return Math.max(1, Math.min(HOUR_OPTIONS[HOUR_OPTIONS.length - 1], Math.floor((end - start) / unit)));
+}
+function renderHours(){
+  const box = $('hourPick'); if (!box) return;
+  const c = S.courses.find(x => x.id === S.course);
+  const limit = maxHoursAllowed();
+  if (S.hours > limit) S.hours = limit;
+  box.innerHTML = HOUR_OPTIONS.map(h => {
+    const off = h > limit;
+    const sub = c ? money(Number(c.price || 0) * h) : fmtDur(unitMinutes() * h);
+    return `<button type="button" data-h="${h}" class="${S.hours === h ? 'on' : ''}" ${off ? 'disabled' : ''}>
+      ${h} ${esc(t('hours'))}<small>${esc(sub)}</small></button>`;
+  }).join('');
+  box.querySelectorAll('[data-h]:not([disabled])').forEach(b => b.onclick = () => {
+    S.hours = Number(b.dataset.h); S.time = '';
+    renderHours(); onBookingChange();
+  });
+  $('hoursHint').textContent = c
+    ? t('hours_hint', { dur: fmtDur(totalMinutes()), sum: money(totalPrice()) })
+    : t('hours_pick_course');
 }
 
 /* ---------------- Bo'sh vaqt ---------------- */
@@ -985,7 +1043,7 @@ function renderTimes(){
   const box=$('timeGrid'), date=$('bookDate').value, ins=$('bookInstructor').value;
   const c=S.courses.find(x=>x.id===S.course);
   if(!date||!ins||!c){ box.innerHTML=''; $('availabilityHint').textContent=t('hint_pick'); return; }
-  const dur=c.duration_minutes, now=Date.now();
+  const dur=totalMinutes(), now=Date.now();
   const {end:closeMin}=workRange();
   box.innerHTML=slots().map(t=>{
     const st=tkDT(date,t), en=new Date(st.getTime()+dur*60000);
@@ -1001,20 +1059,28 @@ function renderTimes(){
 }
 function updateSteps(){
   $('step1').classList.toggle('active',!!S.course);
-  $('step2').classList.toggle('active',!!$('bookInstructor').value);
-  $('step3').classList.toggle('active',!!$('bookDate').value);
+  $('step2').classList.toggle('active',!!S.course);
+  $('step3').classList.toggle('active',!!$('bookInstructor').value && !!$('bookDate').value);
   $('step4').classList.toggle('active',!!S.time);
 }
+/** Xulosa uchun matn: kurs birligi 60 daqiqa bo'lsa oddiy «4 soat»,
+    aks holda takrorlamay «4 × 90 daq = 6 soat». */
+function durLabel(){
+  const unit = unitMinutes(), h = S.hours || 1, tot = fmtDur(totalMinutes());
+  if (unit === 60) return `${h} ${t('hours')}`;
+  return `${h} × ${fmtDur(unit)} = ${tot}`;
+}
+
 function updateSummary(){
   const c=S.courses.find(x=>x.id===S.course);
   const i=S.instructors.find(x=>String(x.id)===String($('bookInstructor').value));
   const d=$('bookDate').value;
   if(!c&&!i&&!S.time){ $('bookingSummary').textContent=t('sum_placeholder'); return; }
   $('bookingSummary').innerHTML=`<b>${esc(t('sum_title'))}</b><br>
-    📚 ${c?esc(c.name)+' · '+esc(c.duration_minutes)+' '+t('minutes'):t('sum_nocourse')}<br>
+    📚 ${c?esc(c.name)+' · '+esc(durLabel()):esc(t('sum_nocourse'))}<br>
     👨‍🏫 ${i?esc(iName(i)):esc(t('sum_noins'))}<br>
     📅 ${d?esc(fDate(d)):'—'} · 🕐 ${S.time?esc(S.time):esc(t('sum_notime'))}<br>
-    💵 <b>${c?money(c.price):'—'}</b>`;
+    💵 <b>${c?money(totalPrice()):'—'}</b>`;
 }
 $('bookDate').onchange=()=>{ S.time=''; onBookingChange(); };
 $('bookInstructor').onchange=()=>{ S.time=''; onBookingChange(); };
@@ -1029,10 +1095,10 @@ $('submitBooking').onclick=async()=>{
   const b=$('submitBooking'); b.disabled=true; b.textContent=t('submitting');
   try{
     await api('/api/bookings',{method:'POST',body:JSON.stringify({
-      instructor_id:$('bookInstructor').value, course_id:S.course,
+      instructor_id:$('bookInstructor').value, course_id:S.course, hours:S.hours,
       start_at:tkDT($('bookDate').value,S.time).toISOString(),
       customer_note:$('bookNote').value.trim()||null })});
-    $('bookNote').value=''; S.time=''; S.course=null; renderCourses();
+    $('bookNote').value=''; S.time=''; S.course=null; S.hours=1; renderCourses(); renderHours();
     await loadBookings(); toast(t('ok_booked')); go('bookings');
   }catch(e){ alertBox('bookAlert',e.message); }
   finally{ b.disabled=false; b.textContent=t('submit'); }
@@ -1062,14 +1128,14 @@ function renderBookings(){
   }
   box.innerHTML=rows.map(b=>{
     const st=b.status||'pending';
-    const mins=b.course?.duration_minutes||Math.round((new Date(b.end_at)-new Date(b.start_at))/60000)||0;
+    const mins=b.total_minutes||b.course?.duration_minutes||Math.round((new Date(b.end_at)-new Date(b.start_at))/60000)||0;
     const pendingReq = !!b.cancel_requested_at && !b.cancel_reviewed_at;
     const canCancel=['pending','confirmed'].includes(st) && !pendingReq;
     const canReview=st==='completed'&&!b.reviewed;
     return `<article class="card booking-card">
       <div class="booking-row">
         <div><span class="status ${esc(st)}">${esc(stLabel(st))}</span><h3>${esc(b.course?.name||t('lesson'))}</h3></div>
-        <b style="color:var(--brand);white-space:nowrap">${b.course?.price!=null?esc(money(b.course.price)):''}</b></div>
+        <b style="color:var(--brand);white-space:nowrap">${(b.total_price||b.course?.price)!=null?esc(money(b.total_price||b.course?.price)):''}</b></div>
       <div class="booking-info">
         <div class="info"><span>${esc(t('instructor'))}</span><b>${esc(iName(b.instructor))}</b></div>
         <div class="info"><span>${esc(t('date'))}</span><b>${esc(fDate(b.start_at))}</b></div>
