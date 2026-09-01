@@ -163,8 +163,14 @@ export async function registerInstructorRoutes(
    * arrived/departed alohida RPC orqali ketadi (atomik), bu esa
    * qabul qilish / rad etish / kelmadi uchun.
    */
+  /**
+   * Instruktor bronni QABUL QILMAYDI va RAD ETMAYDI — buni faqat Admin qiladi.
+   * Instruktor panelida kutilayotgan bron faqat KO'RINADI.
+   * Instruktorga qolgan yagona holat: tasdiqlangan bronga mijoz kelmasa,
+   * uni "kelmagan" deb belgilash (dars vaqti o'tib ketmasin).
+   * Dars boshlash/yakunlash alohida RPC orqali (arrived / departed).
+   */
   const INSTRUCTOR_TRANSITIONS: Record<string, string[]> = {
-    pending:   ['confirmed', 'rejected'],
     confirmed: ['no_show'],
   };
 
@@ -207,8 +213,15 @@ export async function registerInstructorRoutes(
     }
   }
 
-  app.post('/api/instructor/bookings/:id/accept', (req, reply) => changeStatus(req, reply, 'confirmed'));
-  app.post('/api/instructor/bookings/:id/reject', (req, reply) => changeStatus(req, reply, 'rejected'));
+  // accept / reject ATAYLAB YO'Q — bronni faqat Admin tasdiqlaydi yoki rad etadi.
+  // Eski panellar chaqirsa, sababi tushunarli bo'lsin:
+  const adminOnly = async (_req: any, reply: any) => reply.code(403).send({
+    ok: false,
+    error: 'Bronni qabul qilish yoki rad etish faqat Admin huquqida. Siz uni panelda kuzatib turasiz.',
+  });
+  app.post('/api/instructor/bookings/:id/accept', adminOnly);
+  app.post('/api/instructor/bookings/:id/reject', adminOnly);
+
   app.post('/api/instructor/bookings/:id/no-show', (req, reply) => changeStatus(req, reply, 'no_show'));
 
   /** Instruktorning o'z sharhlari — faqat admin tasdiqlaganlari ko'rinadi. */
