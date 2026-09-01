@@ -70,7 +70,7 @@ export async function adminUser() {
 }
 
 /** Audit log: har bir muhim admin amali yoziladi (talab 22-bo'lim). Yozib bo'lmasa oqim to'xtamaydi. */
-async function audit(adminId: string | null, action: string, entityType: string, entityId: string | null, oldData: unknown, newData: unknown) {
+export async function audit(adminId: string | null, action: string, entityType: string, entityId: string | null, oldData: unknown, newData: unknown) {
   try {
     await supabaseRest('admin_audit_logs', {
       method: 'POST',
