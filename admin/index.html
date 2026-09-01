@@ -3,19 +3,23 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>TASH INDEX AVTODROM</title>
+<title>AVTODROM INDEX — ADMIN</title>
 <style>
-:root{--g:#087f4f;--bg:#f4f7f5;--card:#fff;--line:#dfe7e2;--text:#13221b;--muted:#6c7c74;--red:#c62828;--blue:#1769aa;--gold:#b8860b;--shadow:0 8px 28px rgba(20,50,35,.08)}
+:root{/* TASH INDEX AVTODROM — logotip ranglari */
+ --g:#2E3192;--g2:#4348C4;--soft:#EEF0FB;
+ --bg:#f4f5fa;--card:#fff;--line:#e2e4f2;--text:#15173a;--muted:#6f739b;
+ --red:#c62828;--blue:#2457a6;--gold:#b8860b;--ok:#0d7a4a;
+ --shadow:0 8px 28px rgba(20,25,80,.08)}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,Arial,sans-serif}
 button,input,select,textarea{font:inherit}.hidden{display:none!important}
-.supthread{width:100%;border:0;background:#fff;text-align:left;padding:12px;border-bottom:1px solid #edf1ef;cursor:pointer}
-.supthread:hover{background:#f7faf8}.supthread.on{background:#eaf7f0}
+.supthread{width:100%;border:0;background:#fff;text-align:left;padding:12px;border-bottom:1px solid #eceef8;cursor:pointer}
+.supthread:hover{background:#f7f8fd}.supthread.on{background:#EEF0FB}
 .supthread b{display:block;font-size:13px}.supthread span{display:block;font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:3px}
 .supmsg{max-width:78%;padding:9px 12px;border-radius:13px;margin:7px 0;font-size:13px;line-height:1.45;white-space:pre-wrap;word-break:break-word;background:#f2f5f3}
 .supmsg.admin{margin-left:auto;background:var(--g);color:#fff}
 .supmsg small{display:block;opacity:.7;font-size:9px;margin-top:4px}
 
-.hourrow{display:grid;grid-template-columns:78px 1fr;gap:12px;border-bottom:1px solid #edf1ef;padding:10px 0}
+.hourrow{display:grid;grid-template-columns:78px 1fr;gap:12px;border-bottom:1px solid #eceef8;padding:10px 0}
 .hourrow:last-child{border-bottom:0}
 .hourlab{font-weight:900;font-size:15px;color:var(--g);padding-top:9px}
 .hourlab small{display:block;font-weight:600;font-size:10px;color:var(--muted)}
@@ -26,6 +30,36 @@ button,input,select,textarea{font:inherit}.hidden{display:none!important}
 .slot .right{display:flex;gap:7px;align-items:center;flex-wrap:wrap}
 .free{color:var(--muted);font-size:13px;padding:9px 2px}
 .rcp{font-family:ui-monospace,Menlo,monospace;font-weight:900;letter-spacing:.06em}
+
+.segs{display:inline-flex;background:var(--soft);border-radius:11px;padding:3px;gap:2px}
+.seg{border:0;background:transparent;border-radius:9px;padding:8px 13px;font-weight:800;font-size:12.5px;color:#5b6091;cursor:pointer}
+.seg.on{background:#fff;color:var(--g);box-shadow:0 2px 6px rgba(20,25,80,.1)}
+.kpis{display:grid;grid-template-columns:repeat(6,1fr);gap:11px;margin-bottom:15px}
+.kpi{background:#fff;border:1px solid var(--line);border-radius:15px;padding:14px}
+.kpi span{display:block;font-size:10px;color:var(--muted);font-weight:900;text-transform:uppercase;letter-spacing:.03em}
+.kpi b{display:block;font-size:25px;margin-top:6px;line-height:1;letter-spacing:-.02em}
+.kpi i{font-style:normal;font-size:11px;font-weight:800;margin-top:6px;display:inline-block;padding:2px 7px;border-radius:99px}
+.kpi i.up{background:#e7f6ee;color:var(--ok)}.kpi i.dn{background:#fdecec;color:var(--red)}.kpi i.fl{background:var(--soft);color:var(--muted)}
+.bars{display:flex;align-items:flex-end;gap:5px;height:170px;padding-top:8px}
+.bar{flex:1;min-width:8px;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:5px;height:100%}
+.bar .v{width:100%;border-radius:6px 6px 0 0;background:linear-gradient(180deg,var(--g2),var(--g));min-height:3px;transition:.2s}
+.bar .v:hover{filter:brightness(1.15)}
+.bar small{font-size:9px;color:var(--muted);white-space:nowrap;transform:rotate(-45deg);transform-origin:top left;height:26px}
+.pie{display:flex;gap:18px;align-items:center;flex-wrap:wrap}
+.legend{display:grid;gap:8px;font-size:13px}
+.legend div{display:flex;align-items:center;gap:8px}
+.legend i{width:12px;height:12px;border-radius:3px;flex:none}
+.rank{display:grid;gap:8px}
+.rankrow{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;background:#f7f8fd;border:1px solid var(--line);border-radius:11px;padding:10px 12px}
+.rankrow b{font-size:13.5px}
+.rankrow .met{font-size:11.5px;color:var(--muted);margin-top:2px}
+.rankbar{grid-column:1/-1;height:6px;border-radius:99px;background:#e4e7f5;overflow:hidden}
+.rankbar i{display:block;height:100%;background:linear-gradient(90deg,var(--g2),var(--g))}
+.inspick{display:flex;gap:8px;flex-wrap:wrap}
+.inspick button{border:1px solid var(--line);background:#fff;border-radius:12px;padding:11px 14px;font-weight:800;font-size:13px;cursor:pointer}
+.inspick button.on{background:var(--g);border-color:var(--g);color:#fff}
+@media(max-width:1100px){.kpis{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:700px){.kpis{grid-template-columns:repeat(2,1fr)}.bars{height:140px}}
 .warn{padding:11px;border-radius:11px;background:#fff8e6;color:#8a6500;border:1px solid #ffe6a8;font-size:13px}
 .top{height:70px;background:#fff;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:20}
 .topin{height:100%;max-width:1500px;margin:auto;padding:0 20px;display:flex;align-items:center;justify-content:space-between}
@@ -37,8 +71,8 @@ button,input,select,textarea{font:inherit}.hidden{display:none!important}
 .layout{max-width:1500px;margin:auto;display:grid;grid-template-columns:235px 1fr;gap:18px;padding:18px 20px 50px}
 .side{background:#fff;border:1px solid var(--line);border-radius:16px;padding:9px;height:max-content;position:sticky;top:88px}
 .nav{width:100%;border:0;background:#fff;text-align:left;padding:12px;border-radius:10px;cursor:pointer;font-weight:800;color:#45574e;margin-bottom:3px}
-.nav:hover,.nav.on{background:#eaf7f0;color:var(--g)}
-.count{background:#eaf7f0;color:var(--g);padding:2px 7px;border-radius:99px;font-size:11px}
+.nav:hover,.nav.on{background:#EEF0FB;color:var(--g)}
+.count{background:#EEF0FB;color:var(--g);padding:2px 7px;border-radius:99px;font-size:11px}
 .page{display:none}.page.on{display:block}
 .head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;margin-bottom:15px;flex-wrap:wrap}
 .head h1{margin:0 0 5px;font-size:27px}.head p{margin:0;color:var(--muted)}
@@ -52,21 +86,21 @@ button,input,select,textarea{font:inherit}.hidden{display:none!important}
 .search{min-width:260px;flex:1}
 .tableWrap{overflow:auto;border:1px solid var(--line);border-radius:12px}
 .table{width:100%;border-collapse:collapse;min-width:800px}
-.table th,.table td{padding:10px;border-bottom:1px solid #edf1ef;text-align:left;font-size:13px;vertical-align:top}
-.table th{font-size:10px;color:#66766e;text-transform:uppercase;background:#fafcfb;position:sticky;top:0}
+.table th,.table td{padding:10px;border-bottom:1px solid #eceef8;text-align:left;font-size:13px;vertical-align:top}
+.table th{font-size:10px;color:#66766e;text-transform:uppercase;background:#fafbfe;position:sticky;top:0}
 .status{display:inline-block;padding:5px 8px;border-radius:99px;font-size:11px;font-weight:900}
-.wait{background:#fff4d7;color:#9a6800}.ok{background:#e5f7ed;color:#087f4f}.bad{background:#ffe8e8;color:#bd2525}.run{background:#e4f0ff;color:#1769aa}
+.wait{background:#fff4d7;color:#9a6800}.ok{background:#e7f6ee;color:#0d7a4a}.bad{background:#ffe8e8;color:#bd2525}.run{background:#e4f0ff;color:#1769aa}
 .muted{color:var(--muted)}
 .notice{padding:11px 13px;border-radius:11px;background:#eef8f3;color:var(--g);margin-bottom:12px;font-size:13px}
 .error{padding:11px;border-radius:11px;background:#fff0f0;color:var(--red);margin-bottom:12px;white-space:pre-line}
-.supthread{width:100%;border:0;background:#fff;text-align:left;padding:12px;border-bottom:1px solid #edf1ef;cursor:pointer}
-.supthread:hover{background:#f7faf8}.supthread.on{background:#eaf7f0}
+.supthread{width:100%;border:0;background:#fff;text-align:left;padding:12px;border-bottom:1px solid #eceef8;cursor:pointer}
+.supthread:hover{background:#f7f8fd}.supthread.on{background:#EEF0FB}
 .supthread b{display:block;font-size:13px}.supthread span{display:block;font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:3px}
 .supmsg{max-width:78%;padding:9px 12px;border-radius:13px;margin:7px 0;font-size:13px;line-height:1.45;white-space:pre-wrap;word-break:break-word;background:#f2f5f3}
 .supmsg.admin{margin-left:auto;background:var(--g);color:#fff}
 .supmsg small{display:block;opacity:.7;font-size:9px;margin-top:4px}
 
-.hourrow{display:grid;grid-template-columns:78px 1fr;gap:12px;border-bottom:1px solid #edf1ef;padding:10px 0}
+.hourrow{display:grid;grid-template-columns:78px 1fr;gap:12px;border-bottom:1px solid #eceef8;padding:10px 0}
 .hourrow:last-child{border-bottom:0}
 .hourlab{font-weight:900;font-size:15px;color:var(--g);padding-top:9px}
 .hourlab small{display:block;font-weight:600;font-size:10px;color:var(--muted)}
@@ -77,6 +111,36 @@ button,input,select,textarea{font:inherit}.hidden{display:none!important}
 .slot .right{display:flex;gap:7px;align-items:center;flex-wrap:wrap}
 .free{color:var(--muted);font-size:13px;padding:9px 2px}
 .rcp{font-family:ui-monospace,Menlo,monospace;font-weight:900;letter-spacing:.06em}
+
+.segs{display:inline-flex;background:var(--soft);border-radius:11px;padding:3px;gap:2px}
+.seg{border:0;background:transparent;border-radius:9px;padding:8px 13px;font-weight:800;font-size:12.5px;color:#5b6091;cursor:pointer}
+.seg.on{background:#fff;color:var(--g);box-shadow:0 2px 6px rgba(20,25,80,.1)}
+.kpis{display:grid;grid-template-columns:repeat(6,1fr);gap:11px;margin-bottom:15px}
+.kpi{background:#fff;border:1px solid var(--line);border-radius:15px;padding:14px}
+.kpi span{display:block;font-size:10px;color:var(--muted);font-weight:900;text-transform:uppercase;letter-spacing:.03em}
+.kpi b{display:block;font-size:25px;margin-top:6px;line-height:1;letter-spacing:-.02em}
+.kpi i{font-style:normal;font-size:11px;font-weight:800;margin-top:6px;display:inline-block;padding:2px 7px;border-radius:99px}
+.kpi i.up{background:#e7f6ee;color:var(--ok)}.kpi i.dn{background:#fdecec;color:var(--red)}.kpi i.fl{background:var(--soft);color:var(--muted)}
+.bars{display:flex;align-items:flex-end;gap:5px;height:170px;padding-top:8px}
+.bar{flex:1;min-width:8px;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:5px;height:100%}
+.bar .v{width:100%;border-radius:6px 6px 0 0;background:linear-gradient(180deg,var(--g2),var(--g));min-height:3px;transition:.2s}
+.bar .v:hover{filter:brightness(1.15)}
+.bar small{font-size:9px;color:var(--muted);white-space:nowrap;transform:rotate(-45deg);transform-origin:top left;height:26px}
+.pie{display:flex;gap:18px;align-items:center;flex-wrap:wrap}
+.legend{display:grid;gap:8px;font-size:13px}
+.legend div{display:flex;align-items:center;gap:8px}
+.legend i{width:12px;height:12px;border-radius:3px;flex:none}
+.rank{display:grid;gap:8px}
+.rankrow{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;background:#f7f8fd;border:1px solid var(--line);border-radius:11px;padding:10px 12px}
+.rankrow b{font-size:13.5px}
+.rankrow .met{font-size:11.5px;color:var(--muted);margin-top:2px}
+.rankbar{grid-column:1/-1;height:6px;border-radius:99px;background:#e4e7f5;overflow:hidden}
+.rankbar i{display:block;height:100%;background:linear-gradient(90deg,var(--g2),var(--g))}
+.inspick{display:flex;gap:8px;flex-wrap:wrap}
+.inspick button{border:1px solid var(--line);background:#fff;border-radius:12px;padding:11px 14px;font-weight:800;font-size:13px;cursor:pointer}
+.inspick button.on{background:var(--g);border-color:var(--g);color:#fff}
+@media(max-width:1100px){.kpis{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:700px){.kpis{grid-template-columns:repeat(2,1fr)}.bars{height:140px}}
 .warn{padding:11px;border-radius:11px;background:#fff8e6;color:#8a6500;border:1px solid #ffe6a8;margin-bottom:12px;font-size:13px}
 .empty{padding:25px;text-align:center;color:var(--muted)}
 .actions{display:flex;gap:5px;flex-wrap:wrap}
@@ -93,7 +157,7 @@ button,input,select,textarea{font:inherit}.hidden{display:none!important}
 .modalback{display:none;position:fixed;inset:0;background:#00000055;z-index:80;align-items:center;justify-content:center;padding:16px}
 .modalback.open{display:flex}.modal{background:#fff;border-radius:18px;padding:20px;width:min(480px,100%);max-height:88vh;overflow:auto}
 .modal h3{margin:0 0 14px}
-pre.json{background:#f7faf8;border:1px solid var(--line);border-radius:8px;padding:8px;font-size:11px;max-width:320px;overflow:auto;margin:0}
+pre.json{background:#f7f8fd;border:1px solid var(--line);border-radius:8px;padding:8px;font-size:11px;max-width:320px;overflow:auto;margin:0}
 @media(max-width:1100px){.layout{grid-template-columns:1fr}.side{position:static;display:flex;overflow:auto;gap:3px}.nav{white-space:nowrap;width:auto}.stats{grid-template-columns:repeat(3,1fr)}.report{grid-template-columns:repeat(3,1fr)}}
 @media(max-width:720px){.layout{padding:10px}.topin{padding:0 10px}.grid2,.mediaGrid{grid-template-columns:1fr}.stats{grid-template-columns:1fr 1fr}.report{grid-template-columns:1fr 1fr}.head h1{font-size:22px}}
 
@@ -115,7 +179,21 @@ pre.json{background:#f7faf8;border:1px solid var(--line);border-radius:8px;paddi
 <body>
 <section id="login" class="login">
   <form id="loginForm" class="loginbox">
-    <div class="brand"><div class="logo">AI</div><div><b>AVTODROM — ADMIN</b><small>PRODUCTION ADMIN PANEL</small></div></div>
+    <div class="brand"><svg viewBox="0 0 200 200" width="42" height="42" xmlns="http://www.w3.org/2000/svg" style="flex:none">
+<defs><path id="aTop" d="M100,100 m-78,0 a78,78 0 0,1 156,0" fill="none"/></defs>
+<circle cx="100" cy="100" r="98" fill="#2E3192"/><circle cx="100" cy="100" r="90" fill="#fff"/>
+<circle cx="100" cy="100" r="82" fill="#2E3192"/><circle cx="100" cy="100" r="75" fill="#fff"/>
+<text font-size="13.5" font-weight="800" letter-spacing="2.4" fill="#2E3192"><textPath href="#aTop" startOffset="50%" text-anchor="middle">TASH INDEX AVTODROM</textPath></text>
+<g fill="#2E3192" transform="translate(100 78) scale(1.02)">
+<path d="M-40 6c1-9 5-16 9-20 3-3 9-5 31-5s28 2 31 5c4 4 8 11 9 20 1 6-2 9-7 9h-66c-5 0-8-3-7-9z"/>
+<path d="M-31 3c1-6 3-11 6-13 3-2 9-3 25-3s22 1 25 3c3 2 5 7 6 13z" fill="#fff"/>
+<rect x="-40" y="14" width="16" height="7" rx="3.5"/><rect x="24" y="14" width="16" height="7" rx="3.5"/>
+<path d="M-8 16h16l-3 6h-10z"/></g>
+<rect x="18" y="104" width="164" height="30" rx="4" fill="#2E3192"/>
+<text x="100" y="126" text-anchor="middle" font-size="25" font-weight="900" fill="#fff" letter-spacing="1.5">TASH INDEX</text>
+<rect x="30" y="139" width="140" height="26" rx="4" fill="#2E3192"/>
+<text x="100" y="158" text-anchor="middle" font-size="20" font-weight="900" fill="#fff" letter-spacing="1.2">AVTODROM</text>
+<text x="100" y="180" text-anchor="middle" font-size="13" font-weight="800" fill="#2E3192">2025</text></svg><div><b>TASH INDEX AVTODROM</b><small>PRODUCTION ADMIN PANEL</small></div></div>
     <h2>Admin panel</h2>
     <div id="loginError" class="error hidden"></div>
     <div class="field"><label>LOGIN</label><input id="loginUser" class="input" required autocomplete="username"></div>
@@ -126,13 +204,28 @@ pre.json{background:#f7faf8;border:1px solid var(--line);border-radius:8px;paddi
 
 <div id="app" class="hidden">
 <header class="top"><div class="topin">
-  <div class="brand"><div class="logo">AI</div><div><b>AVTODROM — ADMIN</b><small>ARIZA · BRON · INSTRUKTOR · NARX · TO‘LOV · HISOBOT</small></div></div>
+  <div class="brand"><svg viewBox="0 0 200 200" width="42" height="42" xmlns="http://www.w3.org/2000/svg" style="flex:none">
+<defs><path id="aTop" d="M100,100 m-78,0 a78,78 0 0,1 156,0" fill="none"/></defs>
+<circle cx="100" cy="100" r="98" fill="#2E3192"/><circle cx="100" cy="100" r="90" fill="#fff"/>
+<circle cx="100" cy="100" r="82" fill="#2E3192"/><circle cx="100" cy="100" r="75" fill="#fff"/>
+<text font-size="13.5" font-weight="800" letter-spacing="2.4" fill="#2E3192"><textPath href="#aTop" startOffset="50%" text-anchor="middle">TASH INDEX AVTODROM</textPath></text>
+<g fill="#2E3192" transform="translate(100 78) scale(1.02)">
+<path d="M-40 6c1-9 5-16 9-20 3-3 9-5 31-5s28 2 31 5c4 4 8 11 9 20 1 6-2 9-7 9h-66c-5 0-8-3-7-9z"/>
+<path d="M-31 3c1-6 3-11 6-13 3-2 9-3 25-3s22 1 25 3c3 2 5 7 6 13z" fill="#fff"/>
+<rect x="-40" y="14" width="16" height="7" rx="3.5"/><rect x="24" y="14" width="16" height="7" rx="3.5"/>
+<path d="M-8 16h16l-3 6h-10z"/></g>
+<rect x="18" y="104" width="164" height="30" rx="4" fill="#2E3192"/>
+<text x="100" y="126" text-anchor="middle" font-size="25" font-weight="900" fill="#fff" letter-spacing="1.5">TASH INDEX</text>
+<rect x="30" y="139" width="140" height="26" rx="4" fill="#2E3192"/>
+<text x="100" y="158" text-anchor="middle" font-size="20" font-weight="900" fill="#fff" letter-spacing="1.2">AVTODROM</text>
+<text x="100" y="180" text-anchor="middle" font-size="13" font-weight="800" fill="#2E3192">2025</text></svg><div><b>TASH INDEX AVTODROM</b><small>ARIZA · BRON · INSTRUKTOR · NARX · TO‘LOV · HISOBOT</small></div></div>
   <div class="tools"><span id="lastSync" class="muted" style="font-size:11px"></span><button class="btn" id="refreshBtn">↻ Yangilash</button><button class="btn red" id="logoutBtn">Chiqish</button></div>
 </div></header>
 
 <div class="layout">
 <aside class="side">
-  <button class="nav on" data-p="dashboard">⌂ Umumiy</button>
+  <button class="nav on" data-p="dashboard">📊 Dashboard</button>
+  <button class="nav" data-p="control">🎯 Instruktor nazorati</button>
   <button class="nav" data-p="applications">📝 Arizalar <span id="appCount" class="count">0</span></button>
   <button class="nav" data-p="cashier">💵 Kassa</button>
   <button class="nav" data-p="bookings">📋 Bronlar <span id="bookCount" class="count">0</span></button>
@@ -154,19 +247,42 @@ pre.json{background:#f7faf8;border:1px solid var(--line);border-radius:8px;paddi
 <div id="warnings"></div>
 
 <section id="dashboard" class="page on">
-  <div class="head"><div><h1>Umumiy boshqaruv</h1><p>Barcha asosiy ko‘rsatkichlar.</p></div></div>
-  <div class="stats">
-    <div class="stat"><span>MIJOZLAR</span><b id="sUsers">0</b></div>
-    <div class="stat"><span>FAOL INSTRUKTOR</span><b id="sInst">0</b></div>
-    <div class="stat"><span>KUTILAYOTGAN BRON</span><b id="sPending">0</b></div>
-    <div class="stat"><span>BUGUNGI BRON</span><b id="sToday">0</b></div>
-    <div class="stat"><span>O‘RTACHA REYTING</span><b id="sRating">0</b></div>
-    <div class="stat"><span>BUGUNGI TUSHUM</span><b id="sRevenue">0 so‘m</b></div>
+  <div class="head"><div><h1>📊 Dashboard</h1><p id="dPeriodLabel">Kunlik ko‘rsatkichlar</p></div>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <input id="dDate" type="date" class="input">
+      <div class="segs" id="dSegs">
+        <button class="seg on" data-per="day">Kunlik</button>
+        <button class="seg" data-per="week">Haftalik</button>
+        <button class="seg" data-per="month">Oylik</button>
+        <button class="seg" data-per="year">Yillik</button>
+      </div>
+    </div></div>
+  <div id="dAlert"></div>
+  <div class="kpis" id="dKpis"></div>
+  <div class="grid2">
+    <div class="card"><h3 style="margin-top:0">Dinamika</h3><div id="dChart"></div></div>
+    <div class="card"><h3 style="margin-top:0">To‘lov turlari</h3><div id="dPie"></div></div>
   </div>
-  <div class="grid2" style="margin-top:15px">
-    <div class="card"><h3>📝 Yangi arizalar</h3><div id="dashApps" class="empty">Yuklanmoqda...</div></div>
-    <div class="card"><h3>📋 So‘nggi bronlar</h3><div id="dashBookings" class="empty">Yuklanmoqda...</div></div>
+  <div class="grid2">
+    <div class="card"><h3 style="margin-top:0">Instruktorlar reytingi</h3><div id="dIns"></div></div>
+    <div class="card"><h3 style="margin-top:0">Soatlar bo‘yicha band-band</h3><div id="dHours"></div></div>
   </div>
+  <div class="card"><h3 style="margin-top:0">Mashg‘ulotlar bo‘yicha</h3><div id="dCourses"></div></div>
+</section>
+
+<section id="control" class="page">
+  <div class="head"><div><h1>🎯 Instruktor nazorati</h1><p>Instruktorni tanlang — nechta chek urilgan, soat nechada, qancha pul.</p></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <input id="cDate" type="date" class="input">
+      <div class="segs" id="cSegs">
+        <button class="seg on" data-per="day">Kun</button>
+        <button class="seg" data-per="week">Hafta</button>
+        <button class="seg" data-per="month">Oy</button>
+        <button class="seg" data-per="year">Yil</button>
+      </div>
+    </div></div>
+  <div class="card"><div id="ctlPicker" class="inspick"></div></div>
+  <div id="ctlBody"></div>
 </section>
 
 <section id="applications" class="page">
@@ -448,29 +564,15 @@ function showPage(id){
   if(id==='audit')loadAudit();
   if(id==='support')loadSupport();
   if(id==='cancels')loadCancels();
+  if(id==='dashboard'){ if(!$('dDate').value)$('dDate').value=kToday(); loadAnalytics(); }
+  if(id==='control'){ if(!$('cDate').value)$('cDate').value=kToday(); renderCtlPicker(); loadControl(); }
   if(id==='cashier'){ if(!$('kDate').value) $('kDate').value=kToday(); fillCashierInstructors(); loadCashier(); }
 }
 document.querySelectorAll('.nav').forEach(x=>x.addEventListener('click',()=>showPage(x.dataset.p)));
 
 /* ---------- Dashboard ---------- */
-function renderStats(){
-  const s=S.stats;
-  $('sUsers').textContent=s.customers??S.users.length;
-  $('sInst').textContent=s.instructors??0;
-  $('sPending').textContent=s.pendingBookings??S.bookings.filter(x=>x.status==='pending').length;
-  $('sToday').textContent=s.todayBookings??0;
-  $('sRating').textContent=s.averageRating??0;
-  $('sRevenue').textContent=money(s.paidToday||0);
-  $('appCount').textContent=S.applications.filter(x=>String(x.status).toUpperCase()==='PENDING').length;
-  $('bookCount').textContent=S.bookings.length;
-  $('revCount').textContent=S.reviews.filter(r=>r.status==='pending').length;
-}
-function renderDash(){
-  const pend=S.applications.filter(x=>String(x.status).toUpperCase()==='PENDING').slice(0,5);
-  $('dashApps').innerHTML=pend.length?pend.map(x=>`<div class="card"><b>${esc(uname(x))}</b><div class="muted">${esc(x.phone||'—')} · ${dt(x.created_at)}</div><div class="actions" style="margin-top:7px"><button class="btn small green" data-app-approve="${esc(x.id)}">Tasdiqlash</button><button class="btn small red" data-app-reject="${esc(x.id)}">Rad</button></div></div>`).join(''):'<div class="empty">Yangi ariza yo‘q.</div>';
-  $('dashBookings').innerHTML=S.bookings.length?S.bookings.slice(0,6).map(x=>`<div class="card"><b>${esc(uname(x.customer))}</b> · ${esc(iname(x.instructor))}<div class="muted">${dt(x.start_at)} · ${badge(x.status)}</div></div>`).join(''):'<div class="empty">Bron yo‘q.</div>';
-  bindAppButtons();
-}
+
+
 
 /* ---------- Arizalar ---------- */
 function renderApplications(){
@@ -879,7 +981,11 @@ async function loadAll(show){
     S.applications=a.applications||[];S.users=u.customers||[];S.reviews=r.reviews||[];
     S.settings=set.settings||[];S.courses=c.courses||[];S.payments=p.payments||[];
     showWarnings([...(b.warnings||[]),...(i.warnings||[])]);
-    renderStats();renderDash();renderApplications();renderBookings();renderInstructors();
+    // Yon menyudagi hisoblagichlar
+    $('appCount').textContent=S.applications.filter(x=>String(x.status).toUpperCase()==='PENDING').length;
+    $('bookCount').textContent=S.bookings.length;
+    $('revCount').textContent=S.reviews.filter(r=>r.status==='pending').length;
+    renderApplications();renderBookings();renderInstructors();
     renderUsers();renderCourses();renderPayments();renderReviews();fillInst();renderReport();loadSettings();
     $('lastSync').textContent='Yangilandi: '+new Date().toLocaleTimeString('uz-UZ',{timeZone:'Asia/Tashkent'});
     if(show)toast('Ma’lumotlar yangilandi');
@@ -1191,6 +1297,188 @@ async function drawQR(box, text){
   }
 }
 
+
+/* =========================================================================
+   DASHBOARD — kunlik / haftalik / oylik / yillik
+   Hisob bazada bajariladi (analytics_report), bu yerga tayyor yig'indi keladi.
+   ========================================================================= */
+S.an = null; S.anPeriod = 'day';
+const nf = n => new Intl.NumberFormat('uz-UZ').format(Number(n || 0));
+
+function segBind(wrap, onPick){
+  document.querySelectorAll(`#${wrap} .seg`).forEach(b => b.onclick = () => {
+    document.querySelectorAll(`#${wrap} .seg`).forEach(x => x.classList.remove('on'));
+    b.classList.add('on'); onPick(b.dataset.per);
+  });
+}
+
+async function loadAnalytics(){
+  const date = $('dDate').value || kToday();
+  $('dAlert').innerHTML = '';
+  $('dKpis').innerHTML = '<div class="empty" style="grid-column:1/-1">Yuklanmoqda…</div>';
+  try{
+    const d = await api(`/api/admin/analytics?period=${encodeURIComponent(S.anPeriod)}&date=${encodeURIComponent(date)}`);
+    S.an = d; renderAnalytics();
+  }catch(e){
+    $('dKpis').innerHTML = '';
+    $('dAlert').innerHTML = `<div class="error">${esc(e.message)}</div>`;
+  }
+}
+
+function renderAnalytics(){
+  const d = S.an; if (!d) return;
+  const t = d.totals || {}, ch = d.change || {};
+  $('dPeriodLabel').textContent = `${d.label} ko‘rsatkichlar`;
+
+  const arrow = v => v > 0 ? `<i class="up">▲ ${v}%</i>` : v < 0 ? `<i class="dn">▼ ${Math.abs(v)}%</i>` : `<i class="fl">— 0%</i>`;
+  const kpi = (label, value, delta) =>
+    `<div class="kpi"><span>${esc(label)}</span><b>${value}</b>${delta !== undefined ? arrow(delta) : ''}</div>`;
+
+  $('dKpis').innerHTML =
+      kpi('Tushum', nf(t.revenue) + ' so‘m', ch.revenue)
+    + kpi('Bronlar', nf(t.bookings), ch.bookings)
+    + kpi('Tugagan', nf(t.completed), ch.completed)
+    + kpi('Kelmagan', nf(t.no_show))
+    + kpi('Mijozlar', nf(t.customers), ch.customers)
+    + kpi('Soatlar', ((Number(t.minutes || 0)) / 60).toFixed(1));
+
+  renderBars(d.series || []);
+  renderPie(t);
+  renderInstructorRank(d.instructors || []);
+  renderHourBars(d.hours || []);
+  renderCourseTable(d.courses || []);
+}
+
+/** Ustunli grafik — tushum bo'yicha. */
+function renderBars(series){
+  const box = $('dChart');
+  if (!series.length) { box.innerHTML = '<div class="empty">Bu davrda ma’lumot yo‘q.</div>'; return; }
+  const max = Math.max(...series.map(s => Number(s.revenue || 0)), 1);
+  const short = l => String(l).length > 7 ? String(l).slice(5) : String(l);
+  box.innerHTML = `<div class="bars">${series.map(s => {
+    const h = Math.round((Number(s.revenue || 0) / max) * 100);
+    return `<div class="bar" title="${esc(s.label)} · ${nf(s.revenue)} so‘m · ${esc(s.bookings)} bron">
+      <div class="v" style="height:${h}%"></div><small>${esc(short(s.label))}</small></div>`;
+  }).join('')}</div>
+  <div class="muted" style="font-size:12px;margin-top:26px">Ustun balandligi — tushum. Ustma turing: bron soni ham chiqadi.</div>`;
+}
+
+/** Doiraviy diagramma — naqd va karta ulushi. */
+function renderPie(t){
+  const cash = Number(t.revenue_cash || 0), card = Number(t.revenue_card || 0), sum = cash + card;
+  const box = $('dPie');
+  if (!sum) { box.innerHTML = '<div class="empty">To‘lov yo‘q.</div>'; return; }
+  const pc = Math.round((cash / sum) * 100);
+  const R = 54, C = 2 * Math.PI * R;
+  box.innerHTML = `<div class="pie">
+    <svg width="140" height="140" viewBox="0 0 140 140">
+      <circle cx="70" cy="70" r="${R}" fill="none" stroke="#4348C4" stroke-width="22"/>
+      <circle cx="70" cy="70" r="${R}" fill="none" stroke="#0d7a4a" stroke-width="22"
+        stroke-dasharray="${(C * pc / 100).toFixed(1)} ${C.toFixed(1)}" transform="rotate(-90 70 70)"/>
+      <text x="70" y="66" text-anchor="middle" font-size="20" font-weight="900" fill="#15173a">${pc}%</text>
+      <text x="70" y="84" text-anchor="middle" font-size="10" fill="#6f739b">naqd</text>
+    </svg>
+    <div class="legend">
+      <div><i style="background:#0d7a4a"></i> Naqd — <b>${nf(cash)}</b></div>
+      <div><i style="background:#4348C4"></i> Karta — <b>${nf(card)}</b></div>
+      <div style="margin-top:4px;color:var(--muted)">Jami: <b>${nf(sum)} so‘m</b></div>
+    </div></div>`;
+}
+
+function renderInstructorRank(list){
+  const box = $('dIns');
+  if (!list.length) { box.innerHTML = '<div class="empty">Ma’lumot yo‘q.</div>'; return; }
+  const max = Math.max(...list.map(i => Number(i.revenue || 0)), 1);
+  box.innerHTML = `<div class="rank">${list.slice(0, 8).map(i => `
+    <div class="rankrow">
+      <div><b>${esc(i.name)}</b>
+        <div class="met">${nf(i.completed)} dars · ${((Number(i.minutes||0))/60).toFixed(1)} soat${Number(i.no_show)?` · ${nf(i.no_show)} kelmagan`:''}</div></div>
+      <b style="color:var(--g);white-space:nowrap">${nf(i.revenue)}</b>
+      <div class="rankbar"><i style="width:${Math.round(Number(i.revenue||0)/max*100)}%"></i></div>
+    </div>`).join('')}</div>`;
+}
+
+function renderHourBars(hours){
+  const box = $('dHours');
+  if (!hours.length) { box.innerHTML = '<div class="empty">Ma’lumot yo‘q.</div>'; return; }
+  const map = new Map(hours.map(h => [Number(h.hour), Number(h.bookings)]));
+  const from = 7, to = 19;
+  const max = Math.max(...hours.map(h => Number(h.bookings)), 1);
+  const cells = [];
+  for (let h = from; h <= to; h++) cells.push({ h, n: map.get(h) || 0 });
+  box.innerHTML = `<div class="bars">${cells.map(c => `
+    <div class="bar" title="${c.h}:00 — ${c.n} bron">
+      <div class="v" style="height:${Math.round(c.n / max * 100)}%;${c.n ? '' : 'opacity:.25'}"></div>
+      <small>${String(c.h).padStart(2,'0')}</small></div>`).join('')}</div>
+    <div class="muted" style="font-size:12px;margin-top:26px">Eng band soat: <b>${cells.reduce((a,b)=>b.n>a.n?b:a,{h:'—',n:0}).h}:00</b></div>`;
+}
+
+function renderCourseTable(list){
+  const box = $('dCourses');
+  if (!list.length) { box.innerHTML = '<div class="empty">Ma’lumot yo‘q.</div>'; return; }
+  box.innerHTML = `<div class="tableWrap"><table class="table">
+    <thead><tr><th>Mashg‘ulot</th><th>Bronlar</th><th>Tushum</th><th>Ulush</th></tr></thead><tbody>
+    ${(() => { const tot = list.reduce((a,c)=>a+Number(c.revenue||0),0) || 1;
+      return list.map(c => `<tr><td><b>${esc(c.name)}</b></td><td>${nf(c.bookings)}</td>
+        <td><b>${nf(c.revenue)}</b></td><td>${Math.round(Number(c.revenue||0)/tot*100)}%</td></tr>`).join(''); })()}
+    </tbody></table></div>`;
+}
+
+/* =========================================================================
+   INSTRUKTOR NAZORATI
+   ========================================================================= */
+S.ctlIns = null; S.ctlPeriod = 'day';
+
+function renderCtlPicker(){
+  const list = S.instructors || [];
+  $('ctlPicker').innerHTML = list.length
+    ? list.map(i => `<button data-ins="${esc(i.id)}" class="${S.ctlIns===String(i.id)?'on':''}">${esc(iname(i))}</button>`).join('')
+    : '<div class="empty">Instruktorlar yo‘q.</div>';
+  $('ctlPicker').querySelectorAll('[data-ins]').forEach(b => b.onclick = () => { S.ctlIns = b.dataset.ins; renderCtlPicker(); loadControl(); });
+}
+
+async function loadControl(){
+  if (!S.ctlIns) { $('ctlBody').innerHTML = '<div class="card empty">Yuqoridan instruktorni tanlang.</div>'; return; }
+  const date = $('cDate').value || kToday();
+  $('ctlBody').innerHTML = '<div class="card empty">Yuklanmoqda…</div>';
+  try{
+    const d = await api(`/api/admin/instructor-control/${encodeURIComponent(S.ctlIns)}?period=${encodeURIComponent(S.ctlPeriod)}&date=${encodeURIComponent(date)}`);
+    renderControl(d);
+  }catch(e){ $('ctlBody').innerHTML = `<div class="card"><div class="error">${esc(e.message)}</div></div>`; }
+}
+
+function renderControl(d){
+  const s0 = d.summary || {};
+  const kpi = (l, v) => `<div class="kpi"><span>${esc(l)}</span><b>${v}</b></div>`;
+  const rows = d.rows || [];
+  $('ctlBody').innerHTML = `
+    <div class="kpis">
+      ${kpi('Chek urilgan', nf(s0.receipts))}
+      ${kpi('Skanerlangan', nf(s0.scanned))}
+      ${kpi('Tugagan dars', nf(s0.completed))}
+      ${kpi('Kelmagan', nf(s0.no_show))}
+      ${kpi('Soatlar', ((Number(s0.minutes||0))/60).toFixed(1))}
+      ${kpi('Tushum', nf(s0.revenue))}
+    </div>
+    <div class="card">
+      <div class="muted" style="font-size:13px;margin-bottom:10px">
+        Naqd: <b>${nf(s0.cash)}</b> · Karta: <b>${nf(s0.card)}</b> · ${esc(d.label)} hisobot
+      </div>
+      <div class="tableWrap"><table class="table">
+        <thead><tr><th>Vaqt</th><th>Mijoz</th><th>Mashg‘ulot</th><th>Chek</th><th>Skaner</th><th>To‘lov</th><th>Holat</th></tr></thead>
+        <tbody>${rows.length ? rows.map(r => `<tr>
+          <td><b>${esc(dt(r.start_at).split(' ').pop())}</b><br><span class="muted" style="font-size:11px">${esc(dt(r.start_at).split(' ')[0])}</span></td>
+          <td><b>${esc(uname(r.customer))}</b><br><span class="muted" style="font-size:11px">${esc(r.customer?.phone||'')}</span></td>
+          <td>${esc(r.course?.name||'—')}<br><span class="muted" style="font-size:11px">${r.duration_minutes?esc(fmtDur(r.duration_minutes)):''}</span></td>
+          <td>${r.receipt_code?`<span class="rcp">${esc(r.receipt_code)}</span>`:'<span class="muted">—</span>'}</td>
+          <td>${r.scanned?`<span class="status ok">✓ ${esc(dt(r.scanned_at).split(' ').pop())}</span>`:'<span class="muted">—</span>'}</td>
+          <td>${r.amount?`<b>${nf(r.amount)}</b><br><span class="muted" style="font-size:11px">${r.method==='card'?'karta':'naqd'}</span>`:'<span class="muted">—</span>'}</td>
+          <td>${badge(r.status)}</td></tr>`).join('')
+          : '<tr><td colspan="7" class="empty">Bu davrda dars bo‘lmagan.</td></tr>'}
+        </tbody></table></div>
+    </div>`;
+}
+
 /* ---------- Bekor qilish so'rovlari ---------- */
 S.cancels=[];
 async function loadCancels(){
@@ -1235,6 +1523,10 @@ async function cxDecide(id,act){
 }
 $('cxRefresh').onclick=loadCancels;
 $('kRefresh').onclick=loadCashier;
+segBind('dSegs', p => { S.anPeriod = p; loadAnalytics(); });
+segBind('cSegs', p => { S.ctlPeriod = p; loadControl(); });
+$('dDate').addEventListener('change', loadAnalytics);
+$('cDate').addEventListener('change', loadControl);
 $('kDate').addEventListener('change',loadCashier);
 $('kInstructor').addEventListener('change',loadCashier);
 $('kSearch').addEventListener('input',renderCashier);
@@ -1245,7 +1537,7 @@ function fillCashierInstructors(){
   if(cur) $('kInstructor').value=cur;
 }
 
-async function boot(){try{await api('/api/admin/me');showApp();await loadAll();await loadSupport();await loadCancels()}catch{showLogin()}}
+async function boot(){try{await api('/api/admin/me');showApp();if(!$('dDate').value)$('dDate').value=kToday();await loadAll();await Promise.allSettled([loadAnalytics(),loadSupport(),loadCancels()])}catch{showLogin()}}
 // Avtomatik yangilanish: modal ochiq bo'lsa yoki sozlama tahrirlanayotgan bo'lsa TO'XTAYDI.
 setInterval(()=>{
   if($('app').classList.contains('hidden')) return;
