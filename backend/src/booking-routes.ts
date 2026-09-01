@@ -60,6 +60,11 @@ function shapeBooking(row: any) {
     // bo'lishi mumkin — shunda booking_date ga tushamiz.
     start_at: row.start_at ?? row.booking_date ?? null,
     end_at: row.end_at ?? null,
+    /* Soat soni bilan hisoblangan qiymatlar — frontend qayta hisoblamasin.
+       Kurs bir birlik (odatda 60 daqiqa), hours esa nechta birlik olingani. */
+    hours: Number(row.hours ?? 1),
+    total_minutes: Number(row.course?.duration_minutes ?? 0) * Number(row.hours ?? 1) || null,
+    total_price: Number(row.course?.price ?? 0) * Number(row.hours ?? 1) || 0,
     instructor: row.instructor
       ? { ...row.instructor, profile: { first_name, last_name, phone: insUser?.phone ?? null } }
       : null,
@@ -241,9 +246,14 @@ export async function registerBookingRoutes(
       if (user.is_blocked) return reply.code(403).send({ ok: false, error: 'Hisobingiz bloklangan' });
 
       const body = (request.body ?? {}) as {
-        instructor_id?: string; course_id?: string;
+        instructor_id?: string; course_id?: string; hours?: number;
         start_at?: string; end_at?: string; customer_note?: string;
       };
+      // Necha birlik (soat) olinayotgani. Kurs — bir birlik, narx soatlik.
+      const hours = Math.trunc(Number(body.hours ?? 1));
+      if (!Number.isInteger(hours) || hours < 1 || hours > 8) {
+        return reply.code(400).send({ ok: false, error: 'Soat soni 1 dan 8 gacha bo‘lishi kerak' });
+      }
       if (!body.instructor_id) return reply.code(400).send({ ok: false, error: 'Instruktorni tanlang' });
       if (!body.course_id) return reply.code(400).send({ ok: false, error: 'Mashg‘ulot turini tanlang' });
       if (!body.start_at) return reply.code(400).send({ ok: false, error: 'start_at majburiy' });
@@ -262,9 +272,11 @@ export async function registerBookingRoutes(
       const course = courses[0];
       if (!course) return reply.code(400).send({ ok: false, error: 'Mashg‘ulot topilmadi yoki faol emas' });
 
-      // end_at har doim serverda, kurs davomiyligidan hisoblanadi —
-      // frontend o'zi hisoblab yuborsa ham ishonilmaydi (narx/vaqt authoritative = backend).
-      const end = body.end_at ? new Date(body.end_at) : new Date(start.getTime() + course.duration_minutes * 60000);
+      /* end_at har doim SERVERDA hisoblanadi: kurs davomiyligi × soat soni.
+         Frontend yuborgan end_at e'tiborga olinmaydi — aks holda mijoz
+         2 soatlik narxga 4 soat band qilib qo'yishi mumkin edi. */
+      const totalMinutes = Number(course.duration_minutes || 60) * hours;
+      const end = new Date(start.getTime() + totalMinutes * 60000);
       if (Number.isNaN(end.getTime()) || !(start < end)) {
         return reply.code(400).send({ ok: false, error: 'Vaqt oralig‘i noto‘g‘ri' });
       }
@@ -300,6 +312,7 @@ export async function registerBookingRoutes(
           booking_date: start.toISOString(),   // NOT NULL, default yo'q — majburiy
           start_at: start.toISOString(),
           end_at: end.toISOString(),
+          hours,
           customer_note: body.customer_note?.trim() || null,
           status: 'pending',
         }),
