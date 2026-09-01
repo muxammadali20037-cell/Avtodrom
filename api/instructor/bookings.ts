@@ -95,6 +95,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       for (const c of customers) customerMap.set(String(c.id), c);
     }
 
+    // Kurs ma'lumoti — busiz kartochkada "0 daq" va "Mashg'ulot" chiqadi
+    const courseIds = [...new Set(bookings.map((b: any) => b.course_id).filter(Boolean).map(String))];
+    const courseMap = new Map<string, any>();
+    if (courseIds.length) {
+      const courses = await rest<any[]>('courses',
+        `?id=in.(${courseIds.map(q).join(',')})&select=id,name,duration_minutes,price`);
+      for (const c of courses) courseMap.set(String(c.id), c);
+    }
+
     const normalized = bookings.map((b: any) => {
       const customer = customerMap.get(String(b.customer_id)) || {};
       const names = String(customer.full_name || '').trim().split(/\s+/).filter(Boolean);
@@ -103,8 +112,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return {
         ...b,
         // Keep the frontend contract stable even though DB uses booking_date.
-        start_at: start,
+        start_at: b.start_at || start,
+        end_at: b.end_at || null,
         booking_date: b.booking_date || start,
+        course: courseMap.get(String(b.course_id)) || null,
         customer: {
           ...customer,
           first_name: names[0] || '',
