@@ -56,6 +56,10 @@ function shape(b: any, m: any) {
   const c = m.cm.get(String(b.course_id));
   const i = m.im.get(String(b.instructor_id));
   const p = m.pm.get(String(b.id));
+  const hours = Number(b.hours ?? 1) || 1;
+  // Kutilayotgan summa: kurs narxi × soat soni.
+  // To'lov allaqachon o'tgan bo'lsa, tarix uchun to'langan summa ustun turadi.
+  const expected = Number(c?.price ?? 0) * hours;
   return {
     ...b,
     start_at: b.start_at || b.booking_date,
@@ -63,7 +67,9 @@ function shape(b: any, m: any) {
     instructor: i || null,
     course: c || null,
     payment: p || null,
-    price: p?.amount ?? c?.price ?? 0,
+    hours,
+    total_minutes: Number(c?.duration_minutes ?? 0) * hours || null,
+    price: p?.amount ?? expected,
     is_paid: String(p?.status) === 'paid',
   };
 }
@@ -127,6 +133,7 @@ export async function registerCashierRoutes(
       const instructorId = String(b.instructor_id || '').trim();
       const courseId = String(b.course_id || '').trim();
       const startAt = String(b.start_at || '').trim();
+      const hours = Math.min(8, Math.max(1, Math.trunc(Number(b.hours ?? 1)) || 1));
 
       if (fullName.length < 2) return reply.code(400).send({ ok: false, error: 'Mijoz ismini kiriting' });
       if (!instructorId) return reply.code(400).send({ ok: false, error: 'Instruktorni tanlang' });
@@ -162,13 +169,13 @@ export async function registerCashierRoutes(
       }
       if (!customer) throw new Error('Mijoz yaratilmadi');
 
-      const end = new Date(start.getTime() + Number(course.duration_minutes || 60) * 60000);
+      const end = new Date(start.getTime() + Number(course.duration_minutes || 60) * hours * 60000);
       const rows = await supabaseRest<any[]>('bookings', {
         method: 'POST', headers: { Prefer: 'return=representation' },
         body: JSON.stringify({
           customer_id: customer.id, instructor_id: instructorId, course_id: course.id,
           booking_date: start.toISOString(), start_at: start.toISOString(), end_at: end.toISOString(),
-          status: 'confirmed', source: 'walk_in',
+          hours, status: 'confirmed', source: 'walk_in',
           confirmed_at: new Date().toISOString(), confirmed_by: admin.id,
         }),
       });
@@ -207,7 +214,9 @@ export async function registerCashierRoutes(
       const course = booking.course_id
         ? (await supabaseRest<any[]>('courses', { query: `?id=eq.${q(String(booking.course_id))}&select=price,name,duration_minutes&limit=1` }))[0]
         : null;
-      const amount = Number(amountRaw ?? course?.price ?? 0);
+      const bookedHours = Number(booking.hours ?? 1) || 1;
+      // Standart summa: kurs narxi × soat soni. Kassir uni o'zgartira oladi.
+      const amount = Number(amountRaw ?? (Number(course?.price ?? 0) * bookedHours));
       if (!Number.isFinite(amount) || amount <= 0) return reply.code(400).send({ ok: false, error: 'Summa noto‘g‘ri' });
 
       const existing = (await supabaseRest<any[]>('payments', { query: `?booking_id=eq.${q(bookingId)}&select=*&limit=1` }))[0];
@@ -368,7 +377,8 @@ function buildReceipt(b: any, p: any) {
     customer_phone: b.customer?.phone || '',
     instructor_name: b.instructor?.profile?.full_name || '',
     course_name: b.course?.name || 'Mashg‘ulot',
-    duration_minutes: b.course?.duration_minutes ?? null,
+    hours: Number(b.hours ?? 1),
+    duration_minutes: b.total_minutes ?? b.course?.duration_minutes ?? null,
     starts_at: b.start_at,
     starts_at_text: fmtWhen(b.start_at),
     amount: Number(p.amount || 0),
