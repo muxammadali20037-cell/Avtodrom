@@ -24,6 +24,20 @@ button,input,textarea,select{font:inherit;color:inherit}
 button{cursor:pointer;border:0;background:none}
 button:disabled{opacity:.5}
 a{color:inherit;text-decoration:none}
+
+.scanbtn{width:100%;height:64px;font-size:17px;margin-bottom:16px;gap:10px;
+ background:linear-gradient(135deg,#2E3192,#4348C4);border:0;color:#fff;
+ box-shadow:0 6px 18px rgba(46,49,146,.28)}
+.scanres{border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:12px;background:#fff}
+.scanres .big{font-size:19px;font-weight:900;margin:6px 0 2px}
+.codebox{font-family:ui-monospace,Menlo,monospace;font-weight:900;letter-spacing:.1em;font-size:17px;
+ text-align:center;background:var(--soft);color:var(--brand);border-radius:11px;padding:11px;margin:10px 0}
+.rep{display:flex;align-items:center;gap:12px;background:#fff;border:1px solid var(--line);
+ border-radius:13px;padding:12px 14px;margin-bottom:9px}
+.rep .tm{font-weight:900;font-size:17px;min-width:56px}
+.rep .nm{flex:1;min-width:0}
+.rep .nm b{display:block;font-size:14px}
+.rep .nm span{display:block;font-size:12px;color:var(--muted);margin-top:2px}
 .hide{display:none!important}
 
 /* ---------- karkas ---------- */
@@ -206,6 +220,9 @@ h2{font-size:20px;margin:0 0 3px}
 <section id="today" class="page">
   <h2 id="greet">Bugungi ishlar</h2>
   <p class="sub" id="todayDate"></p>
+  <button class="btn go scanbtn" id="scanBtn">
+    <span style="font-size:22px">▣</span> Chekni skanerlash
+  </button>
   <div class="stats">
     <div class="st"><span>Bugun</span><b id="sToday">0</b></div>
     <div class="st warn"><span>Kutmoqda</span><b id="sPending">0</b></div>
@@ -225,6 +242,20 @@ h2{font-size:20px;margin:0 0 3px}
     <button class="tab" data-f="completed">Tugagan</button>
   </div>
   <div id="bkList"><div class="sk"></div><div class="sk"></div></div>
+</section>
+
+<!-- ============ KUNLIK HISOBOT ============ -->
+<section id="report" class="page">
+  <h2>Kunlik hisobot</h2><p class="sub">Qaysi kuni kim bilan ishlaganingiz.</p>
+  <div class="card" style="padding:12px">
+    <input id="repDate" type="date" style="width:100%;min-height:var(--tap);border:1.5px solid #d9dcee;border-radius:13px;padding:12px;font-size:16px">
+  </div>
+  <div class="stats">
+    <div class="st ok"><span>Uchurdim</span><b id="rDone">0</b></div>
+    <div class="st"><span>Jami soat</span><b id="rHours">0</b></div>
+    <div class="st warn"><span>Kelmagan</span><b id="rNoShow">0</b></div>
+  </div>
+  <div id="repList"></div>
 </section>
 
 <!-- ============ SHARHLAR ============ -->
@@ -259,9 +290,10 @@ h2{font-size:20px;margin:0 0 3px}
 </section>
 </main>
 
-<nav class="nav hide" id="nav"><div class="navin">
+<nav class="nav hide" id="nav"><div class="navin" style="grid-template-columns:repeat(5,1fr)">
   <button class="nb on" data-p="today"><span>📅</span>Bugun</button>
   <button class="nb" data-p="bookings"><span>📋</span>Bronlar<i class="hide" id="navPill">0</i></button>
+  <button class="nb" data-p="report"><span>📊</span>Hisobot</button>
   <button class="nb" data-p="reviews"><span>⭐</span>Sharhlar</button>
   <button class="nb" data-p="profile"><span>👤</span>Profil</button>
 </div></nav>
@@ -333,8 +365,10 @@ function showPanel(id){
   show(id);
   document.querySelectorAll('.nb').forEach(b => b.classList.toggle('on', b.dataset.p === id));
   if (id === 'reviews') loadReviews();
+  if (id === 'report') { if (!$('repDate').value) $('repDate').value = dayOf(new Date()); renderReport(); }
 }
 document.querySelectorAll('.nb').forEach(b => b.onclick = () => showPanel(b.dataset.p));
+$('repDate').addEventListener('change', renderReport);
 
 /* --------------------- Ro'yxatdan o'tish --------------------- */
 function prefill(){
@@ -437,7 +471,7 @@ async function loadBookings(){
   try {
     const d = await api('/api/instructor/bookings');
     S.bookings = d.bookings || [];
-    renderBookings(); renderToday();
+    renderBookings(); renderToday(); if($('repDate').value) renderReport();
   } catch (e) {
     const html = `<div class="alert a-err">${esc(e.message)}</div>`;
     $('bkList').innerHTML = html; $('todayList').innerHTML = html;
@@ -536,6 +570,153 @@ async function run(a, id, body){
             departed:'Dars yakunlandi', 'no-show':'Kelmagan deb belgilandi' }[a] || 'Saqlandi');
     await Promise.allSettled([loadBookings(), loadStats()]);
   } catch (e) { closeSheet(); alertBox(e.message); toast(e.message); }
+}
+
+
+/* =========================================================================
+   CHEK SKANERI
+   Telegram'ning o'z QR skaneridan foydalanamiz (showScanQrPopup) — kamera
+   ruxsatini so'rash, oqimni boshqarish shart emas, va u iOS'da ham ishlaydi.
+   Eski Telegram versiyalarida yo'q — u holda kodni qo'lda kiritish oynasi.
+   ========================================================================= */
+function canScan(){
+  try { return typeof tg?.showScanQrPopup === 'function' && Number(String(tg.version||'0').split('.')[0]) >= 6; }
+  catch (e) { return false; }
+}
+
+$('scanBtn').onclick = () => {
+  if (!canScan()) return manualCode();
+  try {
+    tg.showScanQrPopup({ text: 'Chekdagi QR kodni kameraga tuting' }, (raw) => {
+      const code = extractCode(raw);
+      if (!code) return true;          // noto'g'ri kod — skaner ochiq qolsin
+      try { tg.closeScanQrPopup(); } catch (e) {}
+      verifyCode(code);
+      return true;
+    });
+  } catch (e) { manualCode(); }
+};
+
+/** QR ichida to'liq URL bo'lishi ham mumkin — faqat kodni ajratamiz. */
+function extractCode(raw){
+  const m = String(raw || '').toUpperCase().match(/AVD-\d{6}-[0-9A-Z]{5}/);
+  return m ? m[0] : '';
+}
+
+function manualCode(){
+  sheet(`<h2 style="margin:0 0 4px">Chek kodini kiriting</h2>
+    <p class="sub">Chekning pastida yozilgan kod. Masalan: AVD-260901-6KBCQ</p>
+    <div class="field"><input id="mcInput" placeholder="AVD-______-_____" autocapitalize="characters" autocomplete="off" inputmode="text"></div>
+    <div id="mcAlert"></div>
+    <div class="acts two" style="padding:0">
+      <button class="btn" id="mcNo">Bekor</button>
+      <button class="btn go" id="mcYes">Tekshirish</button></div>`);
+  const inp = $('mcInput');
+  inp.addEventListener('input', () => { inp.value = inp.value.toUpperCase(); });
+  setTimeout(() => inp.focus(), 120);
+  $('mcNo').onclick = closeSheet;
+  $('mcYes').onclick = () => {
+    const code = extractCode(inp.value) || inp.value.trim().toUpperCase();
+    if (!code) { $('mcAlert').innerHTML = '<div class="alert a-err">Kodni kiriting</div>'; return; }
+    verifyCode(code);
+  };
+}
+
+/** Kodni serverga yuboramiz — bron topilsa tugma chiqadi. */
+async function verifyCode(code){
+  sheet(`<div class="empty"><span class="big">▣</span>Tekshirilmoqda…</div>`);
+  try {
+    const d = await api('/api/instructor/scan', { method:'POST', body: JSON.stringify({ code }) });
+    showScanResult(d, code);
+  } catch (e) {
+    sheet(`<h2 style="margin:0 0 4px">Chek qabul qilinmadi</h2>
+      <div class="alert a-err" style="margin:12px 0">${esc(e.message)}</div>
+      <div class="acts two" style="padding:0">
+        <button class="btn" id="sfNo">Yopish</button>
+        <button class="btn go" id="sfRetry">Qayta urinish</button></div>`);
+    $('sfNo').onclick = closeSheet;
+    $('sfRetry').onclick = () => { closeSheet(); setTimeout(() => $('scanBtn').click(), 150); };
+  }
+}
+
+function showScanResult(d, code){
+  const b = d.booking || {};
+  const name = b.customer?.full_name || 'Mijoz';
+  const phone = String(b.customer?.phone || '').replace(/[^+\d]/g, '');
+  const when = hhmm(b.start_at || b.booking_date);
+  const price = b.price ? money(b.price) : '';
+
+  let action = '', hint = '';
+  if (d.can_start)       action = `<button class="btn ok" id="scStart">🚗 Bronni boshlash</button>`;
+  else if (d.can_finish) action = `<button class="btn ok" id="scFinish">🏁 Darsni yakunlash</button>`;
+  else if (d.already)    hint = `<div class="alert a-info" style="margin:12px 0">Bu bron holati: <b>${esc(ST[d.already] || d.already)}</b></div>`;
+
+  sheet(`
+    <div class="scanres">
+      <span class="st-pill p-${esc(b.status || 'confirmed')}" style="margin:0">${esc(ST[b.status] || b.status || '')}</span>
+      <div class="big">${esc(name)}</div>
+      <div class="sub" style="margin:0">${esc(when)} · ${esc(b.course?.name || 'Mashg‘ulot')}${price ? ' · ' + esc(price) : ''}</div>
+      ${phone ? `<div class="callrow" style="padding:12px 0 0"><a class="call" href="tel:${esc(phone)}">📞 Qo‘ng‘iroq</a></div>` : ''}
+    </div>
+    <div class="codebox">${esc(code)}</div>
+    ${hint}
+    <div class="acts ${action ? '' : 'two'}" style="padding:0">
+      ${action || ''}
+      <button class="btn" id="scClose">Yopish</button>
+    </div>`);
+
+  $('scClose').onclick = closeSheet;
+  if (d.can_start) $('scStart').onclick = () => startFromScan(code);
+  if (d.can_finish) $('scFinish').onclick = async () => {
+    try {
+      await api(`/api/instructor/bookings/${encodeURIComponent(b.id)}/departed`, { method:'POST', body:'{}' });
+      closeSheet(); toast('Dars yakunlandi');
+      await Promise.allSettled([loadBookings(), loadStats()]);
+    } catch (e) { toast(e.message); }
+  };
+}
+
+async function startFromScan(code){
+  const btn = $('scStart'); if (btn) { btn.disabled = true; btn.textContent = '…'; }
+  try {
+    await api('/api/instructor/scan/start', { method:'POST', body: JSON.stringify({ code }) });
+    closeSheet(); toast('Dars boshlandi ✓');
+    await Promise.allSettled([loadBookings(), loadStats()]);
+  } catch (e) {
+    if (btn) { btn.disabled = false; btn.textContent = '🚗 Bronni boshlash'; }
+    toast(e.message);
+  }
+}
+
+/* =========================================================================
+   KUNLIK HISOBOT
+   Bronlar allaqachon yuklangan — qayta so'rov yubormaymiz, shu ma'lumotdan
+   tanlangan kunni ajratamiz.
+   ========================================================================= */
+function renderReport(){
+  const day = $('repDate').value || dayOf(new Date());
+  const rows = S.bookings
+    .filter(b => dayOf(b.start_at || b.booking_date) === day)
+    .sort((a, b) => new Date(a.start_at || a.booking_date) - new Date(b.start_at || b.booking_date));
+
+  const done = rows.filter(b => b.status === 'completed');
+  const noShow = rows.filter(b => b.status === 'no_show');
+  const minutes = done.reduce((a, b) => a + Number(b.course?.duration_minutes || 0), 0);
+
+  $('rDone').textContent = done.length;
+  $('rHours').textContent = minutes ? (minutes / 60).toFixed(minutes % 60 ? 1 : 0) : '0';
+  $('rNoShow').textContent = noShow.length;
+
+  const box = $('repList');
+  box.innerHTML = rows.length ? rows.map(b => {
+    const st = b.status || 'pending';
+    return `<div class="rep">
+      <div class="tm">${esc(hhmm(b.start_at || b.booking_date))}</div>
+      <div class="nm"><b>${esc(b.customer?.full_name || 'Mijoz')}</b>
+        <span>${esc(b.course?.name || 'Mashg‘ulot')}${b.course?.duration_minutes ? ' · ' + esc(fmtDur(b.course.duration_minutes)) : ''}</span></div>
+      <span class="st-pill p-${esc(st)}" style="margin:0">${esc(ST[st] || st)}</span>
+    </div>`;
+  }).join('') : '<div class="empty"><span class="big">📄</span>Bu kunda bron bo‘lmagan.</div>';
 }
 
 /* ------------------------- Sharhlar ------------------------- */
