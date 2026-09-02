@@ -63,8 +63,17 @@ function shapeBooking(row: any) {
     /* Soat soni bilan hisoblangan qiymatlar — frontend qayta hisoblamasin.
        Kurs bir birlik (odatda 60 daqiqa), hours esa nechta birlik olingani. */
     hours: Number(row.hours ?? 1),
-    total_minutes: Number(row.course?.duration_minutes ?? 0) * Number(row.hours ?? 1) || null,
-    total_price: Number(row.course?.price ?? 0) * Number(row.hours ?? 1) || 0,
+    /* Davomiylik daqiqada. Narx nisbatan: 60 daq kurs 250 000 bo'lsa,
+       30 daqiqa 125 000 bo'ladi. */
+    duration_minutes: Number(row.duration_minutes ?? 0)
+      || Number(row.course?.duration_minutes ?? 0) * Number(row.hours ?? 1) || null,
+    total_minutes: Number(row.duration_minutes ?? 0)
+      || Number(row.course?.duration_minutes ?? 0) * Number(row.hours ?? 1) || null,
+    total_price: (() => {
+      const unit = Number(row.course?.duration_minutes ?? 60) || 60;
+      const mins = Number(row.duration_minutes ?? 0) || unit * Number(row.hours ?? 1);
+      return Math.round((Number(row.course?.price ?? 0) * mins) / unit) || 0;
+    })(),
     instructor: row.instructor
       ? { ...row.instructor, profile: { first_name, last_name, phone: insUser?.phone ?? null } }
       : null,
@@ -313,6 +322,7 @@ export async function registerBookingRoutes(
           start_at: start.toISOString(),
           end_at: end.toISOString(),
           hours,
+          duration_minutes: totalMinutes,
           customer_note: body.customer_note?.trim() || null,
           status: 'pending',
         }),
