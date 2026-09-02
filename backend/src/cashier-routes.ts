@@ -2,6 +2,7 @@ import type { FastifyInstance } from 'fastify';
 import { supabaseRest } from './supabase.js';
 import { q, findUserByTelegram, toProfile } from './identity.js';
 import { fmtWhen, fmtMoney } from './notify.js';
+import { readRegisterToken } from './shift-routes.js';
 import type { TelegramWebAppUser } from './telegram.js';
 
 /**
@@ -440,13 +441,13 @@ export async function registerCashierRoutes(
       const receiptCode = typeof codeRes === 'string' ? codeRes : String(codeRes ?? '');
       if (!receiptCode) throw new Error('Chek kodi yaratilmadi');
 
-      /* Chek qaysi KASSAdan chiqarilgani. Ikki kirish (P1, P2) bor va
-         hisob-kitob doimiy ravishda alohida yuritiladi. Kassa
-         ko'rsatilmasa chek chiqmaydi — aks holda pul qaysi kassaga
-         tushgani noma'lum qolardi. */
-      const registerId = String(b.register_id || '').trim();
+      /* Chek qaysi KASSAdan chiqarilgani.
+         Kassa ID'si mijoz yuborgan qiymatdan EMAS, imzolangan TOKENdan
+         olinadi. Shunday qilib brauzerni o'zgartirib boshqa kassa
+         nomidan chek chiqarib bo'lmaydi. */
+      const registerId = readRegisterToken(String(b.register_token || ''));
       if (!registerId) {
-        return reply.code(409).send({ ok: false, error: 'Kassa tanlanmagan. Yuqoridan P1 yoki P2 ni tanlang.' });
+        return reply.code(401).send({ ok: false, error: 'Kassa ochilmagan yoki muddati tugagan. P1 yoki P2 ni PIN bilan qayta oching.' });
       }
       const register = (await supabaseRest<any[]>('cash_registers', {
         query: `?id=eq.${q(registerId)}&is_active=eq.true&select=id,code,name&limit=1`,
