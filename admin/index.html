@@ -2063,8 +2063,31 @@ async function loadRegisters(){
   try{
     const d = await api('/api/admin/registers');
     S.registers = d.registers || [];
-  }catch(e){ S.registers = []; }
-  showLock();
+    showLock();
+  }catch(e){
+    /* Xatoni yutib yubormaymiz — «Kassa topilmadi» deyish sababni
+       yashiradi va nima qilish kerakligi noma'lum qoladi. */
+    S.registers = [];
+    showLockError(e.message);
+  }
+}
+
+
+/** Kassalar yuklanmasa — aniq sabab va nima qilish kerakligi. */
+function showLockError(msg){
+  $('regLock').classList.remove('hidden');
+  document.querySelectorAll('#checkout .grid2, #shiftBar').forEach(el => el.classList.add('hidden'));
+  const missing = /cash_registers|does not exist|42P01|404/i.test(String(msg));
+  $('regLock').innerHTML = `<div class="locksc">
+    <h2>Kassalar yuklanmadi</h2>
+    <div class="error" style="text-align:left">${esc(msg)}</div>
+    ${missing ? `<div class="warn" style="text-align:left;margin-top:12px">
+      Bazada <b>cash_registers</b> jadvali topilmadi. Supabase → SQL Editor da
+      <b>20260902190000_registers_all_in_one.sql</b> faylini ishga tushiring,
+      so‘ng shu sahifani yangilang.</div>` : ''}
+    <button class="btn primary" id="lockRetry" style="margin-top:16px">Qayta urinish</button>
+  </div>`;
+  $('lockRetry').onclick = loadRegisters;
 }
 
 function showLock(){
@@ -2078,7 +2101,9 @@ function showLock(){
       <button type="button" class="lockreg" data-lr="${esc(r.id)}">
         <b>${esc(r.code)}</b><span>${esc(r.name)}</span>
         ${r.has_pin ? '' : '<span class="nopin">PIN o‘rnatilmagan</span>'}
-      </button>`).join('') || '<div class="muted">Kassa topilmadi</div>'}</div>
+      </button>`).join('') || `<div class="warn" style="text-align:left">
+        Kassalar ro‘yxati bo‘sh. Supabase da <b>cash_registers</b> jadvaliga
+        P1 va P2 qo‘shilganini tekshiring.</div>`}</div>
     <div id="pinWrap" class="hidden">
       <div class="pinbox">
         <input id="pinIn" class="pinin" type="password" inputmode="numeric" maxlength="8" placeholder="••••" autocomplete="off">
