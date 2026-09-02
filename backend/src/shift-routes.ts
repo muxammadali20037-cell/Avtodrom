@@ -295,6 +295,97 @@ export async function registerShiftRoutes(
     }
   });
 
+
+  /**
+   * JARAYONDAGI DARSLAR — jonli taxta
+   *
+   * Instruktor chekni skanerlagach bron `in_progress` bo'ladi va shu yerga
+   * tushadi. Har bir qatorda: o'quvchi, instruktor (avtomobil egasi),
+   * chek raqami va urilgan vaqti, boshlangan vaqti, tugash vaqti.
+   *
+   * Tugashiga 10 daqiqa qolganlar tepaga chiqadi va qizaradi,
+   * 20 daqiqa qolganlar sarg'ayadi — instruktor va admin ko'rib tursin.
+   */
+  app.get('/api/admin/in-progress', async (req: any, reply: any) => {
+    try {
+      await requireAdmin(req);
+      const now = Date.now();
+
+      const bookings = await supabaseRest<any[]>('bookings', {
+        query: '?status=eq.in_progress&select=*&order=arrived_at.asc&limit=200',
+      });
+      if (!bookings.length) return { ok: true, now: new Date(now).toISOString(), rows: [] };
+
+      const ids  = bookings.map((b) => String(b.id));
+      const uids = [...new Set(bookings.map((b) => String(b.customer_id)).filter(Boolean))];
+      const iids = [...new Set(bookings.map((b) => String(b.instructor_id)).filter(Boolean))];
+      const cids = [...new Set(bookings.map((b) => String(b.course_id)).filter(Boolean))];
+
+      const [ips, courses, pays, scans] = await Promise.all([
+        iids.length ? supabaseRest<any[]>('instructor_profiles', { query: `?id=in.(${iids.map(q).join(',')})&select=id,user_id` }) : [],
+        cids.length ? supabaseRest<any[]>('courses', { query: `?id=in.(${cids.map(q).join(',')})&select=id,name,duration_minutes` }) : [],
+        ids.length  ? supabaseRest<any[]>('payments', { query: `?booking_id=in.(${ids.map(q).join(',')})&select=booking_id,receipt_code,paid_at,amount,method,register_id` }) : [],
+        ids.length  ? supabaseRest<any[]>('attendance_verifications', { query: `?booking_id=in.(${ids.map(q).join(',')})&select=booking_id,created_at` }) : [],
+      ]);
+
+      const allUserIds = [...new Set([...uids, ...ips.map((i) => String(i.user_id))])].filter(Boolean);
+      const [users, regs] = await Promise.all([
+        allUserIds.length ? supabaseRest<any[]>('users', { query: `?id=in.(${allUserIds.map(q).join(',')})&select=id,full_name,phone` }) : [],
+        supabaseRest<any[]>('cash_registers', { query: '?select=id,code,name' }).catch(() => []),
+      ]);
+
+      const um = new Map(users.map((u) => [String(u.id), u]));
+      const im = new Map(ips.map((i) => [String(i.id), um.get(String(i.user_id)) || null]));
+      const cm = new Map(courses.map((c) => [String(c.id), c]));
+      const pm = new Map(pays.map((p) => [String(p.booking_id), p]));
+      const sm = new Map(scans.map((s) => [String(s.booking_id), s]));
+      const rm = new Map((regs as any[]).map((r) => [String(r.id), r]));
+
+      const rows = bookings.map((b) => {
+        const c = cm.get(String(b.course_id));
+        const p = pm.get(String(b.id));
+        const mins = Number(b.duration_minutes || c?.duration_minutes || 60);
+        const started = b.arrived_at ? new Date(b.arrived_at) : new Date(b.start_at || b.booking_date);
+        const ends = new Date(started.getTime() + mins * 60000);
+        const left = Math.round((ends.getTime() - now) / 60000);
+        return {
+          id: b.id,
+          customer: um.get(String(b.customer_id)) || null,
+          instructor: im.get(String(b.instructor_id)) || null,   // avtomobil egasi
+          course: c || null,
+          duration_minutes: mins,
+          started_at: started.toISOString(),
+          ends_at: ends.toISOString(),
+          minutes_left: left,
+          // 10 daqiqadan kam — qizil, 20 dan kam — sariq
+          level: left <= 10 ? 'red' : left <= 20 ? 'yellow' : 'normal',
+          receipt_code: p?.receipt_code || null,
+          paid_at: p?.paid_at || null,
+          amount: Number(p?.amount || 0),
+          method: p?.method || null,
+          register: p?.register_id ? (rm.get(String(p.register_id))?.code || null) : null,
+          scanned_at: sm.get(String(b.id))?.created_at || null,
+        };
+      });
+
+      // Tugashi yaqinlari tepada
+      rows.sort((a, b) => a.minutes_left - b.minutes_left);
+
+      return {
+        ok: true,
+        now: new Date(now).toISOString(),
+        counts: {
+          total: rows.length,
+          red: rows.filter((r) => r.level === 'red').length,
+          yellow: rows.filter((r) => r.level === 'yellow').length,
+        },
+        rows,
+      };
+    } catch (e: any) {
+      return reply.code(e?.statusCode ?? 500).send({ ok: false, error: e?.message || 'Jarayondagilar yuklanmadi' });
+    }
+  });
+
   /* ---------------- PIN ni o'rnatish (faqat admin) ---------------- */
   app.put('/api/admin/registers/:id/pin', async (req: any, reply: any) => {
     try {
