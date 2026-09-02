@@ -10,7 +10,7 @@
  --bg:#f4f5fa;--card:#fff;--line:#e2e4f2;--text:#15173a;--muted:#6f739b;
  --red:#c62828;--blue:#2457a6;--gold:#b8860b;--ok:#0d7a4a;
  --shadow:0 8px 28px rgba(20,25,80,.08)}
-*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,Arial,sans-serif}
+*{box-sizing:border-box}body{font-family:"Times New Roman",Times,Georgia,"Liberation Serif",serif;margin:0;background:var(--bg);color:var(--text);font-family:"Times New Roman",Times,Georgia,"Liberation Serif",serif}
 button,input,select,textarea{font:inherit}.hidden{display:none!important}
 .supthread{width:100%;border:0;background:#fff;text-align:left;padding:12px;border-bottom:1px solid #eceef8;cursor:pointer}
 .supthread:hover{background:#f7f8fd}.supthread.on{background:#EEF0FB}
@@ -85,6 +85,13 @@ button,input,select,textarea{font:inherit}.hidden{display:none!important}
 .sumbox .row.big{font-size:17px;font-weight:900}
 .sumbox .hr2{border-top:1px dashed #c8cce6;margin:8px 0}
 @media(max-width:1000px){.grid2{grid-template-columns:1fr!important}.durs{grid-template-columns:repeat(3,1fr)}}
+
+.modeswitch{display:inline-flex;background:#e7e9f6;border-radius:11px;padding:4px;gap:3px;margin-right:auto;margin-left:22px}
+.ms{border:0;background:transparent;border-radius:8px;padding:9px 20px;font-weight:700;font-size:13.5px;
+ letter-spacing:.06em;color:#5b6091;cursor:pointer;font-family:inherit}
+.ms.on{background:var(--g);color:#fff;box-shadow:0 2px 8px rgba(46,49,146,.25)}
+[data-grp].hidden{display:none!important}
+@media(max-width:800px){.modeswitch{margin-left:10px}.ms{padding:8px 12px;font-size:12px}}
 .warn{padding:11px;border-radius:11px;background:#fff8e6;color:#8a6500;border:1px solid #ffe6a8;font-size:13px}
 .top{height:70px;background:#fff;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:20}
 .topin{height:100%;max-width:1500px;margin:auto;padding:0 20px;display:flex;align-items:center;justify-content:space-between}
@@ -191,6 +198,13 @@ button,input,select,textarea{font:inherit}.hidden{display:none!important}
 .sumbox .row.big{font-size:17px;font-weight:900}
 .sumbox .hr2{border-top:1px dashed #c8cce6;margin:8px 0}
 @media(max-width:1000px){.grid2{grid-template-columns:1fr!important}.durs{grid-template-columns:repeat(3,1fr)}}
+
+.modeswitch{display:inline-flex;background:#e7e9f6;border-radius:11px;padding:4px;gap:3px;margin-right:auto;margin-left:22px}
+.ms{border:0;background:transparent;border-radius:8px;padding:9px 20px;font-weight:700;font-size:13.5px;
+ letter-spacing:.06em;color:#5b6091;cursor:pointer;font-family:inherit}
+.ms.on{background:var(--g);color:#fff;box-shadow:0 2px 8px rgba(46,49,146,.25)}
+[data-grp].hidden{display:none!important}
+@media(max-width:800px){.modeswitch{margin-left:10px}.ms{padding:8px 12px;font-size:12px}}
 .warn{padding:11px;border-radius:11px;background:#fff8e6;color:#8a6500;border:1px solid #ffe6a8;margin-bottom:12px;font-size:13px}
 .empty{padding:25px;text-align:center;color:var(--muted)}
 .actions{display:flex;gap:5px;flex-wrap:wrap}
@@ -274,31 +288,35 @@ pre.json{background:#f7f8fd;border:1px solid var(--line);border-radius:8px;paddi
 <rect x="30" y="139" width="140" height="26" rx="4" fill="#2E3192"/>
 <text x="100" y="158" text-anchor="middle" font-size="20" font-weight="900" fill="#fff" letter-spacing="1.2">AVTODROM</text>
 <text x="100" y="180" text-anchor="middle" font-size="13" font-weight="800" fill="#2E3192">2025</text></svg><div><b>TASH INDEX AVTODROM</b><small>ARIZA · BRON · INSTRUKTOR · NARX · TO‘LOV · HISOBOT</small></div></div>
-  <div class="tools"><span id="lastSync" class="muted" style="font-size:11px"></span><button class="btn" id="refreshBtn">↻ Yangilash</button><button class="btn red" id="logoutBtn">Chiqish</button></div>
+  <div class="modeswitch" id="modeSwitch">
+    <button class="ms on" data-mode="kassa">KASSA</button>
+    <button class="ms" data-mode="admin">BOSHQARUV</button>
+  </div>
+  <div class="tools"><span id="lastSync" class="muted" style="font-size:11px"></span><button class="btn" id="refreshBtn">Yangilash</button><button class="btn red" id="logoutBtn">Chiqish</button></div>
 </div></header>
 
 <div class="layout">
 <aside class="side">
-  <div class="navgroup">KASSA</div>
-  <button class="nav on" data-p="checkout">🧾 Chek chiqarish</button>
-  <button class="nav" data-p="payments">💳 To‘lovlar</button>
-  <button class="nav" data-p="reports">📈 Hisobot</button>
+  <div class="navgroup" data-grp="kassa">KASSA</div>
+  <button class="nav on" data-grp="kassa" data-p="checkout">Chek chiqarish</button>
+  <button class="nav" data-grp="kassa" data-p="payments">To‘lovlar</button>
+  <button class="nav" data-grp="kassa" data-p="reports">Hisobot</button>
 
-  <div class="navgroup">BOSHQARUV</div>
-  <button class="nav" data-p="dashboard">📊 Dashboard</button>
-  <button class="nav" data-p="control">🎯 Instruktor nazorati</button>
-  <button class="nav" data-p="cashier">📅 Kunlik jadval</button>
-  <button class="nav" data-p="applications">📝 Arizalar <span id="appCount" class="count">0</span></button>
-  <button class="nav" data-p="bookings">📋 Bronlar <span id="bookCount" class="count">0</span></button>
-  <button class="nav" data-p="cancels">🚫 Bekor so‘rovlari <span id="cxCount" class="count">0</span></button>
-  <button class="nav" data-p="instructors">👨‍🏫 Instruktorlar</button>
-  <button class="nav" data-p="users">👤 Foydalanuvchilar</button>
-  <button class="nav" data-p="courses">📘 Mashg‘ulotlar</button>
-  <button class="nav" data-p="support">💬 Chat <span id="supCount" class="count">0</span></button>
-  <button class="nav" data-p="reviews">⭐ Sharhlar <span id="revCount" class="count">0</span></button>
-  <button class="nav" data-p="media">🎬 Media</button>
-  <button class="nav" data-p="audit">📜 Audit log</button>
-  <button class="nav" data-p="settings">⚙️ Sozlamalar</button>
+  <div class="navgroup" data-grp="admin">BOSHQARUV</div>
+  <button class="nav" data-grp="admin" data-p="dashboard">Dashboard</button>
+  <button class="nav" data-grp="admin" data-p="control">Instruktor nazorati</button>
+  <button class="nav" data-grp="admin" data-p="cashier">Kunlik jadval</button>
+  <button class="nav" data-grp="admin" data-p="applications">Arizalar <span id="appCount" class="count">0</span></button>
+  <button class="nav" data-grp="admin" data-p="bookings">Bronlar <span id="bookCount" class="count">0</span></button>
+  <button class="nav" data-grp="admin" data-p="cancels">Bekor so‘rovlari <span id="cxCount" class="count">0</span></button>
+  <button class="nav" data-grp="admin" data-p="instructors">Instruktorlar</button>
+  <button class="nav" data-grp="admin" data-p="users">Foydalanuvchilar</button>
+  <button class="nav" data-grp="admin" data-p="courses">Mashg‘ulotlar</button>
+  <button class="nav" data-grp="admin" data-p="support">Chat <span id="supCount" class="count">0</span></button>
+  <button class="nav" data-grp="admin" data-p="reviews">Sharhlar <span id="revCount" class="count">0</span></button>
+  <button class="nav" data-grp="admin" data-p="media">Media</button>
+  <button class="nav" data-grp="admin" data-p="audit">Audit log</button>
+  <button class="nav" data-grp="admin" data-p="settings">Sozlamalar</button>
 </aside>
 
 <main>
@@ -306,7 +324,7 @@ pre.json{background:#f7f8fd;border:1px solid var(--line);border-radius:8px;paddi
 <div id="warnings"></div>
 
 <section id="dashboard" class="page">
-  <div class="head"><div><h1>📊 Dashboard</h1><p id="dPeriodLabel">Kunlik ko‘rsatkichlar</p></div>
+  <div class="head"><div><h1>Dashboard</h1><p id="dPeriodLabel">Kunlik ko‘rsatkichlar</p></div>
     <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
       <input id="dDate" type="date" class="input">
       <div class="segs" id="dSegs">
@@ -330,7 +348,7 @@ pre.json{background:#f7f8fd;border:1px solid var(--line);border-radius:8px;paddi
 </section>
 
 <section id="control" class="page">
-  <div class="head"><div><h1>🎯 Instruktor nazorati</h1><p>Instruktorni tanlang — nechta chek urilgan, soat nechada, qancha pul.</p></div>
+  <div class="head"><div><h1>Instruktor nazorati</h1><p>Instruktorni tanlang — nechta chek urilgan, soat nechada, qancha pul.</p></div>
     <div style="display:flex;gap:8px;flex-wrap:wrap">
       <input id="cDate" type="date" class="input">
       <div class="segs" id="cSegs">
@@ -345,7 +363,7 @@ pre.json{background:#f7f8fd;border:1px solid var(--line);border-radius:8px;paddi
 </section>
 
 <section id="applications" class="page">
-  <div class="head"><div><h1>📝 Instruktor arizalari</h1><p>Arizani tasdiqlash yoki rad etish.</p></div></div>
+  <div class="head"><div><h1>Instruktor arizalari</h1><p>Arizani tasdiqlash yoki rad etish.</p></div></div>
   <div class="card">
     <div class="toolbar">
       <select id="appFilter" class="select"><option value="">Barchasi</option><option>PENDING</option><option>APPROVED</option><option>REJECTED</option></select>
@@ -356,16 +374,16 @@ pre.json{background:#f7f8fd;border:1px solid var(--line);border-radius:8px;paddi
 </section>
 
 <section id="checkout" class="page on">
-  <div class="head"><div><h1>🧾 Chek chiqarish</h1><p>Mijoz ma’lumotini kiriting — narx avtomatik hisoblanadi, chek QR bilan chiqadi.</p></div>
-    <button class="btn" id="coReset">↺ Tozalash</button></div>
+  <div class="head"><div><h1>Chek chiqarish</h1><p>Mijoz ma’lumotini kiriting — narx avtomatik hisoblanadi, chek QR bilan chiqadi.</p></div>
+    <button class="btn" id="coReset">Tozalash</button></div>
 
   <div class="grid2" style="grid-template-columns:1.15fr .85fr;align-items:start">
     <div class="card">
       <!-- 1. Bronli / bronsiz -->
       <div class="field"><label>1. MIJOZ TURI</label>
         <div class="pick2">
-          <button type="button" class="pk on" id="coBooked">📋 Bronli — oldindan bron qilgan</button>
-          <button type="button" class="pk" id="coWalk">🚶 Bronsiz — hozir keldi</button>
+          <button type="button" class="pk on" id="coBooked">Bronli — oldindan bron qilgan</button>
+          <button type="button" class="pk" id="coWalk">Bronsiz — hozir keldi</button>
         </div></div>
 
       <!-- 2. Mijoz -->
@@ -414,9 +432,9 @@ pre.json{background:#f7f8fd;border:1px solid var(--line);border-radius:8px;paddi
 
       <div class="field" style="margin-top:14px"><label>TO‘LOV TURI *</label>
         <div class="pick3">
-          <button type="button" class="pk" data-pay="cash">💵 Naqd</button>
-          <button type="button" class="pk" data-pay="card">💳 Terminal</button>
-          <button type="button" class="pk" data-pay="mixed">🔀 Aralash</button>
+          <button type="button" class="pk" data-pay="cash">Naqd</button>
+          <button type="button" class="pk" data-pay="card">Terminal</button>
+          <button type="button" class="pk" data-pay="mixed">Aralash</button>
         </div></div>
 
       <div id="coSplit" class="hidden">
@@ -431,15 +449,15 @@ pre.json{background:#f7f8fd;border:1px solid var(--line);border-radius:8px;paddi
         <input id="coAmount" class="input" type="number" min="0" step="1000"></div>
 
       <div id="coAlert"></div>
-      <button class="btn primary" id="coIssue" style="width:100%;height:52px;font-size:16px">🧾 Chek chiqarish</button>
+      <button class="btn primary" id="coIssue" style="width:100%;height:52px;font-size:16px">Chek chiqarish</button>
       <div class="muted" style="font-size:11.5px;margin-top:8px;text-align:center">Chek avtomatik chop etishga yuboriladi</div>
     </div>
   </div>
 </section>
 
 <section id="cashier" class="page">
-  <div class="head"><div><h1>💵 Kassa</h1><p>Instruktorni tanlang — o‘sha kunning soatma-soat jadvali chiqadi. To‘lovdan keyin chek QR bilan chop etiladi.</p></div>
-    <button class="btn" id="kRefresh">↻ Yangilash</button></div>
+  <div class="head"><div><h1>Kassa</h1><p>Instruktorni tanlang — o‘sha kunning soatma-soat jadvali chiqadi. To‘lovdan keyin chek QR bilan chop etiladi.</p></div>
+    <button class="btn" id="kRefresh">Yangilash</button></div>
 
   <div class="card">
     <div class="toolbar">
@@ -454,7 +472,7 @@ pre.json{background:#f7f8fd;border:1px solid var(--line);border-radius:8px;paddi
 </section>
 
 <section id="bookings" class="page">
-  <div class="head"><div><h1>📋 Bronlar</h1><p>Foydalanuvchi bronlari va holatlari.</p></div><button class="btn" id="expBookings">Excel/CSV</button></div>
+  <div class="head"><div><h1>Bronlar</h1><p>Foydalanuvchi bronlari va holatlari.</p></div><button class="btn" id="expBookings">Excel/CSV</button></div>
   <div class="card">
     <div class="toolbar">
       <select id="bookingFilter" class="select"><option value="">Barchasi</option><option value="pending">Kutilmoqda</option><option value="confirmed">Tasdiqlangan</option><option value="in_progress">Jarayonda</option><option value="completed">Tugagan</option><option value="no_show">Kelmagan</option><option value="cancelled">Bekor</option><option value="rejected">Rad etilgan</option></select>
@@ -465,12 +483,12 @@ pre.json{background:#f7f8fd;border:1px solid var(--line);border-radius:8px;paddi
 </section>
 
 <section id="cancels" class="page">
-  <div class="head"><div><h1>🚫 Bekor qilish so‘rovlari</h1><p>Mijoz tasdiqlangan bronni bekor qilmoqchi. Sababni o‘qib, qaror qiling.</p></div><button class="btn" id="cxRefresh">↻ Yangilash</button></div>
+  <div class="head"><div><h1>Bekor qilish so‘rovlari</h1><p>Mijoz tasdiqlangan bronni bekor qilmoqchi. Sababni o‘qib, qaror qiling.</p></div><button class="btn" id="cxRefresh">Yangilash</button></div>
   <div class="card"><div id="cxList"></div></div>
 </section>
 
 <section id="instructors" class="page">
-  <div class="head"><div><h1>👨‍🏫 Instruktorlar</h1><p>Faqat faol va tasdiqlangan instruktorlar mijozga chiqadi.</p></div><button class="btn primary" id="addInstBtn">+ Instruktor qo‘shish</button></div>
+  <div class="head"><div><h1>Instruktorlar</h1><p>Faqat faol va tasdiqlangan instruktorlar mijozga chiqadi.</p></div><button class="btn primary" id="addInstBtn">+ Instruktor qo‘shish</button></div>
   <div class="card">
     <div class="toolbar"><input id="instSearch" class="search" placeholder="Instruktor qidirish..."></div>
     <div class="tableWrap"><table class="table"><thead><tr><th>Instruktor</th><th>Telefon</th><th>Telegram</th><th>Tajriba</th><th>Reyting</th><th>Bron</th><th>Status</th><th>Amal</th></tr></thead><tbody id="instRows"></tbody></table></div>
@@ -478,7 +496,7 @@ pre.json{background:#f7f8fd;border:1px solid var(--line);border-radius:8px;paddi
 </section>
 
 <section id="users" class="page">
-  <div class="head"><div><h1>👤 Foydalanuvchilar</h1><p>Foydalanuvchi alohida tasdiqlanmaydi — uning broni tasdiqlanadi.</p></div><button class="btn" id="expUsers">Excel/CSV</button></div>
+  <div class="head"><div><h1>Foydalanuvchilar</h1><p>Foydalanuvchi alohida tasdiqlanmaydi — uning broni tasdiqlanadi.</p></div><button class="btn" id="expUsers">Excel/CSV</button></div>
   <div class="card">
     <div class="toolbar"><input id="userSearch" class="search" placeholder="Ism, telefon yoki Telegram..."></div>
     <div class="tableWrap"><table class="table"><thead><tr><th>Foydalanuvchi</th><th>Telefon</th><th>Telegram</th><th>Bronlar</th><th>Tugagan</th><th>Sana</th><th>Status</th><th>Amal</th></tr></thead><tbody id="userRows"></tbody></table></div>
@@ -486,12 +504,12 @@ pre.json{background:#f7f8fd;border:1px solid var(--line);border-radius:8px;paddi
 </section>
 
 <section id="courses" class="page">
-  <div class="head"><div><h1>📘 Mashg‘ulotlar va narxlar</h1><p>Narx faqat shu yerdan boshqariladi. Mijoz panel narxni shu yerdan oladi.</p></div><button class="btn primary" id="addCourseBtn">+ Mashg‘ulot qo‘shish</button></div>
+  <div class="head"><div><h1>Mashg‘ulotlar va narxlar</h1><p>Narx faqat shu yerdan boshqariladi. Mijoz panel narxni shu yerdan oladi.</p></div><button class="btn primary" id="addCourseBtn">+ Mashg‘ulot qo‘shish</button></div>
   <div class="card"><div class="tableWrap"><table class="table"><thead><tr><th>Nomi</th><th>Tavsif</th><th>Davomiylik</th><th>Narx</th><th>Holat</th><th>Amal</th></tr></thead><tbody id="courseRows"></tbody></table></div></div>
 </section>
 
 <section id="payments" class="page">
-  <div class="head"><div><h1>💳 To‘lovlar</h1><p>Bron tasdiqlanganda avtomatik <b>pending</b> to‘lov ochiladi.</p></div><button class="btn" id="expPayments">Excel/CSV</button></div>
+  <div class="head"><div><h1>To‘lovlar</h1><p>Bron tasdiqlanganda avtomatik <b>pending</b> to‘lov ochiladi.</p></div><button class="btn" id="expPayments">Excel/CSV</button></div>
   <div class="card">
     <div class="toolbar">
       <select id="payFilter" class="select"><option value="">Barchasi</option><option value="pending">Kutilmoqda</option><option value="paid">To‘langan</option><option value="failed">Muvaffaqiyatsiz</option><option value="refunded">Qaytarilgan</option><option value="cancelled">Bekor</option></select>
@@ -502,7 +520,7 @@ pre.json{background:#f7f8fd;border:1px solid var(--line);border-radius:8px;paddi
 </section>
 
 <section id="support" class="page">
-  <div class="head"><div><h1>💬 Mijozlar bilan chat</h1><p>Javob mijozning Mini App'iga va Telegramiga boradi.</p></div><button class="btn" id="supRefresh">↻ Yangilash</button></div>
+  <div class="head"><div><h1>Mijozlar bilan chat</h1><p>Javob mijozning Mini App'iga va Telegramiga boradi.</p></div><button class="btn" id="supRefresh">Yangilash</button></div>
   <div class="grid2" style="display:grid;grid-template-columns:320px 1fr;gap:15px">
     <div class="card" style="padding:0;overflow:hidden">
       <div style="padding:12px;border-bottom:1px solid var(--line)"><input id="supSearch" class="search" placeholder="Mijoz qidirish..." style="width:100%"></div>
@@ -520,7 +538,7 @@ pre.json{background:#f7f8fd;border:1px solid var(--line);border-radius:8px;paddi
 </section>
 
 <section id="reviews" class="page">
-  <div class="head"><div><h1>⭐ Sharhlar</h1><p>Faqat <b>tasdiqlangan</b> sharhlar instruktor reytingiga qo‘shiladi.</p></div></div>
+  <div class="head"><div><h1>Sharhlar</h1><p>Faqat <b>tasdiqlangan</b> sharhlar instruktor reytingiga qo‘shiladi.</p></div></div>
   <div class="card">
     <div class="toolbar"><select id="revFilter" class="select"><option value="">Barchasi</option><option value="pending">Kutilmoqda</option><option value="approved">Tasdiqlangan</option><option value="rejected">Rad etilgan</option></select></div>
     <div class="tableWrap"><table class="table"><thead><tr><th>Mijoz</th><th>Instruktor</th><th>Reyting</th><th>Sharh</th><th>Sana</th><th>Status</th><th>Amal</th></tr></thead><tbody id="reviewRows"></tbody></table></div>
@@ -528,7 +546,7 @@ pre.json{background:#f7f8fd;border:1px solid var(--line);border-radius:8px;paddi
 </section>
 
 <section id="reports" class="page">
-  <div class="head"><div><h1>📊 Kunlik / umumiy hisobot</h1><p>Sana oralig‘i, kelgan, kelmagan, bekor, tugagan va instruktor kesimida.</p></div><button class="btn primary" id="expReport">📥 Excel/CSV</button></div>
+  <div class="head"><div><h1>Kunlik / umumiy hisobot</h1><p>Sana oralig‘i, kelgan, kelmagan, bekor, tugagan va instruktor kesimida.</p></div><button class="btn primary" id="expReport">Excel/CSV</button></div>
   <div class="card">
     <div class="toolbar">
       <input id="from" type="date" class="input"><input id="to" type="date" class="input">
@@ -544,18 +562,18 @@ pre.json{background:#f7f8fd;border:1px solid var(--line);border-radius:8px;paddi
 </section>
 
 <section id="media" class="page">
-  <div class="head"><div><h1>🎬 Media</h1><p><b>Galereya</b> — istalgancha rasm/video, mijoz panelida «Avtodrom galereyasi» bo‘limida chiqadi. Qolganlari bitta o‘rinli: bosh sahifa foni, lokatsiya kartochkasi, video qo‘llanma.</p></div></div>
+  <div class="head"><div><h1>Media</h1><p><b>Galereya</b> — istalgancha rasm/video, mijoz panelida «Avtodrom galereyasi» bo‘limida chiqadi. Qolganlari bitta o‘rinli: bosh sahifa foni, lokatsiya kartochkasi, video qo‘llanma.</p></div></div>
   <div class="card">
     <div class="toolbar">
       <input id="mediaTitle" class="input" placeholder="Nomi (masalan: Avtodrom maydoni)">
       <select id="mediaSlot" class="select">
-        <option value="gallery">📸 Galereya (ko‘p rasm/video)</option>
+        <option value="gallery">Galereya (ko‘p rasm/video)</option>
         <option value="home">Rasm → bosh sahifa foni</option>
         <option value="location">Rasm → lokatsiya kartochkasi</option>
         <option value="guide">Video → qo‘llanma</option>
       </select>
       <input id="mediaFile" type="file" class="input" accept="video/mp4,video/webm,video/quicktime,image/jpeg,image/png,image/webp">
-      <button id="uploadBtn" class="btn primary">⬆ Yuklash</button>
+      <button id="uploadBtn" class="btn primary">Yuklash</button>
     </div>
     <div id="mediaProgress" class="muted"></div>
   </div>
@@ -563,7 +581,7 @@ pre.json{background:#f7f8fd;border:1px solid var(--line);border-radius:8px;paddi
 </section>
 
 <section id="audit" class="page">
-  <div class="head"><div><h1>🗒 Audit log</h1><p>Admin bajargan barcha muhim amallar.</p></div><button class="btn" id="expAudit">Excel/CSV</button></div>
+  <div class="head"><div><h1>Audit log</h1><p>Admin bajargan barcha muhim amallar.</p></div><button class="btn" id="expAudit">Excel/CSV</button></div>
   <div class="card">
     <div class="toolbar"><input id="auditSearch" class="search" placeholder="Amal, obyekt, admin..."></div>
     <div class="tableWrap"><table class="table"><thead><tr><th>Vaqt</th><th>Admin</th><th>Amal</th><th>Obyekt</th><th>Eski</th><th>Yangi</th></tr></thead><tbody id="auditRows"></tbody></table></div>
@@ -571,7 +589,7 @@ pre.json{background:#f7f8fd;border:1px solid var(--line);border-radius:8px;paddi
 </section>
 
 <section id="settings" class="page">
-  <div class="head"><div><h1>⚙️ Sozlamalar</h1><p>Tizim nomi va bronlarni boshqarish.</p></div></div>
+  <div class="head"><div><h1>Sozlamalar</h1><p>Tizim nomi va bronlarni boshqarish.</p></div></div>
   <div class="card">
     <div class="field"><label>TIZIM NOMI</label><input id="systemName" class="input" value="AVTODROM INDEX"></div>
     <div class="field"><label>BRONLAR</label><select id="bookingEnabled" class="select"><option value="true">Yoqilgan</option><option value="false">O‘chirilgan</option></select></div>
@@ -579,7 +597,7 @@ pre.json{background:#f7f8fd;border:1px solid var(--line);border-radius:8px;paddi
     <div class="field"><label>AVTODROM HAQIDA <span class="muted">(mijoz panelidagi «INDEX AVTODROM» bo‘limi)</span></label>
       <textarea id="aboutText" class="input" rows="3" placeholder="Maydoncha haqida qisqacha…"></textarea></div>
     <div class="field"><label>SHAROITLAR <span class="muted">(har qatorda bittadan)</span></label>
-      <textarea id="facilities" class="input" rows="6" placeholder="🚦 Yo‘l belgilari | Svetoforlar va STOP belgilari&#10;☕ Kutish zonasi | Issiq choy va o‘tirish joyi"></textarea>
+      <textarea id="facilities" class="input" rows="6" placeholder="Yo‘l belgilari | Svetoforlar va STOP belgilari&#10;Kutish zonasi | Issiq choy va o‘tirish joyi"></textarea>
       <div class="muted" style="font-size:12px;margin-top:5px">Format: <code>belgi Sarlavha | Tavsif</code>. Bo‘sh qoldirsangiz standart ro‘yxat ko‘rinadi.</div></div>
     <div class="field"><label>ISH VAQTI (matn)</label><input id="workingHours" class="input" autocomplete="off" placeholder="Dushanba–Shanba"></div>
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
@@ -592,9 +610,9 @@ pre.json{background:#f7f8fd;border:1px solid var(--line);border-radius:8px;paddi
   </div>
 
   <div class="card">
-    <h3 style="margin-top:0">📍 AVTODROM lokatsiyasi</h3>
+    <h3 style="margin-top:0">AVTODROM lokatsiyasi</h3>
     <p class="muted" style="margin-top:0;font-size:13px">Mijoz panelidagi «Xaritada ochish» tugmasi shu ma’lumotdan foydalanadi.</p>
-    <div id="locDirty" class="warn hidden" style="margin-bottom:12px">✎ Tahrirlanmoqda — saqlamaguningizcha avtomatik yangilanish to‘xtatilgan.</div>
+    <div id="locDirty" class="warn hidden" style="margin-bottom:12px">Tahrirlanmoqda — saqlamaguningizcha avtomatik yangilanish to‘xtatilgan.</div>
     <div class="field"><label>NOMI</label><input id="locName" class="input" autocomplete="off" placeholder="TASH INDEX AVTODROM"></div>
     <div class="field"><label>MANZIL</label><input id="locAddress" class="input" autocomplete="off" placeholder="Toshkent sh., Yangihayot tumani, ..."></div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
@@ -606,7 +624,7 @@ pre.json{background:#f7f8fd;border:1px solid var(--line);border-radius:8px;paddi
     <div class="field"><label>2GIS URL <span class="muted">(ixtiyoriy)</span></label><input id="loc2gis" class="input" autocomplete="off" placeholder="https://2gis.uz/..."></div>
     <div id="locAlert"></div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px">
-      <button class="btn primary" id="saveLocBtn">📍 Lokatsiyani saqlash</button>
+      <button class="btn primary" id="saveLocBtn">Lokatsiyani saqlash</button>
       <button class="btn" id="prevGoogle">Google</button>
       <button class="btn" id="prevYandex">Yandex</button>
       <button class="btn" id="prev2gis">2GIS</button>
@@ -635,7 +653,7 @@ const iname=x=>uname(x?.profile||x?.instructor?.profile||x);
 const BADGE={pending:['Kutilmoqda','wait'],confirmed:['Tasdiqlangan','ok'],in_progress:['Jarayonda','run'],completed:['Tugagan','ok'],cancelled:['Bekor','bad'],rejected:['Rad etilgan','bad'],no_show:['Kelmagan','bad'],approved:['Tasdiqlangan','ok'],active:['Faol','ok'],inactive:['Bloklangan','bad'],paid:['To‘langan','ok'],failed:['Xato','bad'],refunded:['Qaytarilgan','run'],PENDING:['Kutilmoqda','wait'],APPROVED:['Tasdiqlangan','ok'],REJECTED:['Rad etilgan','bad']};
 const badge=v=>{const a=BADGE[String(v||'')]||[v||'—','wait'];return `<span class="status ${a[1]}">${esc(a[0])}</span>`};
 
-function toast(t){const x=$('toast');x.textContent='✓ '+t;x.classList.add('on');setTimeout(()=>x.classList.remove('on'),3000)}
+function toast(t){const x=$('toast');x.textContent=t;x.classList.add('on');setTimeout(()=>x.classList.remove('on'),3000)}
 function notice(t,bad=true){$('notice').innerHTML=`<div class="${bad?'error':'notice'}">${esc(t)}</div>`;setTimeout(()=>$('notice').innerHTML='',7000)}
 function showWarnings(list){
   const all=[...new Set(list.filter(Boolean))];
@@ -758,7 +776,7 @@ async function bookingAction(id,s){
 function renderInstructors(){
   const q=$('instSearch').value.toLowerCase();
   const a=S.instructors.filter(x=>!q||JSON.stringify(x).toLowerCase().includes(q));
-  $('instRows').innerHTML=a.length?a.map(x=>`<tr><td><b>${esc(iname(x))}</b></td><td>${esc(x.profile?.phone||'—')}</td><td>${esc(x.profile?.telegram_id||'—')}</td><td>${esc(x.experience_years??0)} yil</td><td>★ ${esc(x.rating??0)} <span class="muted">(${esc(x.total_reviews??0)})</span></td><td>${S.bookings.filter(b=>String(b.instructor_id)===String(x.id)).length}</td><td>${x.active?badge('active'):badge('inactive')}</td><td><button class="btn small" data-inst="${esc(x.id)}" data-act="${x.active?'0':'1'}">${x.active?'Bloklash':'Tiklash'}</button></td></tr>`).join(''):'<tr><td colspan="8" class="empty">Instruktorlar yo‘q.</td></tr>';
+  $('instRows').innerHTML=a.length?a.map(x=>`<tr><td><b>${esc(iname(x))}</b></td><td>${esc(x.profile?.phone||'—')}</td><td>${esc(x.profile?.telegram_id||'—')}</td><td>${esc(x.experience_years??0)} yil</td><td>${esc(x.rating??0)} <span class="muted">(${esc(x.total_reviews??0)})</span></td><td>${S.bookings.filter(b=>String(b.instructor_id)===String(x.id)).length}</td><td>${x.active?badge('active'):badge('inactive')}</td><td><button class="btn small" data-inst="${esc(x.id)}" data-act="${x.active?'0':'1'}">${x.active?'Bloklash':'Tiklash'}</button></td></tr>`).join(''):'<tr><td colspan="8" class="empty">Instruktorlar yo‘q.</td></tr>';
   document.querySelectorAll('[data-inst]').forEach(b=>b.onclick=()=>toggleInstructor(b.dataset.inst,b.dataset.act==='1'));
 }
 async function toggleInstructor(id,active){
@@ -952,7 +970,7 @@ async function loadMedia(){
 
     $('mediaGrid').innerHTML =
       (single.length?`<h3 style="grid-column:1/-1;margin:0">Bitta o‘rinli media</h3>`+single.map(m=>card(m,SLOT[m.key]||m.key)).join(''):'')
-      + `<h3 style="grid-column:1/-1;margin:14px 0 0">📸 Galereya <span class="count">${gal.length}</span></h3>`
+      + `<h3 style="grid-column:1/-1;margin:14px 0 0">Galereya <span class="count">${gal.length}</span></h3>`
       + (gal.length?gal.map(m=>card(m,m.media_type==='video'?'video':'rasm')).join('')
          :'<div class="empty" style="grid-column:1/-1">Galereya bo‘sh. Yuqoridan «Galereya» tanlab rasm yoki video yuklang.</div>');
 
@@ -1082,7 +1100,7 @@ $('saveLocBtn').onclick=async()=>{
     await api('/api/admin/settings/address',{method:'PUT',body:JSON.stringify({value:{value:v.address}})});
     clearEditing(); toast('Lokatsiya saqlandi'); await loadAll();
   }catch(e){ $('locAlert').innerHTML=`<div class="error">${esc(e.message)}</div>`; }
-  finally{ b.disabled=false; b.textContent='📍 Lokatsiyani saqlash'; }
+  finally{ b.disabled=false; b.textContent='Lokatsiyani saqlash'; }
 };
 function mapUrl(kind){
   const v=locForm();
@@ -1257,15 +1275,15 @@ function slotHtml(b){
   return `<div class="slot ${paid?'paid':''}">
     <div>
       <b>${esc(kHour(b.start_at))} · ${esc(name)}</b>
-      <div class="meta2">${esc(b.customer?.phone||'telefon yo‘q')} · 👨‍🏫 ${esc(who)} · ${esc(b.course?.name||'—')}${(b.hours||1)>1?` · <b>${esc(b.hours)} soat</b>`:''}
+      <div class="meta2">${esc(b.customer?.phone||'telefon yo‘q')} · ${esc(who)} · ${esc(b.course?.name||'—')}${(b.hours||1)>1?` · <b>${esc(b.hours)} soat</b>`:''}
         ${b.source==='walk_in'?' · <span class="count">bronsiz</span>':''}</div>
     </div>
     <div class="right">
       <b style="color:var(--g)">${esc(money(b.price))}</b>
       ${paid
         ? `<span class="status ok">${esc(b.payment?.method==='card'?'Karta':'Naqd')} · to‘langan</span>
-           <button class="btn small" data-rcp="${esc(b.payment?.receipt_code||'')}">🧾 Chek</button>`
-        : `<button class="btn primary small" data-pay="${esc(b.id)}">💵 To‘lov qabul qilish</button>`}
+           <button class="btn small" data-rcp="${esc(b.payment?.receipt_code||'')}">Chek</button>`
+        : `<button class="btn primary small" data-pay="${esc(b.id)}">To‘lov qabul qilish</button>`}
     </div>
   </div>`;
 }
@@ -1278,15 +1296,15 @@ function payModal(bookingId){
     <div class="card" style="box-shadow:none;margin-bottom:14px">
       <b style="font-size:16px">${esc(uname(b.customer))}</b>
       <div class="muted" style="font-size:13px;margin-top:4px">
-        ${esc(kHour(b.start_at))} · ${esc(b.course?.name||'—')}${(b.hours||1)>1?` · <b>${esc(b.hours)} soat</b>`:''} · 👨‍🏫 ${esc(b.instructor?.profile?.full_name||'—')}
+        ${esc(kHour(b.start_at))} · ${esc(b.course?.name||'—')}${(b.hours||1)>1?` · <b>${esc(b.hours)} soat</b>`:''} · ${esc(b.instructor?.profile?.full_name||'—')}
       </div>
       ${(b.hours||1)>1&&b.course?.price?`<div class="muted" style="font-size:12px;margin-top:6px">Hisob: ${esc(money(b.course.price))} × ${esc(b.hours)} = <b>${esc(money(b.price))}</b></div>`:''}
     </div>
     <div class="field"><label>SUMMA (UZS) *</label><input id="pyAmount" class="input" type="number" min="0" step="1000" value="${esc(b.price||0)}"></div>
     <div class="field"><label>TO‘LOV TURI *</label>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px">
-        <button type="button" class="btn" id="pyCash" style="height:52px">💵 Naqd</button>
-        <button type="button" class="btn" id="pyCard" style="height:52px">💳 Karta</button>
+        <button type="button" class="btn" id="pyCash" style="height:52px">Naqd</button>
+        <button type="button" class="btn" id="pyCard" style="height:52px">Karta</button>
       </div></div>
     <div class="field"><label>IZOH <span class="muted">(ixtiyoriy)</span></label><input id="pyNote" class="input"></div>
     <div id="pyAlert"></div>
@@ -1404,7 +1422,7 @@ function receiptModal(r){
     </div>
     <div style="display:flex;gap:8px;margin-top:16px">
       <button class="btn" style="flex:1" id="rcClose">Yopish</button>
-      <button class="btn primary" style="flex:1" id="rcPrint">🖨 Chop etish</button>
+      <button class="btn primary" style="flex:1" id="rcPrint">Chop etish</button>
     </div>`);
   drawQR(document.getElementById('qrBox'), r.code);
   $('rcClose').onclick = closeModal;
@@ -1483,7 +1501,7 @@ function renderAnalytics(){
   const t = d.totals || {}, ch = d.change || {};
   $('dPeriodLabel').textContent = `${d.label} ko‘rsatkichlar`;
 
-  const arrow = v => v > 0 ? `<i class="up">▲ ${v}%</i>` : v < 0 ? `<i class="dn">▼ ${Math.abs(v)}%</i>` : `<i class="fl">— 0%</i>`;
+  const arrow = v => v > 0 ? `<i class="up">${v}%</i>` : v < 0 ? `<i class="dn">${Math.abs(v)}%</i>` : `<i class="fl">— 0%</i>`;
   const kpi = (label, value, delta) =>
     `<div class="kpi"><span>${esc(label)}</span><b>${value}</b>${delta !== undefined ? arrow(delta) : ''}</div>`;
 
@@ -1624,7 +1642,7 @@ function renderControl(d){
           <td><b>${esc(uname(r.customer))}</b><br><span class="muted" style="font-size:11px">${esc(r.customer?.phone||'')}</span></td>
           <td>${esc(r.course?.name||'—')}<br><span class="muted" style="font-size:11px">${r.duration_minutes?esc(fmtDur(r.duration_minutes)):''}</span></td>
           <td>${r.receipt_code?`<span class="rcp">${esc(r.receipt_code)}</span>`:'<span class="muted">—</span>'}</td>
-          <td>${r.scanned?`<span class="status ok">✓ ${esc(dt(r.scanned_at).split(' ').pop())}</span>`:'<span class="muted">—</span>'}</td>
+          <td>${r.scanned?`<span class="status ok">${esc(dt(r.scanned_at).split(' ').pop())}</span>`:'<span class="muted">—</span>'}</td>
           <td>${r.amount?`<b>${nf(r.amount)}</b><br><span class="muted" style="font-size:11px">${r.method==='card'?'karta':'naqd'}</span>`:'<span class="muted">—</span>'}</td>
           <td>${badge(r.status)}</td></tr>`).join('')
           : '<tr><td colspan="7" class="empty">Bu davrda dars bo‘lmagan.</td></tr>'}
@@ -1711,7 +1729,7 @@ async function loadCoBookings(){
     if (!mine.length) { box.innerHTML = '<div class="warn" style="margin:0">Bu kunda to‘lanmagan bron topilmadi. «Bronsiz» rejimiga o‘ting.</div>'; return; }
     box.innerHTML = mine.map(b => `<button type="button" data-bk="${esc(b.id)}" class="${CO.booking?.id===b.id?'on':''}">
       <b>${esc(kHour(b.start_at))} · ${esc(b.course?.name||'—')}</b>
-      <span>👨‍🏫 ${esc(b.instructor?.profile?.full_name||'—')} · ${esc(money(b.price))}</span></button>`).join('');
+      <span>${esc(b.instructor?.profile?.full_name||'—')} · ${esc(money(b.price))}</span></button>`).join('');
     box.querySelectorAll('[data-bk]').forEach(btn => btn.onclick = () => {
       CO.booking = mine.find(x => String(x.id) === btn.dataset.bk) || null;
       if (CO.booking) {
@@ -1766,7 +1784,7 @@ async function loadFreeInstructors(){
     if (!CO.instructor && d.suggestion) CO.instructor = { id: d.suggestion.id, name: d.suggestion.name };
     const row = (i, wait) => `<button type="button" data-ins="${esc(i.id)}" class="${String(CO.instructor?.id)===String(i.id)?'on':''} ${wait?'wait':''}">
       <b>${esc(i.name)}${wait?'':' · bo‘sh'}</b>
-      <span>${wait ? `⏳ ${esc(i.wait_minutes)} daqiqadan keyin bo‘shaydi (${esc(kHour(i.free_at))})` : `★ ${esc(i.rating.toFixed(1))}`}</span></button>`;
+      <span>${wait ? `${esc(i.wait_minutes)} daqiqadan keyin bo‘shaydi (${esc(kHour(i.free_at))})` : `★ ${esc(i.rating.toFixed(1))}`}</span></button>`;
     box.innerHTML =
       (CO.free.length ? CO.free.map(i => row(i,false)).join('')
         : '<div class="warn" style="margin:0 0 8px">Bu vaqtda bo‘sh instruktor yo‘q. Eng tez bo‘shaydiganlar:</div>')
@@ -1812,7 +1830,7 @@ function coRender(){
     const cash = Number($('coCash').value||0), card = Number($('coCard').value||0);
     const diff = total - cash - card;
     $('coSplitHint').textContent = diff === 0
-      ? '✓ Bo‘laklar summaga mos'
+      ? 'Bo‘laklar summaga mos'
       : diff > 0 ? `Yetishmayapti: ${money(diff)}` : `Ortiqcha: ${money(-diff)}`;
     $('coSplitHint').style.color = diff === 0 ? 'var(--ok)' : 'var(--red)';
   }
@@ -1864,7 +1882,7 @@ $('coIssue').onclick = async () => {
     setTimeout(() => { try { window.print(); } catch(e){} }, 400);
     coResetForm();
   }catch(e){ err(e.message); }
-  finally{ btn.disabled = false; btn.textContent = '🧾 Chek chiqarish'; }
+  finally{ btn.disabled = false; btn.textContent = 'Chek chiqarish'; }
 };
 
 function coResetForm(){
@@ -1888,6 +1906,30 @@ function initCheckout(){
   if (CO.mode === 'walk_in') loadFreeInstructors();
 }
 
+
+/* =========================================================================
+   IKKI OYNA: KASSA va BOSHQARUV
+   Bitta sahifada, lekin bir vaqtda faqat bittasi ko'rinadi. Kassir
+   boshqaruv bo'limlarini ko'rmaydi — chalkashlik va tasodifiy o'zgarish
+   bo'lmaydi. Tanlov brauzerda saqlanadi.
+   ========================================================================= */
+const MODE_KEY = 'avtodrom_admin_mode';
+const MODE_HOME = { kassa: 'checkout', admin: 'dashboard' };
+let adminMode = 'kassa';
+try { const v = localStorage.getItem(MODE_KEY); if (v === 'admin' || v === 'kassa') adminMode = v; } catch (e) {}
+
+function applyMode(mode, goHome){
+  adminMode = mode;
+  try { localStorage.setItem(MODE_KEY, mode); } catch (e) {}
+  document.querySelectorAll('.ms').forEach(b => b.classList.toggle('on', b.dataset.mode === mode));
+  document.querySelectorAll('[data-grp]').forEach(el => el.classList.toggle('hidden', el.dataset.grp !== mode));
+  // Joriy sahifa boshqa rejimga tegishli bo'lsa, o'sha rejimning bosh sahifasiga o'tamiz
+  const active = document.querySelector('.page.on');
+  const btn = active ? document.querySelector(`.nav[data-p="${active.id}"]`) : null;
+  if (goHome || !btn || btn.dataset.grp !== mode) showPage(MODE_HOME[mode]);
+}
+document.querySelectorAll('.ms').forEach(b => b.onclick = () => applyMode(b.dataset.mode, true));
+
 /* ---------- Bekor qilish so'rovlari ---------- */
 S.cancels=[];
 async function loadCancels(){
@@ -1906,15 +1948,15 @@ function renderCancels(){
         <div>
           <b style="font-size:15px">${esc(uname(b.customer))}</b>
           <div class="muted" style="font-size:12px;margin-top:3px">${esc(b.customer?.phone||'—')}</div>
-          <div style="margin-top:8px">📚 ${esc(b.course?.name||'—')} · 👨‍🏫 ${esc(iname(b.instructor))}</div>
-          <div class="muted" style="font-size:13px;margin-top:3px">📅 ${dt(b.start_at)}</div>
+          <div style="margin-top:8px">${esc(b.course?.name||'—')} · ${esc(iname(b.instructor))}</div>
+          <div class="muted" style="font-size:13px;margin-top:3px">${dt(b.start_at)}</div>
         </div>
         <div style="text-align:right"><span class="muted" style="font-size:11px">So‘rov vaqti</span><div>${dt(b.cancel_requested_at)}</div></div>
       </div>
-      <div class="warn" style="margin:12px 0 0">💬 <b>Sabab:</b> ${esc(b.cancel_request_reason||'—')}</div>
+      <div class="warn" style="margin:12px 0 0"><b>Sabab:</b> ${esc(b.cancel_request_reason||'—')}</div>
       <div class="actions" style="margin-top:12px">
-        <button class="btn red" data-cx-ok="${esc(b.id)}">✓ Tasdiqlash — bronni bekor qilish</button>
-        <button class="btn" data-cx-no="${esc(b.id)}">✕ Rad etish — bron qolsin</button>
+        <button class="btn red" data-cx-ok="${esc(b.id)}">Tasdiqlash — bronni bekor qilish</button>
+        <button class="btn" data-cx-no="${esc(b.id)}">Rad etish — bron qolsin</button>
       </div>
     </div>`).join('');
   document.querySelectorAll('[data-cx-ok]').forEach(x=>x.onclick=()=>cxDecide(x.dataset.cxOk,'approve'));
@@ -1946,7 +1988,8 @@ function fillCashierInstructors(){
   if(cur) $('kInstructor').value=cur;
 }
 
-async function boot(){try{await api('/api/admin/me');showApp();if(!$('dDate').value)$('dDate').value=kToday();await loadAll();await Promise.allSettled([loadAnalytics(),loadSupport(),loadCancels()]); initCheckout();}catch{showLogin()}}
+async function boot(){try{await api('/api/admin/me');showApp();if(!$('dDate').value)$('dDate').value=kToday();await loadAll();applyMode(adminMode,false); initCheckout();
+  await Promise.allSettled([loadAnalytics(),loadSupport(),loadCancels()]);}catch{showLogin()}}
 // Avtomatik yangilanish: modal ochiq bo'lsa yoki sozlama tahrirlanayotgan bo'lsa TO'XTAYDI.
 setInterval(()=>{
   if($('app').classList.contains('hidden')) return;
