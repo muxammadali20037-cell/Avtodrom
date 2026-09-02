@@ -116,6 +116,27 @@ button,input,select,textarea{font:inherit}.hidden{display:none!important}
 .regtoday div{text-align:right}
 .regtoday span{display:block;font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase}
 .regtoday b{display:block;font-size:16px;margin-top:2px}
+
+.locksc{max-width:520px;margin:40px auto;text-align:center}
+.locksc h2{font-size:22px;margin:0 0 6px}
+.locksc p{color:var(--muted);font-size:14px;margin:0 0 22px}
+.lockregs{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:18px}
+.lockreg{border:2px solid var(--line);background:#fff;border-radius:16px;padding:22px 14px;cursor:pointer;font-family:inherit}
+.lockreg b{display:block;font-size:26px;font-weight:700;color:var(--text)}
+.lockreg span{display:block;font-size:12px;color:var(--muted);margin-top:4px}
+.lockreg.on{border-color:var(--g);background:var(--soft)}
+.lockreg.on b{color:var(--g)}
+.lockreg .nopin{display:inline-block;margin-top:7px;font-size:10.5px;background:#FFF4E5;color:#8a6500;border-radius:99px;padding:2px 8px}
+.pinbox{max-width:280px;margin:0 auto}
+.pinin{width:100%;text-align:center;font-size:30px;letter-spacing:.5em;font-family:ui-monospace,Menlo,monospace;
+ border:2px solid var(--line);border-radius:14px;padding:14px 10px;outline:none;background:#fff}
+.pinin:focus{border-color:var(--g)}
+.pinpad{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-top:14px}
+.pinpad button{height:56px;border:1.5px solid var(--line);background:#fff;border-radius:13px;font-size:21px;
+ font-weight:700;cursor:pointer;font-family:inherit;color:var(--text)}
+.pinpad button:active{background:var(--soft)}
+.reglockbtn{border:0;background:transparent;color:var(--muted);font-size:12.5px;text-decoration:underline;
+ cursor:pointer;font-family:inherit;margin-left:14px}
 .warn{padding:11px;border-radius:11px;background:#fff8e6;color:#8a6500;border:1px solid #ffe6a8;font-size:13px}
 .top{height:70px;background:#fff;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:20}
 .topin{height:100%;max-width:1500px;margin:auto;padding:0 20px;display:flex;align-items:center;justify-content:space-between}
@@ -249,6 +270,27 @@ button,input,select,textarea{font:inherit}.hidden{display:none!important}
 .regtoday div{text-align:right}
 .regtoday span{display:block;font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase}
 .regtoday b{display:block;font-size:16px;margin-top:2px}
+
+.locksc{max-width:520px;margin:40px auto;text-align:center}
+.locksc h2{font-size:22px;margin:0 0 6px}
+.locksc p{color:var(--muted);font-size:14px;margin:0 0 22px}
+.lockregs{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:18px}
+.lockreg{border:2px solid var(--line);background:#fff;border-radius:16px;padding:22px 14px;cursor:pointer;font-family:inherit}
+.lockreg b{display:block;font-size:26px;font-weight:700;color:var(--text)}
+.lockreg span{display:block;font-size:12px;color:var(--muted);margin-top:4px}
+.lockreg.on{border-color:var(--g);background:var(--soft)}
+.lockreg.on b{color:var(--g)}
+.lockreg .nopin{display:inline-block;margin-top:7px;font-size:10.5px;background:#FFF4E5;color:#8a6500;border-radius:99px;padding:2px 8px}
+.pinbox{max-width:280px;margin:0 auto}
+.pinin{width:100%;text-align:center;font-size:30px;letter-spacing:.5em;font-family:ui-monospace,Menlo,monospace;
+ border:2px solid var(--line);border-radius:14px;padding:14px 10px;outline:none;background:#fff}
+.pinin:focus{border-color:var(--g)}
+.pinpad{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-top:14px}
+.pinpad button{height:56px;border:1.5px solid var(--line);background:#fff;border-radius:13px;font-size:21px;
+ font-weight:700;cursor:pointer;font-family:inherit;color:var(--text)}
+.pinpad button:active{background:var(--soft)}
+.reglockbtn{border:0;background:transparent;color:var(--muted);font-size:12.5px;text-decoration:underline;
+ cursor:pointer;font-family:inherit;margin-left:14px}
 .warn{padding:11px;border-radius:11px;background:#fff8e6;color:#8a6500;border:1px solid #ffe6a8;margin-bottom:12px;font-size:13px}
 .empty{padding:25px;text-align:center;color:var(--muted)}
 .actions{display:flex;gap:5px;flex-wrap:wrap}
@@ -319,6 +361,7 @@ pre.json{background:#F7FAFF;border:1px solid var(--line);border-radius:8px;paddi
   <button class="nav" data-grp="kassa" data-p="reports">Hisobot</button>
 
   <div class="navgroup" data-grp="admin">BOSHQARUV</div>
+  <span id="supCount" class="hidden">0</span>
   <button class="nav" data-grp="admin" data-p="dashboard">Dashboard</button>
   <button class="nav" data-grp="admin" data-p="control">Instruktor nazorati</button>
   <button class="nav" data-grp="admin" data-p="cashier">Kunlik jadval</button>
@@ -328,10 +371,8 @@ pre.json{background:#F7FAFF;border:1px solid var(--line);border-radius:8px;paddi
   <button class="nav" data-grp="admin" data-p="instructors">Instruktorlar</button>
   <button class="nav" data-grp="admin" data-p="users">Foydalanuvchilar</button>
   <button class="nav" data-grp="admin" data-p="courses">Mashg‘ulotlar</button>
-  <button class="nav" data-grp="admin" data-p="support">Chat <span id="supCount" class="count">0</span></button>
   <button class="nav" data-grp="admin" data-p="reviews">Sharhlar <span id="revCount" class="count">0</span></button>
   <button class="nav" data-grp="admin" data-p="media">Media</button>
-  <button class="nav" data-grp="admin" data-p="audit">Audit log</button>
   <button class="nav" data-grp="admin" data-p="settings">Sozlamalar</button>
 </aside>
 
@@ -393,6 +434,7 @@ pre.json{background:#F7FAFF;border:1px solid var(--line);border-radius:8px;paddi
   <div class="head"><div><h1>Chek chiqarish</h1><p>Mijoz ma’lumotini kiriting — narx avtomatik hisoblanadi, chek QR bilan chiqadi.</p></div>
     <button class="btn" id="coReset">Tozalash</button></div>
 
+  <div id="regLock" class="hidden"></div>
   <div id="shiftBar"></div>
 
   <div class="grid2" style="grid-template-columns:1.15fr .85fr;align-items:start">
@@ -612,6 +654,10 @@ pre.json{background:#F7FAFF;border:1px solid var(--line);border-radius:8px;paddi
     <div class="field"><label>TIZIM NOMI</label><input id="systemName" class="input" value="AVTODROM INDEX"></div>
     <div class="field"><label>BRONLAR</label><select id="bookingEnabled" class="select"><option value="true">Yoqilgan</option><option value="false">O‘chirilgan</option></select></div>
     <div class="field"><label>ALOQA TELEFONI <span class="muted">(mijoz panelida ko‘rinadi)</span></label><input id="contactPhone" class="input" autocomplete="off" placeholder="+998901234567"></div>
+    <div class="field"><label>KASSA PIN KODLARI <span class="muted">(kassir kassani shu bilan ochadi)</span></label>
+      <div id="pinSetters" style="display:grid;gap:9px"></div>
+      <div class="muted" style="font-size:12px;margin-top:6px">4–8 raqam. PIN xeshlanib saqlanadi — hech kim, hatto bazani ko‘rgan odam ham uni o‘qiy olmaydi.</div></div>
+
     <div class="field"><label>SOATLIK TARIF <span class="muted">(chek chiqarishda ishlatiladi)</span></label>
       <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">
         <div><div class="muted" style="font-size:11px;margin-bottom:4px">A kategoriya</div>
@@ -755,6 +801,7 @@ function showPage(id){
   if(id==='checkout'){ initCheckout(); loadRegisters(); }
   if(id==='dashboard'){ if(!$('dDate').value)$('dDate').value=kToday(); loadAnalytics(); }
   if(id==='control'){ if(!$('cDate').value)$('cDate').value=kToday(); renderCtlPicker(); loadControl(); }
+  if(id==='settings') renderPinSetters();
   if(id==='cashier'){ if(!$('kDate').value) $('kDate').value=kToday(); fillCashierInstructors(); loadCashier(); }
 }
 document.querySelectorAll('.nav').forEach(x=>x.addEventListener('click',()=>showPage(x.dataset.p)));
@@ -1904,8 +1951,8 @@ $('coIssue').onclick = async () => {
     if (cash + card !== total) return err(`Naqd + terminal = ${money(cash+card)}, jami esa ${money(total)}`);
   }
 
-  if (!REGISTER) return err('Kassani tanlang (P1 yoki P2).');
-  const body = { duration_minutes: CO.minutes, category: CO.category, register_id: REGISTER.id,
+  if (!REG_TOKEN) return err('Kassa ochilmagan. P1 yoki P2 ni PIN bilan oching.');
+  const body = { duration_minutes: CO.minutes, category: CO.category, register_token: REG_TOKEN,
                  amount: total, cash_amount: cash, card_amount: card };
 
   if (CO.mode === 'booked') {
@@ -1984,52 +2031,128 @@ document.querySelectorAll('.ms').forEach(b => b.onclick = () => applyMode(b.data
 
 
 /* =========================================================================
-   KASSA TANLASH — P1 va P2
-   Ikkita kirish eshigi, har birida kassa. Hisob-kitob doimiy alohida.
-   Kassir bir marta o'z kassasini tanlaydi — tanlov brauzerda saqlanadi,
-   sahifa yangilansa ham yo'qolmaydi. Ochish/yopish yo'q.
+   KASSA QULFI — P1 va P2
+   Har bir kassa PIN bilan ochiladi. PIN serverda tekshiriladi va
+   ochilgach imzolangan token beriladi. Chek chiqarishda kassa aynan
+   shu tokendan aniqlanadi — brauzerni o'zgartirib boshqa kassa nomidan
+   chek chiqarib bo'lmaydi.
    ========================================================================= */
-const REG_KEY = 'avtodrom_register_id';
-let REGISTER = null;
+const REG_KEY = 'avtodrom_reg_token';
+let REGISTER = null, REG_TOKEN = '';
 S.registers = [];
 
-function savedRegId(){ try { return localStorage.getItem(REG_KEY) || ''; } catch (e) { return ''; } }
-function rememberReg(id){ try { id ? localStorage.setItem(REG_KEY, id) : localStorage.removeItem(REG_KEY); } catch (e) {} }
+function saveReg(tok, reg){
+  try{
+    if (tok) localStorage.setItem(REG_KEY, JSON.stringify({ t: tok, r: reg }));
+    else localStorage.removeItem(REG_KEY);
+  }catch(e){}
+}
+function restoreReg(){
+  try{
+    const raw = localStorage.getItem(REG_KEY); if (!raw) return false;
+    const { t, r } = JSON.parse(raw);
+    // Token muddatini o'qiymiz (imzo baribir serverda tekshiriladi)
+    const exp = Number(String(t).split('.')[1]);
+    if (!exp || exp < Date.now()) { saveReg(''); return false; }
+    REG_TOKEN = t; REGISTER = r; return true;
+  }catch(e){ return false; }
+}
 
 async function loadRegisters(){
-  const box = $('shiftBar'); if (!box) return;
+  if (restoreReg()) { showCheckout(); loadRegToday(); return; }
   try{
     const d = await api('/api/admin/registers');
     S.registers = d.registers || [];
-    const saved = savedRegId();
-    REGISTER = S.registers.find(r => String(r.id) === saved) || null;
-    renderRegisterBar();
-  }catch(e){ box.innerHTML = `<div class="error">${esc(e.message)}</div>`; }
+  }catch(e){ S.registers = []; }
+  showLock();
+}
+
+function showLock(){
+  $('regLock').classList.remove('hidden');
+  document.querySelectorAll('#checkout .grid2, #shiftBar').forEach(el => el.classList.add('hidden'));
+  let picked = null;
+  $('regLock').innerHTML = `<div class="locksc">
+    <h2>Kassani tanlang</h2>
+    <p>Ishlayotgan kassangizni tanlab PIN kodini kiriting.</p>
+    <div class="lockregs">${S.registers.map(r => `
+      <button type="button" class="lockreg" data-lr="${esc(r.id)}">
+        <b>${esc(r.code)}</b><span>${esc(r.name)}</span>
+        ${r.has_pin ? '' : '<span class="nopin">PIN o‘rnatilmagan</span>'}
+      </button>`).join('') || '<div class="muted">Kassa topilmadi</div>'}</div>
+    <div id="pinWrap" class="hidden">
+      <div class="pinbox">
+        <input id="pinIn" class="pinin" type="password" inputmode="numeric" maxlength="8" placeholder="••••" autocomplete="off">
+        <div class="pinpad">
+          ${[1,2,3,4,5,6,7,8,9].map(n=>`<button type="button" data-k="${n}">${n}</button>`).join('')}
+          <button type="button" data-k="clear">C</button>
+          <button type="button" data-k="0">0</button>
+          <button type="button" data-k="back">←</button>
+        </div>
+        <div id="pinAlert" style="margin-top:12px"></div>
+        <button class="btn primary" id="pinGo" style="width:100%;height:50px;margin-top:6px">Ochish</button>
+      </div>
+    </div>
+  </div>`;
+
+  $('regLock').querySelectorAll('[data-lr]').forEach(b => b.onclick = () => {
+    picked = S.registers.find(r => String(r.id) === b.dataset.lr) || null;
+    $('regLock').querySelectorAll('.lockreg').forEach(x => x.classList.toggle('on', x === b));
+    $('pinWrap').classList.remove('hidden');
+    setTimeout(() => $('pinIn').focus(), 80);
+  });
+
+  const pad = k => {
+    const el = $('pinIn');
+    if (k === 'clear') el.value = '';
+    else if (k === 'back') el.value = el.value.slice(0, -1);
+    else if (el.value.length < 8) el.value += k;
+  };
+  $('regLock').querySelectorAll('[data-k]').forEach(b => b.onclick = () => pad(b.dataset.k));
+  $('pinIn').addEventListener('keydown', e => { if (e.key === 'Enter') $('pinGo').click(); });
+
+  $('pinGo').onclick = async () => {
+    if (!picked) { $('pinAlert').innerHTML = '<div class="error">Avval kassani tanlang</div>'; return; }
+    const btn = $('pinGo'); btn.disabled = true;
+    try{
+      const d = await api(`/api/admin/registers/${encodeURIComponent(picked.id)}/unlock`, {
+        method:'POST', body: JSON.stringify({ pin: $('pinIn').value.trim() }) });
+      REG_TOKEN = d.token; REGISTER = d.register;
+      saveReg(REG_TOKEN, REGISTER);
+      if (d.warning) notice(d.warning);
+      toast(`${REGISTER.code} ochildi`);
+      showCheckout(); loadRegToday();
+    }catch(e){
+      $('pinAlert').innerHTML = `<div class="error">${esc(e.message)}</div>`;
+      $('pinIn').value = ''; $('pinIn').focus();
+    }finally{ btn.disabled = false; }
+  };
+}
+
+function showCheckout(){
+  $('regLock').classList.add('hidden');
+  document.querySelectorAll('#checkout .grid2, #shiftBar').forEach(el => el.classList.remove('hidden'));
+  renderRegisterBar();
+}
+
+function lockRegister(){
+  REGISTER = null; REG_TOKEN = ''; saveReg('');
+  loadRegisters();
 }
 
 function renderRegisterBar(){
-  const box = $('shiftBar');
-  const btns = S.registers.map(r =>
-    `<button type="button" class="regbtn ${String(REGISTER?.id)===String(r.id)?'on':''}" data-reg="${esc(r.id)}">
-      <b>${esc(r.code)}</b><span>${esc(r.name)}</span></button>`).join('');
-
-  box.innerHTML = `<div class="regbar ${REGISTER?'ok':'warn2'}">
-    <div class="reglabel">${REGISTER ? 'Ishlayotgan kassa' : 'Kassani tanlang'}</div>
-    <div class="regbtns">${btns || '<div class="muted">Kassa topilmadi</div>'}</div>
+  if (!REGISTER) return;
+  $('shiftBar').innerHTML = `<div class="regbar ok">
+    <div class="reglabel">Ishlayotgan kassa</div>
+    <div class="regbtns"><div class="regbtn on"><b>${esc(REGISTER.code)}</b><span>${esc(REGISTER.name)}</span></div></div>
+    <button class="reglockbtn" id="regLockBtn">Kassani almashtirish</button>
     <div class="regtoday" id="regToday"></div>
   </div>`;
-
-  box.querySelectorAll('[data-reg]').forEach(b => b.onclick = () => {
-    REGISTER = S.registers.find(r => String(r.id) === b.dataset.reg) || null;
-    rememberReg(REGISTER?.id || '');
-    renderRegisterBar(); loadRegToday();
-  });
-  loadRegToday();
+  $('regLockBtn').onclick = lockRegister;
 }
 
-/** Shu kassaning bugungi hisobi — kassir doim ko'rib turadi. */
+/** Shu kassaning bugungi hisobi. */
 async function loadRegToday(){
-  const el = $('regToday'); if (!el || !REGISTER) { if (el) el.innerHTML = ''; return; }
+  const el = $('regToday'); if (!el || !REGISTER) return;
   try{
     const d = await api(`/api/admin/register-report?period=day&date=${encodeURIComponent(kToday())}`);
     const mine = (d.registers || []).find(r => r.code === REGISTER.code);
@@ -2040,6 +2163,37 @@ async function loadRegToday(){
       <div><span>Terminal</span><b>${esc(money(mine.card))}</b></div>
       <div><span>Bugun jami</span><b style="color:var(--g)">${esc(money(mine.total))}</b></div>`;
   }catch(e){ el.innerHTML = ''; }
+}
+
+
+/* ---- Kassa PIN kodlarini o'rnatish (faqat admin) ---- */
+async function renderPinSetters(){
+  const box = $('pinSetters'); if (!box) return;
+  let regs = [];
+  try{ regs = (await api('/api/admin/registers')).registers || []; }
+  catch(e){ box.innerHTML = `<div class="error">${esc(e.message)}</div>`; return; }
+  box.innerHTML = regs.map(r => `
+    <div style="display:flex;gap:9px;align-items:center;flex-wrap:wrap">
+      <b style="min-width:34px">${esc(r.code)}</b>
+      <span class="muted" style="min-width:120px;font-size:12.5px">${esc(r.name)}</span>
+      <input class="input" type="password" inputmode="numeric" maxlength="8" placeholder="Yangi PIN"
+             data-pinreg="${esc(r.id)}" style="max-width:150px" autocomplete="new-password">
+      <button class="btn small" data-pinsave="${esc(r.id)}">Saqlash</button>
+      <span class="${r.has_pin?'status ok':'warn'}" style="padding:3px 9px;border-radius:99px;font-size:11px">
+        ${r.has_pin ? 'PIN o‘rnatilgan' : 'PIN yo‘q'}</span>
+    </div>`).join('');
+  box.querySelectorAll('[data-pinsave]').forEach(b => b.onclick = async () => {
+    const id = b.dataset.pinsave;
+    const inp = box.querySelector(`[data-pinreg="${id}"]`);
+    const pin = String(inp.value || '').trim();
+    if (!/^\d{4,8}$/.test(pin)) { notice('PIN 4 dan 8 tagacha raqam bo‘lsin'); return; }
+    b.disabled = true;
+    try{
+      await api(`/api/admin/registers/${encodeURIComponent(id)}/pin`, { method:'PUT', body: JSON.stringify({ pin }) });
+      inp.value = ''; toast('PIN saqlandi'); renderPinSetters();
+    }catch(e){ notice(e.message); }
+    finally{ b.disabled = false; }
+  });
 }
 
 /* ---------- Bekor qilish so'rovlari ---------- */
