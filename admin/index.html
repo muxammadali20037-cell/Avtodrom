@@ -5,21 +5,25 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>AVTODROM INDEX — ADMIN</title>
 <style>
-:root{/* TASH INDEX AVTODROM — logotip ranglari */
- --g:#2E3192;--g2:#4348C4;--soft:#EEF0FB;
- --bg:#f4f5fa;--card:#fff;--line:#e2e4f2;--text:#15173a;--muted:#6f739b;
- --red:#c62828;--blue:#2457a6;--gold:#b8860b;--ok:#0d7a4a;
- --shadow:0 8px 28px rgba(20,25,80,.08)}
+:root{/* TASH INDEX AVTODROM — och ko'k va oq */
+ --g:#3B5BDB;          /* asosiy och ko'k */
+ --g2:#5C7CFA;         /* yorug'roq */
+ --soft:#EDF2FF;       /* juda och ko'k fon */
+ --soft2:#DBE4FF;      /* chegara/urg'u */
+ --bg:#F5F8FF;         /* sahifa foni — oqqa yaqin ko'kimtir */
+ --card:#fff;--line:#DCE4F5;--text:#1E2A47;--muted:#6B7A99;
+ --red:#c62828;--blue:#3B5BDB;--gold:#b8860b;--ok:#0d7a4a;
+ --shadow:0 6px 20px rgba(59,91,219,.08)}
 *{box-sizing:border-box}body{font-family:"Times New Roman",Times,Georgia,"Liberation Serif",serif;margin:0;background:var(--bg);color:var(--text);font-family:"Times New Roman",Times,Georgia,"Liberation Serif",serif}
 button,input,select,textarea{font:inherit}.hidden{display:none!important}
-.supthread{width:100%;border:0;background:#fff;text-align:left;padding:12px;border-bottom:1px solid #eceef8;cursor:pointer}
-.supthread:hover{background:#f7f8fd}.supthread.on{background:#EEF0FB}
+.supthread{width:100%;border:0;background:#fff;text-align:left;padding:12px;border-bottom:1px solid #E8EEFC;cursor:pointer}
+.supthread:hover{background:#F7FAFF}.supthread.on{background:#EDF2FF}
 .supthread b{display:block;font-size:13px}.supthread span{display:block;font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:3px}
 .supmsg{max-width:78%;padding:9px 12px;border-radius:13px;margin:7px 0;font-size:13px;line-height:1.45;white-space:pre-wrap;word-break:break-word;background:#f2f5f3}
 .supmsg.admin{margin-left:auto;background:var(--g);color:#fff}
 .supmsg small{display:block;opacity:.7;font-size:9px;margin-top:4px}
 
-.hourrow{display:grid;grid-template-columns:78px 1fr;gap:12px;border-bottom:1px solid #eceef8;padding:10px 0}
+.hourrow{display:grid;grid-template-columns:78px 1fr;gap:12px;border-bottom:1px solid #E8EEFC;padding:10px 0}
 .hourrow:last-child{border-bottom:0}
 .hourlab{font-weight:900;font-size:15px;color:var(--g);padding-top:9px}
 .hourlab small{display:block;font-weight:600;font-size:10px;color:var(--muted)}
@@ -32,8 +36,8 @@ button,input,select,textarea{font:inherit}.hidden{display:none!important}
 .rcp{font-family:ui-monospace,Menlo,monospace;font-weight:900;letter-spacing:.06em}
 
 .segs{display:inline-flex;background:var(--soft);border-radius:11px;padding:3px;gap:2px}
-.seg{border:0;background:transparent;border-radius:9px;padding:8px 13px;font-weight:800;font-size:12.5px;color:#5b6091;cursor:pointer}
-.seg.on{background:#fff;color:var(--g);box-shadow:0 2px 6px rgba(20,25,80,.1)}
+.seg{border:0;background:transparent;border-radius:9px;padding:8px 13px;font-weight:800;font-size:12.5px;color:#5A6B93;cursor:pointer}
+.seg.on{background:#fff;color:var(--g);box-shadow:0 2px 6px rgba(59,91,219,.1)}
 .kpis{display:grid;grid-template-columns:repeat(6,1fr);gap:11px;margin-bottom:15px}
 .kpi{background:#fff;border:1px solid var(--line);border-radius:15px;padding:14px}
 .kpi span{display:block;font-size:10px;color:var(--muted);font-weight:900;text-transform:uppercase;letter-spacing:.03em}
@@ -50,7 +54,7 @@ button,input,select,textarea{font:inherit}.hidden{display:none!important}
 .legend div{display:flex;align-items:center;gap:8px}
 .legend i{width:12px;height:12px;border-radius:3px;flex:none}
 .rank{display:grid;gap:8px}
-.rankrow{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;background:#f7f8fd;border:1px solid var(--line);border-radius:11px;padding:10px 12px}
+.rankrow{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;background:#F7FAFF;border:1px solid var(--line);border-radius:11px;padding:10px 12px}
 .rankrow b{font-size:13.5px}
 .rankrow .met{font-size:11.5px;color:var(--muted);margin-top:2px}
 .rankbar{grid-column:1/-1;height:6px;border-radius:99px;background:#e4e7f5;overflow:hidden}
@@ -61,18 +65,18 @@ button,input,select,textarea{font:inherit}.hidden{display:none!important}
 @media(max-width:1100px){.kpis{grid-template-columns:repeat(3,1fr)}}
 @media(max-width:700px){.kpis{grid-template-columns:repeat(2,1fr)}.bars{height:140px}}
 
-.navgroup{font-size:10px;font-weight:900;letter-spacing:.1em;color:#9096c4;padding:14px 12px 6px}
+.navgroup{font-size:10px;font-weight:900;letter-spacing:.1em;color:#8B9BC4;padding:14px 12px 6px}
 .navgroup:first-child{padding-top:4px}
 
 .pick2{display:grid;grid-template-columns:1fr 1fr;gap:9px}
 .pick3{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}
 .pk{border:1.5px solid var(--line);background:#fff;border-radius:12px;padding:13px 10px;font-weight:800;font-size:13.5px;cursor:pointer;color:var(--text)}
-.pk.on{border-color:var(--g);background:var(--soft);color:var(--g);box-shadow:0 0 0 3px rgba(46,49,146,.09)}
+.pk.on{border-color:var(--g);background:var(--soft);color:var(--g);box-shadow:0 0 0 3px rgba(59,91,219,.09)}
 .durs{display:grid;grid-template-columns:repeat(5,1fr);gap:7px}
 .durs button{border:1.5px solid var(--line);background:#fff;border-radius:11px;padding:11px 3px;font-weight:800;font-size:13px;cursor:pointer;color:var(--text)}
 .durs button.on{border-color:var(--g);background:var(--soft);color:var(--g)}
 .suggest{position:relative;margin-top:6px;border:1px solid var(--line);border-radius:11px;overflow:hidden;background:#fff;max-height:210px;overflow-y:auto}
-.suggest button{display:block;width:100%;text-align:left;border:0;background:#fff;padding:10px 12px;border-bottom:1px solid #eceef8;cursor:pointer;font-size:13px}
+.suggest button{display:block;width:100%;text-align:left;border:0;background:#fff;padding:10px 12px;border-bottom:1px solid #E8EEFC;cursor:pointer;font-size:13px}
 .suggest button:hover{background:var(--soft)}
 .bklist,.inslist{display:grid;gap:7px;max-height:230px;overflow-y:auto}
 .bklist button,.inslist button{border:1.5px solid var(--line);background:#fff;border-radius:11px;padding:11px 13px;text-align:left;cursor:pointer;font-size:13px}
@@ -80,16 +84,16 @@ button,input,select,textarea{font:inherit}.hidden{display:none!important}
 .inslist button.wait{border-style:dashed}
 .inslist b,.bklist b{display:block;font-size:13.5px}
 .inslist span,.bklist span{display:block;font-size:11.5px;color:var(--muted);margin-top:2px}
-.sumbox{background:#f7f8fd;border:1px solid var(--line);border-radius:13px;padding:14px}
+.sumbox{background:#F7FAFF;border:1px solid var(--line);border-radius:13px;padding:14px}
 .sumbox .row{display:flex;justify-content:space-between;gap:10px;font-size:13px;padding:4px 0}
 .sumbox .row.big{font-size:17px;font-weight:900}
-.sumbox .hr2{border-top:1px dashed #c8cce6;margin:8px 0}
+.sumbox .hr2{border-top:1px dashed #C5D2F0;margin:8px 0}
 @media(max-width:1000px){.grid2{grid-template-columns:1fr!important}.durs{grid-template-columns:repeat(3,1fr)}}
 
-.modeswitch{display:inline-flex;background:#e7e9f6;border-radius:11px;padding:4px;gap:3px;margin-right:auto;margin-left:22px}
+.modeswitch{display:inline-flex;background:#E3EAFF;border-radius:11px;padding:4px;gap:3px;margin-right:auto;margin-left:22px}
 .ms{border:0;background:transparent;border-radius:8px;padding:9px 20px;font-weight:700;font-size:13.5px;
- letter-spacing:.06em;color:#5b6091;cursor:pointer;font-family:inherit}
-.ms.on{background:var(--g);color:#fff;box-shadow:0 2px 8px rgba(46,49,146,.25)}
+ letter-spacing:.06em;color:#5A6B93;cursor:pointer;font-family:inherit}
+.ms.on{background:var(--g);color:#fff;box-shadow:0 2px 8px rgba(59,91,219,.25)}
 [data-grp].hidden{display:none!important}
 @media(max-width:800px){.modeswitch{margin-left:10px}.ms{padding:8px 12px;font-size:12px}}
 .warn{padding:11px;border-radius:11px;background:#fff8e6;color:#8a6500;border:1px solid #ffe6a8;font-size:13px}
@@ -103,8 +107,8 @@ button,input,select,textarea{font:inherit}.hidden{display:none!important}
 .layout{max-width:1500px;margin:auto;display:grid;grid-template-columns:235px 1fr;gap:18px;padding:18px 20px 50px}
 .side{background:#fff;border:1px solid var(--line);border-radius:16px;padding:9px;height:max-content;position:sticky;top:88px}
 .nav{width:100%;border:0;background:#fff;text-align:left;padding:12px;border-radius:10px;cursor:pointer;font-weight:800;color:#45574e;margin-bottom:3px}
-.nav:hover,.nav.on{background:#EEF0FB;color:var(--g)}
-.count{background:#EEF0FB;color:var(--g);padding:2px 7px;border-radius:99px;font-size:11px}
+.nav:hover,.nav.on{background:#EDF2FF;color:var(--g)}
+.count{background:#EDF2FF;color:var(--g);padding:2px 7px;border-radius:99px;font-size:11px}
 .page{display:none}.page.on{display:block}
 .head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;margin-bottom:15px;flex-wrap:wrap}
 .head h1{margin:0 0 5px;font-size:27px}.head p{margin:0;color:var(--muted)}
@@ -118,21 +122,21 @@ button,input,select,textarea{font:inherit}.hidden{display:none!important}
 .search{min-width:260px;flex:1}
 .tableWrap{overflow:auto;border:1px solid var(--line);border-radius:12px}
 .table{width:100%;border-collapse:collapse;min-width:800px}
-.table th,.table td{padding:10px;border-bottom:1px solid #eceef8;text-align:left;font-size:13px;vertical-align:top}
+.table th,.table td{padding:10px;border-bottom:1px solid #E8EEFC;text-align:left;font-size:13px;vertical-align:top}
 .table th{font-size:10px;color:#66766e;text-transform:uppercase;background:#fafbfe;position:sticky;top:0}
 .status{display:inline-block;padding:5px 8px;border-radius:99px;font-size:11px;font-weight:900}
 .wait{background:#fff4d7;color:#9a6800}.ok{background:#e7f6ee;color:#0d7a4a}.bad{background:#ffe8e8;color:#bd2525}.run{background:#e4f0ff;color:#1769aa}
 .muted{color:var(--muted)}
 .notice{padding:11px 13px;border-radius:11px;background:#eef8f3;color:var(--g);margin-bottom:12px;font-size:13px}
 .error{padding:11px;border-radius:11px;background:#fff0f0;color:var(--red);margin-bottom:12px;white-space:pre-line}
-.supthread{width:100%;border:0;background:#fff;text-align:left;padding:12px;border-bottom:1px solid #eceef8;cursor:pointer}
-.supthread:hover{background:#f7f8fd}.supthread.on{background:#EEF0FB}
+.supthread{width:100%;border:0;background:#fff;text-align:left;padding:12px;border-bottom:1px solid #E8EEFC;cursor:pointer}
+.supthread:hover{background:#F7FAFF}.supthread.on{background:#EDF2FF}
 .supthread b{display:block;font-size:13px}.supthread span{display:block;font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:3px}
 .supmsg{max-width:78%;padding:9px 12px;border-radius:13px;margin:7px 0;font-size:13px;line-height:1.45;white-space:pre-wrap;word-break:break-word;background:#f2f5f3}
 .supmsg.admin{margin-left:auto;background:var(--g);color:#fff}
 .supmsg small{display:block;opacity:.7;font-size:9px;margin-top:4px}
 
-.hourrow{display:grid;grid-template-columns:78px 1fr;gap:12px;border-bottom:1px solid #eceef8;padding:10px 0}
+.hourrow{display:grid;grid-template-columns:78px 1fr;gap:12px;border-bottom:1px solid #E8EEFC;padding:10px 0}
 .hourrow:last-child{border-bottom:0}
 .hourlab{font-weight:900;font-size:15px;color:var(--g);padding-top:9px}
 .hourlab small{display:block;font-weight:600;font-size:10px;color:var(--muted)}
@@ -145,8 +149,8 @@ button,input,select,textarea{font:inherit}.hidden{display:none!important}
 .rcp{font-family:ui-monospace,Menlo,monospace;font-weight:900;letter-spacing:.06em}
 
 .segs{display:inline-flex;background:var(--soft);border-radius:11px;padding:3px;gap:2px}
-.seg{border:0;background:transparent;border-radius:9px;padding:8px 13px;font-weight:800;font-size:12.5px;color:#5b6091;cursor:pointer}
-.seg.on{background:#fff;color:var(--g);box-shadow:0 2px 6px rgba(20,25,80,.1)}
+.seg{border:0;background:transparent;border-radius:9px;padding:8px 13px;font-weight:800;font-size:12.5px;color:#5A6B93;cursor:pointer}
+.seg.on{background:#fff;color:var(--g);box-shadow:0 2px 6px rgba(59,91,219,.1)}
 .kpis{display:grid;grid-template-columns:repeat(6,1fr);gap:11px;margin-bottom:15px}
 .kpi{background:#fff;border:1px solid var(--line);border-radius:15px;padding:14px}
 .kpi span{display:block;font-size:10px;color:var(--muted);font-weight:900;text-transform:uppercase;letter-spacing:.03em}
@@ -163,7 +167,7 @@ button,input,select,textarea{font:inherit}.hidden{display:none!important}
 .legend div{display:flex;align-items:center;gap:8px}
 .legend i{width:12px;height:12px;border-radius:3px;flex:none}
 .rank{display:grid;gap:8px}
-.rankrow{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;background:#f7f8fd;border:1px solid var(--line);border-radius:11px;padding:10px 12px}
+.rankrow{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;background:#F7FAFF;border:1px solid var(--line);border-radius:11px;padding:10px 12px}
 .rankrow b{font-size:13.5px}
 .rankrow .met{font-size:11.5px;color:var(--muted);margin-top:2px}
 .rankbar{grid-column:1/-1;height:6px;border-radius:99px;background:#e4e7f5;overflow:hidden}
@@ -174,18 +178,18 @@ button,input,select,textarea{font:inherit}.hidden{display:none!important}
 @media(max-width:1100px){.kpis{grid-template-columns:repeat(3,1fr)}}
 @media(max-width:700px){.kpis{grid-template-columns:repeat(2,1fr)}.bars{height:140px}}
 
-.navgroup{font-size:10px;font-weight:900;letter-spacing:.1em;color:#9096c4;padding:14px 12px 6px}
+.navgroup{font-size:10px;font-weight:900;letter-spacing:.1em;color:#8B9BC4;padding:14px 12px 6px}
 .navgroup:first-child{padding-top:4px}
 
 .pick2{display:grid;grid-template-columns:1fr 1fr;gap:9px}
 .pick3{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}
 .pk{border:1.5px solid var(--line);background:#fff;border-radius:12px;padding:13px 10px;font-weight:800;font-size:13.5px;cursor:pointer;color:var(--text)}
-.pk.on{border-color:var(--g);background:var(--soft);color:var(--g);box-shadow:0 0 0 3px rgba(46,49,146,.09)}
+.pk.on{border-color:var(--g);background:var(--soft);color:var(--g);box-shadow:0 0 0 3px rgba(59,91,219,.09)}
 .durs{display:grid;grid-template-columns:repeat(5,1fr);gap:7px}
 .durs button{border:1.5px solid var(--line);background:#fff;border-radius:11px;padding:11px 3px;font-weight:800;font-size:13px;cursor:pointer;color:var(--text)}
 .durs button.on{border-color:var(--g);background:var(--soft);color:var(--g)}
 .suggest{position:relative;margin-top:6px;border:1px solid var(--line);border-radius:11px;overflow:hidden;background:#fff;max-height:210px;overflow-y:auto}
-.suggest button{display:block;width:100%;text-align:left;border:0;background:#fff;padding:10px 12px;border-bottom:1px solid #eceef8;cursor:pointer;font-size:13px}
+.suggest button{display:block;width:100%;text-align:left;border:0;background:#fff;padding:10px 12px;border-bottom:1px solid #E8EEFC;cursor:pointer;font-size:13px}
 .suggest button:hover{background:var(--soft)}
 .bklist,.inslist{display:grid;gap:7px;max-height:230px;overflow-y:auto}
 .bklist button,.inslist button{border:1.5px solid var(--line);background:#fff;border-radius:11px;padding:11px 13px;text-align:left;cursor:pointer;font-size:13px}
@@ -193,16 +197,16 @@ button,input,select,textarea{font:inherit}.hidden{display:none!important}
 .inslist button.wait{border-style:dashed}
 .inslist b,.bklist b{display:block;font-size:13.5px}
 .inslist span,.bklist span{display:block;font-size:11.5px;color:var(--muted);margin-top:2px}
-.sumbox{background:#f7f8fd;border:1px solid var(--line);border-radius:13px;padding:14px}
+.sumbox{background:#F7FAFF;border:1px solid var(--line);border-radius:13px;padding:14px}
 .sumbox .row{display:flex;justify-content:space-between;gap:10px;font-size:13px;padding:4px 0}
 .sumbox .row.big{font-size:17px;font-weight:900}
-.sumbox .hr2{border-top:1px dashed #c8cce6;margin:8px 0}
+.sumbox .hr2{border-top:1px dashed #C5D2F0;margin:8px 0}
 @media(max-width:1000px){.grid2{grid-template-columns:1fr!important}.durs{grid-template-columns:repeat(3,1fr)}}
 
-.modeswitch{display:inline-flex;background:#e7e9f6;border-radius:11px;padding:4px;gap:3px;margin-right:auto;margin-left:22px}
+.modeswitch{display:inline-flex;background:#E3EAFF;border-radius:11px;padding:4px;gap:3px;margin-right:auto;margin-left:22px}
 .ms{border:0;background:transparent;border-radius:8px;padding:9px 20px;font-weight:700;font-size:13.5px;
- letter-spacing:.06em;color:#5b6091;cursor:pointer;font-family:inherit}
-.ms.on{background:var(--g);color:#fff;box-shadow:0 2px 8px rgba(46,49,146,.25)}
+ letter-spacing:.06em;color:#5A6B93;cursor:pointer;font-family:inherit}
+.ms.on{background:var(--g);color:#fff;box-shadow:0 2px 8px rgba(59,91,219,.25)}
 [data-grp].hidden{display:none!important}
 @media(max-width:800px){.modeswitch{margin-left:10px}.ms{padding:8px 12px;font-size:12px}}
 .warn{padding:11px;border-radius:11px;background:#fff8e6;color:#8a6500;border:1px solid #ffe6a8;margin-bottom:12px;font-size:13px}
@@ -221,7 +225,7 @@ button,input,select,textarea{font:inherit}.hidden{display:none!important}
 .modalback{display:none;position:fixed;inset:0;background:#00000055;z-index:80;align-items:center;justify-content:center;padding:16px}
 .modalback.open{display:flex}.modal{background:#fff;border-radius:18px;padding:20px;width:min(480px,100%);max-height:88vh;overflow:auto}
 .modal h3{margin:0 0 14px}
-pre.json{background:#f7f8fd;border:1px solid var(--line);border-radius:8px;padding:8px;font-size:11px;max-width:320px;overflow:auto;margin:0}
+pre.json{background:#F7FAFF;border:1px solid var(--line);border-radius:8px;padding:8px;font-size:11px;max-width:320px;overflow:auto;margin:0}
 @media(max-width:1100px){.layout{grid-template-columns:1fr}.side{position:static;display:flex;overflow:auto;gap:3px}.nav{white-space:nowrap;width:auto}.stats{grid-template-columns:repeat(3,1fr)}.report{grid-template-columns:repeat(3,1fr)}}
 @media(max-width:720px){.layout{padding:10px}.topin{padding:0 10px}.grid2,.mediaGrid{grid-template-columns:1fr}.stats{grid-template-columns:1fr 1fr}.report{grid-template-columns:1fr 1fr}.head h1{font-size:22px}}
 
@@ -250,19 +254,19 @@ pre.json{background:#f7f8fd;border:1px solid var(--line);border-radius:8px;paddi
   <form id="loginForm" class="loginbox">
     <div class="brand"><svg viewBox="0 0 200 200" width="42" height="42" xmlns="http://www.w3.org/2000/svg" style="flex:none">
 <defs><path id="aTop" d="M100,100 m-78,0 a78,78 0 0,1 156,0" fill="none"/></defs>
-<circle cx="100" cy="100" r="98" fill="#2E3192"/><circle cx="100" cy="100" r="90" fill="#fff"/>
-<circle cx="100" cy="100" r="82" fill="#2E3192"/><circle cx="100" cy="100" r="75" fill="#fff"/>
-<text font-size="13.5" font-weight="800" letter-spacing="2.4" fill="#2E3192"><textPath href="#aTop" startOffset="50%" text-anchor="middle">TASH INDEX AVTODROM</textPath></text>
-<g fill="#2E3192" transform="translate(100 78) scale(1.02)">
+<circle cx="100" cy="100" r="98" fill="#3B5BDB"/><circle cx="100" cy="100" r="90" fill="#fff"/>
+<circle cx="100" cy="100" r="82" fill="#3B5BDB"/><circle cx="100" cy="100" r="75" fill="#fff"/>
+<text font-size="13.5" font-weight="800" letter-spacing="2.4" fill="#3B5BDB"><textPath href="#aTop" startOffset="50%" text-anchor="middle">TASH INDEX AVTODROM</textPath></text>
+<g fill="#3B5BDB" transform="translate(100 78) scale(1.02)">
 <path d="M-40 6c1-9 5-16 9-20 3-3 9-5 31-5s28 2 31 5c4 4 8 11 9 20 1 6-2 9-7 9h-66c-5 0-8-3-7-9z"/>
 <path d="M-31 3c1-6 3-11 6-13 3-2 9-3 25-3s22 1 25 3c3 2 5 7 6 13z" fill="#fff"/>
 <rect x="-40" y="14" width="16" height="7" rx="3.5"/><rect x="24" y="14" width="16" height="7" rx="3.5"/>
 <path d="M-8 16h16l-3 6h-10z"/></g>
-<rect x="18" y="104" width="164" height="30" rx="4" fill="#2E3192"/>
+<rect x="18" y="104" width="164" height="30" rx="4" fill="#3B5BDB"/>
 <text x="100" y="126" text-anchor="middle" font-size="25" font-weight="900" fill="#fff" letter-spacing="1.5">TASH INDEX</text>
-<rect x="30" y="139" width="140" height="26" rx="4" fill="#2E3192"/>
+<rect x="30" y="139" width="140" height="26" rx="4" fill="#3B5BDB"/>
 <text x="100" y="158" text-anchor="middle" font-size="20" font-weight="900" fill="#fff" letter-spacing="1.2">AVTODROM</text>
-<text x="100" y="180" text-anchor="middle" font-size="13" font-weight="800" fill="#2E3192">2025</text></svg><div><b>TASH INDEX AVTODROM</b><small>PRODUCTION ADMIN PANEL</small></div></div>
+<text x="100" y="180" text-anchor="middle" font-size="13" font-weight="800" fill="#3B5BDB">2025</text></svg><div><b>TASH INDEX AVTODROM</b><small>PRODUCTION ADMIN PANEL</small></div></div>
     <h2>Admin panel</h2>
     <div id="loginError" class="error hidden"></div>
     <div class="field"><label>LOGIN</label><input id="loginUser" class="input" required autocomplete="username"></div>
@@ -275,19 +279,19 @@ pre.json{background:#f7f8fd;border:1px solid var(--line);border-radius:8px;paddi
 <header class="top"><div class="topin">
   <div class="brand"><svg viewBox="0 0 200 200" width="42" height="42" xmlns="http://www.w3.org/2000/svg" style="flex:none">
 <defs><path id="aTop" d="M100,100 m-78,0 a78,78 0 0,1 156,0" fill="none"/></defs>
-<circle cx="100" cy="100" r="98" fill="#2E3192"/><circle cx="100" cy="100" r="90" fill="#fff"/>
-<circle cx="100" cy="100" r="82" fill="#2E3192"/><circle cx="100" cy="100" r="75" fill="#fff"/>
-<text font-size="13.5" font-weight="800" letter-spacing="2.4" fill="#2E3192"><textPath href="#aTop" startOffset="50%" text-anchor="middle">TASH INDEX AVTODROM</textPath></text>
-<g fill="#2E3192" transform="translate(100 78) scale(1.02)">
+<circle cx="100" cy="100" r="98" fill="#3B5BDB"/><circle cx="100" cy="100" r="90" fill="#fff"/>
+<circle cx="100" cy="100" r="82" fill="#3B5BDB"/><circle cx="100" cy="100" r="75" fill="#fff"/>
+<text font-size="13.5" font-weight="800" letter-spacing="2.4" fill="#3B5BDB"><textPath href="#aTop" startOffset="50%" text-anchor="middle">TASH INDEX AVTODROM</textPath></text>
+<g fill="#3B5BDB" transform="translate(100 78) scale(1.02)">
 <path d="M-40 6c1-9 5-16 9-20 3-3 9-5 31-5s28 2 31 5c4 4 8 11 9 20 1 6-2 9-7 9h-66c-5 0-8-3-7-9z"/>
 <path d="M-31 3c1-6 3-11 6-13 3-2 9-3 25-3s22 1 25 3c3 2 5 7 6 13z" fill="#fff"/>
 <rect x="-40" y="14" width="16" height="7" rx="3.5"/><rect x="24" y="14" width="16" height="7" rx="3.5"/>
 <path d="M-8 16h16l-3 6h-10z"/></g>
-<rect x="18" y="104" width="164" height="30" rx="4" fill="#2E3192"/>
+<rect x="18" y="104" width="164" height="30" rx="4" fill="#3B5BDB"/>
 <text x="100" y="126" text-anchor="middle" font-size="25" font-weight="900" fill="#fff" letter-spacing="1.5">TASH INDEX</text>
-<rect x="30" y="139" width="140" height="26" rx="4" fill="#2E3192"/>
+<rect x="30" y="139" width="140" height="26" rx="4" fill="#3B5BDB"/>
 <text x="100" y="158" text-anchor="middle" font-size="20" font-weight="900" fill="#fff" letter-spacing="1.2">AVTODROM</text>
-<text x="100" y="180" text-anchor="middle" font-size="13" font-weight="800" fill="#2E3192">2025</text></svg><div><b>TASH INDEX AVTODROM</b><small>ARIZA · BRON · INSTRUKTOR · NARX · TO‘LOV · HISOBOT</small></div></div>
+<text x="100" y="180" text-anchor="middle" font-size="13" font-weight="800" fill="#3B5BDB">2025</text></svg><div><b>TASH INDEX AVTODROM</b><small>ARIZA · BRON · INSTRUKTOR · NARX · TO‘LOV · HISOBOT</small></div></div>
   <div class="modeswitch" id="modeSwitch">
     <button class="ms on" data-mode="kassa">KASSA</button>
     <button class="ms" data-mode="admin">BOSHQARUV</button>
@@ -432,9 +436,9 @@ pre.json{background:#f7f8fd;border:1px solid var(--line);border-radius:8px;paddi
 
       <div class="field" style="margin-top:14px"><label>TO‘LOV TURI *</label>
         <div class="pick3">
-          <button type="button" class="pk" data-pay="cash">Naqd</button>
-          <button type="button" class="pk" data-pay="card">Terminal</button>
-          <button type="button" class="pk" data-pay="mixed">Aralash</button>
+          <button type="button" class="pk" data-paytype="cash">Naqd</button>
+          <button type="button" class="pk" data-paytype="card">Terminal</button>
+          <button type="button" class="pk" data-paytype="mixed">Aralash</button>
         </div></div>
 
       <div id="coSplit" class="hidden">
@@ -594,6 +598,17 @@ pre.json{background:#f7f8fd;border:1px solid var(--line);border-radius:8px;paddi
     <div class="field"><label>TIZIM NOMI</label><input id="systemName" class="input" value="AVTODROM INDEX"></div>
     <div class="field"><label>BRONLAR</label><select id="bookingEnabled" class="select"><option value="true">Yoqilgan</option><option value="false">O‘chirilgan</option></select></div>
     <div class="field"><label>ALOQA TELEFONI <span class="muted">(mijoz panelida ko‘rinadi)</span></label><input id="contactPhone" class="input" autocomplete="off" placeholder="+998901234567"></div>
+    <div class="field"><label>SOATLIK TARIF <span class="muted">(chek chiqarishda ishlatiladi)</span></label>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">
+        <div><div class="muted" style="font-size:11px;margin-bottom:4px">A kategoriya</div>
+          <input id="rateA" class="input" type="number" min="0" step="1000" placeholder="350000"></div>
+        <div><div class="muted" style="font-size:11px;margin-bottom:4px">B kategoriya</div>
+          <input id="rateB" class="input" type="number" min="0" step="1000" placeholder="250000"></div>
+        <div><div class="muted" style="font-size:11px;margin-bottom:4px">C kategoriya</div>
+          <input id="rateC" class="input" type="number" min="0" step="1000" placeholder="400000"></div>
+      </div>
+      <div class="muted" style="font-size:12px;margin-top:6px">Bir soatlik narx. 30 daqiqa — yarmi, 2 soat — ikki barobar.</div></div>
+
     <div class="field"><label>AVTODROM HAQIDA <span class="muted">(mijoz panelidagi «INDEX AVTODROM» bo‘limi)</span></label>
       <textarea id="aboutText" class="input" rows="3" placeholder="Maydoncha haqida qisqacha…"></textarea></div>
     <div class="field"><label>SHAROITLAR <span class="muted">(har qatorda bittadan)</span></label>
@@ -869,7 +884,7 @@ function renderPayments(){
   const f=$('payFilter').value,q=$('paySearch').value.toLowerCase();
   const a=S.payments.filter(x=>(!f||x.status===f)&&(!q||JSON.stringify(x).toLowerCase().includes(q)));
   $('payRows').innerHTML=a.length?a.map(p=>`<tr><td>${dt(p.created_at)}</td><td>${esc(uname(p.customer))}</td><td><b>${money(p.amount)}</b></td><td>${esc(p.provider||'—')}</td><td>${badge(p.status)}</td><td>${p.paid_at?dt(p.paid_at):'—'}</td><td class="actions">${p.status==='pending'?`<button class="btn small green" data-pay="${esc(p.id)}" data-st="paid">To‘landi</button><button class="btn small red" data-pay="${esc(p.id)}" data-st="cancelled">Bekor</button>`:''}${p.status==='paid'?`<button class="btn small red" data-pay="${esc(p.id)}" data-st="refunded">Qaytarish</button>`:''}</td></tr>`).join(''):'<tr><td colspan="7" class="empty">To‘lovlar yo‘q.</td></tr>';
-  document.querySelectorAll('[data-pay]').forEach(b=>b.onclick=async()=>{
+  $('payRows').querySelectorAll('[data-pay]').forEach(b=>b.onclick=async()=>{
     if(!confirm('To‘lov holatini o‘zgartirasizmi?'))return;
     try{await api(`/api/admin/payments/${encodeURIComponent(b.dataset.pay)}`,{method:'PATCH',body:JSON.stringify({status:b.dataset.st})});toast('To‘lov saqlandi');await loadAll()}catch(e){notice(e.message)}
   });
@@ -1043,7 +1058,7 @@ function renderAudit(){
    (a) avtomatik yangilanish to'xtaydi, (b) loadSettings maydonlarga tegmaydi.
    Saqlangandan yoki bekor qilingandan keyingina qulf ochiladi. */
 let editing = false;
-const SETTING_FIELDS = ['systemName','bookingEnabled','contactPhone','workingHours','aboutText','facilities','workStart','workEnd','slotStep',
+const SETTING_FIELDS = ['systemName','bookingEnabled','contactPhone','workingHours','rateA','rateB','rateC','aboutText','facilities','workStart','workEnd','slotStep',
                         'locName','locAddress','locLat','locLng','locGoogle','locYandex','loc2gis'];
 function markEditing(){ if(!editing){ editing=true; $('locDirty').classList.remove('hidden'); } }
 function clearEditing(){ editing=false; $('locDirty').classList.add('hidden'); }
@@ -1061,6 +1076,9 @@ function loadSettings(){
   $('contactPhone').value=val('contact_phone');
   $('workingHours').value=val('working_hours');
   $('aboutText').value=val('about_text');
+  $('rateA').value=val('rate_a')||350000;
+  $('rateB').value=val('rate_b')||250000;
+  $('rateC').value=val('rate_c')||400000;
   $('facilities').value=val('facilities');
   $('workStart').value=val('work_start')||'07:00';
   $('workEnd').value=val('work_end')||'19:00';
@@ -1120,6 +1138,9 @@ $('saveSettingsBtn').onclick=async()=>{
     await put('contact_phone',$('contactPhone').value.trim());
     await put('working_hours',$('workingHours').value.trim());
     await put('about_text',$('aboutText').value.trim());
+    await put('rate_a',Number($('rateA').value)||350000);
+    await put('rate_b',Number($('rateB').value)||250000);
+    await put('rate_c',Number($('rateC').value)||400000);
     await put('facilities',$('facilities').value.trim());
     await put('work_start',$('workStart').value||'07:00');
     await put('work_end',$('workEnd').value||'19:00');
@@ -1543,7 +1564,7 @@ function renderPie(t){
   const R = 54, C = 2 * Math.PI * R;
   box.innerHTML = `<div class="pie">
     <svg width="140" height="140" viewBox="0 0 140 140">
-      <circle cx="70" cy="70" r="${R}" fill="none" stroke="#4348C4" stroke-width="22"/>
+      <circle cx="70" cy="70" r="${R}" fill="none" stroke="#5C7CFA" stroke-width="22"/>
       <circle cx="70" cy="70" r="${R}" fill="none" stroke="#0d7a4a" stroke-width="22"
         stroke-dasharray="${(C * pc / 100).toFixed(1)} ${C.toFixed(1)}" transform="rotate(-90 70 70)"/>
       <text x="70" y="66" text-anchor="middle" font-size="20" font-weight="900" fill="#15173a">${pc}%</text>
@@ -1551,7 +1572,7 @@ function renderPie(t){
     </svg>
     <div class="legend">
       <div><i style="background:#0d7a4a"></i> Naqd — <b>${nf(cash)}</b></div>
-      <div><i style="background:#4348C4"></i> Karta — <b>${nf(card)}</b></div>
+      <div><i style="background:#5C7CFA"></i> Karta — <b>${nf(card)}</b></div>
       <div style="margin-top:4px;color:var(--muted)">Jami: <b>${nf(sum)} so‘m</b></div>
     </div></div>`;
 }
@@ -1661,15 +1682,26 @@ const CO = { mode:'booked', customer:null, booking:null, category:'', minutes:60
              instructor:null, pay:'', free:[], busy:[] };
 
 function coCourse(){
-  // Tanlangan kategoriyaga mos faol mashg'ulot
+  // Bron uchun mashg'ulot kerak (bazada bog'lanish). Kategoriyaga mosini olamiz.
   const list = (S.courses||[]).filter(c => c.is_active);
   return list.find(c => String(c.category||'').toUpperCase() === CO.category) || list[0] || null;
 }
-function coUnit(){ return Number(coCourse()?.duration_minutes || 60) || 60; }
-function coPrice(){
-  const c = coCourse(); if (!c) return 0;
-  return Math.round((Number(c.price||0) * CO.minutes) / coUnit());
+/* Narx SOATLIK TARIFdan olinadi, kurs narxidan emas.
+   Sabab: kurslar turli davomiylikda bo'lishi mumkin (masalan 5 soatlik
+   paket), tarif esa aniq: A 350 000, B 250 000, C 400 000 — bir soatiga. */
+const DEFAULT_RATE = { A: 350000, B: 250000, C: 400000 };
+function settingVal(key){
+  const row = (S.settings||[]).find(x => x.key === key);
+  const v = row?.value;
+  return v == null ? null : (v.value !== undefined ? v.value : v);
 }
+function coRate(){
+  const fromSettings = Number(settingVal('rate_' + String(CO.category||'').toLowerCase()));
+  return Number.isFinite(fromSettings) && fromSettings > 0
+    ? fromSettings
+    : (DEFAULT_RATE[CO.category] || 0);
+}
+function coPrice(){ return Math.round((coRate() * CO.minutes) / 60); }
 function coStartAt(){
   const d = $('coDate').value, t = $('coTime').value;
   if (!d || !t) return null;
@@ -1750,9 +1782,9 @@ async function loadCoBookings(){
 function renderCats(){
   const cats = ['A','B','C'];
   $('coCats').innerHTML = cats.map(c => {
-    const course = (S.courses||[]).find(x => String(x.category||'').toUpperCase()===c && x.is_active);
+    const r = Number(settingVal('rate_' + c.toLowerCase())) || DEFAULT_RATE[c] || 0;
     return `<button type="button" class="pk ${CO.category===c?'on':''}" data-cat="${c}">
-      ${c}${course?`<br><small style="font-weight:600;font-size:11px">${esc(money(course.price))}</small>`:''}</button>`;
+      ${c}<br><small style="font-weight:600;font-size:11px">${esc(money(r))}/soat</small></button>`;
   }).join('');
   $('coCats').querySelectorAll('[data-cat]').forEach(b => b.onclick = () => { CO.category = b.dataset.cat; renderCats(); coRender(); });
 }
@@ -1801,9 +1833,12 @@ $('coDate').addEventListener('change', () => { CO.mode==='booked' ? loadCoBookin
 $('coTime').addEventListener('change', () => { if (CO.mode==='walk_in') loadFreeInstructors(); coRender(); });
 
 /* ---- to'lov turi ---- */
-document.querySelectorAll('[data-pay]').forEach(b => b.onclick = () => {
-  CO.pay = b.dataset.pay;
-  document.querySelectorAll('[data-pay]').forEach(x => x.classList.toggle('on', x.dataset.pay===CO.pay));
+/* data-paytype — chek chiqarish uchun. To'lovlar bo'limi ham `data-pay`
+   ishlatadi va butun sahifadan qidiradi; bir xil nom bo'lsa uning
+   ishlovchisi bu tugmalarni ham ushlab olardi. */
+document.querySelectorAll('[data-paytype]').forEach(b => b.onclick = () => {
+  CO.pay = b.dataset.paytype;
+  document.querySelectorAll('[data-paytype]').forEach(x => x.classList.toggle('on', x.dataset.paytype===CO.pay));
   $('coSplit').classList.toggle('hidden', CO.pay!=='mixed');
   if (CO.pay!=='mixed') { $('coCash').value = 0; $('coCard').value = 0; }
   coRender();
@@ -1823,8 +1858,10 @@ function coRender(){
   const at = coStartAt();
   $('sumTime').textContent = at ? `${$('coDate').value} · ${$('coTime').value}` : '—';
   $('sumTotal').textContent = money(total);
-  const c = coCourse();
-  $('sumCalc').textContent = c ? `${money(c.price)} / ${fmtDur(coUnit())} × ${fmtDur(CO.minutes)}` : 'Kategoriya tanlanmagan';
+  const rate = coRate();
+  $('sumCalc').textContent = rate
+    ? `${money(rate)} / soat × ${fmtDur(CO.minutes)}`
+    : 'Kategoriya tanlanmagan yoki tarif kiritilmagan';
 
   if (CO.pay === 'mixed') {
     const cash = Number($('coCash').value||0), card = Number($('coCard').value||0);
@@ -1889,7 +1926,7 @@ function coResetForm(){
   CO.customer = null; CO.booking = null; CO.instructor = null; CO.pay = '';
   $('coName').value = ''; $('coPhone').value = ''; $('coCash').value = 0; $('coCard').value = 0;
   $('coSuggest').classList.add('hidden'); $('coSplit').classList.add('hidden');
-  document.querySelectorAll('[data-pay]').forEach(x => x.classList.remove('on'));
+  document.querySelectorAll('[data-paytype]').forEach(x => x.classList.remove('on'));
   $('coBookings').innerHTML = '';
   coRender();
 }
