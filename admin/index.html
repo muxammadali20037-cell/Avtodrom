@@ -60,6 +60,31 @@ button,input,select,textarea{font:inherit}.hidden{display:none!important}
 .inspick button.on{background:var(--g);border-color:var(--g);color:#fff}
 @media(max-width:1100px){.kpis{grid-template-columns:repeat(3,1fr)}}
 @media(max-width:700px){.kpis{grid-template-columns:repeat(2,1fr)}.bars{height:140px}}
+
+.navgroup{font-size:10px;font-weight:900;letter-spacing:.1em;color:#9096c4;padding:14px 12px 6px}
+.navgroup:first-child{padding-top:4px}
+
+.pick2{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.pick3{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}
+.pk{border:1.5px solid var(--line);background:#fff;border-radius:12px;padding:13px 10px;font-weight:800;font-size:13.5px;cursor:pointer;color:var(--text)}
+.pk.on{border-color:var(--g);background:var(--soft);color:var(--g);box-shadow:0 0 0 3px rgba(46,49,146,.09)}
+.durs{display:grid;grid-template-columns:repeat(5,1fr);gap:7px}
+.durs button{border:1.5px solid var(--line);background:#fff;border-radius:11px;padding:11px 3px;font-weight:800;font-size:13px;cursor:pointer;color:var(--text)}
+.durs button.on{border-color:var(--g);background:var(--soft);color:var(--g)}
+.suggest{position:relative;margin-top:6px;border:1px solid var(--line);border-radius:11px;overflow:hidden;background:#fff;max-height:210px;overflow-y:auto}
+.suggest button{display:block;width:100%;text-align:left;border:0;background:#fff;padding:10px 12px;border-bottom:1px solid #eceef8;cursor:pointer;font-size:13px}
+.suggest button:hover{background:var(--soft)}
+.bklist,.inslist{display:grid;gap:7px;max-height:230px;overflow-y:auto}
+.bklist button,.inslist button{border:1.5px solid var(--line);background:#fff;border-radius:11px;padding:11px 13px;text-align:left;cursor:pointer;font-size:13px}
+.bklist button.on,.inslist button.on{border-color:var(--g);background:var(--soft)}
+.inslist button.wait{border-style:dashed}
+.inslist b,.bklist b{display:block;font-size:13.5px}
+.inslist span,.bklist span{display:block;font-size:11.5px;color:var(--muted);margin-top:2px}
+.sumbox{background:#f7f8fd;border:1px solid var(--line);border-radius:13px;padding:14px}
+.sumbox .row{display:flex;justify-content:space-between;gap:10px;font-size:13px;padding:4px 0}
+.sumbox .row.big{font-size:17px;font-weight:900}
+.sumbox .hr2{border-top:1px dashed #c8cce6;margin:8px 0}
+@media(max-width:1000px){.grid2{grid-template-columns:1fr!important}.durs{grid-template-columns:repeat(3,1fr)}}
 .warn{padding:11px;border-radius:11px;background:#fff8e6;color:#8a6500;border:1px solid #ffe6a8;font-size:13px}
 .top{height:70px;background:#fff;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:20}
 .topin{height:100%;max-width:1500px;margin:auto;padding:0 20px;display:flex;align-items:center;justify-content:space-between}
@@ -141,6 +166,31 @@ button,input,select,textarea{font:inherit}.hidden{display:none!important}
 .inspick button.on{background:var(--g);border-color:var(--g);color:#fff}
 @media(max-width:1100px){.kpis{grid-template-columns:repeat(3,1fr)}}
 @media(max-width:700px){.kpis{grid-template-columns:repeat(2,1fr)}.bars{height:140px}}
+
+.navgroup{font-size:10px;font-weight:900;letter-spacing:.1em;color:#9096c4;padding:14px 12px 6px}
+.navgroup:first-child{padding-top:4px}
+
+.pick2{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.pick3{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}
+.pk{border:1.5px solid var(--line);background:#fff;border-radius:12px;padding:13px 10px;font-weight:800;font-size:13.5px;cursor:pointer;color:var(--text)}
+.pk.on{border-color:var(--g);background:var(--soft);color:var(--g);box-shadow:0 0 0 3px rgba(46,49,146,.09)}
+.durs{display:grid;grid-template-columns:repeat(5,1fr);gap:7px}
+.durs button{border:1.5px solid var(--line);background:#fff;border-radius:11px;padding:11px 3px;font-weight:800;font-size:13px;cursor:pointer;color:var(--text)}
+.durs button.on{border-color:var(--g);background:var(--soft);color:var(--g)}
+.suggest{position:relative;margin-top:6px;border:1px solid var(--line);border-radius:11px;overflow:hidden;background:#fff;max-height:210px;overflow-y:auto}
+.suggest button{display:block;width:100%;text-align:left;border:0;background:#fff;padding:10px 12px;border-bottom:1px solid #eceef8;cursor:pointer;font-size:13px}
+.suggest button:hover{background:var(--soft)}
+.bklist,.inslist{display:grid;gap:7px;max-height:230px;overflow-y:auto}
+.bklist button,.inslist button{border:1.5px solid var(--line);background:#fff;border-radius:11px;padding:11px 13px;text-align:left;cursor:pointer;font-size:13px}
+.bklist button.on,.inslist button.on{border-color:var(--g);background:var(--soft)}
+.inslist button.wait{border-style:dashed}
+.inslist b,.bklist b{display:block;font-size:13.5px}
+.inslist span,.bklist span{display:block;font-size:11.5px;color:var(--muted);margin-top:2px}
+.sumbox{background:#f7f8fd;border:1px solid var(--line);border-radius:13px;padding:14px}
+.sumbox .row{display:flex;justify-content:space-between;gap:10px;font-size:13px;padding:4px 0}
+.sumbox .row.big{font-size:17px;font-weight:900}
+.sumbox .hr2{border-top:1px dashed #c8cce6;margin:8px 0}
+@media(max-width:1000px){.grid2{grid-template-columns:1fr!important}.durs{grid-template-columns:repeat(3,1fr)}}
 .warn{padding:11px;border-radius:11px;background:#fff8e6;color:#8a6500;border:1px solid #ffe6a8;margin-bottom:12px;font-size:13px}
 .empty{padding:25px;text-align:center;color:var(--muted)}
 .actions{display:flex;gap:5px;flex-wrap:wrap}
@@ -164,16 +214,21 @@ pre.json{background:#f7f8fd;border:1px solid var(--line);border-radius:8px;paddi
 @media print{
   body *{visibility:hidden!important}
   #receiptPaper,#receiptPaper *{visibility:visible!important}
-  #receiptPaper{position:absolute;left:0;top:0;width:76mm;padding:2mm;font-family:ui-monospace,Menlo,monospace;color:#000}
-  @page{size:80mm auto;margin:3mm}
+  #receiptPaper{position:absolute;left:0;top:0;width:76mm;padding:2mm}
+  @page{size:80mm auto;margin:2mm}
 }
-#receiptPaper{width:76mm;margin:auto;font-family:ui-monospace,Menlo,monospace;color:#111;font-size:12px;line-height:1.45}
-#receiptPaper h3{text-align:center;margin:0 0 2px;font-size:15px;letter-spacing:.04em}
-#receiptPaper .c{text-align:center}
-#receiptPaper .hr{border-top:1px dashed #999;margin:7px 0}
-#receiptPaper .row{display:flex;justify-content:space-between;gap:8px}
-#receiptPaper .big{font-size:15px;font-weight:900}
-#receiptPaper .code{text-align:center;font-size:16px;font-weight:900;letter-spacing:.12em;margin-top:4px}
+/* Chek: termal printer uchun — qora, qalin, katta.
+   Kulrang matn termal qog'ozda deyarli ko'rinmaydi. */
+#receiptPaper{width:76mm;margin:auto;font-family:ui-monospace,"Courier New",monospace;
+ color:#000;font-size:14px;line-height:1.55;font-weight:600;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+#receiptPaper h3{text-align:center;margin:0 0 3px;font-size:20px;font-weight:900;letter-spacing:.02em;color:#000}
+#receiptPaper .c{text-align:center;color:#000}
+#receiptPaper .hr{border-top:2px dashed #000;margin:9px 0}
+#receiptPaper .row{display:flex;justify-content:space-between;gap:8px;color:#000}
+#receiptPaper .row span{font-weight:600}
+#receiptPaper .row b{font-weight:900}
+#receiptPaper .big{font-size:19px;font-weight:900;margin:4px 0}
+#receiptPaper .code{text-align:center;font-size:22px;font-weight:900;letter-spacing:.14em;margin-top:6px;color:#000}
 </style>
 </head>
 <body>
@@ -224,21 +279,25 @@ pre.json{background:#f7f8fd;border:1px solid var(--line);border-radius:8px;paddi
 
 <div class="layout">
 <aside class="side">
-  <button class="nav on" data-p="dashboard">📊 Dashboard</button>
+  <div class="navgroup">KASSA</div>
+  <button class="nav on" data-p="checkout">🧾 Chek chiqarish</button>
+  <button class="nav" data-p="payments">💳 To‘lovlar</button>
+  <button class="nav" data-p="reports">📈 Hisobot</button>
+
+  <div class="navgroup">BOSHQARUV</div>
+  <button class="nav" data-p="dashboard">📊 Dashboard</button>
   <button class="nav" data-p="control">🎯 Instruktor nazorati</button>
+  <button class="nav" data-p="cashier">📅 Kunlik jadval</button>
   <button class="nav" data-p="applications">📝 Arizalar <span id="appCount" class="count">0</span></button>
-  <button class="nav" data-p="cashier">💵 Kassa</button>
   <button class="nav" data-p="bookings">📋 Bronlar <span id="bookCount" class="count">0</span></button>
   <button class="nav" data-p="cancels">🚫 Bekor so‘rovlari <span id="cxCount" class="count">0</span></button>
   <button class="nav" data-p="instructors">👨‍🏫 Instruktorlar</button>
   <button class="nav" data-p="users">👤 Foydalanuvchilar</button>
   <button class="nav" data-p="courses">📘 Mashg‘ulotlar</button>
-  <button class="nav" data-p="payments">💳 To‘lovlar</button>
   <button class="nav" data-p="support">💬 Chat <span id="supCount" class="count">0</span></button>
   <button class="nav" data-p="reviews">⭐ Sharhlar <span id="revCount" class="count">0</span></button>
-  <button class="nav" data-p="reports">📊 Hisobot</button>
   <button class="nav" data-p="media">🎬 Media</button>
-  <button class="nav" data-p="audit">🗒 Audit log</button>
+  <button class="nav" data-p="audit">📜 Audit log</button>
   <button class="nav" data-p="settings">⚙️ Sozlamalar</button>
 </aside>
 
@@ -246,7 +305,7 @@ pre.json{background:#f7f8fd;border:1px solid var(--line);border-radius:8px;paddi
 <div id="notice"></div>
 <div id="warnings"></div>
 
-<section id="dashboard" class="page on">
+<section id="dashboard" class="page">
   <div class="head"><div><h1>📊 Dashboard</h1><p id="dPeriodLabel">Kunlik ko‘rsatkichlar</p></div>
     <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
       <input id="dDate" type="date" class="input">
@@ -293,6 +352,88 @@ pre.json{background:#f7f8fd;border:1px solid var(--line);border-radius:8px;paddi
       <input id="appSearch" class="search" placeholder="Ism, telefon, Telegram...">
     </div>
     <div class="tableWrap"><table class="table"><thead><tr><th>Ism</th><th>Telefon</th><th>Telegram</th><th>Tajriba</th><th>Izoh</th><th>Sana</th><th>Holat</th><th>Amal</th></tr></thead><tbody id="applicationRows"></tbody></table></div>
+  </div>
+</section>
+
+<section id="checkout" class="page on">
+  <div class="head"><div><h1>🧾 Chek chiqarish</h1><p>Mijoz ma’lumotini kiriting — narx avtomatik hisoblanadi, chek QR bilan chiqadi.</p></div>
+    <button class="btn" id="coReset">↺ Tozalash</button></div>
+
+  <div class="grid2" style="grid-template-columns:1.15fr .85fr;align-items:start">
+    <div class="card">
+      <!-- 1. Bronli / bronsiz -->
+      <div class="field"><label>1. MIJOZ TURI</label>
+        <div class="pick2">
+          <button type="button" class="pk on" id="coBooked">📋 Bronli — oldindan bron qilgan</button>
+          <button type="button" class="pk" id="coWalk">🚶 Bronsiz — hozir keldi</button>
+        </div></div>
+
+      <!-- 2. Mijoz -->
+      <div class="field"><label>2. ISM FAMILIYA *</label>
+        <input id="coName" class="input" autocomplete="off" placeholder="Mijoz ismini yozing...">
+        <div id="coSuggest" class="suggest hidden"></div></div>
+      <div class="field" id="coPhoneWrap"><label>TELEFON</label>
+        <input id="coPhone" class="input" autocomplete="off" placeholder="+998901234567"></div>
+
+      <!-- bronli: mijozning bronlari -->
+      <div class="field hidden" id="coBookWrap"><label>MIJOZNING BRONI *</label>
+        <div id="coBookings" class="bklist"></div></div>
+
+      <!-- 3. Kategoriya -->
+      <div class="field"><label>3. KATEGORIYA *</label>
+        <div class="pick3" id="coCats"></div></div>
+
+      <!-- 4. Davomiylik -->
+      <div class="field"><label>4. DAVOMIYLIK *</label>
+        <div class="durs" id="coDurs"></div>
+        <div style="display:flex;gap:8px;align-items:center;margin-top:9px">
+          <input id="coCustomMin" class="input" type="number" min="15" max="600" step="5" placeholder="Qo‘lda: daqiqa" style="max-width:180px">
+          <span class="muted" style="font-size:12px">15–600 daqiqa</span>
+        </div></div>
+
+      <!-- 5. Vaqt va instruktor -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div class="field"><label>SANA</label><input id="coDate" class="input" type="date"></div>
+        <div class="field"><label>VAQT</label><input id="coTime" class="input" type="time" step="900"></div>
+      </div>
+      <div class="field"><label>5. INSTRUKTOR *</label>
+        <div id="coInsBox" class="inslist"><div class="muted" style="font-size:13px">Vaqt tanlansa bo‘sh instruktorlar chiqadi.</div></div></div>
+    </div>
+
+    <div class="card" style="position:sticky;top:88px">
+      <h3 style="margin-top:0">To‘lov</h3>
+      <div class="sumbox">
+        <div class="row"><span>Kategoriya</span><b id="sumCat">—</b></div>
+        <div class="row"><span>Davomiylik</span><b id="sumDur">—</b></div>
+        <div class="row"><span>Instruktor</span><b id="sumIns">—</b></div>
+        <div class="row"><span>Vaqt</span><b id="sumTime">—</b></div>
+        <div class="hr2"></div>
+        <div class="row big"><span>Jami</span><b id="sumTotal">0</b></div>
+        <div class="muted" id="sumCalc" style="font-size:11.5px;margin-top:4px"></div>
+      </div>
+
+      <div class="field" style="margin-top:14px"><label>TO‘LOV TURI *</label>
+        <div class="pick3">
+          <button type="button" class="pk" data-pay="cash">💵 Naqd</button>
+          <button type="button" class="pk" data-pay="card">💳 Terminal</button>
+          <button type="button" class="pk" data-pay="mixed">🔀 Aralash</button>
+        </div></div>
+
+      <div id="coSplit" class="hidden">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px">
+          <div class="field"><label>NAQD</label><input id="coCash" class="input" type="number" min="0" step="1000" value="0"></div>
+          <div class="field"><label>TERMINAL</label><input id="coCard" class="input" type="number" min="0" step="1000" value="0"></div>
+        </div>
+        <div class="muted" id="coSplitHint" style="font-size:12px;margin:-4px 0 10px"></div>
+      </div>
+
+      <div class="field"><label>SUMMA (o‘zgartirish mumkin)</label>
+        <input id="coAmount" class="input" type="number" min="0" step="1000"></div>
+
+      <div id="coAlert"></div>
+      <button class="btn primary" id="coIssue" style="width:100%;height:52px;font-size:16px">🧾 Chek chiqarish</button>
+      <div class="muted" style="font-size:11.5px;margin-top:8px;text-align:center">Chek avtomatik chop etishga yuboriladi</div>
+    </div>
   </div>
 </section>
 
@@ -564,6 +705,7 @@ function showPage(id){
   if(id==='audit')loadAudit();
   if(id==='support')loadSupport();
   if(id==='cancels')loadCancels();
+  if(id==='checkout') initCheckout();
   if(id==='dashboard'){ if(!$('dDate').value)$('dDate').value=kToday(); loadAnalytics(); }
   if(id==='control'){ if(!$('cDate').value)$('cDate').value=kToday(); renderCtlPicker(); loadControl(); }
   if(id==='cashier'){ if(!$('kDate').value) $('kDate').value=kToday(); fillCashierInstructors(); loadCashier(); }
@@ -1245,12 +1387,15 @@ function receiptModal(r){
       <div class="row"><span>Mijoz</span><b>${esc(r.customer_name)}</b></div>
       ${r.customer_phone?`<div class="row"><span>Telefon</span><span>${esc(r.customer_phone)}</span></div>`:''}
       <div class="row"><span>Mashg‘ulot</span><span>${esc(r.course_name)}</span></div>
-      ${(r.hours||1)>1?`<div class="row"><span>Soat</span><b>${esc(r.hours)} soat</b></div>`:''}
+      ${r.category?`<div class="row"><span>Kategoriya</span><b>${esc(r.category)}</b></div>`:''}
+      ${r.duration_minutes?`<div class="row"><span>Davomiylik</span><b>${esc(fmtDur(r.duration_minutes))}</b></div>`:''}
       ${r.instructor_name?`<div class="row"><span>Instruktor</span><span>${esc(r.instructor_name)}</span></div>`:''}
       <div class="row"><span>Vaqt</span><b>${esc(r.starts_at_text)}</b></div>
       <div class="hr"></div>
       <div class="row big"><span>Summa</span><span>${esc(r.amount_text)}</span></div>
-      <div class="row"><span>To‘lov</span><span>${esc(r.method_text)}</span></div>
+      <div class="row"><span>To‘lov</span><b>${esc(r.method_text)}</b></div>
+      ${r.method==='mixed'?`<div class="row"><span>· Naqd</span><span>${esc(money(r.cash_amount))}</span></div>
+      <div class="row"><span>· Terminal</span><span>${esc(money(r.card_amount))}</span></div>`:''}
       <div class="row"><span>Sana</span><span>${esc(r.paid_at_text)}</span></div>
       <div class="hr"></div>
       <div class="c" id="qrBox"></div>
@@ -1487,6 +1632,262 @@ function renderControl(d){
     </div>`;
 }
 
+
+/* =========================================================================
+   CHEK CHIQARISH
+   Bronli va bronsiz mijoz bir ekranda. Narx davomiylikka qarab avtomatik
+   hisoblanadi (kurs birligiga nisbatan), kassir uni o'zgartira oladi.
+   ========================================================================= */
+const DURS = [30, 60, 90, 120, 150, 180, 210, 240, 270, 300];
+const CO = { mode:'booked', customer:null, booking:null, category:'', minutes:60,
+             instructor:null, pay:'', free:[], busy:[] };
+
+function coCourse(){
+  // Tanlangan kategoriyaga mos faol mashg'ulot
+  const list = (S.courses||[]).filter(c => c.is_active);
+  return list.find(c => String(c.category||'').toUpperCase() === CO.category) || list[0] || null;
+}
+function coUnit(){ return Number(coCourse()?.duration_minutes || 60) || 60; }
+function coPrice(){
+  const c = coCourse(); if (!c) return 0;
+  return Math.round((Number(c.price||0) * CO.minutes) / coUnit());
+}
+function coStartAt(){
+  const d = $('coDate').value, t = $('coTime').value;
+  if (!d || !t) return null;
+  const x = new Date(`${d}T${t}:00+05:00`);
+  return Number.isNaN(x.getTime()) ? null : x;
+}
+
+/* ---- rejim ---- */
+function coSetMode(m){
+  CO.mode = m; CO.booking = null; CO.instructor = null;
+  $('coBooked').classList.toggle('on', m==='booked');
+  $('coWalk').classList.toggle('on', m==='walk_in');
+  $('coBookWrap').classList.toggle('hidden', m!=='booked');
+  if (m==='booked' && CO.customer) loadCoBookings();
+  if (m==='walk_in') loadFreeInstructors();
+  coRender();
+}
+$('coBooked').onclick = () => coSetMode('booked');
+$('coWalk').onclick   = () => coSetMode('walk_in');
+
+/* ---- mijoz qidirish ---- */
+let coTimer = null;
+$('coName').addEventListener('input', () => {
+  CO.customer = null; CO.booking = null;
+  clearTimeout(coTimer);
+  const q0 = $('coName').value.trim();
+  if (q0.length < 2) { $('coSuggest').classList.add('hidden'); return; }
+  coTimer = setTimeout(async () => {
+    try{
+      const d = await api(`/api/admin/cashier/search?q=${encodeURIComponent(q0)}`);
+      const list = d.customers || [];
+      if (!list.length) { $('coSuggest').classList.add('hidden'); return; }
+      $('coSuggest').classList.remove('hidden');
+      $('coSuggest').innerHTML = list.map(c =>
+        `<button type="button" data-cid="${esc(c.id)}"><b>${esc(c.full_name)}</b> <span class="muted">${esc(c.phone||'')}</span></button>`).join('');
+      $('coSuggest').querySelectorAll('[data-cid]').forEach(b => b.onclick = () => {
+        CO.customer = list.find(x => String(x.id) === b.dataset.cid) || null;
+        $('coName').value = CO.customer?.full_name || '';
+        $('coPhone').value = CO.customer?.phone || '';
+        $('coSuggest').classList.add('hidden');
+        if (CO.mode === 'booked') loadCoBookings();
+        coRender();
+      });
+    }catch(e){ $('coSuggest').classList.add('hidden'); }
+  }, 280);
+});
+
+/* ---- mijozning bronlari ---- */
+async function loadCoBookings(){
+  const box = $('coBookings');
+  if (!CO.customer) { box.innerHTML = '<div class="muted" style="font-size:13px">Avval mijozni tanlang.</div>'; return; }
+  box.innerHTML = '<div class="muted" style="font-size:13px">Yuklanmoqda…</div>';
+  try{
+    const date = $('coDate').value || kToday();
+    const d = await api(`/api/admin/cashier/day?date=${encodeURIComponent(date)}`);
+    const mine = (d.bookings||[]).filter(b => String(b.customer?.id) === String(CO.customer.id) && !b.is_paid);
+    if (!mine.length) { box.innerHTML = '<div class="warn" style="margin:0">Bu kunda to‘lanmagan bron topilmadi. «Bronsiz» rejimiga o‘ting.</div>'; return; }
+    box.innerHTML = mine.map(b => `<button type="button" data-bk="${esc(b.id)}" class="${CO.booking?.id===b.id?'on':''}">
+      <b>${esc(kHour(b.start_at))} · ${esc(b.course?.name||'—')}</b>
+      <span>👨‍🏫 ${esc(b.instructor?.profile?.full_name||'—')} · ${esc(money(b.price))}</span></button>`).join('');
+    box.querySelectorAll('[data-bk]').forEach(btn => btn.onclick = () => {
+      CO.booking = mine.find(x => String(x.id) === btn.dataset.bk) || null;
+      if (CO.booking) {
+        CO.minutes = Number(CO.booking.duration_minutes || CO.booking.total_minutes || 60);
+        CO.instructor = { id: CO.booking.instructor_id, name: CO.booking.instructor?.profile?.full_name || '—' };
+        const st = new Date(CO.booking.start_at);
+        $('coDate').value = new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Tashkent'}).format(st);
+        $('coTime').value = kHour(CO.booking.start_at);
+        const cat = String(CO.booking.category || CO.booking.course?.category || '').toUpperCase();
+        if (cat) CO.category = cat;
+      }
+      loadCoBookings(); coRender();
+    });
+  }catch(e){ box.innerHTML = `<div class="error">${esc(e.message)}</div>`; }
+}
+
+/* ---- kategoriya ---- */
+function renderCats(){
+  const cats = ['A','B','C'];
+  $('coCats').innerHTML = cats.map(c => {
+    const course = (S.courses||[]).find(x => String(x.category||'').toUpperCase()===c && x.is_active);
+    return `<button type="button" class="pk ${CO.category===c?'on':''}" data-cat="${c}">
+      ${c}${course?`<br><small style="font-weight:600;font-size:11px">${esc(money(course.price))}</small>`:''}</button>`;
+  }).join('');
+  $('coCats').querySelectorAll('[data-cat]').forEach(b => b.onclick = () => { CO.category = b.dataset.cat; renderCats(); coRender(); });
+}
+
+/* ---- davomiylik ---- */
+function renderDurs(){
+  $('coDurs').innerHTML = DURS.map(m => `<button type="button" data-m="${m}" class="${CO.minutes===m?'on':''}">${fmtDur(m)}</button>`).join('');
+  $('coDurs').querySelectorAll('[data-m]').forEach(b => b.onclick = () => {
+    CO.minutes = Number(b.dataset.m); $('coCustomMin').value = '';
+    renderDurs(); coRender(); if (CO.mode==='walk_in') loadFreeInstructors();
+  });
+}
+$('coCustomMin').addEventListener('input', () => {
+  const v = Number($('coCustomMin').value);
+  if (v >= 15 && v <= 600) { CO.minutes = v; renderDurs(); coRender(); }
+});
+
+/* ---- bo'sh instruktorlar ---- */
+async function loadFreeInstructors(){
+  if (CO.mode !== 'walk_in') return;
+  const at = coStartAt();
+  const box = $('coInsBox');
+  if (!at) { box.innerHTML = '<div class="muted" style="font-size:13px">Sana va vaqtni tanlang.</div>'; return; }
+  box.innerHTML = '<div class="muted" style="font-size:13px">Tekshirilmoqda…</div>';
+  try{
+    const d = await api(`/api/admin/cashier/free-instructors?at=${encodeURIComponent(at.toISOString())}&minutes=${CO.minutes}`);
+    CO.free = d.free||[]; CO.busy = d.busy||[];
+    if (!CO.free.length && !CO.busy.length) { box.innerHTML = '<div class="warn" style="margin:0">Faol instruktor yo‘q.</div>'; return; }
+    if (!CO.instructor && d.suggestion) CO.instructor = { id: d.suggestion.id, name: d.suggestion.name };
+    const row = (i, wait) => `<button type="button" data-ins="${esc(i.id)}" class="${String(CO.instructor?.id)===String(i.id)?'on':''} ${wait?'wait':''}">
+      <b>${esc(i.name)}${wait?'':' · bo‘sh'}</b>
+      <span>${wait ? `⏳ ${esc(i.wait_minutes)} daqiqadan keyin bo‘shaydi (${esc(kHour(i.free_at))})` : `★ ${esc(i.rating.toFixed(1))}`}</span></button>`;
+    box.innerHTML =
+      (CO.free.length ? CO.free.map(i => row(i,false)).join('')
+        : '<div class="warn" style="margin:0 0 8px">Bu vaqtda bo‘sh instruktor yo‘q. Eng tez bo‘shaydiganlar:</div>')
+      + (CO.free.length ? '' : CO.busy.slice(0,4).map(i => row(i,true)).join(''));
+    box.querySelectorAll('[data-ins]').forEach(b => b.onclick = () => {
+      const all = [...CO.free, ...CO.busy];
+      const f = all.find(x => String(x.id) === b.dataset.ins);
+      CO.instructor = f ? { id: f.id, name: f.name } : null;
+      loadFreeInstructors(); coRender();
+    });
+  }catch(e){ box.innerHTML = `<div class="error">${esc(e.message)}</div>`; }
+}
+$('coDate').addEventListener('change', () => { CO.mode==='booked' ? loadCoBookings() : loadFreeInstructors(); coRender(); });
+$('coTime').addEventListener('change', () => { if (CO.mode==='walk_in') loadFreeInstructors(); coRender(); });
+
+/* ---- to'lov turi ---- */
+document.querySelectorAll('[data-pay]').forEach(b => b.onclick = () => {
+  CO.pay = b.dataset.pay;
+  document.querySelectorAll('[data-pay]').forEach(x => x.classList.toggle('on', x.dataset.pay===CO.pay));
+  $('coSplit').classList.toggle('hidden', CO.pay!=='mixed');
+  if (CO.pay!=='mixed') { $('coCash').value = 0; $('coCard').value = 0; }
+  coRender();
+});
+['coCash','coCard','coAmount'].forEach(id => $(id).addEventListener('input', coRender));
+
+/* ---- xulosa ---- */
+function coRender(){
+  renderCats(); renderDurs();
+  const price = coPrice();
+  if (document.activeElement !== $('coAmount')) $('coAmount').value = price || '';
+  const total = Number($('coAmount').value || price || 0);
+
+  $('sumCat').textContent  = CO.category || '—';
+  $('sumDur').textContent  = fmtDur(CO.minutes);
+  $('sumIns').textContent  = CO.instructor?.name || '—';
+  const at = coStartAt();
+  $('sumTime').textContent = at ? `${$('coDate').value} · ${$('coTime').value}` : '—';
+  $('sumTotal').textContent = money(total);
+  const c = coCourse();
+  $('sumCalc').textContent = c ? `${money(c.price)} / ${fmtDur(coUnit())} × ${fmtDur(CO.minutes)}` : 'Kategoriya tanlanmagan';
+
+  if (CO.pay === 'mixed') {
+    const cash = Number($('coCash').value||0), card = Number($('coCard').value||0);
+    const diff = total - cash - card;
+    $('coSplitHint').textContent = diff === 0
+      ? '✓ Bo‘laklar summaga mos'
+      : diff > 0 ? `Yetishmayapti: ${money(diff)}` : `Ortiqcha: ${money(-diff)}`;
+    $('coSplitHint').style.color = diff === 0 ? 'var(--ok)' : 'var(--red)';
+  }
+}
+
+/* ---- chek chiqarish ---- */
+$('coIssue').onclick = async () => {
+  $('coAlert').innerHTML = '';
+  const err = m => { $('coAlert').innerHTML = `<div class="error">${esc(m)}</div>`; };
+  const total = Number($('coAmount').value || 0);
+  if (!CO.pay) return err('To‘lov turini tanlang');
+  if (!(total > 0)) return err('Summani kiriting');
+  if (!CO.category) return err('Kategoriyani tanlang');
+
+  let cash = 0, card = 0;
+  if (CO.pay === 'cash') cash = total;
+  else if (CO.pay === 'card') card = total;
+  else {
+    cash = Number($('coCash').value||0); card = Number($('coCard').value||0);
+    if (cash + card !== total) return err(`Naqd + terminal = ${money(cash+card)}, jami esa ${money(total)}`);
+  }
+
+  const body = { duration_minutes: CO.minutes, category: CO.category,
+                 amount: total, cash_amount: cash, card_amount: card };
+
+  if (CO.mode === 'booked') {
+    if (!CO.booking) return err('Mijozning bronini tanlang');
+    body.booking_id = CO.booking.id;
+  } else {
+    const at = coStartAt();
+    if (!$('coName').value.trim()) return err('Ism familiyani kiriting');
+    if (!at) return err('Sana va vaqtni tanlang');
+    if (!CO.instructor) return err('Instruktorni tanlang');
+    const course = coCourse();
+    if (!course) return err('Bu kategoriya uchun mashg‘ulot topilmadi. Mashg‘ulotlar bo‘limida qo‘shing.');
+    Object.assign(body, {
+      full_name: $('coName').value.trim(), phone: $('coPhone').value.trim(),
+      customer_id: CO.customer?.id || null, instructor_id: CO.instructor.id,
+      course_id: course.id, start_at: at.toISOString(),
+    });
+  }
+
+  const btn = $('coIssue'); btn.disabled = true; btn.textContent = 'Chiqarilmoqda…';
+  try{
+    const d = await api('/api/admin/cashier/issue', { method:'POST', body: JSON.stringify(body) });
+    toast('Chek chiqarildi');
+    receiptModal(d.receipt);
+    // Avtomatik chop etishga o'tamiz
+    setTimeout(() => { try { window.print(); } catch(e){} }, 400);
+    coResetForm();
+  }catch(e){ err(e.message); }
+  finally{ btn.disabled = false; btn.textContent = '🧾 Chek chiqarish'; }
+};
+
+function coResetForm(){
+  CO.customer = null; CO.booking = null; CO.instructor = null; CO.pay = '';
+  $('coName').value = ''; $('coPhone').value = ''; $('coCash').value = 0; $('coCard').value = 0;
+  $('coSuggest').classList.add('hidden'); $('coSplit').classList.add('hidden');
+  document.querySelectorAll('[data-pay]').forEach(x => x.classList.remove('on'));
+  $('coBookings').innerHTML = '';
+  coRender();
+}
+$('coReset').onclick = coResetForm;
+
+function initCheckout(){
+  if (!$('coDate').value) $('coDate').value = kToday();
+  if (!$('coTime').value) $('coTime').value = new Date().toLocaleTimeString('en-GB',{timeZone:'Asia/Tashkent',hour:'2-digit',minute:'2-digit'});
+  if (!CO.category) {
+    const first = (S.courses||[]).find(c => c.is_active && c.category);
+    CO.category = String(first?.category || 'B').toUpperCase();
+  }
+  coRender();
+  if (CO.mode === 'walk_in') loadFreeInstructors();
+}
+
 /* ---------- Bekor qilish so'rovlari ---------- */
 S.cancels=[];
 async function loadCancels(){
@@ -1545,7 +1946,7 @@ function fillCashierInstructors(){
   if(cur) $('kInstructor').value=cur;
 }
 
-async function boot(){try{await api('/api/admin/me');showApp();if(!$('dDate').value)$('dDate').value=kToday();await loadAll();await Promise.allSettled([loadAnalytics(),loadSupport(),loadCancels()])}catch{showLogin()}}
+async function boot(){try{await api('/api/admin/me');showApp();if(!$('dDate').value)$('dDate').value=kToday();await loadAll();await Promise.allSettled([loadAnalytics(),loadSupport(),loadCancels()]); initCheckout();}catch{showLogin()}}
 // Avtomatik yangilanish: modal ochiq bo'lsa yoki sozlama tahrirlanayotgan bo'lsa TO'XTAYDI.
 setInterval(()=>{
   if($('app').classList.contains('hidden')) return;
