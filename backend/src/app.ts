@@ -15,6 +15,7 @@ import { registerSupportRoutes } from './support-routes.js';
 import { sendDueReminders, handleReminderCallback } from './reminders.js';
 import { registerCashierRoutes } from './cashier-routes.js';
 import { registerAnalyticsRoutes } from './analytics-routes.js';
+import { registerShiftRoutes } from './shift-routes.js';
 
 const app = Fastify({ logger: true });
 const CUSTOMER_BOT_TOKEN = process.env.CUSTOMER_BOT_TOKEN || process.env.TELEGRAM_CUSTOMER_BOT_TOKEN || '';
@@ -70,6 +71,7 @@ await registerReviewRoutes(app, authenticateCustomer);
 await registerSupportRoutes(app, authenticateCustomer, requireAdmin, adminUser);
 await registerCashierRoutes(app, requireAdmin, adminUser, audit, authenticateInstructor);
 await registerAnalyticsRoutes(app, requireAdmin);
+await registerShiftRoutes(app, requireAdmin, adminUser, audit);
 
 // IMPORTANT: admin-password-routes.ts is the single owner of the canonical
 // /api/admin/* endpoints. Do not register admin-routes.ts or
