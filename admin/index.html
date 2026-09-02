@@ -2077,14 +2077,22 @@ async function loadRegisters(){
 function showLockError(msg){
   $('regLock').classList.remove('hidden');
   document.querySelectorAll('#checkout .grid2, #shiftBar').forEach(el => el.classList.add('hidden'));
-  const missing = /cash_registers|does not exist|42P01|404/i.test(String(msg));
+  const m = String(msg);
+  // Jadval yo'qmi yoki faqat ustun yetishmayaptimi — maslahat shunga qarab
+  const noTable  = /relation .*cash_registers.* does not exist|42P01/i.test(m);
+  const noColumn = /column .*cash_registers\.[a-z_]+ does not exist|42703|Ustun topilmadi/i.test(m);
+  const hint = noTable
+    ? 'Bazada <b>cash_registers</b> jadvali yo‘q.'
+    : noColumn
+      ? 'Jadval bor, lekin <b>PIN ustunlari</b> qo‘shilmagan.'
+      : '';
   $('regLock').innerHTML = `<div class="locksc">
     <h2>Kassalar yuklanmadi</h2>
     <div class="error" style="text-align:left">${esc(msg)}</div>
-    ${missing ? `<div class="warn" style="text-align:left;margin-top:12px">
-      Bazada <b>cash_registers</b> jadvali topilmadi. Supabase → SQL Editor da
+    ${hint ? `<div class="warn" style="text-align:left;margin-top:12px">
+      ${hint} Supabase → SQL Editor da
       <b>20260902190000_registers_all_in_one.sql</b> faylini ishga tushiring,
-      so‘ng shu sahifani yangilang.</div>` : ''}
+      so‘ng «Qayta urinish» tugmasini bosing.</div>` : ''}
     <button class="btn primary" id="lockRetry" style="margin-top:16px">Qayta urinish</button>
   </div>`;
   $('lockRetry').onclick = loadRegisters;
