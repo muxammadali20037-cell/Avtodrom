@@ -440,11 +440,24 @@ export async function registerCashierRoutes(
       const receiptCode = typeof codeRes === 'string' ? codeRes : String(codeRes ?? '');
       if (!receiptCode) throw new Error('Chek kodi yaratilmadi');
 
+      /* Chek qaysi KASSAdan chiqarilgani. Ikki kirish (P1, P2) bor va
+         hisob-kitob doimiy ravishda alohida yuritiladi. Kassa
+         ko'rsatilmasa chek chiqmaydi — aks holda pul qaysi kassaga
+         tushgani noma'lum qolardi. */
+      const registerId = String(b.register_id || '').trim();
+      if (!registerId) {
+        return reply.code(409).send({ ok: false, error: 'Kassa tanlanmagan. Yuqoridan P1 yoki P2 ni tanlang.' });
+      }
+      const register = (await supabaseRest<any[]>('cash_registers', {
+        query: `?id=eq.${q(registerId)}&is_active=eq.true&select=id,code,name&limit=1`,
+      }))[0];
+      if (!register) return reply.code(404).send({ ok: false, error: 'Kassa topilmadi' });
+
       const now2 = new Date().toISOString();
       const payload = {
         booking_id: booking.id, customer_id: booking.customer_id, amount: total, currency: 'UZS',
         status: 'paid', method, cash_amount: cash, card_amount: card,
-        paid_at: now2, receipt_code: receiptCode, cashier_id: admin.id,
+        paid_at: now2, receipt_code: receiptCode, cashier_id: admin.id, register_id: registerId,
         note: String(b.note || '').trim() || null,
       };
       const payment = existing
@@ -455,11 +468,12 @@ export async function registerCashierRoutes(
             method: 'POST', headers: { Prefer: 'return=representation' }, body: JSON.stringify(payload) }))[0];
 
       await audit(admin.id, 'RECEIPT_ISSUED', 'payments', payment?.id ?? null, null,
-        { amount: total, method, cash, card, receipt_code: receiptCode, booking_id: booking.id, mode });
+        { amount: total, method, cash, card, receipt_code: receiptCode, booking_id: booking.id, mode, register: register.code });
 
       const fresh = (await supabaseRest<any[]>('bookings', { query: `?id=eq.${q(String(booking.id))}&select=*&limit=1` }))[0];
       const m = await loadMaps([fresh]);
-      return reply.code(201).send({ ok: true, mode, booking: shape(fresh, m), payment, receipt: buildReceipt(shape(fresh, m), payment) });
+      const shaped = shape(fresh, m); (shaped as any).__register = register.name;
+      return reply.code(201).send({ ok: true, mode, booking: shaped, payment, receipt: buildReceipt(shaped, payment) });
     } catch (e: any) {
       const msg = String(e?.message || '');
       if (/no_instructor_overlap/.test(msg)) return reply.code(409).send({ ok: false, error: 'Instruktor bu vaqtda band' });
@@ -580,5 +594,6 @@ function buildReceipt(b: any, p: any) {
     paid_at: p.paid_at,
     paid_at_text: fmtWhen(p.paid_at),
     booking_id: b.id,
+    register: b.__register || null,
   };
 }
