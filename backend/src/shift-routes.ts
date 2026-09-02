@@ -1,4 +1,5 @@
 import type { FastifyInstance } from 'fastify';
+import { createHmac, timingSafeEqual, randomUUID } from 'node:crypto';
 import { supabaseRest } from './supabase.js';
 
 /**
@@ -14,6 +15,43 @@ import { supabaseRest } from './supabase.js';
 
 const q = (v: string) => encodeURIComponent(v);
 
+
+/* ---------------------------------------------------------------
+   KASSA PIN VA TOKEN
+
+   PIN ochiq saqlanmaydi — HMAC-SHA256 bilan xeshlanadi.
+   Ochilgach kassirga imzolangan token beriladi; chek chiqarishda
+   kassa ID'si o'sha TOKENdan olinadi, mijoz yuborgan qiymatdan emas.
+   Shunday qilib brauzerdan boshqa kassa nomidan chek chiqarib bo'lmaydi.
+   --------------------------------------------------------------- */
+const SECRET = () => String(process.env.ADMIN_SESSION_SECRET || '').trim();
+const TOKEN_TTL_MS = 12 * 60 * 60 * 1000;   // 12 soat — bir ish kuni
+
+function hmac(data: string) {
+  return createHmac('sha256', SECRET() || 'avtodrom-fallback').update(data).digest('hex');
+}
+function pinHash(registerId: string, pin: string) {
+  return hmac(`pin:${registerId}:${pin}`);
+}
+function safeEq(a: string, b: string) {
+  const x = Buffer.from(a), y = Buffer.from(b);
+  return x.length === y.length && timingSafeEqual(x, y);
+}
+export function makeRegisterToken(registerId: string) {
+  const exp = Date.now() + TOKEN_TTL_MS;
+  const body = `${registerId}.${exp}`;
+  return `${body}.${hmac(`reg:${body}`)}`;
+}
+/** Tokendan kassa ID'sini oladi. Imzo yoki muddat noto'g'ri bo'lsa null. */
+export function readRegisterToken(token: string): string | null {
+  const parts = String(token || '').split('.');
+  if (parts.length !== 3) return null;
+  const [id, expStr, sig] = parts;
+  if (!safeEq(sig, hmac(`reg:${id}.${expStr}`))) return null;
+  if (!Number(expStr) || Number(expStr) < Date.now()) return null;
+  return id;
+}
+
 export async function registerShiftRoutes(
   app: FastifyInstance,
   requireAdmin: (request: any) => Promise<void>,
@@ -25,7 +63,7 @@ export async function registerShiftRoutes(
     try {
       await requireAdmin(req);
       const regs = await supabaseRest<any[]>('cash_registers', {
-        query: '?is_active=eq.true&select=*&order=code.asc',
+        query: '?is_active=eq.true&select=id,code,name,is_active,pin_set_at&order=code.asc',
       });
       const open = await supabaseRest<any[]>('cashier_shifts', {
         query: '?closed_at=is.null&select=*',
@@ -33,7 +71,7 @@ export async function registerShiftRoutes(
       const byReg = new Map(open.map((s) => [String(s.register_id), s]));
       return {
         ok: true,
-        registers: regs.map((r) => ({ ...r, open_shift: byReg.get(String(r.id)) || null })),
+        registers: regs.map((r) => ({ ...r, has_pin: !!r.pin_set_at, open_shift: byReg.get(String(r.id)) || null })),
       };
     } catch (e: any) {
       return reply.code(e?.statusCode ?? 500).send({ ok: false, error: e?.message || 'Kassalar yuklanmadi' });
@@ -199,6 +237,67 @@ export async function registerShiftRoutes(
       };
     } catch (e: any) {
       return reply.code(e?.statusCode ?? 500).send({ ok: false, error: e?.message || 'Kassa hisoboti yuklanmadi' });
+    }
+  });
+
+  /* ---------------- PIN ni o'rnatish (faqat admin) ---------------- */
+  app.put('/api/admin/registers/:id/pin', async (req: any, reply: any) => {
+    try {
+      await requireAdmin(req);
+      const admin = await adminUser();
+      const id = String(req.params.id);
+      const pin = String(req.body?.pin ?? '').trim();
+
+      if (!/^\d{4,8}$/.test(pin)) {
+        return reply.code(400).send({ ok: false, error: 'PIN 4 dan 8 tagacha raqamdan iborat bo‘lsin' });
+      }
+      const reg = (await supabaseRest<any[]>('cash_registers', { query: `?id=eq.${q(id)}&select=id,code&limit=1` }))[0];
+      if (!reg) return reply.code(404).send({ ok: false, error: 'Kassa topilmadi' });
+
+      await supabaseRest('cash_registers', {
+        method: 'PATCH', query: `?id=eq.${q(id)}`,
+        body: JSON.stringify({ pin_hash: pinHash(id, pin), pin_set_at: new Date().toISOString() }),
+      });
+      // PIN ning o'zi hech qayerga yozilmaydi — auditda ham
+      await audit(admin.id, 'REGISTER_PIN_SET', 'cash_registers', id, null, { register: reg.code });
+      return { ok: true };
+    } catch (e: any) {
+      return reply.code(e?.statusCode ?? 400).send({ ok: false, error: e?.message || 'PIN saqlanmadi' });
+    }
+  });
+
+  /* ---------------- Kassani ochish ---------------- */
+  app.post('/api/admin/registers/:id/unlock', async (req: any, reply: any) => {
+    try {
+      await requireAdmin(req);
+      const id = String(req.params.id);
+      const pin = String(req.body?.pin ?? '').trim();
+
+      const reg = (await supabaseRest<any[]>('cash_registers', {
+        query: `?id=eq.${q(id)}&is_active=eq.true&select=id,code,name,pin_hash&limit=1`,
+      }))[0];
+      if (!reg) return reply.code(404).send({ ok: false, error: 'Kassa topilmadi' });
+
+      // PIN hali o'rnatilmagan bo'lsa kirishga ruxsat beramiz, lekin ogohlantiramiz —
+      // aks holda admin PIN qo'ymaguncha kassa umuman ishlamay qolardi.
+      if (!reg.pin_hash) {
+        return {
+          ok: true, warning: 'Bu kassaga PIN o‘rnatilmagan. Sozlamalar bo‘limidan qo‘ying.',
+          register: { id: reg.id, code: reg.code, name: reg.name },
+          token: makeRegisterToken(reg.id),
+        };
+      }
+      if (!pin) return reply.code(400).send({ ok: false, error: 'PIN kiriting' });
+      if (!safeEq(reg.pin_hash, pinHash(id, pin))) {
+        return reply.code(401).send({ ok: false, error: 'PIN noto‘g‘ri' });
+      }
+      return {
+        ok: true,
+        register: { id: reg.id, code: reg.code, name: reg.name },
+        token: makeRegisterToken(reg.id),
+      };
+    } catch (e: any) {
+      return reply.code(e?.statusCode ?? 400).send({ ok: false, error: e?.message || 'Kassa ochilmadi' });
     }
   });
 }
