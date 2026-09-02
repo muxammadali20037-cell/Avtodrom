@@ -62,16 +62,33 @@ export async function registerShiftRoutes(
   app.get('/api/admin/registers', async (req: any, reply: any) => {
     try {
       await requireAdmin(req);
+      /* Faqat kafolatlangan ustunlarni so'raymiz. `pin_set_at` alohida
+         tekshiriladi — agar migratsiya hali qo'llanmagan bo'lsa, butun
+         ro'yxat 400 bilan yiqilib, panel umuman ochilmasdi. */
       const regs = await supabaseRest<any[]>('cash_registers', {
-        query: '?is_active=eq.true&select=id,code,name,is_active,pin_set_at&order=code.asc',
+        query: '?is_active=eq.true&select=id,code,name,is_active&order=code.asc',
       });
+
+      let pinMap = new Map<string, boolean>();
+      let pinReady = true;
+      try {
+        const withPin = await supabaseRest<any[]>('cash_registers', { query: '?select=id,pin_set_at' });
+        pinMap = new Map(withPin.map((r) => [String(r.id), !!r.pin_set_at]));
+      } catch {
+        pinReady = false;   // ustun yo'q — PIN hali sozlanmagan
+      }
       const open = await supabaseRest<any[]>('cashier_shifts', {
         query: '?closed_at=is.null&select=*',
       });
       const byReg = new Map(open.map((s) => [String(s.register_id), s]));
       return {
         ok: true,
-        registers: regs.map((r) => ({ ...r, has_pin: !!r.pin_set_at, open_shift: byReg.get(String(r.id)) || null })),
+        pin_ready: pinReady,
+        registers: regs.map((r) => ({
+          ...r,
+          has_pin: pinMap.get(String(r.id)) ?? false,
+          open_shift: byReg.get(String(r.id)) || null,
+        })),
       };
     } catch (e: any) {
       return reply.code(e?.statusCode ?? 500).send({ ok: false, error: e?.message || 'Kassalar yuklanmadi' });
@@ -240,6 +257,44 @@ export async function registerShiftRoutes(
     }
   });
 
+
+  /**
+   * TASHXIS — backend qaysi Supabase loyihasiga ulangan va
+   * kerakli ustunlar bormi. Bazani taxmin qilmasdan aniqlash uchun.
+   */
+  app.get('/api/admin/db-check', async (req: any, reply: any) => {
+    try {
+      await requireAdmin(req);
+      const url = String(process.env.SUPABASE_URL || '');
+      const project = url.replace(/^https?:\/\//, '').split('.')[0] || '(nomaʼlum)';
+
+      const check = async (table: string, cols: string) => {
+        try { await supabaseRest<any[]>(table, { query: `?select=${cols}&limit=1` }); return true; }
+        catch { return false; }
+      };
+      const [regTable, pinCols, payReg] = await Promise.all([
+        check('cash_registers', 'id,code'),
+        check('cash_registers', 'pin_hash,pin_set_at'),
+        check('payments', 'register_id'),
+      ]);
+      let registers: any[] = [];
+      try { registers = await supabaseRest<any[]>('cash_registers', { query: '?select=code,name&order=code.asc' }); } catch {}
+
+      return {
+        ok: true,
+        supabase_project: project,
+        supabase_url: url.slice(0, 40) + '…',
+        tables: { cash_registers: regTable, pin_columns: pinCols, payments_register_id: payReg },
+        registers: registers.map((r) => r.code),
+        verdict: !regTable ? 'cash_registers jadvali yo‘q — migratsiyani ishga tushiring'
+               : !pinCols  ? 'PIN ustunlari yo‘q — migratsiya SHU loyihada ishga tushmagan'
+               : 'hammasi joyida',
+      };
+    } catch (e: any) {
+      return reply.code(e?.statusCode ?? 500).send({ ok: false, error: e?.message || 'Tekshirib bo‘lmadi' });
+    }
+  });
+
   /* ---------------- PIN ni o'rnatish (faqat admin) ---------------- */
   app.put('/api/admin/registers/:id/pin', async (req: any, reply: any) => {
     try {
@@ -274,9 +329,25 @@ export async function registerShiftRoutes(
       const pin = String(req.body?.pin ?? '').trim();
 
       const reg = (await supabaseRest<any[]>('cash_registers', {
-        query: `?id=eq.${q(id)}&is_active=eq.true&select=id,code,name,pin_hash&limit=1`,
+        query: `?id=eq.${q(id)}&is_active=eq.true&select=id,code,name&limit=1`,
       }))[0];
       if (!reg) return reply.code(404).send({ ok: false, error: 'Kassa topilmadi' });
+
+      // PIN ustuni bo'lmasa — migratsiya hali qo'llanmagan, kirishga ruxsat
+      let storedHash: string | null = null;
+      try {
+        const r2 = (await supabaseRest<any[]>('cash_registers', {
+          query: `?id=eq.${q(id)}&select=pin_hash&limit=1`,
+        }))[0];
+        storedHash = r2?.pin_hash ?? null;
+      } catch {
+        return {
+          ok: true, warning: 'PIN ustunlari bazaga qo‘shilmagan. Migratsiyani ishga tushiring.',
+          register: { id: reg.id, code: reg.code, name: reg.name },
+          token: makeRegisterToken(reg.id),
+        };
+      }
+      (reg as any).pin_hash = storedHash;
 
       // PIN hali o'rnatilmagan bo'lsa kirishga ruxsat beramiz, lekin ogohlantiramiz —
       // aks holda admin PIN qo'ymaguncha kassa umuman ishlamay qolardi.
