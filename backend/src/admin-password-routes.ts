@@ -581,8 +581,11 @@ export async function registerAdminPasswordRoutes(app: FastifyInstance) {
   app.get('/api/admin/payments', async (req: any, reply: any) => {
     try {
       await guard(req);
+      /* Kassa bo'yicha filtr: P1 va P2 ning hisobi aralashmasligi kerak.
+         register_id berilmasa — hammasi (boshqaruv uchun). */
+      const regFilter = String(req.query?.register_id || '').trim();
       const [payments, users, bookings] = await Promise.all([
-        safe<any>('payments', '?select=*&order=created_at.desc'),
+        safe<any>('payments', `?select=*${regFilter ? `&register_id=eq.${q(regFilter)}` : ''}&order=created_at.desc`),
         safe<any>('users', '?select=id,full_name,phone'),
         safe<any>('bookings', '?select=id,booking_date,course_id'),
       ]);
