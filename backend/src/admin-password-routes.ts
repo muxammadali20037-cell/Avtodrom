@@ -292,6 +292,14 @@ export async function registerAdminPasswordRoutes(app: FastifyInstance) {
         insPatch.bio = bio || null;
       }
       if (typeof b.is_verified === 'boolean') insPatch.is_verified = b.is_verified;
+      if (b.categories !== undefined) {
+        const list = (Array.isArray(b.categories) ? b.categories : [])
+          .map((c: any) => String(c).trim().toUpperCase())
+          .filter((c: string) => ['A', 'B', 'C'].includes(c));
+        const uniq = [...new Set(list)];
+        if (!uniq.length) return reply.code(400).send({ ok: false, error: 'Kamida bitta kategoriya tanlang' });
+        insPatch.categories = uniq;
+      }
       if (b.avatar_url !== undefined) {
         const u = String(b.avatar_url).trim();
         if (u && !/^https:\/\/[a-z0-9-]+\.supabase\.co\/storage\/v1\/object\/public\//i.test(u)) {
