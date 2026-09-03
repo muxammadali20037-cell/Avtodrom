@@ -161,6 +161,12 @@ button,input,select,textarea{font:inherit}.hidden{display:none!important}
 .lv.stale{border-color:#DDD;background:#FAFAFA;opacity:.75}
 .lv.stale .left b{color:#999}
 .badge.grey{background:#EEE;color:#666}
+
+.offbar{position:fixed;left:0;right:0;top:0;z-index:9999;padding:11px 16px;font-size:13.5px;
+ text-align:center;transform:translateY(-100%);transition:.25s;background:#E9F7EF;color:#0d7a4a;
+ border-bottom:1px solid #BFE6D0}
+.offbar.show{transform:translateY(0)}
+.offbar.down{background:#FDECEC;color:#a52020;border-bottom-color:#F3B4B4}
 .warn{padding:11px;border-radius:11px;background:#fff8e6;color:#8a6500;border:1px solid #ffe6a8;font-size:13px}
 .top{height:70px;background:#fff;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:20}
 .topin{height:100%;max-width:1500px;margin:auto;padding:0 20px;display:flex;align-items:center;justify-content:space-between}
@@ -339,6 +345,12 @@ button,input,select,textarea{font:inherit}.hidden{display:none!important}
 .lv.stale{border-color:#DDD;background:#FAFAFA;opacity:.75}
 .lv.stale .left b{color:#999}
 .badge.grey{background:#EEE;color:#666}
+
+.offbar{position:fixed;left:0;right:0;top:0;z-index:9999;padding:11px 16px;font-size:13.5px;
+ text-align:center;transform:translateY(-100%);transition:.25s;background:#E9F7EF;color:#0d7a4a;
+ border-bottom:1px solid #BFE6D0}
+.offbar.show{transform:translateY(0)}
+.offbar.down{background:#FDECEC;color:#a52020;border-bottom-color:#F3B4B4}
 .warn{padding:11px;border-radius:11px;background:#fff8e6;color:#8a6500;border:1px solid #ffe6a8;margin-bottom:12px;font-size:13px}
 .empty{padding:25px;text-align:center;color:var(--muted)}
 .actions{display:flex;gap:5px;flex-wrap:wrap}
@@ -881,17 +893,50 @@ function errText(d,status,path){
   if(status===405) return `Bu manzil bu usulni qabul qilmaydi (405): ${path}`;
   return `Server xatosi: ${status}`;
 }
+/* Kassa PIN'i ham 401 qaytaradi. Uni "sessiya tugadi" deb hisoblab
+   adminni chiqarib yuborish noto'g'ri — noto'g'ri PIN kiritgan kassir
+   butun paneldan uchib ketardi. Shu manzillar bundan mustasno. */
+const PIN_PATHS = /\/api\/admin\/registers\/[^/]+\/(unlock|pin)/;
+
 async function api(path,opt={}){
   let r;
   try{
-    r=await fetch(path,{...opt,credentials:'include',cache:'no-store',headers:{Accept:'application/json',...(opt.body?{'Content-Type':'application/json'}:{})}});
-  }catch(e){ throw Error('Tarmoq xatosi. Internet aloqasini tekshiring.'); }
+    r=await fetch(path,{...opt,credentials:'include',cache:'no-store',headers:{Accept:'application/json',...(opt.body?{'Content-Type':'application/json'}:{}),...(opt.headers||{})}});
+  }catch(e){
+    setOffline(true);
+    throw Error('Internet aloqasi yo‘q. Ma’lumotlar serverda saqlanadi — aloqa qaytgach hammasi joyida bo‘ladi.');
+  }
+  setOffline(false);
   const raw=await r.text();
   let d={}; try{ d=raw?JSON.parse(raw):{} }catch{ d={} }
-  if(r.status===401){ showLogin(); throw Error(errText(d,401,path)||'Admin sessiyasi tugagan'); }
+  if(r.status===401 && !PIN_PATHS.test(String(path))){ showLogin(); throw Error(errText(d,401,path)||'Admin sessiyasi tugagan'); }
   if(!r.ok||d.ok===false) throw Error(errText(d,r.status,path));
   return d;
 }
+
+/* ---------- Aloqa holati ----------
+   Internet uzilganda o'nlab qizil xato o'rniga bitta tushunarli
+   chiziq. Aloqa qaytgach o'zi yo'qoladi va ma'lumot qayta yuklanadi. */
+let offlineNow = false;
+function setOffline(on){
+  if (on === offlineNow) return;
+  offlineNow = on;
+  let bar = document.getElementById('offlineBar');
+  if (!bar) {
+    bar = document.createElement('div');
+    bar.id = 'offlineBar'; bar.className = 'offbar';
+    document.body.appendChild(bar);
+  }
+  bar.innerHTML = on
+    ? '<b>Internet aloqasi yo‘q.</b> Ma’lumotlar serverda saqlanadi — hech narsa yo‘qolmaydi. Aloqa qaytishi kutilmoqda…'
+    : '<b>Aloqa tiklandi.</b>';
+  bar.classList.toggle('down', on);
+  bar.classList.add('show');
+  if (!on) setTimeout(() => bar.classList.remove('show'), 2500);
+}
+window.addEventListener('offline', () => setOffline(true));
+window.addEventListener('online', () => { setOffline(false); try { loadAll(); } catch (e) {} });
+
 function showLogin(){$('login').classList.remove('hidden');$('app').classList.add('hidden')}
 function showApp(){$('login').classList.add('hidden');$('app').classList.remove('hidden')}
 
