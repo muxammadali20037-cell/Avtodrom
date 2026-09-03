@@ -250,6 +250,8 @@ details.faq[open] summary{border-bottom:1px solid var(--line)}
 .insrow{display:flex;align-items:center;gap:12px;width:100%;text-align:left;background:#fff;
  border:1px solid var(--line);border-radius:14px;padding:11px 13px;margin-bottom:8px;cursor:pointer;font:inherit}
 .insrow:active{background:#f7f8fd}
+.insrow img.ini{object-fit:cover}
+.insitem img.ini{object-fit:cover}
 .insrow .ini{width:40px;height:40px;border-radius:12px;flex:none;display:grid;place-items:center;
  background:var(--soft,#EEF0FB);color:var(--brand);font-weight:900;font-size:14px}
 .insrow .txt{flex:1;min-width:0}
@@ -882,8 +884,11 @@ function instructorRow(x){
   const bits = [];
   if (x.experience_years) bits.push(t('ins_years', { n: x.experience_years }));
   bits.push(`★ ${Number(x.rating || 0).toFixed(1)}`);
+  const av = x.avatar_url
+    ? `<img class="ini" src="${esc(x.avatar_url)}" alt="">`
+    : `<span class="ini">${esc(initials(name))}</span>`;
   return `<button class="insrow" data-ins-detail="${esc(x.id)}">
-    <span class="ini">${esc(initials(name))}</span>
+    ${av}
     <span class="txt"><b>${esc(name)}</b><small>${esc(bits.join(' · '))}</small></span>
     <span class="go">›</span>
   </button>`;
@@ -899,7 +904,7 @@ function instructorListItem(x){
   bits.push(`★ ${Number(x.rating || 0).toFixed(1)} · ${t('ins_reviews', { n: x.total_reviews || 0 })}`);
   return `<article class="insitem">
     <div class="top">
-      <span class="ini">${esc(initials(name))}</span>
+      ${x.avatar_url ? `<img class="ini" src="${esc(x.avatar_url)}" alt="">` : `<span class="ini">${esc(initials(name))}</span>`}
       <span class="txt"><b>${esc(name)}</b><small>${esc(bits.join(' · '))}</small></span>
     </div>
     ${x.bio ? `<p class="bio">${esc(x.bio)}</p>` : ''}
@@ -947,7 +952,9 @@ function showInstructor(id){
   const x=S.instructors.find(v=>String(v.id)===String(id)); if(!x) return;
   const name=iName(x);
   openModal(name,`<div style="display:flex;gap:14px;align-items:center;margin-bottom:14px">
-      <div class="ini" style="background:linear-gradient(135deg,#2E3192,#4348C4);width:64px;height:64px;border-radius:19px">${esc(initials(name))}</div>
+      ${x.avatar_url
+        ? `<img src="${esc(x.avatar_url)}" alt="" style="width:64px;height:64px;border-radius:19px;object-fit:cover;flex:none">`
+        : `<div class="ini" style="background:linear-gradient(135deg,#2E3192,#4348C4);width:64px;height:64px;border-radius:19px">${esc(initials(name))}</div>`}
       <div><div style="font-weight:900;font-size:17px">${esc(name)}</div>
       <div style="color:var(--gold);font-weight:900;font-size:13px">★ ${esc(Number(x.rating||0).toFixed(1))} · ${esc(t('ins_reviews',{n:x.total_reviews||0}))}</div></div></div>
     <p class="meta">${esc(x.bio||t('ins_nobio'))}</p>
