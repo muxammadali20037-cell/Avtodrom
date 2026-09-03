@@ -171,11 +171,15 @@ export async function registerBookingRoutes(
   /** Faqat admin tasdiqlagan (is_verified) va faol (is_available) instruktorlar. */
   app.get('/api/instructors', async (request, reply) => {
     try {
+      /* Kategoriya filtri: mijoz C tanlasa faqat C ni o'rgatadiganlar.
+         PostgREST'da massiv "o'z ichiga oladi" sharti — cs.{C} */
+      const cat = String((request.query as any)?.category || '').trim().toUpperCase();
+      const catFilter = /^[ABC]$/.test(cat) ? `&categories=cs.{${cat}}` : '';
       await authenticate(request);
       const rows = await supabaseRest<any[]>('instructor_profiles', {
         query:
-          '?is_verified=eq.true&is_available=eq.true' +
-          '&select=id,user_id,bio,experience_years,rating,total_reviews,is_verified,is_available,avatar_url,' +
+          '?is_verified=eq.true&is_available=eq.true' + catFilter +
+          '&select=id,user_id,bio,experience_years,rating,total_reviews,is_verified,is_available,avatar_url,categories,' +
           'user:user_id(id,full_name,phone,telegram_id,is_active,is_blocked)' +
           '&order=created_at.desc',
       });
