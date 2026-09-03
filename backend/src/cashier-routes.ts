@@ -296,8 +296,11 @@ export async function registerCashierRoutes(
       if (Number.isNaN(at.getTime())) return reply.code(400).send({ ok: false, error: 'Vaqt noto‘g‘ri' });
       const end = new Date(at.getTime() + minutes * 60000);
 
+      /* Kategoriya berilsa — faqat o'sha kategoriyani o'rgatadiganlar. */
+      const cat = String(req.query?.category || '').trim().toUpperCase();
+      const catFilter = /^[ABC]$/.test(cat) ? `&categories=cs.{${cat}}` : '';
       const ips = await supabaseRest<any[]>('instructor_profiles', {
-        query: '?is_verified=eq.true&is_available=eq.true&select=id,user_id,rating&limit=200',
+        query: `?is_verified=eq.true&is_available=eq.true&select=id,user_id,rating,categories${catFilter}&limit=200`,
       });
       if (!ips.length) return { ok: true, free: [], busy: [] };
 
@@ -326,6 +329,7 @@ export async function registerCashierRoutes(
           name: um.get(String(ip.user_id))?.full_name || 'Instruktor',
           phone: um.get(String(ip.user_id))?.phone || null,
           rating: Number(ip.rating || 0),
+          categories: Array.isArray(ip.categories) ? ip.categories : ['B'],
         };
         if (!clash) { free.push(info); continue; }
         // Qachon bo'shaydi: ketma-ket bandliklar oxiri
@@ -481,6 +485,97 @@ export async function registerCashierRoutes(
       if (/no_customer_overlap/.test(msg)) return reply.code(409).send({ ok: false, error: 'Mijozda shu vaqtda boshqa bron bor' });
       if (/duplicate key.*phone/i.test(msg)) return reply.code(409).send({ ok: false, error: 'Bu telefon boshqa mijozda ro‘yxatdan o‘tgan' });
       return reply.code(e?.statusCode ?? 400).send({ ok: false, error: msg || 'Chek chiqarilmadi' });
+    }
+  });
+
+
+  /**
+   * QO'LDA BRON — telefon orqali murojaat qilganlar uchun
+   *
+   * Telegram ishlatmaydigan mijozlar qo'ng'iroq qiladi, admin ularni
+   * shu yerdan yozib qo'yadi. Bron yaratilgach o'sha vaqt onlayn
+   * bron qilayotganlarga BAND ko'rinadi — ikkalasi bitta jadvalda.
+   *
+   * To'lov bu yerda olinmaydi: mijoz kelib kassada to'laydi.
+   */
+  app.post('/api/admin/manual-booking', async (req: any, reply: any) => {
+    try {
+      await requireAdmin(req);
+      const admin = await adminUser();
+      const b = req.body || {};
+
+      const fullName = String(b.full_name || '').trim();
+      const phone = String(b.phone || '').trim();
+      const instructorId = String(b.instructor_id || '').trim();
+      const category = String(b.category || '').trim().toUpperCase();
+      const minutes = Math.max(15, Math.min(600, Math.round(Number(b.duration_minutes || 60))));
+      const start = new Date(String(b.start_at || ''));
+
+      if (fullName.length < 2) return reply.code(400).send({ ok: false, error: 'Mijoz ismini kiriting' });
+      if (!instructorId) return reply.code(400).send({ ok: false, error: 'Instruktorni tanlang' });
+      if (Number.isNaN(start.getTime())) return reply.code(400).send({ ok: false, error: 'Sana yoki vaqt noto‘g‘ri' });
+      if (!/^[ABC]$/.test(category)) return reply.code(400).send({ ok: false, error: 'Kategoriyani tanlang' });
+
+      // Instruktor shu kategoriyani o'rgatadimi?
+      const ins = (await supabaseRest<any[]>('instructor_profiles', {
+        query: `?id=eq.${q(instructorId)}&select=id,categories,is_verified,is_available&limit=1`,
+      }))[0];
+      if (!ins) return reply.code(404).send({ ok: false, error: 'Instruktor topilmadi' });
+      const cats: string[] = Array.isArray(ins.categories) ? ins.categories : ['B'];
+      if (!cats.includes(category)) {
+        return reply.code(409).send({ ok: false, error: `Bu instruktor ${category} kategoriyani o‘rgatmaydi` });
+      }
+
+      // Kategoriyaga mos kurs
+      const course = (await supabaseRest<any[]>('courses', {
+        query: `?category=eq.${q(category)}&is_active=eq.true&select=id,name,duration_minutes,price&limit=1`,
+      }))[0];
+      if (!course) {
+        return reply.code(400).send({ ok: false, error: `${category} kategoriya uchun mashg‘ulot topilmadi. Mashg‘ulotlar bo‘limida qo‘shing.` });
+      }
+
+      // Mijoz: telefon bo'yicha topamiz, bo'lmasa yaratamiz
+      let customer: any = null;
+      if (phone) {
+        customer = (await supabaseRest<any[]>('users', { query: `?phone=eq.${q(phone)}&select=*&limit=1` }))[0];
+      }
+      if (!customer) {
+        try {
+          customer = (await supabaseRest<any[]>('users', {
+            method: 'POST', headers: { Prefer: 'return=representation' },
+            body: JSON.stringify({ full_name: fullName, phone: phone || null, role: 'customer', is_active: true, is_blocked: false }),
+          }))[0];
+        } catch (e: any) {
+          if (/duplicate key.*phone/i.test(String(e?.message))) {
+            return reply.code(409).send({ ok: false, error: 'Bu telefon boshqa mijozda ro‘yxatdan o‘tgan' });
+          }
+          throw e;
+        }
+      }
+
+      const end = new Date(start.getTime() + minutes * 60000);
+      const now = new Date().toISOString();
+      const rows = await supabaseRest<any[]>('bookings', {
+        method: 'POST', headers: { Prefer: 'return=representation' },
+        body: JSON.stringify({
+          customer_id: customer.id, instructor_id: instructorId, course_id: course.id,
+          booking_date: start.toISOString(), start_at: start.toISOString(), end_at: end.toISOString(),
+          duration_minutes: minutes, category,
+          status: 'confirmed', source: 'admin',
+          confirmed_at: now, confirmed_by: admin.id,
+          customer_note: String(b.note || '').trim() || 'Telefon orqali qo‘lda bron',
+        }),
+      });
+      const booking = rows[0];
+      await audit(admin.id, 'MANUAL_BOOKING_CREATED', 'bookings', booking?.id ?? null, null,
+        { customer: fullName, phone, category, minutes });
+
+      return reply.code(201).send({ ok: true, booking, customer, course });
+    } catch (e: any) {
+      const msg = String(e?.message || '');
+      if (/no_instructor_overlap/.test(msg)) return reply.code(409).send({ ok: false, error: 'Instruktor bu vaqtda band' });
+      if (/no_customer_overlap/.test(msg)) return reply.code(409).send({ ok: false, error: 'Mijozda shu vaqtda boshqa bron bor' });
+      return reply.code(e?.statusCode ?? 400).send({ ok: false, error: msg || 'Bron yaratilmadi' });
     }
   });
 
