@@ -246,6 +246,28 @@ details.faq[open] summary{border-bottom:1px solid var(--line)}
 .hours button.on{border-color:var(--brand);background:#f2f4fd;color:var(--brand);box-shadow:0 0 0 3px rgba(46,49,146,.09)}
 .hours button.on small{color:var(--brand)}
 .hours button:disabled{opacity:.4;cursor:not-allowed}
+
+.insrow{display:flex;align-items:center;gap:12px;width:100%;text-align:left;background:#fff;
+ border:1px solid var(--line);border-radius:14px;padding:11px 13px;margin-bottom:8px;cursor:pointer;font:inherit}
+.insrow:active{background:#f7f8fd}
+.insrow .ini{width:40px;height:40px;border-radius:12px;flex:none;display:grid;place-items:center;
+ background:var(--soft,#EEF0FB);color:var(--brand);font-weight:900;font-size:14px}
+.insrow .txt{flex:1;min-width:0}
+.insrow .txt b{display:block;font-size:14.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.insrow .txt small{display:block;font-size:12px;color:var(--muted);margin-top:2px}
+.insrow .go{color:var(--muted);font-size:20px;flex:none}
+
+.insitem{background:#fff;border:1px solid var(--line);border-radius:15px;padding:13px;margin-bottom:9px}
+.insitem .top{display:flex;align-items:center;gap:11px}
+.insitem .ini{width:42px;height:42px;border-radius:13px;flex:none;display:grid;place-items:center;
+ background:var(--soft,#EEF0FB);color:var(--brand);font-weight:900;font-size:14px}
+.insitem .txt{flex:1;min-width:0}
+.insitem .txt b{display:block;font-size:15px}
+.insitem .txt small{display:block;font-size:12px;color:var(--muted);margin-top:2px}
+.insitem .bio{margin:9px 0 0;font-size:13px;color:#4a4f7a;line-height:1.45;
+ display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.insitem .acts{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:11px}
+.insitem .acts button{height:42px;border-radius:11px;font-size:14px;font-weight:800}
 .hide{display:none!important}
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
 @media(max-width:900px){.grid{grid-template-columns:repeat(2,1fr)}}
@@ -533,7 +555,7 @@ const I18N = {
     why_h:'Nega AVTODROM?', why_p:'O‘quvchi uchun eng kerakli xizmatlar bir joyda.',
     f1_t:'Tasdiqlangan instruktorlar', f1_p:'Har bir instruktor Admin tomonidan tekshiriladi. Reyting faqat real sharhlardan hisoblanadi.',
     f2_t:'Aniq bo‘sh vaqt', f2_p:'Band vaqtlar avtomatik yopiladi — jadval instruktorning haqiqiy bandligidan olinadi.',
-    f3_t:'Jonli aloqa', f3_p:'Savolingizni Chat bo‘limida yozing — Admin javobi Telegramga ham keladi.',
+    f3_t:'Qulay bron', f3_p:'Bo‘sh vaqtni ko‘rib, bir necha bosishda bron qilasiz.',
     ins_h:'Instruktorlarimiz', ins_p:'Admin tasdiqlagan faol ro‘yxat.', ins_all:'Barchasi →',
     ins_title:'Instruktorlar', ins_sub:'O‘zingizga mos instruktorni tanlang.',
     ins_search:'🔎 Ism yoki telefon bo‘yicha qidirish...',
@@ -658,7 +680,7 @@ const I18N = {
     why_h:'Почему АВТОДРОМ?', why_p:'Всё необходимое для ученика в одном месте.',
     f1_t:'Проверенные инструкторы', f1_p:'Каждого инструктора проверяет администратор. Рейтинг считается только по реальным отзывам.',
     f2_t:'Точное свободное время', f2_p:'Занятые часы закрываются автоматически — расписание берётся из реальной занятости инструктора.',
-    f3_t:'Живая связь', f3_p:'Напишите вопрос в разделе Чат — ответ администратора придёт и в Telegram.',
+    f3_t:'Удобная бронь', f3_p:'Видите свободное время и бронируете в пару нажатий.',
     ins_h:'Наши инструкторы', ins_p:'Активный список, подтверждённый администратором.', ins_all:'Все →',
     ins_title:'Инструкторы', ins_sub:'Выберите подходящего инструктора.',
     ins_search:'🔎 Поиск по имени или телефону...',
@@ -852,6 +874,42 @@ async function loadInstructors(){
     $('bookInstructor').innerHTML=`<option value="">${esc(t('load_failed'))}</option>`;
   }
 }
+
+/** Bosh sahifa uchun ixcham qator. To'liq kartochka — «Barchasi» sahifasida.
+    10 ta instruktorda uchta katta kartochka ekranni to'ldirib yuborardi. */
+function instructorRow(x){
+  const name = iName(x);
+  const bits = [];
+  if (x.experience_years) bits.push(t('ins_years', { n: x.experience_years }));
+  bits.push(`★ ${Number(x.rating || 0).toFixed(1)}`);
+  return `<button class="insrow" data-ins-detail="${esc(x.id)}">
+    <span class="ini">${esc(initials(name))}</span>
+    <span class="txt"><b>${esc(name)}</b><small>${esc(bits.join(' · '))}</small></span>
+    <span class="go">›</span>
+  </button>`;
+}
+
+
+/** «Barchasi» sahifasi uchun — ixcham, lekin bron tugmasi bilan.
+    10 ta to'liq kartochka telefonda juda uzun ro'yxat berardi. */
+function instructorListItem(x){
+  const name = iName(x);
+  const bits = [];
+  if (x.experience_years) bits.push(t('ins_years', { n: x.experience_years }));
+  bits.push(`★ ${Number(x.rating || 0).toFixed(1)} · ${t('ins_reviews', { n: x.total_reviews || 0 })}`);
+  return `<article class="insitem">
+    <div class="top">
+      <span class="ini">${esc(initials(name))}</span>
+      <span class="txt"><b>${esc(name)}</b><small>${esc(bits.join(' · '))}</small></span>
+    </div>
+    ${x.bio ? `<p class="bio">${esc(x.bio)}</p>` : ''}
+    <div class="acts">
+      <button class="secondary" data-ins-detail="${esc(x.id)}">${esc(t('ins_more'))}</button>
+      <button class="primary solid" data-ins-book="${esc(x.id)}">${esc(t('ins_book'))}</button>
+    </div>
+  </article>`;
+}
+
 function instructorCard(x){
   const name=iName(x), tags=[];
   if(x.experience_years) tags.push(t('ins_years',{n:x.experience_years}));
@@ -873,14 +931,14 @@ function bindIns(){
 }
 function renderHomeInstructors(){
   $('homeInstructors').innerHTML = S.instructors.length
-    ? S.instructors.slice(0,3).map(instructorCard).join('')
+    ? S.instructors.slice(0,3).map(instructorRow).join('')
     : `<div class="card empty">${esc(t('ins_none'))}</div>`;
   bindIns();
 }
 function renderInstructors(){
   const q=($('instructorSearch').value||'').toLowerCase();
   const rows=S.instructors.filter(x=>`${iName(x)} ${x.phone||''}`.toLowerCase().includes(q));
-  $('instructorList').innerHTML = rows.length ? rows.map(instructorCard).join('') : `<div class="card empty">${esc(t('ins_notfound'))}</div>`;
+  $('instructorList').innerHTML = rows.length ? rows.map(instructorListItem).join('') : `<div class="card empty">${esc(t('ins_notfound'))}</div>`;
   bindIns();
 }
 $('instructorSearch').oninput=renderInstructors;
