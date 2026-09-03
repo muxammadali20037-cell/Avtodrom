@@ -959,9 +959,98 @@ async function bookingAction(id,s){
 function renderInstructors(){
   const q=$('instSearch').value.toLowerCase();
   const a=S.instructors.filter(x=>!q||JSON.stringify(x).toLowerCase().includes(q));
-  $('instRows').innerHTML=a.length?a.map(x=>`<tr><td><b>${esc(iname(x))}</b></td><td>${esc(x.profile?.phone||'—')}</td><td>${esc(x.profile?.telegram_id||'—')}</td><td>${esc(x.experience_years??0)} yil</td><td>${esc(x.rating??0)} <span class="muted">(${esc(x.total_reviews??0)})</span></td><td>${S.bookings.filter(b=>String(b.instructor_id)===String(x.id)).length}</td><td>${x.active?badge('active'):badge('inactive')}</td><td><button class="btn small" data-inst="${esc(x.id)}" data-act="${x.active?'0':'1'}">${x.active?'Bloklash':'Tiklash'}</button></td></tr>`).join(''):'<tr><td colspan="8" class="empty">Instruktorlar yo‘q.</td></tr>';
+  $('instRows').innerHTML=a.length?a.map(x=>`<tr>
+    <td><div style="display:flex;align-items:center;gap:9px">
+      ${x.avatar_url?`<img src="${esc(x.avatar_url)}" alt="" style="width:34px;height:34px;border-radius:10px;object-fit:cover;flex:none">`
+        :`<span style="width:34px;height:34px;border-radius:10px;background:var(--soft);color:var(--g);display:grid;place-items:center;font-weight:700;font-size:12px;flex:none">${esc(String(iname(x)).slice(0,2).toUpperCase())}</span>`}
+      <b>${esc(iname(x))}</b></div></td>
+    <td>${esc(x.profile?.phone||'—')}</td>
+    <td>${esc(x.experience_years??0)} yil</td>
+    <td>★ ${esc(Number(x.rating||0).toFixed(1))}</td>
+    <td>${x.active?'<span class="status ok">Faol</span>':'<span class="status">Nofaol</span>'}</td>
+    <td><div style="display:flex;gap:6px;flex-wrap:wrap">
+      <button class="btn small" data-insedit="${esc(x.id)}">Tahrirlash</button>
+      <button class="btn small ${x.active?'red':''}" data-inst="${esc(x.id)}" data-act="${x.active?'0':'1'}">${x.active?'Bloklash':'Tiklash'}</button>
+    </div></td></tr>`).join(''):'<tr><td colspan="6" class="empty">Instruktor yo‘q.</td></tr>';
+  document.querySelectorAll('[data-insedit]').forEach(b=>b.onclick=()=>editInstructor(b.dataset.insedit));
   document.querySelectorAll('[data-inst]').forEach(b=>b.onclick=()=>toggleInstructor(b.dataset.inst,b.dataset.act==='1'));
 }
+
+/** Instruktorni tahrirlash — ism, telefon, tajriba, bio, rasm.
+    Reyting yo'q: u faqat mijoz sharhlaridan hisoblanadi. */
+function editInstructor(id){
+  const x = S.instructors.find(v => String(v.id) === String(id));
+  if (!x) return;
+  const [first, ...rest] = String(iname(x)).split(' ');
+  let avatarUrl = x.avatar_url || '';
+
+  openModal('Instruktorni tahrirlash', `
+    <div style="display:flex;gap:14px;align-items:center;margin-bottom:14px">
+      <div id="ieAvatar" style="width:64px;height:64px;border-radius:18px;background:var(--soft);color:var(--g);
+        display:grid;place-items:center;font-weight:700;font-size:19px;overflow:hidden;flex:none">
+        ${avatarUrl ? `<img src="${esc(avatarUrl)}" style="width:100%;height:100%;object-fit:cover">` : esc(String(iname(x)).slice(0,2).toUpperCase())}</div>
+      <div style="flex:1">
+        <input id="ieFile" type="file" accept="image/jpeg,image/png,image/webp" style="display:none">
+        <button class="btn small" id="ieUpload">Rasm yuklash</button>
+        ${avatarUrl ? '<button class="btn small red" id="ieRemove" style="margin-left:6px">O‘chirish</button>' : ''}
+        <div class="muted" id="ieHint" style="font-size:11.5px;margin-top:6px">JPG, PNG yoki WEBP · 5 MB gacha</div>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div class="field"><label>ISM *</label><input id="ieFirst" class="input" value="${esc(first || '')}"></div>
+      <div class="field"><label>FAMILIYA</label><input id="ieLast" class="input" value="${esc(rest.join(' '))}"></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div class="field"><label>TELEFON</label><input id="iePhone" class="input" value="${esc(x.profile?.phone || '')}" placeholder="+998901234567"></div>
+      <div class="field"><label>TAJRIBA (YIL)</label><input id="ieExp" class="input" type="number" min="0" max="60" value="${esc(x.experience_years ?? 0)}"></div>
+    </div>
+    <div class="field"><label>BIO <span class="muted">(mijozlar ko‘radi)</span></label>
+      <textarea id="ieBio" class="input" style="min-height:88px">${esc(x.bio || '')}</textarea></div>
+    <label class="chk" style="display:flex;gap:9px;align-items:center;margin:4px 0 12px;font-size:13px">
+      <input id="ieVerified" type="checkbox" ${x.is_verified !== false ? 'checked' : ''} style="width:20px;height:20px">
+      <span>Tasdiqlangan — mijozlar ro‘yxatida ko‘rinadi</span></label>
+    <div id="ieAlert"></div>
+    <div style="display:flex;gap:8px">
+      <button class="btn" style="flex:1" id="ieCancel">Bekor</button>
+      <button class="btn primary" style="flex:1" id="ieSave">Saqlash</button>
+    </div>`);
+
+  $('ieUpload').onclick = () => $('ieFile').click();
+  if ($('ieRemove')) $('ieRemove').onclick = () => {
+    avatarUrl = '';
+    $('ieAvatar').innerHTML = esc(String(iname(x)).slice(0,2).toUpperCase());
+    $('ieRemove').remove();
+  };
+  $('ieFile').onchange = async () => {
+    const f = $('ieFile').files[0]; if (!f) return;
+    if (f.size > 5 * 1024 * 1024) { $('ieHint').textContent = 'Rasm 5 MB dan oshmasin'; return; }
+    $('ieHint').textContent = 'Yuklanmoqda…';
+    try{
+      const sign = await api('/api/admin/media/sign', { method:'POST', body: JSON.stringify({
+        media_type:'image', slot:'gallery', file_name:f.name, content_type:f.type, size:f.size }) });
+      await putWithProgress(sign.upload_url, f, pc => { $('ieHint').textContent = `Yuklanmoqda… ${pc}%`; });
+      avatarUrl = sign.public_url;
+      $('ieAvatar').innerHTML = `<img src="${esc(avatarUrl)}" style="width:100%;height:100%;object-fit:cover">`;
+      $('ieHint').textContent = 'Rasm tayyor — «Saqlash» ni bosing';
+    }catch(e){ $('ieHint').textContent = 'Xato: ' + e.message; }
+  };
+
+  $('ieCancel').onclick = closeModal;
+  $('ieSave').onclick = async () => {
+    $('ieAlert').innerHTML = '';
+    const full = [$('ieFirst').value.trim(), $('ieLast').value.trim()].filter(Boolean).join(' ');
+    if (full.length < 2) { $('ieAlert').innerHTML = '<div class="error">Ismni kiriting</div>'; return; }
+    const btn = $('ieSave'); btn.disabled = true;
+    try{
+      await api(`/api/admin/instructors/${encodeURIComponent(id)}`, { method:'PATCH', body: JSON.stringify({
+        full_name: full, phone: $('iePhone').value.trim(),
+        experience_years: Number($('ieExp').value || 0), bio: $('ieBio').value.trim(),
+        is_verified: $('ieVerified').checked, avatar_url: avatarUrl })});
+      closeModal(); toast('Saqlandi'); await loadAll();
+    }catch(e){ $('ieAlert').innerHTML = `<div class="error">${esc(e.message)}</div>`; btn.disabled = false; }
+  };
+}
+
 async function toggleInstructor(id,active){
   if(!confirm(active?'Instruktor tiklansinmi?':'Instruktor bloklansinmi? U yangi bron qabul qila olmaydi.'))return;
   try{await api(`/api/admin/instructors/${encodeURIComponent(id)}`,{method:'PATCH',body:JSON.stringify({active})});toast('Instruktor holati saqlandi');await loadAll()}catch(e){notice(e.message)}
