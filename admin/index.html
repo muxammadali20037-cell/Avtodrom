@@ -421,6 +421,7 @@ pre.json{background:#F7FAFF;border:1px solid var(--line);border-radius:8px;paddi
   
   <button class="nav" data-grp="admin" data-p="reports">Hisobot</button>
   <button class="nav" data-grp="admin" data-p="applications">Arizalar <span id="appCount" class="count">0</span></button>
+  <button class="nav" data-grp="admin" data-p="manual">Qo‘lda bron</button>
   <button class="nav" data-grp="admin" data-p="bookings">Bronlar <span id="bookCount" class="count">0</span></button>
   <button class="nav" data-grp="admin" data-p="cancels">Bekor so‘rovlari <span id="cxCount" class="count">0</span></button>
   <button class="nav" data-grp="admin" data-p="instructors">Instruktorlar</button>
@@ -487,6 +488,40 @@ pre.json{background:#F7FAFF;border:1px solid var(--line);border-radius:8px;paddi
     </div></div>
   <div id="kliveAlert"></div>
   <div id="kliveList"></div>
+</section>
+
+<section id="manual" class="page">
+  <div class="head"><div><h1>Qo‘lda bron</h1><p>Telefon orqali murojaat qilganlar uchun. To‘lov kassada olinadi.</p></div>
+    <button class="btn" id="mbClear">Tozalash</button></div>
+
+  <div class="grid2" style="grid-template-columns:1.1fr .9fr;align-items:start">
+    <div class="card">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div class="field"><label>SANA *</label><input id="mbDate" class="input" type="date"></div>
+        <div class="field"><label>VAQT *</label><input id="mbTime" class="input" type="time" step="900"></div>
+      </div>
+      <div class="field"><label>KATEGORIYA *</label><div class="pick3" id="mbCats"></div></div>
+      <div class="field"><label>DAVOMIYLIK *</label><div class="durs" id="mbDurs"></div></div>
+      <div class="field"><label>BO‘SH INSTRUKTORLAR *</label>
+        <div id="mbIns" class="inslist"><div class="muted" style="font-size:13px">Sana, vaqt va kategoriyani tanlang.</div></div></div>
+    </div>
+
+    <div class="card" style="position:sticky;top:88px">
+      <h3 style="margin-top:0">Mijoz</h3>
+      <div class="field"><label>ISM FAMILIYA *</label><input id="mbName" class="input" autocomplete="off"></div>
+      <div class="field"><label>TELEFON</label><input id="mbPhone" class="input" placeholder="+998901234567" autocomplete="off"></div>
+      <div class="field"><label>IZOH</label><input id="mbNote" class="input" placeholder="Ixtiyoriy"></div>
+      <div class="sumbox">
+        <div class="row"><span>Kategoriya</span><b id="mbSumCat">—</b></div>
+        <div class="row"><span>Davomiylik</span><b id="mbSumDur">—</b></div>
+        <div class="row"><span>Instruktor</span><b id="mbSumIns">—</b></div>
+        <div class="row"><span>Vaqt</span><b id="mbSumTime">—</b></div>
+      </div>
+      <div id="mbAlert" style="margin-top:12px"></div>
+      <button class="btn primary" id="mbSave" style="width:100%;height:50px;margin-top:6px">Bron qilish</button>
+      <div class="muted" style="font-size:11.5px;margin-top:8px;text-align:center">Bu vaqt onlayn bron qilayotganlarga band ko‘rinadi</div>
+    </div>
+  </div>
 </section>
 
 <section id="live" class="page">
@@ -901,6 +936,7 @@ function showPage(id){
   if(id==='audit')loadAudit();
   if(id==='support')loadSupport();
   if(id==='cancels')loadCancels();
+  if(id==='manual')initManual();
   if(id==='live')loadLive('live');
   if(id==='klive')loadLive('klive');
   if(id==='kdash'){ if(!$('kdDate').value)$('kdDate').value=kToday(); loadKdash(); }
@@ -965,6 +1001,7 @@ function renderInstructors(){
         :`<span style="width:34px;height:34px;border-radius:10px;background:var(--soft);color:var(--g);display:grid;place-items:center;font-weight:700;font-size:12px;flex:none">${esc(String(iname(x)).slice(0,2).toUpperCase())}</span>`}
       <b>${esc(iname(x))}</b></div></td>
     <td>${esc(x.profile?.phone||'—')}</td>
+    <td>${(Array.isArray(x.categories)?x.categories:['B']).map(c=>`<span class="status" style="margin-right:3px">${esc(c)}</span>`).join('')}</td>
     <td>${esc(x.experience_years??0)} yil</td>
     <td>★ ${esc(Number(x.rating||0).toFixed(1))}</td>
     <td>${x.active?'<span class="status ok">Faol</span>':'<span class="status">Nofaol</span>'}</td>
@@ -1004,6 +1041,8 @@ function editInstructor(id){
       <div class="field"><label>TELEFON</label><input id="iePhone" class="input" value="${esc(x.profile?.phone || '')}" placeholder="+998901234567"></div>
       <div class="field"><label>TAJRIBA (YIL)</label><input id="ieExp" class="input" type="number" min="0" max="60" value="${esc(x.experience_years ?? 0)}"></div>
     </div>
+    <div class="field"><label>KATEGORIYALAR * <span class="muted">(qaysilarini o‘rgatadi)</span></label>
+      <div class="pick3" id="ieCats"></div></div>
     <div class="field"><label>BIO <span class="muted">(mijozlar ko‘radi)</span></label>
       <textarea id="ieBio" class="input" style="min-height:88px">${esc(x.bio || '')}</textarea></div>
     <label class="chk" style="display:flex;gap:9px;align-items:center;margin:4px 0 12px;font-size:13px">
@@ -1014,6 +1053,20 @@ function editInstructor(id){
       <button class="btn" style="flex:1" id="ieCancel">Bekor</button>
       <button class="btn primary" style="flex:1" id="ieSave">Saqlash</button>
     </div>`);
+
+  // Kategoriyalar — bir nechtasini tanlash mumkin
+  let cats = Array.isArray(x.categories) && x.categories.length ? [...x.categories] : ['B'];
+  const paintCats = () => {
+    $('ieCats').innerHTML = ['A','B','C'].map(c =>
+      `<button type="button" class="pk ${cats.includes(c)?'on':''}" data-iecat="${c}">${c}</button>`).join('');
+    $('ieCats').querySelectorAll('[data-iecat]').forEach(b => b.onclick = () => {
+      const c = b.dataset.iecat;
+      cats = cats.includes(c) ? cats.filter(v => v !== c) : [...cats, c];
+      if (!cats.length) cats = [c];        // kamida bittasi qolsin
+      paintCats();
+    });
+  };
+  paintCats();
 
   $('ieUpload').onclick = () => $('ieFile').click();
   if ($('ieRemove')) $('ieRemove').onclick = () => {
@@ -1045,7 +1098,7 @@ function editInstructor(id){
       await api(`/api/admin/instructors/${encodeURIComponent(id)}`, { method:'PATCH', body: JSON.stringify({
         full_name: full, phone: $('iePhone').value.trim(),
         experience_years: Number($('ieExp').value || 0), bio: $('ieBio').value.trim(),
-        is_verified: $('ieVerified').checked, avatar_url: avatarUrl })});
+        is_verified: $('ieVerified').checked, avatar_url: avatarUrl, categories: cats })});
       closeModal(); toast('Saqlandi'); await loadAll();
     }catch(e){ $('ieAlert').innerHTML = `<div class="error">${esc(e.message)}</div>`; btn.disabled = false; }
   };
@@ -2525,6 +2578,113 @@ function renderKdash(d){
       <td>${esc(r.method === 'mixed' ? 'Aralash' : r.method === 'card' ? 'Terminal' : 'Naqd')}</td>
       <td><b>${nf(r.amount)}</b></td></tr>`).join('')}</tbody></table></div>`
     : '<div class="empty">Chek yo‘q.</div>';
+}
+
+
+/* =========================================================================
+   QO'LDA BRON
+   Telefon orqali murojaat qilganlar uchun. Sana, vaqt va kategoriya
+   tanlanadi — o'sha paytda BAND BO'LMAGAN va shu kategoriyani
+   o'rgatadigan instruktorlar chiqadi. Bron yaratilgach o'sha vaqt
+   onlayn bron qilayotganlarga band ko'rinadi.
+   ========================================================================= */
+const MB = { cat: 'B', minutes: 60, ins: null, free: [], busy: [] };
+const MB_DURS = [30, 60, 90, 120, 150, 180, 240, 300];
+
+function mbStart(){
+  const d = $('mbDate').value, t = $('mbTime').value;
+  if (!d || !t) return null;
+  const x = new Date(`${d}T${t}:00+05:00`);
+  return Number.isNaN(x.getTime()) ? null : x;
+}
+function mbPaintCats(){
+  $('mbCats').innerHTML = ['A','B','C'].map(c =>
+    `<button type="button" class="pk ${MB.cat===c?'on':''}" data-mbcat="${c}">${c}</button>`).join('');
+  $('mbCats').querySelectorAll('[data-mbcat]').forEach(b => b.onclick = () => {
+    MB.cat = b.dataset.mbcat; MB.ins = null; mbPaintCats(); mbLoadFree(); mbSum();
+  });
+}
+function mbPaintDurs(){
+  $('mbDurs').innerHTML = MB_DURS.map(m =>
+    `<button type="button" data-mbdur="${m}" class="${MB.minutes===m?'on':''}">${fmtDur(m)}</button>`).join('');
+  $('mbDurs').querySelectorAll('[data-mbdur]').forEach(b => b.onclick = () => {
+    MB.minutes = Number(b.dataset.mbdur); MB.ins = null; mbPaintDurs(); mbLoadFree(); mbSum();
+  });
+}
+
+/** Band bo'lmagan instruktorlar. Bo'sh bo'lmasa — kim qachon bo'shashi. */
+async function mbLoadFree(){
+  const at = mbStart(), box = $('mbIns');
+  if (!at) { box.innerHTML = '<div class="muted" style="font-size:13px">Sana va vaqtni tanlang.</div>'; return; }
+  box.innerHTML = '<div class="muted" style="font-size:13px">Tekshirilmoqda…</div>';
+  try{
+    const d = await api(`/api/admin/cashier/free-instructors?at=${encodeURIComponent(at.toISOString())}&minutes=${MB.minutes}&category=${encodeURIComponent(MB.cat)}`);
+    MB.free = d.free || []; MB.busy = d.busy || [];
+    if (!MB.free.length && !MB.busy.length) {
+      box.innerHTML = `<div class="warn" style="margin:0">${esc(MB.cat)} kategoriyani o‘rgatadigan faol instruktor yo‘q.</div>`;
+      return;
+    }
+    const row = (i, wait) => `<button type="button" data-mbins="${esc(i.id)}" class="${String(MB.ins?.id)===String(i.id)?'on':''} ${wait?'wait':''}">
+      <b>${esc(i.name)}${wait?'':' · bo‘sh'}</b>
+      <span>${wait ? `${esc(i.wait_minutes)} daqiqadan keyin bo‘shaydi (${esc(kHour(i.free_at))})`
+                   : `★ ${esc(i.rating.toFixed(1))} · ${esc((i.categories||['B']).join(', '))}`}</span></button>`;
+    box.innerHTML = MB.free.length
+      ? MB.free.map(i => row(i, false)).join('')
+      : '<div class="warn" style="margin:0 0 8px">Bu vaqtda bo‘sh instruktor yo‘q. Eng tez bo‘shaydiganlar:</div>'
+        + MB.busy.slice(0,4).map(i => row(i, true)).join('');
+    box.querySelectorAll('[data-mbins]').forEach(b => b.onclick = () => {
+      MB.ins = [...MB.free, ...MB.busy].find(x => String(x.id) === b.dataset.mbins) || null;
+      mbLoadFree(); mbSum();
+    });
+  }catch(e){ box.innerHTML = `<div class="error">${esc(e.message)}</div>`; }
+}
+
+function mbSum(){
+  $('mbSumCat').textContent = MB.cat;
+  $('mbSumDur').textContent = fmtDur(MB.minutes);
+  $('mbSumIns').textContent = MB.ins?.name || '—';
+  const at = mbStart();
+  $('mbSumTime').textContent = at ? `${$('mbDate').value} · ${$('mbTime').value}` : '—';
+}
+
+$('mbDate').addEventListener('change', () => { MB.ins = null; mbLoadFree(); mbSum(); });
+$('mbTime').addEventListener('change', () => { MB.ins = null; mbLoadFree(); mbSum(); });
+
+$('mbSave').onclick = async () => {
+  $('mbAlert').innerHTML = '';
+  const err = m => { $('mbAlert').innerHTML = `<div class="error">${esc(m)}</div>`; };
+  const at = mbStart();
+  if (!$('mbName').value.trim()) return err('Mijoz ismini kiriting');
+  if (!at) return err('Sana va vaqtni tanlang');
+  if (!MB.ins) return err('Instruktorni tanlang');
+
+  const btn = $('mbSave'); btn.disabled = true; btn.textContent = 'Saqlanmoqda…';
+  try{
+    const d = await api('/api/admin/manual-booking', { method:'POST', body: JSON.stringify({
+      full_name: $('mbName').value.trim(), phone: $('mbPhone').value.trim(),
+      instructor_id: MB.ins.id, category: MB.cat, duration_minutes: MB.minutes,
+      start_at: at.toISOString(), note: $('mbNote').value.trim() })});
+    toast('Bron yaratildi');
+    $('mbAlert').innerHTML = `<div class="ok-box" style="background:#E9F7EF;border:1px solid #BFE6D0;border-radius:11px;padding:11px;font-size:13px">
+      <b>${esc(d.customer?.full_name || '')}</b> — ${esc(kHour(d.booking?.start_at))}, ${esc(MB.ins.name)}<br>
+      Mijoz kelib kassada to‘laydi.</div>`;
+    mbClearForm(false);
+  }catch(e){ err(e.message); }
+  finally{ btn.disabled = false; btn.textContent = 'Bron qilish'; }
+};
+
+function mbClearForm(all){
+  $('mbName').value = ''; $('mbPhone').value = ''; $('mbNote').value = '';
+  MB.ins = null;
+  if (all) $('mbAlert').innerHTML = '';
+  mbLoadFree(); mbSum();
+}
+$('mbClear').onclick = () => mbClearForm(true);
+
+function initManual(){
+  if (!$('mbDate').value) $('mbDate').value = kToday();
+  if (!$('mbTime').value) $('mbTime').value = new Date().toLocaleTimeString('en-GB',{timeZone:'Asia/Tashkent',hour:'2-digit',minute:'2-digit'});
+  mbPaintCats(); mbPaintDurs(); mbLoadFree(); mbSum();
 }
 
 /* ---------- Bekor qilish so'rovlari ---------- */
