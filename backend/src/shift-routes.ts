@@ -357,8 +357,10 @@ export async function registerShiftRoutes(
           started_at: started.toISOString(),
           ends_at: ends.toISOString(),
           minutes_left: left,
-          // 10 daqiqadan kam — qizil, 20 dan kam — sariq
-          level: left <= 10 ? 'red' : left <= 20 ? 'yellow' : 'normal',
+          /* 10 daqiqadan kam — qizil, 20 dan kam — sariq.
+             2 soatdan ko'p oshgani — unutilgan dars, alohida belgilanadi
+             (instruktor «yakunlash»ni bosmagan). */
+          level: left < -120 ? 'stale' : left <= 10 ? 'red' : left <= 20 ? 'yellow' : 'normal',
           receipt_code: p?.receipt_code || null,
           paid_at: p?.paid_at || null,
           amount: Number(p?.amount || 0),
@@ -368,8 +370,13 @@ export async function registerShiftRoutes(
         };
       });
 
-      // Tugashi yaqinlari tepada
-      rows.sort((a, b) => a.minutes_left - b.minutes_left);
+      /* Tartib: shoshilinchlar tepada, unutilganlar esa pastda —
+         ular ro'yxatni to'sib qo'ymasligi kerak. */
+      rows.sort((a, b) => {
+        const sa = a.level === 'stale' ? 1 : 0, sb = b.level === 'stale' ? 1 : 0;
+        if (sa !== sb) return sa - sb;
+        return a.minutes_left - b.minutes_left;
+      });
 
       return {
         ok: true,
@@ -378,11 +385,66 @@ export async function registerShiftRoutes(
           total: rows.length,
           red: rows.filter((r) => r.level === 'red').length,
           yellow: rows.filter((r) => r.level === 'yellow').length,
+          stale: rows.filter((r) => r.level === 'stale').length,
         },
         rows,
       };
     } catch (e: any) {
       return reply.code(e?.statusCode ?? 500).send({ ok: false, error: e?.message || 'Jarayondagilar yuklanmadi' });
+    }
+  });
+
+
+  /**
+   * KASSA DASHBOARDI — faqat o'z kassasi.
+   *
+   * Kassa ID'si TOKENdan olinadi, so'rovdan emas. Shunday qilib P1
+   * kassiri P2 ning tushumini ko'ra olmaydi — token faqat o'z kassasiga
+   * imzolangan.
+   */
+  app.get('/api/admin/my-dashboard', async (req: any, reply: any) => {
+    try {
+      await requireAdmin(req);
+      const registerId = readRegisterToken(String(req.query?.token || ''));
+      if (!registerId) {
+        return reply.code(401).send({ ok: false, error: 'Kassa ochilmagan yoki muddati tugagan. PIN bilan qayta oching.' });
+      }
+      const reg = (await supabaseRest<any[]>('cash_registers', {
+        query: `?id=eq.${q(registerId)}&select=id,code,name&limit=1`,
+      }))[0];
+      if (!reg) return reply.code(404).send({ ok: false, error: 'Kassa topilmadi' });
+
+      const { periodRange } = await import('./analytics-routes.js');
+      const { from, to, label, anchor, bucket } = periodRange(String(req.query?.period || 'day'), req.query?.date);
+
+      const span = to.getTime() - from.getTime();
+      const prevFrom = new Date(from.getTime() - span);
+      const call = (f: Date, t: Date) => supabaseRest<any>('rpc/register_dashboard', {
+        method: 'POST',
+        body: JSON.stringify({ p_register: registerId, p_from: f.toISOString(), p_to: t.toISOString() }),
+      });
+      const [cur, prev] = await Promise.all([call(from, to), call(prevFrom, from)]);
+
+      const t0 = cur?.totals || {}, p0 = prev?.totals || {};
+      const delta = (a: any, b: any) => {
+        const x = Number(a || 0), y = Number(b || 0);
+        if (!y) return x ? 100 : 0;
+        return Math.round(((x - y) / y) * 100);
+      };
+
+      return {
+        ok: true,
+        register: reg, period: String(req.query?.period || 'day'), label, anchor, bucket,
+        from: from.toISOString(), to: to.toISOString(),
+        totals: t0,
+        change: { total: delta(t0.total, p0.total), receipts: delta(t0.receipts, p0.receipts) },
+        hours: cur?.hours || [],
+        categories: cur?.categories || [],
+        instructors: cur?.instructors || [],
+        recent: cur?.recent || [],
+      };
+    } catch (e: any) {
+      return reply.code(e?.statusCode ?? 500).send({ ok: false, error: e?.message || 'Hisobot yuklanmadi' });
     }
   });
 
