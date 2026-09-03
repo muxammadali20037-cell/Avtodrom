@@ -167,6 +167,15 @@ button,input,select,textarea{font:inherit}.hidden{display:none!important}
  border-bottom:1px solid #BFE6D0}
 .offbar.show{transform:translateY(0)}
 .offbar.down{background:#FDECEC;color:#a52020;border-bottom-color:#F3B4B4}
+
+.pk.cat{position:relative;display:flex;flex-direction:column;align-items:center;gap:2px;padding:14px 8px 12px}
+.pk.cat b{font-size:19px;font-weight:700;line-height:1}
+.pk.cat small{font-size:10.5px;color:var(--muted);font-weight:600;text-align:center;line-height:1.2}
+.pk.cat.on small{color:var(--g)}
+.pk.cat .tick{position:absolute;top:6px;right:8px;width:17px;height:17px;border-radius:5px;
+ border:1.5px solid var(--line);display:grid;place-items:center;font-size:11px;font-weight:900;
+ color:#fff;background:#fff;line-height:1}
+.pk.cat.on .tick{background:var(--g);border-color:var(--g)}
 .warn{padding:11px;border-radius:11px;background:#fff8e6;color:#8a6500;border:1px solid #ffe6a8;font-size:13px}
 .top{height:70px;background:#fff;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:20}
 .topin{height:100%;max-width:1500px;margin:auto;padding:0 20px;display:flex;align-items:center;justify-content:space-between}
@@ -351,6 +360,15 @@ button,input,select,textarea{font:inherit}.hidden{display:none!important}
  border-bottom:1px solid #BFE6D0}
 .offbar.show{transform:translateY(0)}
 .offbar.down{background:#FDECEC;color:#a52020;border-bottom-color:#F3B4B4}
+
+.pk.cat{position:relative;display:flex;flex-direction:column;align-items:center;gap:2px;padding:14px 8px 12px}
+.pk.cat b{font-size:19px;font-weight:700;line-height:1}
+.pk.cat small{font-size:10.5px;color:var(--muted);font-weight:600;text-align:center;line-height:1.2}
+.pk.cat.on small{color:var(--g)}
+.pk.cat .tick{position:absolute;top:6px;right:8px;width:17px;height:17px;border-radius:5px;
+ border:1.5px solid var(--line);display:grid;place-items:center;font-size:11px;font-weight:900;
+ color:#fff;background:#fff;line-height:1}
+.pk.cat.on .tick{background:var(--g);border-color:var(--g)}
 .warn{padding:11px;border-radius:11px;background:#fff8e6;color:#8a6500;border:1px solid #ffe6a8;margin-bottom:12px;font-size:13px}
 .empty{padding:25px;text-align:center;color:var(--muted)}
 .actions{display:flex;gap:5px;flex-wrap:wrap}
@@ -1086,8 +1104,12 @@ function editInstructor(id){
       <div class="field"><label>TELEFON</label><input id="iePhone" class="input" value="${esc(x.profile?.phone || '')}" placeholder="+998901234567"></div>
       <div class="field"><label>TAJRIBA (YIL)</label><input id="ieExp" class="input" type="number" min="0" max="60" value="${esc(x.experience_years ?? 0)}"></div>
     </div>
-    <div class="field"><label>KATEGORIYALAR * <span class="muted">(qaysilarini o‘rgatadi)</span></label>
-      <div class="pick3" id="ieCats"></div></div>
+    <div class="field"><label>KATEGORIYALAR * <span class="muted">(bir nechtasini tanlash mumkin)</span></label>
+      <div class="pick3" id="ieCats"></div>
+      <div style="display:flex;gap:8px;align-items:center;margin-top:8px;flex-wrap:wrap">
+        <button type="button" class="btn small" id="ieAllCats">Uchalasi ham</button>
+        <span class="muted" id="ieCatsHint" style="font-size:12px"></span>
+      </div></div>
     <div class="field"><label>BIO <span class="muted">(mijozlar ko‘radi)</span></label>
       <textarea id="ieBio" class="input" style="min-height:88px">${esc(x.bio || '')}</textarea></div>
     <label class="chk" style="display:flex;gap:9px;align-items:center;margin:4px 0 12px;font-size:13px">
@@ -1101,17 +1123,34 @@ function editInstructor(id){
 
   // Kategoriyalar — bir nechtasini tanlash mumkin
   let cats = Array.isArray(x.categories) && x.categories.length ? [...x.categories] : ['B'];
+  /* Ko'p tanlanadi: bitta instruktor A, B va C ni birga o'rgatishi mumkin.
+     Belgi (✓) qo'yildi — aks holda tugmalar bittasini tanlaydigandek
+     ko'rinardi va ko'p tanlash mumkinligi bilinmasdi. */
+  const CAT_NAME = { A: 'Mototsikl', B: 'Yengil avtomobil', C: 'Yuk avtomobili' };
   const paintCats = () => {
-    $('ieCats').innerHTML = ['A','B','C'].map(c =>
-      `<button type="button" class="pk ${cats.includes(c)?'on':''}" data-iecat="${c}">${c}</button>`).join('');
+    $('ieCats').innerHTML = ['A','B','C'].map(c => {
+      const on = cats.includes(c);
+      return `<button type="button" class="pk cat ${on?'on':''}" data-iecat="${c}">
+        <span class="tick">${on ? '✓' : ''}</span>
+        <b>${c}</b><small>${esc(CAT_NAME[c])}</small></button>`;
+    }).join('');
     $('ieCats').querySelectorAll('[data-iecat]').forEach(b => b.onclick = () => {
       const c = b.dataset.iecat;
       cats = cats.includes(c) ? cats.filter(v => v !== c) : [...cats, c];
       if (!cats.length) cats = [c];        // kamida bittasi qolsin
       paintCats();
     });
+    const sorted = ['A','B','C'].filter(c => cats.includes(c));
+    $('ieCatsHint').textContent = sorted.length === 3
+      ? 'Uchala kategoriyani ham o‘rgatadi'
+      : `Tanlangan: ${sorted.join(', ')}`;
+    $('ieAllCats').textContent = sorted.length === 3 ? 'Faqat B qoldirish' : 'Uchalasi ham';
   };
   paintCats();
+  $('ieAllCats').onclick = () => {
+    cats = cats.length === 3 ? ['B'] : ['A','B','C'];
+    paintCats();
+  };
 
   $('ieUpload').onclick = () => $('ieFile').click();
   if ($('ieRemove')) $('ieRemove').onclick = () => {
