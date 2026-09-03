@@ -542,6 +542,96 @@ export async function registerAdminPasswordRoutes(app: FastifyInstance) {
   app.get('/api/admin/applications', applications);
   app.get('/api/admin/instructor-applications', applications);
 
+
+/**
+ * Instruktorga arizasi natijasi haqida xabar.
+ *
+ * Ikki joyga yoziladi: ilova ichidagi bildirishnomalar va Telegram.
+ * Telegram yuborilmasa ham (bot to'xtatilgan, chat yopilgan) tasdiqlash
+ * bekor bo'lmasligi kerak — shuning uchun xatolar yutiladi va faqat
+ * jurnalga yoziladi.
+ */
+async function notifyInstructorDecision(
+  application: any,
+  approved: boolean,
+  reason?: string,
+) {
+  try {
+    /* Ariza jadvalida maydon nomi muhitga qarab farq qiladi
+       (telegram_user_id / telegram_id), shuning uchun bir nechtasini
+       sinab ko'ramiz. Topilmasa — foydalanuvchini bazadan qidiramiz. */
+    const tgId = Number(
+      application?.telegram_user_id ??
+      application?.telegram_id ??
+      application?.user?.telegram_id ??
+      0,
+    );
+    const name = [application?.first_name, application?.last_name]
+      .filter(Boolean).join(' ').trim() || String(application?.full_name || '').trim();
+
+    let userId = application?.user_id ?? application?.profile_id ?? null;
+    if (!userId && tgId) {
+      const u = (await supabaseRest<any[]>('users', {
+        query: `?telegram_id=eq.${q(String(tgId))}&select=id&limit=1`,
+      }).catch(() => []))[0];
+      userId = u?.id ?? null;
+    }
+
+    const title = approved ? 'Arizangiz tasdiqlandi' : 'Arizangiz rad etildi';
+    const body = approved
+      ? [
+          name ? `${name}, tabriklaymiz!` : 'Tabriklaymiz!',
+          '',
+          'Siz TASH INDEX AVTODROM instruktori sifatida tasdiqlandingiz.',
+          'Endi instruktor panelidan foydalanishingiz mumkin:',
+          '· bronlaringizni ko‘rasiz',
+          '· chekni skanerlab darsni boshlaysiz',
+          '· kunlik hisobotni kuzatasiz',
+          '',
+          'Panelni ochish uchun quyidagi tugmani bosing.',
+        ].join('\n')
+      : [
+          name ? `${name}, arizangiz ko‘rib chiqildi.` : 'Arizangiz ko‘rib chiqildi.',
+          '',
+          'Afsuski, ariza tasdiqlanmadi.',
+          reason ? `Sabab: ${reason}` : 'Sabab ko‘rsatilmagan.',
+          '',
+          'Savollaringiz bo‘lsa administratorga murojaat qiling.',
+        ].join('\n');
+
+    // 1) Ilova ichidagi bildirishnoma
+    if (userId) {
+      await supabaseRest('notifications', {
+        method: 'POST',
+        body: JSON.stringify({
+          user_id: userId,
+          type: 'application',
+          title,
+          message: approved ? 'Instruktor sifatida tasdiqlandingiz.' : (reason || 'Ariza rad etildi.'),
+        }),
+      }).catch(() => {});
+    }
+
+    // 2) Telegram
+    const token = String(process.env.INSTRUCTOR_BOT_TOKEN || '').trim();
+    if (!token || !tgId) {
+      console.warn('notifyInstructorDecision: token yoki telegram_id yo‘q', { hasToken: !!token, tgId });
+      return;
+    }
+    const miniApp = String(process.env.INSTRUCTOR_MINI_APP_URL || '').trim();
+    await sendBookingNotification(
+      token,
+      tgId,
+      `${title}\n\n${body}`,
+      approved ? miniApp || undefined : undefined,
+      'Instruktor panelini ochish',
+    );
+  } catch (e) {
+    // Xabar ketmasa ham tasdiqlash kuchda qoladi
+    console.error('notifyInstructorDecision failed:', e);
+  }
+}
+
   const approve = async (req: any, reply: any) => {
     try {
       await guard(req);
@@ -549,6 +639,7 @@ export async function registerAdminPasswordRoutes(app: FastifyInstance) {
       const rows = await supabaseRest<any[]>('rpc/admin_approve_instructor', { method: 'POST', body: JSON.stringify({ p_application_id: String(req.params.id), p_admin_id: admin.id }) });
       const application = Array.isArray(rows) ? rows[0] : rows;
       await audit(admin.id, 'INSTRUCTOR_CREATED', 'instructor_applications', String(req.params.id), null, application);
+      await notifyInstructorDecision(application, true);
       return { ok: true, application };
     } catch (e) { return err(reply, e, 'Tasdiqlash amalga oshmadi', 400); }
   };
@@ -560,6 +651,7 @@ export async function registerAdminPasswordRoutes(app: FastifyInstance) {
       const rows = await supabaseRest<any[]>('rpc/admin_reject_instructor', { method: 'POST', body: JSON.stringify({ p_application_id: String(req.params.id), p_admin_id: admin.id, p_reason: reason }) });
       const application = Array.isArray(rows) ? rows[0] : rows;
       await audit(admin.id, 'INSTRUCTOR_DISABLED', 'instructor_applications', String(req.params.id), null, { rejected: true, reason });
+      await notifyInstructorDecision(application, false, reason || undefined);
       return { ok: true, application };
     } catch (e) { return err(reply, e, 'Rad etish amalga oshmadi', 400); }
   };
