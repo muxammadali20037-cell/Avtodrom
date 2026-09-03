@@ -132,10 +132,17 @@ export async function registerAnalyticsRoutes(
       const uids = [...new Set(bookings.map((b) => String(b.customer_id)).filter(Boolean))];
       const cids = [...new Set(bookings.map((b) => String(b.course_id)).filter(Boolean))];
 
+      /* Kassa rejimida faqat o'sha kassaning to'lovlari ko'rinadi —
+         P1 kassiri P2 yiqqan pulni ko'rmasligi kerak. Kassa ID'si
+         tokendan olinadi, so'rovdan emas. */
+      const { readRegisterToken } = await import('./shift-routes.js');
+      const regId = readRegisterToken(String(req.query?.token || ''));
+      const payFilter = regId ? `&register_id=eq.${q(regId)}` : '';
+
       const [users, courses, pays, scans] = await Promise.all([
         uids.length ? supabaseRest<any[]>('users', { query: `?id=in.(${uids.map(q).join(',')})&select=id,full_name,phone` }) : [],
         cids.length ? supabaseRest<any[]>('courses', { query: `?id=in.(${cids.map(q).join(',')})&select=id,name,duration_minutes,price` }) : [],
-        ids.length ? supabaseRest<any[]>('payments', { query: `?booking_id=in.(${ids.map(q).join(',')})&select=booking_id,amount,method,status,receipt_code,paid_at` }) : [],
+        ids.length ? supabaseRest<any[]>('payments', { query: `?booking_id=in.(${ids.map(q).join(',')})&select=booking_id,amount,method,status,receipt_code,paid_at${payFilter}` }) : [],
         ids.length ? supabaseRest<any[]>('attendance_verifications', { query: `?booking_id=in.(${ids.map(q).join(',')})&select=booking_id,method,receipt_code,created_at` }) : [],
       ]);
       const um = new Map(users.map((u) => [String(u.id), u]));
@@ -169,6 +176,7 @@ export async function registerAnalyticsRoutes(
       return {
         ok: true,
         period, label, anchor,
+        scoped_to_register: !!regId,
         summary: {
           bookings: rows.length,
           completed: done.length,
