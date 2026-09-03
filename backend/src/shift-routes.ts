@@ -272,10 +272,13 @@ export async function registerShiftRoutes(
         try { await supabaseRest<any[]>(table, { query: `?select=${cols}&limit=1` }); return true; }
         catch { return false; }
       };
-      const [regTable, pinCols, payReg] = await Promise.all([
+      const [regTable, pinCols, payReg, insCats, insAvatar, bkDuration] = await Promise.all([
         check('cash_registers', 'id,code'),
         check('cash_registers', 'pin_hash,pin_set_at'),
         check('payments', 'register_id'),
+        check('instructor_profiles', 'categories'),
+        check('instructor_profiles', 'avatar_url'),
+        check('bookings', 'duration_minutes'),
       ]);
       let registers: any[] = [];
       try { registers = await supabaseRest<any[]>('cash_registers', { query: '?select=code,name&order=code.asc' }); } catch {}
@@ -284,10 +287,26 @@ export async function registerShiftRoutes(
         ok: true,
         supabase_project: project,
         supabase_url: url.slice(0, 40) + '…',
-        tables: { cash_registers: regTable, pin_columns: pinCols, payments_register_id: payReg },
+        tables: {
+          cash_registers: regTable,
+          pin_columns: pinCols,
+          payments_register_id: payReg,
+          instructor_categories: insCats,
+          instructor_avatar: insAvatar,
+          booking_duration_minutes: bkDuration,
+        },
+        missing: [
+          !regTable   && 'cash_registers jadvali',
+          !pinCols    && 'cash_registers.pin_hash / pin_set_at',
+          !payReg     && 'payments.register_id',
+          !insCats    && 'instructor_profiles.categories  ← kategoriya saqlanmasligining sababi',
+          !insAvatar  && 'instructor_profiles.avatar_url',
+          !bkDuration && 'bookings.duration_minutes',
+        ].filter(Boolean),
         registers: registers.map((r) => r.code),
         verdict: !regTable ? 'cash_registers jadvali yo‘q — migratsiyani ishga tushiring'
-               : !pinCols  ? 'PIN ustunlari yo‘q — migratsiya SHU loyihada ishga tushmagan'
+               : !pinCols  ? 'PIN ustunlari yo‘q'
+               : !insCats  ? 'instructor_profiles.categories yo‘q — kategoriya shuning uchun saqlanmayapti'
                : 'hammasi joyida',
       };
     } catch (e: any) {
