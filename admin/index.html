@@ -2687,6 +2687,41 @@ function initManual(){
   mbPaintCats(); mbPaintDurs(); mbLoadFree(); mbSum();
 }
 
+
+/** Kassa PIN kodlarini o'rnatish. PIN'ning o'zi hech qayerda
+    saqlanmaydi — server uni xeshlab qo'yadi. */
+async function renderPinSetters(){
+  const box = $('pinSetters'); if (!box) return;
+  box.innerHTML = '<div class="muted" style="font-size:13px">Yuklanmoqda…</div>';
+  let regs = [];
+  try{ regs = (await api('/api/admin/registers')).registers || []; }
+  catch(e){ box.innerHTML = `<div class="error">${esc(e.message)}</div>`; return; }
+  if (!regs.length) { box.innerHTML = '<div class="warn" style="margin:0">Kassalar topilmadi.</div>'; return; }
+
+  box.innerHTML = regs.map(r => `
+    <div style="display:flex;gap:9px;align-items:center;flex-wrap:wrap">
+      <b style="min-width:32px">${esc(r.code)}</b>
+      <span class="muted" style="min-width:118px;font-size:12.5px">${esc(r.name)}</span>
+      <input class="input" type="password" inputmode="numeric" maxlength="8" placeholder="Yangi PIN"
+             data-pinreg="${esc(r.id)}" style="max-width:150px" autocomplete="new-password">
+      <button class="btn small" data-pinsave="${esc(r.id)}">Saqlash</button>
+      <span class="${r.has_pin ? 'status ok' : 'warn'}" style="padding:3px 9px;border-radius:99px;font-size:11px">
+        ${r.has_pin ? 'PIN o‘rnatilgan' : 'PIN yo‘q'}</span>
+    </div>`).join('');
+
+  box.querySelectorAll('[data-pinsave]').forEach(b => b.onclick = async () => {
+    const id = b.dataset.pinsave;
+    const inp = box.querySelector(`[data-pinreg="${id}"]`);
+    const pin = String(inp.value || '').trim();
+    if (!/^\d{4,8}$/.test(pin)) { notice('PIN 4 dan 8 tagacha raqam bo‘lsin'); return; }
+    b.disabled = true;
+    try{
+      await api(`/api/admin/registers/${encodeURIComponent(id)}/pin`, { method:'PUT', body: JSON.stringify({ pin }) });
+      inp.value = ''; toast('PIN saqlandi'); renderPinSetters();
+    }catch(e){ notice(e.message); b.disabled = false; }
+  });
+}
+
 /* ---------- Bekor qilish so'rovlari ---------- */
 S.cancels=[];
 async function loadCancels(){
