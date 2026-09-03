@@ -160,6 +160,7 @@ export function toInstructorCard(row: any) {
     full_name: user?.full_name ?? '',
     phone: user?.phone ?? null,
     bio: row.bio ?? null,
+    avatar_url: row.avatar_url ?? null,
     experience_years: row.experience_years ?? 0,
     rating: row.rating ?? 0,
     total_reviews: row.total_reviews ?? 0,
