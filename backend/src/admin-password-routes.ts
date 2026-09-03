@@ -248,16 +248,68 @@ export async function registerAdminPasswordRoutes(app: FastifyInstance) {
       const ip = (await supabaseRest<any[]>('instructor_profiles', { query: `?id=eq.${q(id)}&select=*` }))[0];
       if (!ip) return reply.code(404).send({ ok: false, error: 'Instruktor topilmadi' });
 
+      const now = new Date().toISOString();
+
       if (typeof b.active === 'boolean') {
         await supabaseRest('instructor_profiles', {
           method: 'PATCH', query: `?id=eq.${q(id)}`,
-          body: JSON.stringify({ is_available: b.active, updated_at: new Date().toISOString() }),
+          body: JSON.stringify({ is_available: b.active, updated_at: now }),
         });
         await supabaseRest('users', {
           method: 'PATCH', query: `?id=eq.${q(ip.user_id)}`,
-          body: JSON.stringify({ is_active: b.active, is_blocked: !b.active, updated_at: new Date().toISOString() }),
+          body: JSON.stringify({ is_active: b.active, is_blocked: !b.active, updated_at: now }),
         });
         await audit(admin.id, b.active ? 'INSTRUCTOR_RESTORED' : 'INSTRUCTOR_DISABLED', 'instructor_profiles', id, { active: ip.is_available }, { active: b.active });
+      }
+
+      /* To'liq tahrirlash. Reyting ataylab yo'q — u faqat mijoz
+         sharhlaridan hisoblanadi, qo'lda o'zgartirilsa ma'nosini yo'qotadi. */
+      const userPatch: Record<string, unknown> = {};
+      const insPatch: Record<string, unknown> = {};
+
+      if (b.full_name !== undefined) {
+        const full = String(b.full_name).trim();
+        if (full.length < 2) return reply.code(400).send({ ok: false, error: 'Ism juda qisqa' });
+        userPatch.full_name = full;
+      }
+      if (b.phone !== undefined) {
+        const phone = String(b.phone).trim();
+        if (phone && !/^\+?\d[\d\s()-]{6,}$/.test(phone)) {
+          return reply.code(400).send({ ok: false, error: 'Telefon raqami noto‘g‘ri' });
+        }
+        userPatch.phone = phone || null;
+      }
+      if (b.experience_years !== undefined) {
+        const y = Math.trunc(Number(b.experience_years));
+        if (!Number.isFinite(y) || y < 0 || y > 60) {
+          return reply.code(400).send({ ok: false, error: 'Tajriba 0 dan 60 yilgacha' });
+        }
+        insPatch.experience_years = y;
+      }
+      if (b.bio !== undefined) {
+        const bio = String(b.bio).trim();
+        if (bio.length > 600) return reply.code(400).send({ ok: false, error: 'Bio 600 belgidan oshmasin' });
+        insPatch.bio = bio || null;
+      }
+      if (typeof b.is_verified === 'boolean') insPatch.is_verified = b.is_verified;
+      if (b.avatar_url !== undefined) {
+        const u = String(b.avatar_url).trim();
+        if (u && !/^https:\/\/[a-z0-9-]+\.supabase\.co\/storage\/v1\/object\/public\//i.test(u)) {
+          return reply.code(400).send({ ok: false, error: 'Rasm manzili noto‘g‘ri' });
+        }
+        insPatch.avatar_url = u || null;
+      }
+
+      if (Object.keys(userPatch).length) {
+        userPatch.updated_at = now;
+        await supabaseRest('users', { method: 'PATCH', query: `?id=eq.${q(String(ip.user_id))}`, body: JSON.stringify(userPatch) });
+      }
+      if (Object.keys(insPatch).length) {
+        insPatch.updated_at = now;
+        await supabaseRest('instructor_profiles', { method: 'PATCH', query: `?id=eq.${q(id)}`, body: JSON.stringify(insPatch) });
+      }
+      if (Object.keys(userPatch).length || Object.keys(insPatch).length) {
+        await audit(admin.id, 'INSTRUCTOR_UPDATED', 'instructor_profiles', id, null, { ...userPatch, ...insPatch });
       }
       return { ok: true };
     } catch (e) { return err(reply, e, 'Instructor update failed', 400); }
