@@ -56,6 +56,7 @@ a{color:inherit;text-decoration:none}
 .top{position:sticky;top:0;z-index:30;background:rgba(255,255,255,.96);
  backdrop-filter:blur(14px);border-bottom:1px solid var(--line);
  padding:10px 14px calc(10px);display:flex;align-items:center;gap:11px}
+.ini img{width:100%;height:100%;object-fit:cover}
 .topLogo{width:44px;height:44px;flex:none;object-fit:contain;display:block}
 .ini{width:44px;height:44px;border-radius:14px;flex:none;display:grid;place-items:center;
  background:linear-gradient(140deg,var(--brand),#1b1e66);color:#fff;font-weight:900;font-size:15px}
@@ -300,10 +301,11 @@ h2{font-size:20px;margin:0 0 3px}
   <h2>Profilim</h2><p class="sub">Ma’lumotlaringiz Admin tomonidan tasdiqlangan.</p>
   <div class="card">
     <div style="display:flex;gap:14px;align-items:center">
-      <div class="ini" style="width:62px;height:62px;border-radius:19px;font-size:21px" id="pIni">—</div>
-      <div style="min-width:0"><b style="font-size:18px;display:block" id="pName">—</b>
+      <div class="ini" id="pIni" style="width:66px;height:66px;border-radius:20px;font-size:21px;overflow:hidden">—</div>
+      <div style="min-width:0;flex:1"><b style="font-size:18px;display:block" id="pName">—</b>
         <span class="sub" style="margin:0" id="pPhone">—</span></div>
     </div>
+    <button class="btn go" id="pEdit" style="width:100%;margin-top:14px">Profilni tahrirlash</button>
     <div class="stats" style="margin:16px 0 0">
       <div class="st"><span>Tajriba</span><b id="pExp">—</b></div>
       <div class="st gold"><span>Reyting</span><b id="pRating">—</b></div>
@@ -436,15 +438,8 @@ async function openPanel(){
     const d = await api('/api/instructor/me');
     S.profile = d.profile || {}; S.instructor = d.instructor || {};
     const full = [S.profile.first_name, S.profile.last_name].filter(Boolean).join(' ') || S.profile.full_name || 'Instruktor';
-    $('topIni').textContent = initials(full);
-    $('topName').textContent = full;
     $('topRole').textContent = 'INSTRUKTOR';
-    $('pIni').textContent = initials(full);
-    $('pName').textContent = full;
-    $('pPhone').textContent = S.profile.phone || 'Telefon ko‘rsatilmagan';
-    $('pExp').textContent = `${S.instructor.experience_years ?? 0} yil`;
-    $('pRating').textContent = Number(S.instructor.rating || 0).toFixed(1);
-    $('pBio').textContent = S.instructor.bio || 'Bio kiritilmagan.';
+    paintProfile();
     $('greet').textContent = `Salom, ${S.profile.first_name || 'Instruktor'}!`;
     $('todayDate').textContent = new Date().toLocaleDateString('uz-UZ',
       { timeZone: TZ, weekday:'long', day:'numeric', month:'long' });
@@ -473,6 +468,94 @@ $('availSw').onclick = async () => {
   } catch (e) { setAvail(!next); toast(e.message); }
   finally { $('availSw').disabled = false; }
 };
+
+
+/* =========================================================================
+   PROFILNI TAHRIRLASH
+   Instruktor o'z ismi, telefoni, tajribasi, bio va rasmini o'zgartiradi.
+   Reyting va tasdiqlangan holati o'zgarmaydi — birinchisi sharhlardan,
+   ikkinchisi admindan.
+   ========================================================================= */
+$('pEdit').onclick = () => {
+  const p = S.profile || {}, i = S.instructor || {};
+  const full = [p.first_name, p.last_name].filter(Boolean).join(' ') || p.full_name || '';
+  const [first, ...rest] = String(full).split(' ');
+  let avatarUrl = i.avatar_url || '';
+
+  sheet(`<h2 style="margin:0 0 4px">Profilni tahrirlash</h2>
+    <p class="sub">Bu ma’lumotlarni mijozlar ko‘radi.</p>
+    <div style="display:flex;gap:14px;align-items:center;margin:14px 0">
+      <div id="peAv" style="width:70px;height:70px;border-radius:22px;background:var(--soft);color:var(--brand);
+        display:grid;place-items:center;font-weight:900;font-size:20px;overflow:hidden;flex:none">
+        ${avatarUrl ? `<img src="${esc(avatarUrl)}" style="width:100%;height:100%;object-fit:cover">` : esc(initials(full))}</div>
+      <div style="flex:1">
+        <input id="peFile" type="file" accept="image/jpeg,image/png,image/webp" style="display:none">
+        <button class="btn sm" id="peUpload" style="width:100%">Rasm tanlash</button>
+        <div class="sub" id="peHint" style="margin:6px 0 0;font-size:11.5px">JPG, PNG · 5 MB gacha</div>
+      </div>
+    </div>
+    <div class="field"><label>ISM</label><input id="peFirst" value="${esc(first || '')}"></div>
+    <div class="field"><label>FAMILIYA</label><input id="peLast" value="${esc(rest.join(' '))}"></div>
+    <div class="field"><label>TELEFON</label><input id="pePhone" type="tel" inputmode="tel" value="${esc(p.phone || '')}"></div>
+    <div class="field"><label>TAJRIBA (YIL)</label><input id="peExp" type="number" inputmode="numeric" min="0" max="60" value="${esc(i.experience_years ?? 0)}"></div>
+    <div class="field"><label>O‘ZINGIZ HAQINGIZDA</label><textarea id="peBio" placeholder="Mijozlar shu matnni o‘qiydi...">${esc(i.bio || '')}</textarea></div>
+    <div id="peAlert"></div>
+    <div class="acts two" style="padding:0">
+      <button class="btn" id="peCancel">Bekor</button>
+      <button class="btn ok" id="peSave">Saqlash</button>
+    </div>`);
+
+  $('peUpload').onclick = () => $('peFile').click();
+  $('peFile').onchange = async () => {
+    const f = $('peFile').files[0]; if (!f) return;
+    if (f.size > 5 * 1024 * 1024) { $('peHint').textContent = 'Rasm 5 MB dan oshmasin'; return; }
+    $('peHint').textContent = 'Yuklanmoqda…';
+    try{
+      const sign = await api('/api/instructor/avatar/sign', { method:'POST',
+        body: JSON.stringify({ content_type: f.type, size: f.size }) });
+      // Fayl to'g'ridan-to'g'ri Storage'ga — server orqali o'tmaydi
+      const res = await fetch(sign.upload_url, { method:'PUT', headers:{ 'Content-Type': f.type }, body: f });
+      if (!res.ok) throw new Error(`Yuklanmadi (${res.status})`);
+      avatarUrl = sign.public_url;
+      $('peAv').innerHTML = `<img src="${esc(avatarUrl)}" style="width:100%;height:100%;object-fit:cover">`;
+      $('peHint').textContent = 'Rasm tayyor — «Saqlash» ni bosing';
+    }catch(e){ $('peHint').textContent = 'Xato: ' + e.message; }
+  };
+
+  $('peCancel').onclick = closeSheet;
+  $('peSave').onclick = async () => {
+    $('peAlert').innerHTML = '';
+    const btn = $('peSave'); btn.disabled = true; btn.textContent = 'Saqlanmoqda…';
+    try{
+      const d = await api('/api/instructor/profile', { method:'PATCH', body: JSON.stringify({
+        first_name: $('peFirst').value.trim(), last_name: $('peLast').value.trim(),
+        phone: $('pePhone').value.trim(), experience_years: Number($('peExp').value || 0),
+        bio: $('peBio').value.trim(), avatar_url: avatarUrl })});
+      S.profile = d.profile || S.profile; S.instructor = d.instructor || S.instructor;
+      closeSheet(); toast('Profil saqlandi'); paintProfile();
+    }catch(e){
+      $('peAlert').innerHTML = `<div class="alert a-err">${esc(e.message)}</div>`;
+      btn.disabled = false; btn.textContent = 'Saqlash';
+    }
+  };
+};
+
+/** Profil ma'lumotini ekranga chiqaradi — saqlagandan keyin ham. */
+function paintProfile(){
+  const p = S.profile || {}, i = S.instructor || {};
+  const full = [p.first_name, p.last_name].filter(Boolean).join(' ') || p.full_name || 'Instruktor';
+  const av = i.avatar_url
+    ? `<img src="${esc(i.avatar_url)}" style="width:100%;height:100%;object-fit:cover">`
+    : esc(initials(full));
+  $('pIni').innerHTML = av;
+  $('topIni').innerHTML = av;
+  $('pName').textContent = full;
+  $('pPhone').textContent = p.phone || 'Telefon ko‘rsatilmagan';
+  $('pExp').textContent = `${i.experience_years ?? 0} yil`;
+  $('pRating').textContent = Number(i.rating || 0).toFixed(1);
+  $('pBio').textContent = i.bio || 'Bio kiritilmagan.';
+  $('topName').textContent = full;
+}
 
 /* ------------------------- Statistika ------------------------- */
 async function loadStats(){
