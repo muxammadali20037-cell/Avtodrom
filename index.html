@@ -288,6 +288,7 @@ details.faq[open] summary{border-bottom:1px solid var(--line)}
 .bottom-btn.active{color:var(--brand);background:var(--soft,#EEF0FB)}
 .bottom-btn:active{transform:scale(.96)}
 @media(max-width:360px){.bottom-btn .bl{font-size:9.5px}.bottom-btn .bi{width:21px;height:21px}}
+.warnline{color:#8a6500;font-weight:700}
 .hide{display:none!important}
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
 @media(max-width:900px){.grid{grid-template-columns:repeat(2,1fr)}}
@@ -414,7 +415,9 @@ details.faq[open] summary{border-bottom:1px solid var(--line)}
       <p class="meta" id="hoursHint" style="margin:8px 0 0"></p>
     </div>
     <div class="form-grid">
-      <div class="field full"><label data-i18n="l_instructor"></label><select id="bookInstructor"><option value="" data-i18n="loading"></option></select></div>
+      <div class="field full"><label data-i18n="l_instructor"></label>
+        <select id="bookInstructor"><option value="" data-i18n="loading"></option></select>
+        <p class="meta" id="insHint" style="margin:6px 0 0"></p></div>
       <div class="field"><label data-i18n="l_date"></label><input id="bookDate" type="date"></div>
       <div class="field"><label data-i18n="l_note"></label><input id="bookNote" data-i18n-ph="ph_note"></div>
     </div>
@@ -590,6 +593,7 @@ const I18N = {
     addr_nophone:'Telefon raqami Admin panel sozlamalarida kiritilmagan',
     book_h:'Bron qilish', book_p:'4 bosqichda mashg‘ulot vaqtini belgilang.',
     s1:'1. Mashg‘ulot', s2h:'2. Soat', s3i:'3. Instruktor', s4t:'4. Vaqt',
+    ins_cat_ok:'{c} kategoriya uchun {n} ta instruktor', ins_cat_none:'{c} kategoriyani o‘rgatadigan instruktor hozircha yo‘q',
     l_hours:'2. Necha soat?', hours_hint:'Jami: {dur} · {sum}', hours_pick_course:'Avval mashg‘ulot turini tanlang.',
     s2:'2. Instruktor', s3:'3. Sana', s4:'4. Vaqt',
     l_course:'1. Mashg‘ulot turi', l_instructor:'2. Instruktor', l_date:'3. Sana',
@@ -715,6 +719,7 @@ const I18N = {
     addr_nophone:'Номер телефона не указан в настройках админ-панели',
     book_h:'Бронирование', book_p:'Выберите время занятия за 4 шага.',
     s1:'1. Занятие', s2h:'2. Часы', s3i:'3. Инструктор', s4t:'4. Время',
+    ins_cat_ok:'Для категории {c} — {n} инструктор(ов)', ins_cat_none:'Инструкторов для категории {c} пока нет',
     l_hours:'2. Сколько часов?', hours_hint:'Итого: {dur} · {sum}', hours_pick_course:'Сначала выберите тип занятия.',
     s2:'2. Инструктор', s3:'3. Дата', s4:'4. Время',
     l_course:'1. Тип занятия', l_instructor:'2. Инструктор', l_date:'3. Дата',
@@ -952,6 +957,21 @@ function bindIns(){
   document.querySelectorAll('[data-ins-detail]').forEach(b=>b.onclick=()=>showInstructor(b.dataset.insDetail));
   document.querySelectorAll('[data-ins-book]').forEach(b=>b.onclick=()=>{ go('book'); $('bookInstructor').value=b.dataset.insBook; onBookingChange(); });
 }
+/** Tanlangan kategoriyani o'rgatadigan instruktorlar.
+    Mijoz C tanlasa, A/B instruktorlari ro'yxatda umuman ko'rinmaydi. */
+function pickedCategory(){
+  const c = S.courses.find(x => x.id === S.course);
+  return String(c?.category || '').trim().toUpperCase();
+}
+function instructorsForCategory(){
+  const cat = pickedCategory();
+  if (!/^[ABC]$/.test(cat)) return S.instructors;
+  return S.instructors.filter(x => {
+    const list = Array.isArray(x.categories) && x.categories.length ? x.categories : ['B'];
+    return list.includes(cat);
+  });
+}
+
 function renderHomeInstructors(){
   $('homeInstructors').innerHTML = S.instructors.length
     ? S.instructors.slice(0,3).map(instructorRow).join('')
@@ -983,10 +1003,22 @@ function showInstructor(id){
   $('mBook').onclick=()=>{ closeModal(); go('book'); $('bookInstructor').value=x.id; onBookingChange(); };
 }
 function fillInstructorSelect(){
-  const s=$('bookInstructor'), cur=s.value;
-  s.innerHTML=`<option value="">${esc(t('sel_instructor'))}</option>`+
-    S.instructors.map(x=>`<option value="${esc(x.id)}">${esc(iName(x))} · ★${esc(Number(x.rating||0).toFixed(1))}</option>`).join('');
-  if(cur) s.value=cur;
+  const sel=$('bookInstructor'), cur=sel.value;
+  const list=instructorsForCategory();
+  const cat=pickedCategory();
+  sel.innerHTML=`<option value="">${esc(t('sel_instructor'))}</option>`+
+    list.map(x=>`<option value="${esc(x.id)}">${esc(iName(x))} · ★${esc(Number(x.rating||0).toFixed(1))}</option>`).join('');
+  // Oldin tanlangan instruktor yangi kategoriyani o'rgatmasa — tanlov bekor
+  if (cur && list.some(x => String(x.id) === String(cur))) sel.value = cur;
+  else if (cur) { sel.value = ''; S.time = ''; }
+
+  const hint = $('insHint');
+  if (hint) {
+    hint.textContent = !cat ? ''
+      : list.length ? t('ins_cat_ok', { c: cat, n: list.length })
+      : t('ins_cat_none', { c: cat });
+    hint.classList.toggle('warnline', !!cat && !list.length);
+  }
 }
 
 /* ---------------- Kurslar ---------------- */
@@ -1002,7 +1034,7 @@ function renderCourses(){
     <button type="button" class="course ${S.course===c.id?'on':''}" data-course="${esc(c.id)}">
       <span><b>${esc(c.name)}</b><span class="sub">${esc(fmtDur(c.duration_minutes))}${c.description?' · '+esc(c.description):''}</span></span>
       <span class="price">${money(c.price)}</span></button>`).join('');
-  $('courseList').querySelectorAll('[data-course]').forEach(el=>el.onclick=()=>{ S.course=el.dataset.course; S.time=''; renderCourses(); renderHours(); onBookingChange(); });
+  $('courseList').querySelectorAll('[data-course]').forEach(el=>el.onclick=()=>{ S.course=el.dataset.course; S.time=''; renderCourses(); renderHours(); fillInstructorSelect(); onBookingChange(); });
 }
 
 /* -------- Necha soat? --------
