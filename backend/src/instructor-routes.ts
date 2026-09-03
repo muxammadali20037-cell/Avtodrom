@@ -433,4 +433,126 @@ export async function registerInstructorRoutes(
       return reply.code(400).send({ ok: false, error: e instanceof Error ? e.message : 'Hisobot yuklanmadi' });
     }
   });
+
+  /**
+   * INSTRUKTOR O'Z PROFILINI TAHRIRLAYDI
+   *
+   * O'zgartira oladi: ism, familiya, telefon, tajriba, bio, rasm.
+   * O'zgartira OLMAYDI: reyting (sharhlardan), tasdiqlangan holati (admin).
+   */
+  app.patch('/api/instructor/profile', async (request, reply) => {
+    try {
+      const tgUser = await authenticate(request);
+      const profile = await profileForTelegram(tgUser);
+      const instructor = await approvedInstructor(profile);
+      if (!profile || !instructor) return reply.code(403).send({ ok: false, error: 'Instruktor tasdiqlanmagan' });
+
+      const b = (request.body ?? {}) as any;
+      const userPatch: Record<string, unknown> = {};
+      const insPatch: Record<string, unknown> = {};
+
+      const first = String(b.first_name ?? '').trim();
+      const last  = String(b.last_name ?? '').trim();
+      if (first || last) {
+        const full = [first, last].filter(Boolean).join(' ');
+        if (full.length < 2) return reply.code(400).send({ ok: false, error: 'Ism juda qisqa' });
+        userPatch.full_name = full;
+      }
+      if (b.phone !== undefined) {
+        const phone = String(b.phone).trim();
+        if (phone && !/^\+?\d[\d\s()-]{6,}$/.test(phone)) {
+          return reply.code(400).send({ ok: false, error: 'Telefon raqami noto‘g‘ri' });
+        }
+        userPatch.phone = phone || null;
+      }
+      if (b.experience_years !== undefined) {
+        const y = Math.trunc(Number(b.experience_years));
+        if (!Number.isFinite(y) || y < 0 || y > 60) {
+          return reply.code(400).send({ ok: false, error: 'Tajriba 0 dan 60 yilgacha bo‘lsin' });
+        }
+        insPatch.experience_years = y;
+      }
+      if (b.bio !== undefined) {
+        const bio = String(b.bio).trim();
+        if (bio.length > 600) return reply.code(400).send({ ok: false, error: 'Bio 600 belgidan oshmasin' });
+        insPatch.bio = bio || null;
+      }
+      if (b.avatar_url !== undefined) {
+        const u = String(b.avatar_url).trim();
+        // Faqat o'z storage'imizdagi manzil — tashqi havola qo'yib bo'lmaydi
+        if (u && !/^https:\/\/[a-z0-9-]+\.supabase\.co\/storage\/v1\/object\/public\//i.test(u)) {
+          return reply.code(400).send({ ok: false, error: 'Rasm manzili noto‘g‘ri' });
+        }
+        insPatch.avatar_url = u || null;
+      }
+
+      if (Object.keys(userPatch).length) {
+        userPatch.updated_at = new Date().toISOString();
+        await supabaseRest('users', {
+          method: 'PATCH', query: `?id=eq.${q(String(profile.id))}`, body: JSON.stringify(userPatch),
+        });
+      }
+      if (Object.keys(insPatch).length) {
+        insPatch.updated_at = new Date().toISOString();
+        await supabaseRest('instructor_profiles', {
+          method: 'PATCH', query: `?id=eq.${q(String(instructor.id))}`, body: JSON.stringify(insPatch),
+        });
+      }
+
+      const [u2] = await supabaseRest<any[]>('users', { query: `?id=eq.${q(String(profile.id))}&select=*&limit=1` });
+      const [i2] = await supabaseRest<any[]>('instructor_profiles', { query: `?id=eq.${q(String(instructor.id))}&select=*&limit=1` });
+      return { ok: true, profile: u2 ?? profile, instructor: i2 ?? instructor };
+    } catch (e) {
+      return reply.code(400).send({ ok: false, error: e instanceof Error ? e.message : 'Saqlanmadi' });
+    }
+  });
+
+  /**
+   * RASM YUKLASH — imzolangan manzil.
+   * Fayl brauzerdan to'g'ridan-to'g'ri Supabase Storage'ga ketadi,
+   * shuning uchun Vercel'ning 4.5 MB cheklovi tegishli emas.
+   */
+  app.post('/api/instructor/avatar/sign', async (request, reply) => {
+    try {
+      const tgUser = await authenticate(request);
+      const profile = await profileForTelegram(tgUser);
+      const instructor = await approvedInstructor(profile);
+      if (!profile || !instructor) return reply.code(403).send({ ok: false, error: 'Instruktor tasdiqlanmagan' });
+
+      const b = (request.body ?? {}) as any;
+      const contentType = String(b.content_type || '').toLowerCase();
+      const size = Number(b.size || 0);
+      if (!/^image\/(jpeg|png|webp)$/.test(contentType)) {
+        return reply.code(400).send({ ok: false, error: 'Faqat JPG, PNG yoki WEBP' });
+      }
+      if (!(size > 0) || size > 5 * 1024 * 1024) {
+        return reply.code(400).send({ ok: false, error: 'Rasm 5 MB dan oshmasin' });
+      }
+
+      const url = String(process.env.SUPABASE_URL || '').replace(/\/+$/, '');
+      const key = String(process.env.SUPABASE_SERVICE_ROLE_KEY || '');
+      const BUCKET = 'customer-media';
+      const ext = contentType === 'image/png' ? 'png' : contentType === 'image/webp' ? 'webp' : 'jpg';
+      const path = `avatars/${instructor.id}-${Date.now()}.${ext}`;
+
+      const res = await fetch(`${url}/storage/v1/object/upload/sign/${BUCKET}/${path}`, {
+        method: 'POST',
+        headers: { apikey: key, Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ expiresIn: 600 }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data?.token) {
+        return reply.code(502).send({ ok: false, error: `Storage imzo xatosi ${res.status}` });
+      }
+      return {
+        ok: true,
+        path,
+        upload_url: `${url}/storage/v1/object/upload/sign/${BUCKET}/${path}?token=${encodeURIComponent(data.token)}`,
+        public_url: `${url}/storage/v1/object/public/${BUCKET}/${path}`,
+      };
+    } catch (e) {
+      return reply.code(400).send({ ok: false, error: e instanceof Error ? e.message : 'Imzo olinmadi' });
+    }
+  });
+
 }
