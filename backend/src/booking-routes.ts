@@ -175,7 +175,7 @@ export async function registerBookingRoutes(
       const rows = await supabaseRest<any[]>('instructor_profiles', {
         query:
           '?is_verified=eq.true&is_available=eq.true' +
-          '&select=id,user_id,bio,experience_years,rating,total_reviews,is_verified,is_available,' +
+          '&select=id,user_id,bio,experience_years,rating,total_reviews,is_verified,is_available,avatar_url,' +
           'user:user_id(id,full_name,phone,telegram_id,is_active,is_blocked)' +
           '&order=created_at.desc',
       });
