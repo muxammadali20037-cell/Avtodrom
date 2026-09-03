@@ -429,6 +429,7 @@ pre.json{background:#F7FAFF;border:1px solid var(--line);border-radius:8px;paddi
 </aside>
 
 <main>
+<div id="regLock" class="hidden"></div>
 <div id="notice"></div>
 <div id="warnings"></div>
 
@@ -526,7 +527,6 @@ pre.json{background:#F7FAFF;border:1px solid var(--line);border-radius:8px;paddi
   <div class="head"><div><h1>Chek chiqarish</h1><p>Mijoz ma’lumotini kiriting — narx avtomatik hisoblanadi, chek QR bilan chiqadi.</p></div>
     <button class="btn" id="coReset">Tozalash</button></div>
 
-  <div id="regLock" class="hidden"></div>
   <div id="shiftBar"></div>
 
   <div class="grid2" style="grid-template-columns:1.15fr .85fr;align-items:start">
@@ -883,6 +883,9 @@ $('refreshBtn').onclick=()=>loadAll(true);
 
 /* ---------- Navigatsiya ---------- */
 function showPage(id){
+  // Kassa bo'limi qulflangan bo'lsa ochilmaydi
+  const nb = document.querySelector(`.nav[data-p="${id}"]`);
+  if (nb && nb.dataset.grp === 'kassa' && !REG_TOKEN) { openPinFor(adminMode); return; }
   document.querySelectorAll('.page').forEach(x=>x.classList.toggle('on',x.id===id));
   document.querySelectorAll('.nav').forEach(x=>x.classList.toggle('on',x.dataset.p===id));
   if(id==='reports')renderReport();
@@ -2145,31 +2148,37 @@ function applyMode(mode){
 
   if (mode === 'admin') {
     REGISTER = null; REG_TOKEN = '';
+    $('regLock').classList.add('hidden');
     showPage('dashboard');
     return;
   }
   // Kassa rejimi — saqlangan token bormi?
   const saved = tokenFor(mode);
   if (saved) {
-    REG_TOKEN = saved.t; REGISTER = saved.r;
+    REG_TOKEN = saved.t; REGISTER = saved.r; pinSeq++;
     showPage('checkout'); showCheckout(); loadRegToday(); loadPayments();
   } else {
     REGISTER = null; REG_TOKEN = '';
-    showPage('checkout'); openPinFor(mode);
+    openPinFor(mode);          // sahifa ochilmaydi — faqat qulf
   }
 }
 document.querySelectorAll('.ms').forEach(b => b.onclick = () => applyMode(b.dataset.mode));
 
 /* ---------------- PIN ekrani ---------------- */
+let pinSeq = 0;
 async function openPinFor(code){
-  $('regLock').classList.remove('hidden');
-  document.querySelectorAll('#checkout .grid2, #shiftBar').forEach(el => el.classList.add('hidden'));
+  /* Kassalar ro'yxati serverdan keladi — bu vaqt oladi. Shu orada
+     foydalanuvchi boshqa kassani ochib ulgursa, kechikkan javob uni
+     qayta qulflab qo'ymasligi kerak. Har chaqiruvga navbat raqami. */
+  const seq = ++pinSeq;
+  setKassaLocked(true);
   $('regLock').innerHTML = '<div class="locksc"><h2>Yuklanmoqda…</h2></div>';
 
   if (!S.registers.length) {
     try { S.registers = (await api('/api/admin/registers')).registers || []; }
-    catch (e) { return showLockError(e.message); }
+    catch (e) { if (seq === pinSeq && !REG_TOKEN) showLockError(e.message); return; }
   }
+  if (seq !== pinSeq || REG_TOKEN) return;   // eskirgan chaqiruv
   const reg = S.registers.find(r => r.code === code);
   if (!reg) return showLockError(`${code} kassasi topilmadi. Bazada cash_registers jadvalini tekshiring.`);
 
@@ -2200,7 +2209,7 @@ async function openPinFor(code){
     try{
       const d = await api(`/api/admin/registers/${encodeURIComponent(reg.id)}/unlock`, {
         method:'POST', body: JSON.stringify({ pin: $('pinIn').value.trim() }) });
-      REG_TOKEN = d.token; REGISTER = d.register;
+      REG_TOKEN = d.token; REGISTER = d.register; pinSeq++;
       const o = readTokens(); o[code] = { t: d.token, r: d.register }; writeTokens(o);
       if (d.warning) notice(d.warning);
       toast(`${code} ochildi`);
@@ -2215,8 +2224,8 @@ async function openPinFor(code){
 }
 
 function showLockError(msg){
-  $('regLock').classList.remove('hidden');
-  document.querySelectorAll('#checkout .grid2, #shiftBar').forEach(el => el.classList.add('hidden'));
+  if (REG_TOKEN) return;   // kassa allaqachon ochilgan
+  setKassaLocked(true);
   const m = String(msg);
   const noTable  = /relation .*cash_registers.* does not exist|42P01/i.test(m);
   const noColumn = /column .*cash_registers\.[a-z_]+ does not exist|42703|Ustun topilmadi/i.test(m);
@@ -2232,8 +2241,22 @@ function showLockError(msg){
   $('lockRetry').onclick = () => { S.registers = []; openPinFor(adminMode); };
 }
 
+/* Qulf BUTUN kassa rejimini yopadi — nafaqat «Chek chiqarish».
+   Aks holda PIN kiritmasdan «Kunlik hisobot» yoki «To'lovlar» ga
+   o'tib, boshqa kassaning ma'lumotini ko'rib qolish mumkin edi. */
+function setKassaLocked(locked){
+  $('regLock').classList.toggle('hidden', !locked);
+  // Kassa bo'limlari va menyusi
+  document.querySelectorAll('.page').forEach(pg => {
+    const btn = document.querySelector(`.nav[data-p="${pg.id}"]`);
+    if (btn && btn.dataset.grp === 'kassa') pg.classList.toggle('hidden', locked);
+  });
+  document.querySelectorAll('.nav[data-grp="kassa"]').forEach(b => b.classList.toggle('hidden', locked));
+  document.querySelectorAll('.navgroup[data-grp="kassa"]').forEach(b => b.classList.toggle('hidden', locked));
+}
+
 function showCheckout(){
-  $('regLock').classList.add('hidden');
+  setKassaLocked(false);
   document.querySelectorAll('#checkout .grid2, #shiftBar').forEach(el => el.classList.remove('hidden'));
   renderRegisterBar();
 }
