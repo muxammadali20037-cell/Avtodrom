@@ -408,15 +408,18 @@ pre.json{background:#F7FAFF;border:1px solid var(--line);border-radius:8px;paddi
   <button class="nav on" data-grp="kassa" data-p="checkout">Chek chiqarish</button>
   <button class="nav" data-grp="kassa" data-p="kdash">Kunlik hisobot</button>
   <button class="nav" data-grp="kassa" data-p="klive">Jarayonda <span id="kliveCount" class="count">0</span></button>
+  <button class="nav" data-grp="kassa" data-p="cashier">Kunlik jadval</button>
+  <button class="nav" data-grp="kassa" data-p="control">Instruktor nazorati</button>
   <button class="nav" data-grp="kassa" data-p="payments">To‘lovlar</button>
-  <button class="nav" data-grp="kassa" data-p="reports">Hisobot</button>
+  
 
   <div class="navgroup" data-grp="admin">BOSHQARUV</div>
   <span id="supCount" class="hidden">0</span>
   <button class="nav" data-grp="admin" data-p="dashboard">Dashboard</button>
   <button class="nav" data-grp="admin" data-p="live">Jarayonda <span id="liveCount" class="count">0</span></button>
-  <button class="nav" data-grp="admin" data-p="control">Instruktor nazorati</button>
-  <button class="nav" data-grp="admin" data-p="cashier">Kunlik jadval</button>
+  
+  
+  <button class="nav" data-grp="admin" data-p="reports">Hisobot</button>
   <button class="nav" data-grp="admin" data-p="applications">Arizalar <span id="appCount" class="count">0</span></button>
   <button class="nav" data-grp="admin" data-p="bookings">Bronlar <span id="bookCount" class="count">0</span></button>
   <button class="nav" data-grp="admin" data-p="cancels">Bekor so‘rovlari <span id="cxCount" class="count">0</span></button>
@@ -883,9 +886,14 @@ $('refreshBtn').onclick=()=>loadAll(true);
 
 /* ---------- Navigatsiya ---------- */
 function showPage(id){
-  // Kassa bo'limi qulflangan bo'lsa ochilmaydi
+  /* Sahifa joriy rejimga tegishli bo'lishi shart:
+     - kassa rejimida boshqaruv sahifalari ochilmaydi (va aksincha)
+     - kassa qulflangan bo'lsa hech nima ochilmaydi */
   const nb = document.querySelector(`.nav[data-p="${id}"]`);
-  if (nb && nb.dataset.grp === 'kassa' && !REG_TOKEN) { openPinFor(adminMode); return; }
+  const grp = nb ? nb.dataset.grp : null;
+  const wantGrp = adminMode === 'admin' ? 'admin' : 'kassa';
+  if (grp && grp !== wantGrp) return;
+  if (grp === 'kassa' && !REG_TOKEN) { openPinFor(adminMode); return; }
   document.querySelectorAll('.page').forEach(x=>x.classList.toggle('on',x.id===id));
   document.querySelectorAll('.nav').forEach(x=>x.classList.toggle('on',x.dataset.p===id));
   if(id==='reports')renderReport();
@@ -1804,7 +1812,8 @@ async function loadControl(){
   const date = $('cDate').value || kToday();
   $('ctlBody').innerHTML = '<div class="card empty">Yuklanmoqda…</div>';
   try{
-    const d = await api(`/api/admin/instructor-control/${encodeURIComponent(S.ctlIns)}?period=${encodeURIComponent(S.ctlPeriod)}&date=${encodeURIComponent(date)}`);
+    const tok = REG_TOKEN ? `&token=${encodeURIComponent(REG_TOKEN)}` : '';
+    const d = await api(`/api/admin/instructor-control/${encodeURIComponent(S.ctlIns)}?period=${encodeURIComponent(S.ctlPeriod)}&date=${encodeURIComponent(date)}${tok}`);
     renderControl(d);
   }catch(e){ $('ctlBody').innerHTML = `<div class="card"><div class="error">${esc(e.message)}</div></div>`; }
 }
@@ -1825,6 +1834,7 @@ function renderControl(d){
     <div class="card">
       <div class="muted" style="font-size:13px;margin-bottom:10px">
         Naqd: <b>${nf(s0.cash)}</b> · Karta: <b>${nf(s0.card)}</b> · ${esc(d.label)} hisobot
+        ${d.scoped_to_register ? ` · faqat <b>${esc(REGISTER?.code || '')}</b> kassasi bo‘yicha` : ''}
       </div>
       <div class="tableWrap"><table class="table">
         <thead><tr><th>Vaqt</th><th>Mijoz</th><th>Mashg‘ulot</th><th>Chek</th><th>Skaner</th><th>To‘lov</th><th>Holat</th></tr></thead>
@@ -2246,6 +2256,8 @@ function showLockError(msg){
    o'tib, boshqa kassaning ma'lumotini ko'rib qolish mumkin edi. */
 function setKassaLocked(locked){
   $('regLock').classList.toggle('hidden', !locked);
+  // Qulflanganda ekranda hech qanday sahifa qolmasin
+  if (locked) document.querySelectorAll('.page').forEach(pg => pg.classList.remove('on'));
   // Kassa bo'limlari va menyusi
   document.querySelectorAll('.page').forEach(pg => {
     const btn = document.querySelector(`.nav[data-p="${pg.id}"]`);
