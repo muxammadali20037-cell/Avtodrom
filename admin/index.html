@@ -157,6 +157,10 @@ button,input,select,textarea{font:inherit}.hidden{display:none!important}
 .lv .right{text-align:right;font-size:12.5px;color:var(--muted)}
 .lv .right b{display:block;font-size:14px;color:var(--text)}
 @media(max-width:760px){.lv{grid-template-columns:70px 1fr}.lv .right{grid-column:1/-1;text-align:left}}
+
+.lv.stale{border-color:#DDD;background:#FAFAFA;opacity:.75}
+.lv.stale .left b{color:#999}
+.badge.grey{background:#EEE;color:#666}
 .warn{padding:11px;border-radius:11px;background:#fff8e6;color:#8a6500;border:1px solid #ffe6a8;font-size:13px}
 .top{height:70px;background:#fff;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:20}
 .topin{height:100%;max-width:1500px;margin:auto;padding:0 20px;display:flex;align-items:center;justify-content:space-between}
@@ -331,6 +335,10 @@ button,input,select,textarea{font:inherit}.hidden{display:none!important}
 .lv .right{text-align:right;font-size:12.5px;color:var(--muted)}
 .lv .right b{display:block;font-size:14px;color:var(--text)}
 @media(max-width:760px){.lv{grid-template-columns:70px 1fr}.lv .right{grid-column:1/-1;text-align:left}}
+
+.lv.stale{border-color:#DDD;background:#FAFAFA;opacity:.75}
+.lv.stale .left b{color:#999}
+.badge.grey{background:#EEE;color:#666}
 .warn{padding:11px;border-radius:11px;background:#fff8e6;color:#8a6500;border:1px solid #ffe6a8;margin-bottom:12px;font-size:13px}
 .empty{padding:25px;text-align:center;color:var(--muted)}
 .actions{display:flex;gap:5px;flex-wrap:wrap}
@@ -398,6 +406,8 @@ pre.json{background:#F7FAFF;border:1px solid var(--line);border-radius:8px;paddi
 <aside class="side">
   <div class="navgroup" data-grp="kassa">KASSA</div>
   <button class="nav on" data-grp="kassa" data-p="checkout">Chek chiqarish</button>
+  <button class="nav" data-grp="kassa" data-p="kdash">Kunlik hisobot</button>
+  <button class="nav" data-grp="kassa" data-p="klive">Jarayonda <span id="kliveCount" class="count">0</span></button>
   <button class="nav" data-grp="kassa" data-p="payments">To‘lovlar</button>
   <button class="nav" data-grp="kassa" data-p="reports">Hisobot</button>
 
@@ -444,6 +454,35 @@ pre.json{background:#F7FAFF;border:1px solid var(--line);border-radius:8px;paddi
     <div class="card"><h3 style="margin-top:0">Soatlar bo‘yicha band-band</h3><div id="dHours"></div></div>
   </div>
   <div class="card"><h3 style="margin-top:0">Mashg‘ulotlar bo‘yicha</h3><div id="dCourses"></div></div>
+</section>
+
+<section id="kdash" class="page">
+  <div class="head"><div><h1 id="kdTitle">Kunlik hisobot</h1><p id="kdSub">Faqat shu kassaning tushumi</p></div>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <input id="kdDate" type="date" class="input">
+      <div class="segs" id="kdSegs">
+        <button class="seg on" data-per="day">Kunlik</button>
+        <button class="seg" data-per="week">Haftalik</button>
+        <button class="seg" data-per="month">Oylik</button>
+      </div></div></div>
+  <div id="kdAlert"></div>
+  <div class="kpis" id="kdKpis"></div>
+  <div class="grid2">
+    <div class="card"><h3 style="margin-top:0">Soatlar bo‘yicha</h3><div id="kdHours"></div></div>
+    <div class="card"><h3 style="margin-top:0">Kategoriyalar</h3><div id="kdCats"></div></div>
+  </div>
+  <div class="card"><h3 style="margin-top:0">Cheklar</h3><div id="kdRecent"></div></div>
+</section>
+
+<section id="klive" class="page">
+  <div class="head"><div><h1>Jarayondagi darslar</h1><p id="kliveSub">Instruktor chekni skanerlagach shu yerga tushadi.</p></div>
+    <div style="display:flex;gap:9px;align-items:center">
+      <span class="badge red" id="kliveRed">0</span>
+      <span class="badge yellow" id="kliveYellow">0</span>
+      <button class="btn" id="kliveRefresh">Yangilash</button>
+    </div></div>
+  <div id="kliveAlert"></div>
+  <div id="kliveList"></div>
 </section>
 
 <section id="live" class="page">
@@ -851,7 +890,9 @@ function showPage(id){
   if(id==='audit')loadAudit();
   if(id==='support')loadSupport();
   if(id==='cancels')loadCancels();
-  if(id==='live')loadLive();
+  if(id==='live')loadLive('live');
+  if(id==='klive')loadLive('klive');
+  if(id==='kdash'){ if(!$('kdDate').value)$('kdDate').value=kToday(); loadKdash(); }
   if(id==='payments'){ loadPayments(); const h=document.querySelector('#payments .head p'); if(h) h.textContent = REGISTER ? `${REGISTER.code} kassasining to‘lovlari` : 'Barcha kassalar bo‘yicha'; }
   if(id==='checkout'){ initCheckout(); }
   if(id==='dashboard'){ if(!$('dDate').value)$('dDate').value=kToday(); loadAnalytics(); }
@@ -2165,6 +2206,7 @@ async function openPinFor(code){
       toast(`${code} ochildi`);
       showCheckout(); loadRegToday();
       if (typeof loadPayments === 'function') loadPayments();
+      if (!$('kdDate').value) $('kdDate').value = kToday();
     }catch(e){
       $('pinAlert').innerHTML = `<div class="error">${esc(e.message)}</div>`;
       $('pinIn').value = ''; $('pinIn').focus();
@@ -2232,26 +2274,36 @@ async function loadRegToday(){
    JARAYONDAGI DARSLAR
    Tugashiga 10 daqiqa qolganlar tepada va qizil, 20 daqiqa — sariq.
    ========================================================================= */
-async function loadLive(){
+/** Jarayondagi darslar — bir xil ma'lumot ikki joyda: kassada ham,
+    boshqaruvda ham. Prefiks bilan ajratamiz (live / klive). */
+async function loadLive(px){
+  const P = px || (adminMode === 'admin' ? 'live' : 'klive');
   try{
     const d = await api('/api/admin/in-progress');
     const rows = d.rows || [], c = d.counts || {};
-    $('liveRed').textContent = `${c.red || 0} ta — 10 daq`;
-    $('liveYellow').textContent = `${c.yellow || 0} ta — 20 daq`;
-    $('liveCount').textContent = c.total || 0;
-    $('liveSub').textContent = rows.length
-      ? `${rows.length} ta dars ketmoqda`
-      : 'Hozircha jarayondagi dars yo‘q. Instruktor chekni skanerlagach shu yerda paydo bo‘ladi.';
-    $('liveList').innerHTML = rows.length ? rows.map(liveRow).join('')
-      : '<div class="card empty">Jarayonda dars yo‘q.</div>';
-  }catch(e){ $('liveAlert').innerHTML = `<div class="error">${esc(e.message)}</div>`; }
+    const set = (id, v) => { const el = $(id); if (el) el.textContent = v; };
+    set(P + 'Red',    `${c.red || 0} ta — 10 daq`);
+    set(P + 'Yellow', `${c.yellow || 0} ta — 20 daq`);
+    set('liveCount',  c.total || 0);
+    set('kliveCount', c.total || 0);
+    set(P + 'Sub', rows.length
+      ? `${rows.length} ta dars ketmoqda${c.stale ? ` · ${c.stale} ta unutilgan` : ''}`
+      : 'Hozircha jarayondagi dars yo‘q. Instruktor chekni skanerlagach shu yerda paydo bo‘ladi.');
+    const html = rows.length ? rows.map(liveRow).join('') : '<div class="card empty">Jarayonda dars yo‘q.</div>';
+    const box = $(P + 'List'); if (box) box.innerHTML = html;
+  }catch(e){
+    const a = $(P + 'Alert'); if (a) a.innerHTML = `<div class="error">${esc(e.message)}</div>`;
+  }
 }
 
 function liveRow(r){
   const left = Number(r.minutes_left);
-  const leftTxt = left < 0 ? `${Math.abs(left)} daq oshdi` : `${left} daq qoldi`;
+  const stale = r.level === 'stale';
+  const leftTxt = stale ? 'unutilgan — yakunlanmagan'
+                : left < 0 ? `${Math.abs(left)} daq oshdi` : `${left} daq qoldi`;
   return `<div class="lv ${esc(r.level)}">
-    <div class="left"><b>${esc(left < 0 ? '0' : left)}</b><span>${esc(left < 0 ? 'vaqt tugadi' : 'daqiqa')}</span></div>
+    <div class="left"><b>${stale ? '—' : esc(left < 0 ? '0' : left)}</b>
+      <span>${esc(stale ? 'eskirgan' : left < 0 ? 'vaqt tugadi' : 'daqiqa')}</span></div>
     <div class="mid">
       <b>${esc(r.customer?.full_name || 'Mijoz')}</b>
       <div class="r2">Instruktor: <b>${esc(r.instructor?.full_name || '—')}</b> · ${esc(r.course?.name || 'Mashg‘ulot')} · ${esc(fmtDur(r.duration_minutes))}</div>
@@ -2268,7 +2320,88 @@ function liveRow(r){
     </div>
   </div>`;
 }
-$('liveRefresh').onclick = loadLive;
+$('liveRefresh').onclick = () => loadLive('live');
+$('kliveRefresh').onclick = () => loadLive('klive');
+
+
+/* =========================================================================
+   KASSA DASHBOARDI — faqat o'z kassasi
+   Kassa ID'si tokendan olinadi, shuning uchun P1 kassiri P2 ning
+   tushumini ko'ra olmaydi.
+   ========================================================================= */
+S.kdPeriod = 'day';
+
+document.querySelectorAll('#kdSegs .seg').forEach(b => b.onclick = () => {
+  document.querySelectorAll('#kdSegs .seg').forEach(x => x.classList.remove('on'));
+  b.classList.add('on'); S.kdPeriod = b.dataset.per; loadKdash();
+});
+$('kdDate').addEventListener('change', loadKdash);
+
+async function loadKdash(){
+  if (!REG_TOKEN) { $('kdAlert').innerHTML = '<div class="warn">Kassa ochilmagan.</div>'; return; }
+  const date = $('kdDate').value || kToday();
+  $('kdAlert').innerHTML = '';
+  $('kdKpis').innerHTML = '<div class="empty" style="grid-column:1/-1">Yuklanmoqda…</div>';
+  try{
+    const d = await api(`/api/admin/my-dashboard?token=${encodeURIComponent(REG_TOKEN)}&period=${encodeURIComponent(S.kdPeriod)}&date=${encodeURIComponent(date)}`);
+    renderKdash(d);
+  }catch(e){ $('kdKpis').innerHTML=''; $('kdAlert').innerHTML = `<div class="error">${esc(e.message)}</div>`; }
+}
+
+function renderKdash(d){
+  const t = d.totals || {}, c = d.change || {};
+  $('kdTitle').textContent = `${d.register?.code || ''} — ${d.label || 'Kunlik'} hisobot`;
+  $('kdSub').textContent = `${d.register?.name || ''} · faqat shu kassaning tushumi`;
+
+  const arrow = v => v > 0 ? `<i class="up">▲ ${v}%</i>` : v < 0 ? `<i class="dn">▼ ${Math.abs(v)}%</i>` : `<i class="fl">— 0%</i>`;
+  const kpi = (l, v, dl) => `<div class="kpi"><span>${esc(l)}</span><b>${v}</b>${dl !== undefined ? arrow(dl) : ''}</div>`;
+  $('kdKpis').innerHTML =
+      kpi('Tushum', nf(t.total) + ' so‘m', c.total)
+    + kpi('Cheklar', nf(t.receipts), c.receipts)
+    + kpi('Naqd', nf(t.cash))
+    + kpi('Terminal', nf(t.card))
+    + kpi('Mijozlar', nf(t.customers))
+    + kpi('Soatlar', ((Number(t.minutes || 0)) / 60).toFixed(1));
+
+  // soatlar
+  const hrs = d.hours || [];
+  if (!hrs.length) $('kdHours').innerHTML = '<div class="empty">Bu davrda chek yo‘q.</div>';
+  else {
+    const map = new Map(hrs.map(h => [Number(h.hour), Number(h.total)]));
+    const max = Math.max(...hrs.map(h => Number(h.total)), 1);
+    const cells = []; for (let h = 7; h <= 19; h++) cells.push({ h, v: map.get(h) || 0 });
+    $('kdHours').innerHTML = `<div class="bars">${cells.map(x => `
+      <div class="bar" title="${x.h}:00 — ${nf(x.v)}">
+        <div class="v" style="height:${Math.round(x.v/max*100)}%;${x.v?'':'opacity:.2'}"></div>
+        <small>${String(x.h).padStart(2,'0')}</small></div>`).join('')}</div>
+      <div class="muted" style="font-size:12px;margin-top:26px">Ustun balandligi — tushum.</div>`;
+  }
+
+  // kategoriyalar
+  const cats = d.categories || [];
+  $('kdCats').innerHTML = cats.length ? `<div class="rank">${(() => {
+    const max = Math.max(...cats.map(x => Number(x.total)), 1);
+    return cats.map(x => `<div class="rankrow">
+      <div><b>${esc(x.name)}</b><div class="met">${nf(x.receipts)} chek</div></div>
+      <b style="color:var(--g);white-space:nowrap">${nf(x.total)}</b>
+      <div class="rankbar"><i style="width:${Math.round(Number(x.total)/max*100)}%"></i></div>
+    </div>`).join(''); })()}</div>` : '<div class="empty">Ma’lumot yo‘q.</div>';
+
+  // cheklar
+  const rec = d.recent || [];
+  $('kdRecent').innerHTML = rec.length ? `<div class="tableWrap"><table class="table">
+    <thead><tr><th>Vaqt</th><th>Chek</th><th>Mijoz</th><th>Instruktor</th><th>Kat.</th><th>Davomiylik</th><th>To‘lov</th><th>Summa</th></tr></thead>
+    <tbody>${rec.map(r => `<tr>
+      <td>${dt(r.paid_at).split(' ').pop()}</td>
+      <td><span class="rcp">${esc(r.receipt_code || '—')}</span></td>
+      <td>${esc(r.customer_name || '—')}</td>
+      <td>${esc(r.instructor_name || '—')}</td>
+      <td>${esc(r.category || '—')}</td>
+      <td>${esc(fmtDur(r.mins))}</td>
+      <td>${esc(r.method === 'mixed' ? 'Aralash' : r.method === 'card' ? 'Terminal' : 'Naqd')}</td>
+      <td><b>${nf(r.amount)}</b></td></tr>`).join('')}</tbody></table></div>`
+    : '<div class="empty">Chek yo‘q.</div>';
+}
 
 /* ---------- Bekor qilish so'rovlari ---------- */
 S.cancels=[];
