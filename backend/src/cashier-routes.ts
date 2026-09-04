@@ -650,6 +650,25 @@ export async function registerCashierRoutes(
         return reply.code(409).send({ ok: false, error: `Bron holati "${booking.status}" — boshlab bo‘lmaydi` });
       }
 
+      /* Oldingi dars yakunlanmagan bo'lsa yangisini boshlab bo'lmaydi.
+         Bazada ham unique indeks bor — bu yerdagi tekshiruv shunchaki
+         tushunarli xabar berish uchun. */
+      const active = (await supabaseRest<any[]>('bookings', {
+        query: `?instructor_id=eq.${q(String(ip.id))}&status=eq.in_progress&select=id,start_at,customer_id&limit=1`,
+      }))[0];
+      if (active && String(active.id) !== String(booking.id)) {
+        const who = active.customer_id
+          ? (await supabaseRest<any[]>('users', {
+              query: `?id=eq.${q(String(active.customer_id))}&select=full_name&limit=1`,
+            }).catch(() => []))[0]?.full_name
+          : null;
+        return reply.code(409).send({
+          ok: false,
+          error: `Avvalgi dars yakunlanmagan${who ? ` (${who})` : ''}. Avval uni yakunlang, keyin yangisini boshlang.`,
+          active_booking_id: active.id,
+        });
+      }
+
       const now = new Date().toISOString();
       const rows = await supabaseRest<any[]>('bookings', {
         method: 'PATCH', headers: { Prefer: 'return=representation' }, query: `?id=eq.${q(String(booking.id))}`,
@@ -664,7 +683,11 @@ export async function registerCashierRoutes(
 
       return { ok: true, booking: rows[0] ?? booking };
     } catch (e: any) {
-      return reply.code(e?.statusCode ?? 400).send({ ok: false, error: e?.message || 'Dars boshlanmadi' });
+      const msg = String(e?.message || '');
+      if (/bookings_one_active_lesson/i.test(msg)) {
+        return reply.code(409).send({ ok: false, error: 'Avvalgi dars yakunlanmagan. Avval uni yakunlang.' });
+      }
+      return reply.code(e?.statusCode ?? 400).send({ ok: false, error: msg || 'Dars boshlanmadi' });
     }
   });
 }
