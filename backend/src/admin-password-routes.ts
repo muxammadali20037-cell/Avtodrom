@@ -199,6 +199,97 @@ export async function registerAdminPasswordRoutes(app: FastifyInstance) {
     } catch (e) { return err(reply, e, 'Failed to load instructors'); }
   });
 
+
+  /**
+   * INSTRUKTORNI O'CHIRISH
+   *
+   * Bronlari bo'lsa o'chirilmaydi — tarix buzilib ketardi va
+   * hisobotlarda bo'sh joylar paydo bo'lardi. Bunday holda
+   * bloklash taklif qilinadi.
+   */
+  app.delete('/api/admin/instructors/:id', async (req: any, reply: any) => {
+    try {
+      await guard(req);
+      const admin = await adminUser();
+      const id = String(req.params.id);
+
+      const ip = (await supabaseRest<any[]>('instructor_profiles', {
+        query: `?id=eq.${q(id)}&select=*&limit=1`,
+      }))[0];
+      if (!ip) return reply.code(404).send({ ok: false, error: 'Instruktor topilmadi' });
+
+      const bookings = await supabaseRest<any[]>('bookings', {
+        query: `?instructor_id=eq.${q(id)}&select=id&limit=1`,
+      });
+      if (bookings.length) {
+        return reply.code(409).send({
+          ok: false,
+          error: 'Bu instruktorning bronlari bor. O‘chirish o‘rniga bloklang.',
+        });
+      }
+
+      await supabaseRest('instructor_profiles', { method: 'DELETE', query: `?id=eq.${q(id)}` });
+      await supabaseRest('users', {
+        method: 'PATCH', query: `?id=eq.${q(String(ip.user_id))}`,
+        body: JSON.stringify({ is_active: false, is_blocked: true, updated_at: new Date().toISOString() }),
+      });
+      await audit(admin.id, 'INSTRUCTOR_DELETED', 'instructor_profiles', id, ip, null);
+      return { ok: true };
+    } catch (e: any) {
+      return reply.code(e?.statusCode ?? 400).send({ ok: false, error: e?.message || 'O‘chirilmadi' });
+    }
+  });
+
+  /**
+   * INSTRUKTOR RASMI — data URL orqali yuklash.
+   * Kichik rasmlar uchun qulay: alohida imzo olish shart emas.
+   */
+  app.post('/api/admin/instructors/:id/photo', async (req: any, reply: any) => {
+    try {
+      await guard(req);
+      const admin = await adminUser();
+      const id = String(req.params.id);
+      const dataUrl = String((req.body as any)?.photo_data_url || '');
+
+      const m = dataUrl.match(/^data:(image\/(?:jpeg|png|webp));base64,([A-Za-z0-9+/=]+)$/);
+      if (!m) return reply.code(400).send({ ok: false, error: 'Rasm formati noto‘g‘ri (JPG, PNG yoki WEBP)' });
+      if (dataUrl.length > 7 * 1024 * 1024) return reply.code(413).send({ ok: false, error: 'Rasm juda katta' });
+
+      const ip = (await supabaseRest<any[]>('instructor_profiles', {
+        query: `?id=eq.${q(id)}&select=id&limit=1`,
+      }))[0];
+      if (!ip) return reply.code(404).send({ ok: false, error: 'Instruktor topilmadi' });
+
+      const contentType = m[1];
+      const ext = contentType === 'image/png' ? 'png' : contentType === 'image/webp' ? 'webp' : 'jpg';
+      const bytes = Buffer.from(m[2], 'base64');
+      const path = `avatars/${id}-${Date.now()}.${ext}`;
+      const base = String(process.env.SUPABASE_URL || '').replace(/\/+$/, '');
+      const key = String(process.env.SUPABASE_SERVICE_ROLE_KEY || '');
+      const BUCKET = 'customer-media';
+
+      const up = await fetch(`${base}/storage/v1/object/${BUCKET}/${path}`, {
+        method: 'POST',
+        headers: { apikey: key, Authorization: `Bearer ${key}`, 'Content-Type': contentType },
+        body: bytes,
+      });
+      if (!up.ok) {
+        const t = await up.text().catch(() => '');
+        return reply.code(502).send({ ok: false, error: `Rasm yuklanmadi (${up.status}) ${t.slice(0, 120)}` });
+      }
+
+      const publicUrl = `${base}/storage/v1/object/public/${BUCKET}/${path}`;
+      await supabaseRest('instructor_profiles', {
+        method: 'PATCH', query: `?id=eq.${q(id)}`,
+        body: JSON.stringify({ avatar_url: publicUrl, avatar_path: path, updated_at: new Date().toISOString() }),
+      });
+      await audit(admin.id, 'INSTRUCTOR_PHOTO_SET', 'instructor_profiles', id, null, { path });
+      return { ok: true, avatar_url: publicUrl };
+    } catch (e: any) {
+      return reply.code(e?.statusCode ?? 400).send({ ok: false, error: e?.message || 'Rasm saqlanmadi' });
+    }
+  });
+
   app.post('/api/admin/instructors', async (req: any, reply: any) => {
     try {
       await guard(req);
