@@ -330,10 +330,22 @@ export async function registerShiftRoutes(
       await requireAdmin(req);
       const now = Date.now();
 
-      const bookings = await supabaseRest<any[]>('bookings', {
-        query: '?status=eq.in_progress&select=*&order=arrived_at.asc&limit=200',
-      });
-      if (!bookings.length) return { ok: true, now: new Date(now).toISOString(), rows: [] };
+      /* Jarayondagilar + BUGUN yakunlanganlar.
+         Admin "kim nechada boshladi, nechada yopdi" ni ko'rishi kerak,
+         shuning uchun tugaganlar ham kunning oxirigacha ro'yxatda qoladi. */
+      const dayStart = new Date(new Date(now).getTime() - 18 * 3600e3).toISOString();
+      const [active, doneToday] = await Promise.all([
+        supabaseRest<any[]>('bookings', {
+          query: '?status=eq.in_progress&select=*&order=arrived_at.asc&limit=200',
+        }),
+        supabaseRest<any[]>('bookings', {
+          query: `?status=eq.completed&departed_at=gte.${q(dayStart)}&select=*&order=departed_at.desc&limit=100`,
+        }).catch(() => []),
+      ]);
+      const bookings = [...active, ...doneToday];
+      if (!bookings.length) {
+        return { ok: true, now: new Date(now).toISOString(), counts: { total: 0, red: 0, yellow: 0, stale: 0, done: 0 }, rows: [] };
+      }
 
       const ids  = bookings.map((b) => String(b.id));
       const uids = [...new Set(bookings.map((b) => String(b.customer_id)).filter(Boolean))];
@@ -367,8 +379,12 @@ export async function registerShiftRoutes(
         const started = b.arrived_at ? new Date(b.arrived_at) : new Date(b.start_at || b.booking_date);
         const ends = new Date(started.getTime() + mins * 60000);
         const left = Math.round((ends.getTime() - now) / 60000);
+        const finished = String(b.status) === 'completed';
         return {
           id: b.id,
+          status: b.status,
+          finished,
+          departed_at: b.departed_at || null,
           customer: um.get(String(b.customer_id)) || null,
           instructor: im.get(String(b.instructor_id)) || null,   // avtomobil egasi
           course: c || null,
@@ -379,7 +395,10 @@ export async function registerShiftRoutes(
           /* 10 daqiqadan kam — qizil, 20 dan kam — sariq.
              2 soatdan ko'p oshgani — unutilgan dars, alohida belgilanadi
              (instruktor «yakunlash»ni bosmagan). */
-          level: left < -120 ? 'stale' : left <= 10 ? 'red' : left <= 20 ? 'yellow' : 'normal',
+          level: finished ? 'done'
+               : left < -120 ? 'stale'
+               : left <= 10 ? 'red'
+               : left <= 20 ? 'yellow' : 'normal',
           receipt_code: p?.receipt_code || null,
           paid_at: p?.paid_at || null,
           amount: Number(p?.amount || 0),
@@ -391,9 +410,13 @@ export async function registerShiftRoutes(
 
       /* Tartib: shoshilinchlar tepada, unutilganlar esa pastda —
          ular ro'yxatni to'sib qo'ymasligi kerak. */
+      /* Tartib: jarayondagilar (shoshilinchi tepada) -> unutilganlar
+         -> bugun yakunlanganlar. */
+      const rank = (r: any) => r.level === 'done' ? 2 : r.level === 'stale' ? 1 : 0;
       rows.sort((a, b) => {
-        const sa = a.level === 'stale' ? 1 : 0, sb = b.level === 'stale' ? 1 : 0;
-        if (sa !== sb) return sa - sb;
+        const d = rank(a) - rank(b);
+        if (d !== 0) return d;
+        if (rank(a) === 2) return new Date(b.departed_at || 0).getTime() - new Date(a.departed_at || 0).getTime();
         return a.minutes_left - b.minutes_left;
       });
 
@@ -405,6 +428,8 @@ export async function registerShiftRoutes(
           red: rows.filter((r) => r.level === 'red').length,
           yellow: rows.filter((r) => r.level === 'yellow').length,
           stale: rows.filter((r) => r.level === 'stale').length,
+          done: rows.filter((r) => r.level === 'done').length,
+          active: rows.filter((r) => !r.finished).length,
         },
         rows,
       };
