@@ -1,1 +1,1 @@
-export { default } from './_forward.js';
+export { default } from '../_forward.js';
