@@ -1,1 +1,1 @@
-export default function handler(request:any,response:any){response.statusCode=200;response.setHeader('Content-Type','application/json; charset=utf-8');response.setHeader('Cache-Control','no-store');response.setHeader('Set-Cookie','avtodrom_admin_session=; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=0');response.end(JSON.stringify({ok:true}));}
+export { default } from './_forward.js';
