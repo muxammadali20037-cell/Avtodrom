@@ -429,7 +429,10 @@ export async function registerShiftRoutes(
           yellow: rows.filter((r) => r.level === 'yellow').length,
           stale: rows.filter((r) => r.level === 'stale').length,
           done: rows.filter((r) => r.level === 'done').length,
-          active: rows.filter((r) => !r.finished).length,
+          /* «Jarayonda» — faqat haqiqatan ketayotgan darslar.
+             Unutilganlar (stale) alohida sanaladi, aks holda tabda
+             2 ko'rinib, ro'yxat bo'sh chiqardi. */
+          active: rows.filter((r) => r.level !== 'done' && r.level !== 'stale').length,
         },
         rows,
       };
@@ -489,6 +492,46 @@ export async function registerShiftRoutes(
       };
     } catch (e: any) {
       return reply.code(e?.statusCode ?? 500).send({ ok: false, error: e?.message || 'Hisobot yuklanmadi' });
+    }
+  });
+
+
+  /**
+   * Unutilgan darsni majburiy yopish.
+   *
+   * Instruktor "yakunlash" tugmasini bosmay qolganda dars kunlar
+   * davomida "jarayonda" bo'lib turadi va yangi dars boshlashni
+   * to'sib qo'yadi. Admin uni yopa oladi — kim yopgani auditga
+   * yoziladi, chunki bu instruktor o'rniga qilingan amal.
+   */
+  app.post('/api/admin/bookings/:id/force-finish', async (req: any, reply: any) => {
+    try {
+      await requireAdmin(req);
+      const admin = await adminUser();
+      const id = String(req.params.id);
+
+      const b = (await supabaseRest<any[]>('bookings', {
+        query: `?id=eq.${q(id)}&select=*&limit=1`,
+      }))[0];
+      if (!b) return reply.code(404).send({ ok: false, error: 'Bron topilmadi' });
+      if (String(b.status) !== 'in_progress') {
+        return reply.code(409).send({ ok: false, error: `Bron holati "${b.status}" — yopish shart emas` });
+      }
+
+      const now = new Date().toISOString();
+      // Tugash vaqti: rejadagi oxiri, undan ham o'tgan bo'lsa hozir
+      const planned = b.end_at ? new Date(b.end_at) : null;
+      const departed = planned && planned.getTime() < Date.now() ? planned.toISOString() : now;
+
+      const rows = await supabaseRest<any[]>('bookings', {
+        method: 'PATCH', headers: { Prefer: 'return=representation' }, query: `?id=eq.${q(id)}`,
+        body: JSON.stringify({ status: 'completed', departed_at: b.departed_at || departed, updated_at: now }),
+      });
+      await audit(admin.id, 'BOOKING_FORCE_FINISHED', 'bookings', id,
+        { status: b.status }, { status: 'completed', by: 'admin' });
+      return { ok: true, booking: rows[0] ?? null };
+    } catch (e: any) {
+      return reply.code(e?.statusCode ?? 400).send({ ok: false, error: e?.message || 'Yopilmadi' });
     }
   });
 
