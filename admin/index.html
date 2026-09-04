@@ -1110,8 +1110,9 @@ function editInstructor(id){
         <button type="button" class="btn small" id="ieAllCats">Uchalasi ham</button>
         <span class="muted" id="ieCatsHint" style="font-size:12px"></span>
       </div></div>
-    <div class="field"><label>BIO <span class="muted">(mijozlar ko‘radi)</span></label>
-      <textarea id="ieBio" class="input" style="min-height:88px">${esc(x.bio || '')}</textarea></div>
+    <div class="field"><label>BIO <span class="muted">(mijozlar ko‘radi)</span>
+        <span class="muted" id="ieBioCount" style="float:right;font-weight:400"></span></label>
+      <textarea id="ieBio" class="input" style="min-height:110px">${esc(x.bio || '')}</textarea></div>
     <label class="chk" style="display:flex;gap:9px;align-items:center;margin:4px 0 12px;font-size:13px">
       <input id="ieVerified" type="checkbox" ${x.is_verified !== false ? 'checked' : ''} style="width:20px;height:20px">
       <span>Tasdiqlangan — mijozlar ro‘yxatida ko‘rinadi</span></label>
@@ -1152,6 +1153,17 @@ function editInstructor(id){
     paintCats();
   };
 
+  // Qolgan belgilar — chegaraga yetganda qizaradi
+  const BIO_MAX = 2000;
+  const bioCount = () => {
+    const n = $('ieBio').value.length;
+    const el = $('ieBioCount');
+    el.textContent = `${n} / ${BIO_MAX}`;
+    el.style.color = n > BIO_MAX ? 'var(--red)' : 'var(--muted)';
+  };
+  $('ieBio').addEventListener('input', bioCount);
+  bioCount();
+
   $('ieUpload').onclick = () => $('ieFile').click();
   if ($('ieRemove')) $('ieRemove').onclick = () => {
     avatarUrl = '';
@@ -1177,6 +1189,10 @@ function editInstructor(id){
     $('ieAlert').innerHTML = '';
     const full = [$('ieFirst').value.trim(), $('ieLast').value.trim()].filter(Boolean).join(' ');
     if (full.length < 2) { $('ieAlert').innerHTML = '<div class="error">Ismni kiriting</div>'; return; }
+    if ($('ieBio').value.length > BIO_MAX) {
+      $('ieAlert').innerHTML = `<div class="error">Bio juda uzun: ${$('ieBio').value.length} belgi. Eng ko‘pi ${BIO_MAX}.</div>`;
+      return;
+    }
     const btn = $('ieSave'); btn.disabled = true;
     try{
       const res = await api(`/api/admin/instructors/${encodeURIComponent(id)}`, { method:'PATCH', body: JSON.stringify({
@@ -1187,20 +1203,6 @@ function editInstructor(id){
       /* Server nimani haqiqatan saqlaganini tekshiramiz. Agar ustun
          bazada bo'lmasa, so'rov muvaffaqiyatli tugab, qiymat esa
          yozilmay qolardi — oyna yopilib, hech nima o'zgarmasdi. */
-      /* TASHXIS: server nimani qaytargani ekranda ko'rsatiladi.
-         "Saqlandi" deyilib, ro'yxat eski qolayotgani uchun qaysi
-         bosqichda uzilish borligini aniq bilishimiz kerak. */
-      const back = res.instructor || {};
-      const sentCats = cats.join(',');
-      const gotCats  = Array.isArray(back.categories) ? back.categories.join(',') : '(yo‘q)';
-      const gotName  = back.profile?.full_name ?? '(yo‘q)';
-      $('ieAlert').innerHTML = `<div class="warn" style="text-align:left;font-family:ui-monospace,monospace;font-size:12px">
-        <b>Server javobi:</b><br>
-        kategoriya — yuborildi: <b>${esc(sentCats)}</b> · bazada: <b>${esc(gotCats)}</b><br>
-        ism — yuborildi: <b>${esc(full)}</b> · bazada: <b>${esc(gotName)}</b><br>
-        not_saved: <b>${esc(JSON.stringify(res.not_saved ?? null))}</b>
-      </div>`;
-
       const bad = res.not_saved || [];
       if (bad.length) {
         const isCat = bad.includes('categories');
@@ -1212,15 +1214,7 @@ function editInstructor(id){
         await loadAll();
         return;
       }
-      toast('Saqlandi');
-      await loadAll();
-      // Ro'yxat yangilangach o'sha instruktor qanday ko'rinayotganini ham yozamiz
-      const inList = (S.instructors || []).find(v => String(v.id) === String(id));
-      $('ieAlert').innerHTML += `<div class="warn" style="text-align:left;font-family:ui-monospace,monospace;font-size:12px;margin-top:6px">
-        <b>Ro‘yxatda:</b> kategoriya <b>${esc(Array.isArray(inList?.categories) ? inList.categories.join(',') : '(yo‘q)')}</b>
-        · ism <b>${esc(inList?.profile?.full_name ?? '(yo‘q)')}</b>
-      </div>`;
-      btn.disabled = false;
+      closeModal(); toast('Saqlandi'); await loadAll();
     }catch(e){ $('ieAlert').innerHTML = `<div class="error">${esc(e.message)}</div>`; btn.disabled = false; }
   };
 }
@@ -2246,7 +2240,12 @@ function renderCats(){
     return `<button type="button" class="pk ${CO.category===c?'on':''}" data-cat="${c}">
       ${c}<br><small style="font-weight:600;font-size:11px">${esc(money(r))}/soat</small></button>`;
   }).join('');
-  $('coCats').querySelectorAll('[data-cat]').forEach(b => b.onclick = () => { CO.category = b.dataset.cat; renderCats(); coRender(); });
+  $('coCats').querySelectorAll('[data-cat]').forEach(b => b.onclick = () => {
+    CO.category = b.dataset.cat;
+    CO.instructor = null;          // boshqa kategoriya — eski tanlov yaramaydi
+    renderCats(); coRender();
+    if (CO.mode === 'walk_in') loadFreeInstructors();
+  });
 }
 
 /* ---- davomiylik ---- */
@@ -2270,13 +2269,23 @@ async function loadFreeInstructors(){
   if (!at) { box.innerHTML = '<div class="muted" style="font-size:13px">Sana va vaqtni tanlang.</div>'; return; }
   box.innerHTML = '<div class="muted" style="font-size:13px">Tekshirilmoqda…</div>';
   try{
-    const d = await api(`/api/admin/cashier/free-instructors?at=${encodeURIComponent(at.toISOString())}&minutes=${CO.minutes}`);
+    /* Kategoriya filtri SHART: C tanlangan bo'lsa faqat C ni
+       o'rgatadigan instruktorlar chiqishi kerak. Busiz hamma
+       chiqib, kassir noto'g'ri instruktorga chek yozib yuborardi. */
+    const d = await api(`/api/admin/cashier/free-instructors?at=${encodeURIComponent(at.toISOString())}&minutes=${CO.minutes}&category=${encodeURIComponent(CO.category || '')}`);
     CO.free = d.free||[]; CO.busy = d.busy||[];
-    if (!CO.free.length && !CO.busy.length) { box.innerHTML = '<div class="warn" style="margin:0">Faol instruktor yo‘q.</div>'; return; }
+    if (!CO.free.length && !CO.busy.length) {
+      box.innerHTML = `<div class="warn" style="margin:0">
+        <b>${esc(CO.category || '')}</b> kategoriyani o‘rgatadigan faol instruktor yo‘q.
+        Boshqaruv → Instruktorlar bo‘limida kategoriya belgilang.</div>`;
+      return;
+    }
     if (!CO.instructor && d.suggestion) CO.instructor = { id: d.suggestion.id, name: d.suggestion.name };
     const row = (i, wait) => `<button type="button" data-ins="${esc(i.id)}" class="${String(CO.instructor?.id)===String(i.id)?'on':''} ${wait?'wait':''}">
       <b>${esc(i.name)}${wait?'':' · bo‘sh'}</b>
-      <span>${wait ? `${esc(i.wait_minutes)} daqiqadan keyin bo‘shaydi (${esc(kHour(i.free_at))})` : `★ ${esc(i.rating.toFixed(1))}`}</span></button>`;
+      <span>${wait
+        ? `${esc(i.wait_minutes)} daqiqadan keyin bo‘shaydi (${esc(kHour(i.free_at))})`
+        : `★ ${esc(i.rating.toFixed(1))} · ${esc((i.categories || ['B']).join(', '))}`}</span></button>`;
     box.innerHTML =
       (CO.free.length ? CO.free.map(i => row(i,false)).join('')
         : '<div class="warn" style="margin:0 0 8px">Bu vaqtda bo‘sh instruktor yo‘q. Eng tez bo‘shaydiganlar:</div>')
