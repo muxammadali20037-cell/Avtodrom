@@ -498,12 +498,22 @@ $('pEdit').onclick = () => {
     <div class="field"><label>FAMILIYA</label><input id="peLast" value="${esc(rest.join(' '))}"></div>
     <div class="field"><label>TELEFON</label><input id="pePhone" type="tel" inputmode="tel" value="${esc(p.phone || '')}"></div>
     <div class="field"><label>TAJRIBA (YIL)</label><input id="peExp" type="number" inputmode="numeric" min="0" max="60" value="${esc(i.experience_years ?? 0)}"></div>
-    <div class="field"><label>O‘ZINGIZ HAQINGIZDA</label><textarea id="peBio" placeholder="Mijozlar shu matnni o‘qiydi...">${esc(i.bio || '')}</textarea></div>
+    <div class="field"><label>O‘ZINGIZ HAQINGIZDA <span id="peBioCount" class="sub" style="float:right;margin:0"></span></label>
+      <textarea id="peBio" placeholder="Mijozlar shu matnni o‘qiydi...">${esc(i.bio || '')}</textarea></div>
     <div id="peAlert"></div>
     <div class="acts two" style="padding:0">
       <button class="btn" id="peCancel">Bekor</button>
       <button class="btn ok" id="peSave">Saqlash</button>
     </div>`);
+
+  const BIO_MAX = 2000;
+  const bioCount = () => {
+    const n = $('peBio').value.length;
+    $('peBioCount').textContent = `${n} / ${BIO_MAX}`;
+    $('peBioCount').style.color = n > BIO_MAX ? 'var(--red)' : 'var(--muted)';
+  };
+  $('peBio').addEventListener('input', bioCount);
+  bioCount();
 
   $('peUpload').onclick = () => $('peFile').click();
   $('peFile').onchange = async () => {
