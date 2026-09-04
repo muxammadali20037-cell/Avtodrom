@@ -386,7 +386,10 @@ export async function registerShiftRoutes(
           finished,
           departed_at: b.departed_at || null,
           customer: um.get(String(b.customer_id)) || null,
-          instructor: im.get(String(b.instructor_id)) || null,   // avtomobil egasi
+          /* Instruktor o'chirilgan bo'lsa bronda saqlangan ismdan
+             foydalanamiz — hisobot "—" bo'lib qolmasin. */
+          instructor: im.get(String(b.instructor_id))
+            || (b.instructor_name ? { full_name: b.instructor_name, deleted: true } : null),
           course: c || null,
           duration_minutes: mins,
           started_at: started.toISOString(),
