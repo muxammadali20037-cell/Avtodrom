@@ -16,7 +16,10 @@ export async function registerCourseRoutes(
     try {
       await authenticate(request);
       const rows = await supabaseRest<any[]>('courses', {
-        query: '?is_active=eq.true&select=id,name,description,duration_minutes,price&order=price.asc',
+        /* `category` shart: mijoz panelida instruktorlar shu kategoriya
+           bo'yicha filtrlanadi. Busiz qaysi kategoriya tanlanganini
+           bilib bo'lmaydi va hamma instruktor chiqib ketadi. */
+        query: '?is_active=eq.true&select=id,name,description,duration_minutes,price,category&order=price.asc',
       });
       return { ok: true, courses: rows };
     } catch (e) {
