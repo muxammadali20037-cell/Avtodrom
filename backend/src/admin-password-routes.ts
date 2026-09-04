@@ -319,7 +319,34 @@ export async function registerAdminPasswordRoutes(app: FastifyInstance) {
       if (Object.keys(userPatch).length || Object.keys(insPatch).length) {
         await audit(admin.id, 'INSTRUCTOR_UPDATED', 'instructor_profiles', id, null, { ...userPatch, ...insPatch });
       }
-      return { ok: true };
+
+      /* Saqlangandan keyin yozuvni QAYTA O'QIYMIZ va qaytaramiz.
+         Sabab: agar ustun bazada bo'lmasa yoki qiymat yozilmasa,
+         so'rov "muvaffaqiyatli" tugab, panel eski holatni ko'rsatardi —
+         foydalanuvchi nima bo'lganini bilmasdi. Endi haqiqiy holat
+         qaytadi va panel farqni sezadi. */
+      const [fresh] = await supabaseRest<any[]>('instructor_profiles', {
+        query: `?id=eq.${q(id)}&select=*&limit=1`,
+      });
+      const [freshUser] = await supabaseRest<any[]>('users', {
+        query: `?id=eq.${q(String(ip.user_id))}&select=id,full_name,phone&limit=1`,
+      });
+
+      // Nima so'ralgan-u nima saqlangan — mos kelmasa panel ogohlantiradi
+      const notSaved: string[] = [];
+      for (const key of Object.keys(insPatch)) {
+        if (key === 'updated_at') continue;
+        const want = (insPatch as any)[key];
+        const got = fresh ? (fresh as any)[key] : undefined;
+        if (got === undefined) { notSaved.push(key); continue; }
+        if (JSON.stringify(want) !== JSON.stringify(got)) notSaved.push(key);
+      }
+
+      return {
+        ok: true,
+        instructor: fresh ? { ...fresh, profile: freshUser ?? null } : null,
+        not_saved: notSaved,
+      };
     } catch (e) { return err(reply, e, 'Instructor update failed', 400); }
   });
 
