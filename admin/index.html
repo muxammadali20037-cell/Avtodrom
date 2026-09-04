@@ -743,7 +743,7 @@ pre.json{background:#F7FAFF;border:1px solid var(--line);border-radius:8px;paddi
   <div class="head"><div><h1>Instruktorlar</h1><p>Faqat faol va tasdiqlangan instruktorlar mijozga chiqadi.</p></div><button class="btn primary" id="addInstBtn">+ Instruktor qo‘shish</button></div>
   <div class="card">
     <div class="toolbar"><input id="instSearch" class="search" placeholder="Instruktor qidirish..."></div>
-    <div class="tableWrap"><table class="table"><thead><tr><th>Instruktor</th><th>Telefon</th><th>Telegram</th><th>Tajriba</th><th>Reyting</th><th>Bron</th><th>Status</th><th>Amal</th></tr></thead><tbody id="instRows"></tbody></table></div>
+    <div class="tableWrap"><table class="table"><thead><tr><th>Instruktor</th><th>Telefon</th><th>Kategoriya</th><th>Tajriba</th><th>Reyting</th><th>Status</th><th>Amal</th></tr></thead><tbody id="instRows"></tbody></table></div>
   </div>
 </section>
 
@@ -1103,13 +1103,68 @@ function renderInstructors(){
     <td><div style="display:flex;gap:6px;flex-wrap:wrap">
       <button class="btn small" data-insedit="${esc(x.id)}">Tahrirlash</button>
       <button class="btn small ${x.active?'red':''}" data-inst="${esc(x.id)}" data-act="${x.active?'0':'1'}">${x.active?'Bloklash':'Tiklash'}</button>
-    </div></td></tr>`).join(''):'<tr><td colspan="6" class="empty">Instruktor yo‘q.</td></tr>';
+      <button class="btn small red" data-insdel="${esc(x.id)}">O‘chirish</button>
+    </div></td></tr>`).join(''):'<tr><td colspan="7" class="empty">Instruktor yo‘q.</td></tr>';
   document.querySelectorAll('[data-insedit]').forEach(b=>b.onclick=()=>editInstructor(b.dataset.insedit));
+  document.querySelectorAll('[data-insdel]').forEach(b=>b.onclick=()=>deleteInstructor(b.dataset.insdel));
   document.querySelectorAll('[data-inst]').forEach(b=>b.onclick=()=>toggleInstructor(b.dataset.inst,b.dataset.act==='1'));
 }
 
 /** Instruktorni tahrirlash — ism, telefon, tajriba, bio, rasm.
     Reyting yo'q: u faqat mijoz sharhlaridan hisoblanadi. */
+
+/** Instruktorni butunlay o'chirish.
+    Bronlari bo'lsa server rad etadi — tarix buzilmasligi kerak.
+    Shunday holatda bloklash taklif qilinadi. */
+function deleteInstructor(id){
+  const x = S.instructors.find(v => String(v.id) === String(id));
+  if (!x) return;
+  const name = iname(x);
+
+  openModal('Instruktorni o‘chirish', `
+    <div class="warn" style="text-align:left">
+      <b>${esc(name)}</b> butunlay o‘chiriladi. Bu amalni qaytarib bo‘lmaydi.
+    </div>
+    <div class="muted" style="font-size:13px;margin:12px 0">
+      Agar bu instruktorda bronlar bo‘lsa, o‘chirilmaydi — tarix va hisobotlar buzilib ketadi.
+      Bunday holatda <b>Bloklash</b> dan foydalaning: instruktor ro‘yxatdan yo‘qoladi,
+      lekin o‘tgan darslari saqlanib qoladi.
+    </div>
+    <div class="field"><label>TASDIQLASH UCHUN <b>O‘CHIR</b> DEB YOZING</label>
+      <input id="delConfirm" class="input" autocomplete="off" placeholder="O‘CHIR"></div>
+    <div id="delAlert"></div>
+    <div style="display:flex;gap:8px">
+      <button class="btn" style="flex:1" id="delCancel">Bekor</button>
+      <button class="btn red" style="flex:1" id="delGo" disabled>O‘chirish</button>
+    </div>`);
+
+  const check = () => {
+    const v = $('delConfirm').value.trim().toUpperCase().replace(/‘/g, "'");
+    $('delGo').disabled = !(v === "O'CHIR" || v === 'OCHIR');
+  };
+  $('delConfirm').addEventListener('input', check);
+  $('delCancel').onclick = closeModal;
+
+  $('delGo').onclick = async () => {
+    const btn = $('delGo'); btn.disabled = true; btn.textContent = 'O‘chirilmoqda…';
+    try{
+      await api(`/api/admin/instructors/${encodeURIComponent(id)}`, { method:'DELETE' });
+      closeModal(); toast('Instruktor o‘chirildi'); await loadAll();
+    }catch(e){
+      const hasBookings = /bron/i.test(String(e.message));
+      $('delAlert').innerHTML = `<div class="error" style="text-align:left">${esc(e.message)}</div>` +
+        (hasBookings ? `<button class="btn" id="delBlock" style="width:100%;margin-top:8px">O‘rniga bloklash</button>` : '');
+      if (hasBookings && $('delBlock')) $('delBlock').onclick = async () => {
+        try{
+          await api(`/api/admin/instructors/${encodeURIComponent(id)}`, { method:'PATCH', body: JSON.stringify({ active:false }) });
+          closeModal(); toast('Instruktor bloklandi'); await loadAll();
+        }catch(err){ notice(err.message); }
+      };
+      btn.disabled = false; btn.textContent = 'O‘chirish';
+    }
+  };
+}
+
 function editInstructor(id){
   const x = S.instructors.find(v => String(v.id) === String(id));
   if (!x) return;
@@ -2657,6 +2712,18 @@ async function loadLive(px){
   }
 }
 
+
+/** Unutilgan darsni admin yopadi. Instruktor unutgan bo'lsa,
+    bu dars yangi darslarni to'sib turadi. */
+async function forceFinish(id, P){
+  if (!confirm('Bu darsni yakunlangan deb belgilaysizmi?\n\nInstruktor yopish tugmasini bosmagan. Amal auditga yoziladi.')) return;
+  try{
+    await api(`/api/admin/bookings/${encodeURIComponent(id)}/force-finish`, { method:'POST', body:'{}' });
+    toast('Dars yopildi');
+    await loadLive(P);
+  }catch(e){ notice(e.message); }
+}
+
 /** Tanlangan tab bo'yicha ko'rsatish. */
 function renderLive(P){
   const tab = S.liveTab[P] || 'active';
@@ -2676,7 +2743,10 @@ function renderLive(P){
 
   const empty = { active: 'Hozir hech kim darsda emas.', done: 'Bugun hali dars yakunlanmagan.', stale: 'Hammasi joyida.' };
   const box = $(P + 'List');
-  if (box) box.innerHTML = rows.length ? rows.map(liveRow).join('') : `<div class="card empty">${esc(empty[tab])}</div>`;
+  if (box) {
+    box.innerHTML = rows.length ? rows.map(liveRow).join('') : `<div class="card empty">${esc(empty[tab])}</div>`;
+    box.querySelectorAll('[data-forcefin]').forEach(b => b.onclick = () => forceFinish(b.dataset.forcefin, P));
+  }
 }
 
 document.querySelectorAll('#liveTabs .seg').forEach(b => b.onclick = () => {
@@ -2743,6 +2813,7 @@ function liveRow(r){
     <div class="right">
       ${r.amount ? `<b>${esc(money(r.amount))}</b>` : ''}
       ${done ? 'yakunlangan' : stale ? 'instruktor yopmagan' : (left < 0 ? `${Math.abs(left)} daq oshdi` : `${left} daq qoldi`)}
+      ${stale ? `<br><button class="btn small" data-forcefin="${esc(r.id)}" style="margin-top:6px">Yopish</button>` : ''}
     </div>
   </div>`;
 }
