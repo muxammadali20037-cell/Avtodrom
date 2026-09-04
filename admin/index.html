@@ -1179,10 +1179,25 @@ function editInstructor(id){
     if (full.length < 2) { $('ieAlert').innerHTML = '<div class="error">Ismni kiriting</div>'; return; }
     const btn = $('ieSave'); btn.disabled = true;
     try{
-      await api(`/api/admin/instructors/${encodeURIComponent(id)}`, { method:'PATCH', body: JSON.stringify({
+      const res = await api(`/api/admin/instructors/${encodeURIComponent(id)}`, { method:'PATCH', body: JSON.stringify({
         full_name: full, phone: $('iePhone').value.trim(),
         experience_years: Number($('ieExp').value || 0), bio: $('ieBio').value.trim(),
         is_verified: $('ieVerified').checked, avatar_url: avatarUrl, categories: cats })});
+
+      /* Server nimani haqiqatan saqlaganini tekshiramiz. Agar ustun
+         bazada bo'lmasa, so'rov muvaffaqiyatli tugab, qiymat esa
+         yozilmay qolardi — oyna yopilib, hech nima o'zgarmasdi. */
+      const bad = res.not_saved || [];
+      if (bad.length) {
+        const isCat = bad.includes('categories');
+        $('ieAlert').innerHTML = `<div class="error" style="text-align:left">
+          Saqlanmadi: <b>${esc(bad.join(', '))}</b>.
+          ${isCat ? 'Bazada <b>instructor_profiles.categories</b> ustuni yo‘q. Supabase → SQL Editor da <b>20260903180000_all_missing_columns.sql</b> faylini ishga tushiring.' : 'Bazada mos ustun topilmadi.'}
+        </div>`;
+        btn.disabled = false;
+        await loadAll();
+        return;
+      }
       closeModal(); toast('Saqlandi'); await loadAll();
     }catch(e){ $('ieAlert').innerHTML = `<div class="error">${esc(e.message)}</div>`; btn.disabled = false; }
   };
