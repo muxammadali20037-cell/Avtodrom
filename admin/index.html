@@ -1187,6 +1187,20 @@ function editInstructor(id){
       /* Server nimani haqiqatan saqlaganini tekshiramiz. Agar ustun
          bazada bo'lmasa, so'rov muvaffaqiyatli tugab, qiymat esa
          yozilmay qolardi — oyna yopilib, hech nima o'zgarmasdi. */
+      /* TASHXIS: server nimani qaytargani ekranda ko'rsatiladi.
+         "Saqlandi" deyilib, ro'yxat eski qolayotgani uchun qaysi
+         bosqichda uzilish borligini aniq bilishimiz kerak. */
+      const back = res.instructor || {};
+      const sentCats = cats.join(',');
+      const gotCats  = Array.isArray(back.categories) ? back.categories.join(',') : '(yo‘q)';
+      const gotName  = back.profile?.full_name ?? '(yo‘q)';
+      $('ieAlert').innerHTML = `<div class="warn" style="text-align:left;font-family:ui-monospace,monospace;font-size:12px">
+        <b>Server javobi:</b><br>
+        kategoriya — yuborildi: <b>${esc(sentCats)}</b> · bazada: <b>${esc(gotCats)}</b><br>
+        ism — yuborildi: <b>${esc(full)}</b> · bazada: <b>${esc(gotName)}</b><br>
+        not_saved: <b>${esc(JSON.stringify(res.not_saved ?? null))}</b>
+      </div>`;
+
       const bad = res.not_saved || [];
       if (bad.length) {
         const isCat = bad.includes('categories');
@@ -1198,7 +1212,15 @@ function editInstructor(id){
         await loadAll();
         return;
       }
-      closeModal(); toast('Saqlandi'); await loadAll();
+      toast('Saqlandi');
+      await loadAll();
+      // Ro'yxat yangilangach o'sha instruktor qanday ko'rinayotganini ham yozamiz
+      const inList = (S.instructors || []).find(v => String(v.id) === String(id));
+      $('ieAlert').innerHTML += `<div class="warn" style="text-align:left;font-family:ui-monospace,monospace;font-size:12px;margin-top:6px">
+        <b>Ro‘yxatda:</b> kategoriya <b>${esc(Array.isArray(inList?.categories) ? inList.categories.join(',') : '(yo‘q)')}</b>
+        · ism <b>${esc(inList?.profile?.full_name ?? '(yo‘q)')}</b>
+      </div>`;
+      btn.disabled = false;
     }catch(e){ $('ieAlert').innerHTML = `<div class="error">${esc(e.message)}</div>`; btn.disabled = false; }
   };
 }
