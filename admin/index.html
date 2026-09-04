@@ -1153,13 +1153,36 @@ function deleteInstructor(id){
     }catch(e){
       const hasBookings = /bron/i.test(String(e.message));
       $('delAlert').innerHTML = `<div class="error" style="text-align:left">${esc(e.message)}</div>` +
-        (hasBookings ? `<button class="btn" id="delBlock" style="width:100%;margin-top:8px">O‘rniga bloklash</button>` : '');
+        (hasBookings ? `
+          <div class="warn" style="text-align:left;margin-top:10px">
+            <b>Baribir o‘chirsangiz</b> bronlar va to‘lovlar <b>saqlanib qoladi</b>.
+            Instruktorning ismi bronlarga yozib qo‘yiladi, shuning uchun hisobotlarda
+            u ko‘rinishda davom etadi. Faqat ro‘yxatdan va yangi bronlardan yo‘qoladi.
+          </div>
+          <div style="display:grid;gap:8px;margin-top:10px">
+            <button class="btn" id="delBlock">O‘rniga bloklash (tavsiya)</button>
+            <button class="btn red" id="delForce">Baribir o‘chirish</button>
+          </div>` : '');
+
       if (hasBookings && $('delBlock')) $('delBlock').onclick = async () => {
         try{
           await api(`/api/admin/instructors/${encodeURIComponent(id)}`, { method:'PATCH', body: JSON.stringify({ active:false }) });
           closeModal(); toast('Instruktor bloklandi'); await loadAll();
         }catch(err){ notice(err.message); }
       };
+
+      if (hasBookings && $('delForce')) $('delForce').onclick = async () => {
+        const f = $('delForce'); f.disabled = true; f.textContent = 'O‘chirilmoqda…';
+        try{
+          const res = await api(`/api/admin/instructors/${encodeURIComponent(id)}?force=1`, { method:'DELETE' });
+          closeModal();
+          toast(res.detached_bookings
+            ? `O‘chirildi · ${res.detached_bookings} ta bron saqlanib qoldi`
+            : 'Instruktor o‘chirildi');
+          await loadAll();
+        }catch(err){ f.disabled = false; f.textContent = 'Baribir o‘chirish'; notice(err.message); }
+      };
+
       btn.disabled = false; btn.textContent = 'O‘chirish';
     }
   };
