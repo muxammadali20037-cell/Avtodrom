@@ -1570,17 +1570,34 @@ $('saveSettingsBtn').onclick=async()=>{
 };
 
 /* ---------- Yuklash ---------- */
+/* To'qqizta so'rov birga yuboriladi. Ilgari Promise.all ishlatilardi —
+   bittasi yiqilsa BUTUN yangilash bekor bo'lib, ro'yxat eski holicha
+   qolardi. Saqlangandan keyin "o'zgarmadi" ko'rinishining sababi shu edi.
+   Endi allSettled: yiqilgani o'tkazib yuboriladi, qolgani yangilanadi. */
 async function loadAll(show){
   try{
-    const [st,b,i,a,u,r,set,c,p]=await Promise.all([
-      api('/api/admin/stats'),api('/api/admin/bookings'),api('/api/admin/instructors'),
-      api('/api/admin/applications'),api('/api/admin/customers'),api('/api/admin/reviews'),
-      api('/api/admin/settings'),api('/api/admin/courses'),api(payUrl()),
+    const urls = ['/api/admin/stats','/api/admin/bookings','/api/admin/instructors',
+      '/api/admin/applications','/api/admin/customers','/api/admin/reviews',
+      '/api/admin/settings','/api/admin/courses',payUrl()];
+    const res = await Promise.allSettled(urls.map(u => api(u)));
+    const val = k => res[k].status === 'fulfilled' ? res[k].value : null;
+    const failed = res.map((r,k) => r.status === 'rejected' ? urls[k] : null).filter(Boolean);
+    const [st,b,i,a,u,r2,set,c,p] = [0,1,2,3,4,5,6,7,8].map(val);
+
+    if (st)  S.stats       = st.stats       || {};
+    if (b)   S.bookings    = b.bookings     || [];
+    if (i)   S.instructors = i.instructors  || [];
+    if (a)   S.applications= a.applications || [];
+    if (u)   S.users       = u.customers    || [];
+    if (r2)  S.reviews     = r2.reviews     || [];
+    if (set) S.settings    = set.settings   || [];
+    if (c)   S.courses     = c.courses      || [];
+    if (p)   S.payments    = p.payments     || [];
+
+    showWarnings([
+      ...((b&&b.warnings)||[]), ...((i&&i.warnings)||[]),
+      ...(failed.length ? [`Yuklanmadi: ${failed.join(', ')}`] : []),
     ]);
-    S.stats=st.stats||{};S.bookings=b.bookings||[];S.instructors=i.instructors||[];
-    S.applications=a.applications||[];S.users=u.customers||[];S.reviews=r.reviews||[];
-    S.settings=set.settings||[];S.courses=c.courses||[];S.payments=p.payments||[];
-    showWarnings([...(b.warnings||[]),...(i.warnings||[])]);
     // Yon menyudagi hisoblagichlar
     $('appCount').textContent=S.applications.filter(x=>String(x.status).toUpperCase()==='PENDING').length;
     $('bookCount').textContent=S.bookings.length;
