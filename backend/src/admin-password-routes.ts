@@ -219,12 +219,39 @@ export async function registerAdminPasswordRoutes(app: FastifyInstance) {
       if (!ip) return reply.code(404).send({ ok: false, error: 'Instruktor topilmadi' });
 
       const bookings = await supabaseRest<any[]>('bookings', {
-        query: `?instructor_id=eq.${q(id)}&select=id&limit=1`,
+        query: `?instructor_id=eq.${q(id)}&select=id&limit=1000`,
       });
-      if (bookings.length) {
+
+      /* Bronlari bo'lsa ikki yo'l bor:
+         · odatiy o'chirish — rad etiladi, admin bloklashni tanlaydi
+         · force=1 — bronlar SAQLANADI, faqat instruktor o'chiriladi.
+           Ismi bronga nusxalanadi, shuning uchun to'lov tarixi va
+           hisobotlar buzilmaydi: "kim o'tkazgan" ko'rinib turadi. */
+      const force = String((req.query as any)?.force || '') === '1';
+
+      if (bookings.length && !force) {
         return reply.code(409).send({
           ok: false,
-          error: 'Bu instruktorning bronlari bor. O‘chirish o‘rniga bloklang.',
+          error: `Bu instruktorda ${bookings.length} ta bron bor.`,
+          bookings: bookings.length,
+          can_force: true,
+        });
+      }
+
+      if (bookings.length) {
+        // 1) Ismni bronlarga yozib qo'yamiz — tarix o'qilishi kerak
+        const uname = (await supabaseRest<any[]>('users', {
+          query: `?id=eq.${q(String(ip.user_id))}&select=full_name&limit=1`,
+        }).catch(() => []))[0]?.full_name || 'O‘chirilgan instruktor';
+
+        await supabaseRest('bookings', {
+          method: 'PATCH', query: `?instructor_id=eq.${q(id)}`,
+          body: JSON.stringify({ instructor_name: uname, updated_at: new Date().toISOString() }),
+        });
+        // 2) Bog'lanishni uzamiz — bron qoladi, instruktor o'chadi
+        await supabaseRest('bookings', {
+          method: 'PATCH', query: `?instructor_id=eq.${q(id)}`,
+          body: JSON.stringify({ instructor_id: null }),
         });
       }
 
@@ -233,8 +260,9 @@ export async function registerAdminPasswordRoutes(app: FastifyInstance) {
         method: 'PATCH', query: `?id=eq.${q(String(ip.user_id))}`,
         body: JSON.stringify({ is_active: false, is_blocked: true, updated_at: new Date().toISOString() }),
       });
-      await audit(admin.id, 'INSTRUCTOR_DELETED', 'instructor_profiles', id, ip, null);
-      return { ok: true };
+      await audit(admin.id, 'INSTRUCTOR_DELETED', 'instructor_profiles', id, ip,
+        { forced: force, detached_bookings: bookings.length });
+      return { ok: true, detached_bookings: bookings.length };
     } catch (e: any) {
       return reply.code(e?.statusCode ?? 400).send({ ok: false, error: e?.message || 'O‘chirilmadi' });
     }
