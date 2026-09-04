@@ -18,6 +18,16 @@ import { registerAnalyticsRoutes } from './analytics-routes.js';
 import { registerShiftRoutes } from './shift-routes.js';
 
 const app = Fastify({ logger: true });
+
+/* Admin javoblari hech qachon keshlanmasin. Vercel yoki brauzer
+   eski javobni qaytarsa, saqlangan o'zgarish ko'rinmay qolardi. */
+app.addHook('onSend', async (req, reply, payload) => {
+  if (String(req.url || '').startsWith('/api/admin/')) {
+    reply.header('Cache-Control', 'no-store, no-cache, must-revalidate');
+    reply.header('Pragma', 'no-cache');
+  }
+  return payload;
+});
 const CUSTOMER_BOT_TOKEN = process.env.CUSTOMER_BOT_TOKEN || process.env.TELEGRAM_CUSTOMER_BOT_TOKEN || '';
 const INSTRUCTOR_BOT_TOKEN = process.env.INSTRUCTOR_BOT_TOKEN || process.env.TELEGRAM_INSTRUCTOR_BOT_TOKEN || '';
 const ADMIN_BOT_TOKEN = process.env.ADMIN_BOT_TOKEN || process.env.TELEGRAM_ADMIN_BOT_TOKEN || '';
