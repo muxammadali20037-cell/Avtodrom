@@ -179,6 +179,14 @@ button,input,select,textarea{font:inherit}.hidden{display:none!important}
 
 .lv.done{border-color:#CFE8DA;background:#F6FCF9;opacity:.9}
 .lv.done .left b{color:var(--ok);font-size:26px}
+
+.seg .cnt{font-style:normal;background:rgba(0,0,0,.07);border-radius:99px;padding:1px 7px;font-size:11px;margin-left:5px}
+.seg.on .cnt{background:var(--soft);color:var(--g)}
+.lv .times{display:flex;gap:14px;flex-wrap:wrap;margin-top:7px}
+.lv .tm2{display:flex;flex-direction:column;line-height:1.2}
+.lv .tm2 span{font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.02em}
+.lv .tm2 b{font-size:14px;font-family:ui-monospace,Menlo,monospace}
+.lv .tm2.miss b{color:#bbb;font-weight:400}
 .warn{padding:11px;border-radius:11px;background:#fff8e6;color:#8a6500;border:1px solid #ffe6a8;font-size:13px}
 .top{height:70px;background:#fff;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:20}
 .topin{height:100%;max-width:1500px;margin:auto;padding:0 20px;display:flex;align-items:center;justify-content:space-between}
@@ -375,6 +383,14 @@ button,input,select,textarea{font:inherit}.hidden{display:none!important}
 
 .lv.done{border-color:#CFE8DA;background:#F6FCF9;opacity:.9}
 .lv.done .left b{color:var(--ok);font-size:26px}
+
+.seg .cnt{font-style:normal;background:rgba(0,0,0,.07);border-radius:99px;padding:1px 7px;font-size:11px;margin-left:5px}
+.seg.on .cnt{background:var(--soft);color:var(--g)}
+.lv .times{display:flex;gap:14px;flex-wrap:wrap;margin-top:7px}
+.lv .tm2{display:flex;flex-direction:column;line-height:1.2}
+.lv .tm2 span{font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.02em}
+.lv .tm2 b{font-size:14px;font-family:ui-monospace,Menlo,monospace}
+.lv .tm2.miss b{color:#bbb;font-weight:400}
 .warn{padding:11px;border-radius:11px;background:#fff8e6;color:#8a6500;border:1px solid #ffe6a8;margin-bottom:12px;font-size:13px}
 .empty{padding:25px;text-align:center;color:var(--muted)}
 .actions{display:flex;gap:5px;flex-wrap:wrap}
@@ -516,12 +532,17 @@ pre.json{background:#F7FAFF;border:1px solid var(--line);border-radius:8px;paddi
 </section>
 
 <section id="klive" class="page">
-  <div class="head"><div><h1>Jarayondagi darslar</h1><p id="kliveSub">Instruktor chekni skanerlagach shu yerga tushadi.</p></div>
-    <div style="display:flex;gap:9px;align-items:center">
+  <div class="head"><div><h1 id="kliveTitle">Jarayondagi darslar</h1><p id="kliveSub"></p></div>
+    <div style="display:flex;gap:9px;align-items:center;flex-wrap:wrap">
       <span class="badge red" id="kliveRed">0</span>
       <span class="badge yellow" id="kliveYellow">0</span>
       <button class="btn" id="kliveRefresh">Yangilash</button>
     </div></div>
+  <div class="segs" id="kliveTabs" style="margin-bottom:14px">
+    <button class="seg on" data-klv="active">Jarayonda <i class="cnt" id="ktabActive">0</i></button>
+    <button class="seg" data-klv="done">Tugatilganlar <i class="cnt" id="ktabDone">0</i></button>
+    <button class="seg" data-klv="stale">Unutilganlar <i class="cnt" id="ktabStale">0</i></button>
+  </div>
   <div id="kliveAlert"></div>
   <div id="kliveList"></div>
 </section>
@@ -561,12 +582,17 @@ pre.json{background:#F7FAFF;border:1px solid var(--line);border-radius:8px;paddi
 </section>
 
 <section id="live" class="page">
-  <div class="head"><div><h1>Jarayondagi darslar</h1><p id="liveSub">Instruktor chekni skanerlagach shu yerga tushadi.</p></div>
-    <div style="display:flex;gap:9px;align-items:center">
+  <div class="head"><div><h1 id="liveTitle">Jarayondagi darslar</h1><p id="liveSub"></p></div>
+    <div style="display:flex;gap:9px;align-items:center;flex-wrap:wrap">
       <span class="badge red" id="liveRed">0</span>
       <span class="badge yellow" id="liveYellow">0</span>
       <button class="btn" id="liveRefresh">Yangilash</button>
     </div></div>
+  <div class="segs" id="liveTabs" style="margin-bottom:14px">
+    <button class="seg on" data-lv="active">Jarayonda <i class="cnt" id="tabActive">0</i></button>
+    <button class="seg" data-lv="done">Tugatilganlar <i class="cnt" id="tabDone">0</i></button>
+    <button class="seg" data-lv="stale">Unutilganlar <i class="cnt" id="tabStale">0</i></button>
+  </div>
   <div id="liveAlert"></div>
   <div id="liveList"></div>
 </section>
@@ -2606,52 +2632,93 @@ async function loadRegToday(){
    ========================================================================= */
 /** Jarayondagi darslar — bir xil ma'lumot ikki joyda: kassada ham,
     boshqaruvda ham. Prefiks bilan ajratamiz (live / klive). */
+S.liveTab = { live: 'active', klive: 'active' };
+S.liveRows = [];
+
 async function loadLive(px){
   const P = px || (adminMode === 'admin' ? 'live' : 'klive');
   try{
     const d = await api('/api/admin/in-progress');
-    const rows = d.rows || [], c = d.counts || {};
+    S.liveRows = d.rows || [];
+    const c = d.counts || {};
     const set = (id, v) => { const el = $(id); if (el) el.textContent = v; };
     set(P + 'Red',    `${c.red || 0} ta — 10 daq`);
     set(P + 'Yellow', `${c.yellow || 0} ta — 20 daq`);
-    set('liveCount',  c.active ?? c.total ?? 0);
-    set('kliveCount', c.active ?? c.total ?? 0);
-    set('liveCount',  c.total || 0);
-    set('kliveCount', c.total || 0);
-    set(P + 'Sub', rows.length
-      ? `${c.active ?? 0} ta dars ketmoqda${c.done ? ` · bugun ${c.done} ta yakunlandi` : ''}${c.stale ? ` · ${c.stale} ta unutilgan` : ''}`
-      : 'Hozircha jarayondagi dars yo‘q. Instruktor chekni skanerlagach shu yerda paydo bo‘ladi.');
-    const html = rows.length ? rows.map(liveRow).join('') : '<div class="card empty">Jarayonda dars yo‘q.</div>';
-    const box = $(P + 'List'); if (box) box.innerHTML = html;
+    // Yon menyudagi nishon FAQAT jarayondagilarni sanaydi
+    set('liveCount',  c.active ?? 0);
+    set('kliveCount', c.active ?? 0);
+    const pre = P === 'live' ? 'tab' : 'ktab';
+    set(pre + 'Active', c.active ?? 0);
+    set(pre + 'Done',   c.done ?? 0);
+    set(pre + 'Stale',  c.stale ?? 0);
+    renderLive(P);
   }catch(e){
     const a = $(P + 'Alert'); if (a) a.innerHTML = `<div class="error">${esc(e.message)}</div>`;
   }
 }
 
-/** Jarayondagi (va bugun yakunlangan) dars qatori.
-    Har bir vaqt alohida ko'rsatiladi: chek nechada urilgan,
-    instruktor nechada boshlagan, nechada yopgan. */
+/** Tanlangan tab bo'yicha ko'rsatish. */
+function renderLive(P){
+  const tab = S.liveTab[P] || 'active';
+  const rows = (S.liveRows || []).filter(r =>
+    tab === 'done'  ? r.level === 'done'
+  : tab === 'stale' ? r.level === 'stale'
+  : (r.level !== 'done' && r.level !== 'stale'));
+
+  const titles = { active: 'Jarayondagi darslar', done: 'Bugun tugatilganlar', stale: 'Yopilmagan darslar' };
+  const subs = {
+    active: rows.length ? `${rows.length} ta dars hozir ketmoqda` : 'Hozir jarayonda dars yo‘q.',
+    done:   rows.length ? `Bugun ${rows.length} ta dars yakunlandi` : 'Bugun yakunlangan dars yo‘q.',
+    stale:  rows.length ? `${rows.length} ta dars yopilmagan — instruktor yakunlash tugmasini bosmagan` : 'Yopilmagan dars yo‘q.',
+  };
+  const t = $(P + 'Title'); if (t) t.textContent = titles[tab];
+  const sb = $(P + 'Sub');  if (sb) sb.textContent = subs[tab];
+
+  const empty = { active: 'Hozir hech kim darsda emas.', done: 'Bugun hali dars yakunlanmagan.', stale: 'Hammasi joyida.' };
+  const box = $(P + 'List');
+  if (box) box.innerHTML = rows.length ? rows.map(liveRow).join('') : `<div class="card empty">${esc(empty[tab])}</div>`;
+}
+
+document.querySelectorAll('#liveTabs .seg').forEach(b => b.onclick = () => {
+  document.querySelectorAll('#liveTabs .seg').forEach(x => x.classList.remove('on'));
+  b.classList.add('on'); S.liveTab.live = b.dataset.lv; renderLive('live');
+});
+document.querySelectorAll('#kliveTabs .seg').forEach(b => b.onclick = () => {
+  document.querySelectorAll('#kliveTabs .seg').forEach(x => x.classList.remove('on'));
+  b.classList.add('on'); S.liveTab.klive = b.dataset.klv; renderLive('klive');
+});
+
+/** Soniya aniqligida davomiylik: "1 soat 5 daq 23 son". */
+function fmtDurSec(ms){
+  const total = Math.max(0, Math.round(ms / 1000));
+  const h = Math.floor(total / 3600), m = Math.floor((total % 3600) / 60), sec = total % 60;
+  const parts = [];
+  if (h) parts.push(`${h} soat`);
+  if (m) parts.push(`${m} daq`);
+  if (sec || !parts.length) parts.push(`${sec} son`);
+  return parts.join(' ');
+}
+
+/** Jarayondagi / tugatilgan dars qatori.
+    Vaqtlar alohida ustunlarda — chalkashmasin va tez o'qilsin. */
 function liveRow(r){
-  const hhmm = v => v ? dt(v).split(' ').pop() : '—';
+  const hhmm = v => v ? dt(v).split(' ').pop() : null;
   const left = Number(r.minutes_left);
   const done = r.level === 'done';
   const stale = r.level === 'stale';
 
-  const bigNum = done ? '✓' : stale ? '—' : (left < 0 ? '0' : left);
-  const bigLbl = done ? 'yakunlandi' : stale ? 'eskirgan' : (left < 0 ? 'vaqt tugadi' : 'daqiqa');
+  const bigNum = done ? '✓' : stale ? '!' : (left < 0 ? '0' : left);
+  const bigLbl = done ? 'tugadi' : stale ? 'yopilmagan' : (left < 0 ? 'vaqt tugadi' : 'daqiqa');
 
-  // Vaqtlar zanjiri
-  const chain = [
-    r.paid_at    ? `Chek <b>${esc(hhmm(r.paid_at))}</b>`        : null,
-    r.scanned_at ? `Skaner <b>${esc(hhmm(r.scanned_at))}</b>`   : null,
-    r.started_at ? `Boshladi <b>${esc(hhmm(r.started_at))}</b>` : null,
-    r.departed_at? `Yopdi <b>${esc(hhmm(r.departed_at))}</b>`   : null,
-  ].filter(Boolean).join(' → ');
+  const cell = (label, v) => `<div class="tm2 ${v ? '' : 'miss'}">
+    <span>${esc(label)}</span><b>${esc(hhmm(v) || '—')}</b></div>`;
 
-  let dur = '';
+  // Haqiqiy davomiylik — soniyagacha
+  let real = '';
   if (r.started_at && r.departed_at) {
-    const mins = Math.round((new Date(r.departed_at) - new Date(r.started_at)) / 60000);
-    dur = ` · haqiqiy ${fmtDur(mins)}`;
+    real = fmtDurSec(new Date(r.departed_at) - new Date(r.started_at));
+  } else if (r.started_at && !done) {
+    real = fmtDurSec(Date.now() - new Date(r.started_at)) + ' (ketmoqda)';
   }
 
   return `<div class="lv ${esc(r.level)}">
@@ -2659,18 +2726,23 @@ function liveRow(r){
     <div class="mid">
       <b>${esc(r.customer?.full_name || 'Mijoz')}</b>
       <div class="r2">Instruktor: <b>${esc(r.instructor?.full_name || '—')}</b>
-        · ${esc(r.course?.name || 'Mashg‘ulot')} · rejada ${esc(fmtDur(r.duration_minutes))}${esc(dur)}</div>
+        · ${esc(r.course?.name || 'Mashg‘ulot')} · rejada ${esc(fmtDur(r.duration_minutes))}</div>
+      <div class="times">
+        ${cell('Chek', r.paid_at)}
+        ${cell('Skaner', r.scanned_at)}
+        ${cell('Boshladi', r.started_at)}
+        ${cell('Yopdi', r.departed_at)}
+        ${real ? `<div class="tm2"><span>Haqiqiy</span><b>${esc(real)}</b></div>` : ''}
+      </div>
       <div class="r3">
-        ${chain || 'vaqt yozuvi yo‘q'}
-        ${r.receipt_code ? ` · <span class="rcp">${esc(r.receipt_code)}</span>` : ''}
+        ${r.receipt_code ? `<span class="rcp">${esc(r.receipt_code)}</span>` : 'chek yo‘q'}
         ${r.register ? ` · ${esc(r.register)}` : ''}
+        ${r.customer?.phone ? ` · ${esc(r.customer.phone)}` : ''}
       </div>
     </div>
     <div class="right">
-      <b>${esc(hhmm(r.started_at))} → ${esc(hhmm(r.departed_at || r.ends_at))}</b>
-      ${done ? 'tugadi' : stale ? 'yakunlanmagan' : (left < 0 ? `${Math.abs(left)} daq oshdi` : `${left} daq qoldi`)}
-      ${r.customer?.phone ? `<br>${esc(r.customer.phone)}` : ''}
-      ${r.amount ? `<br><b>${esc(money(r.amount))}</b>` : ''}
+      ${r.amount ? `<b>${esc(money(r.amount))}</b>` : ''}
+      ${done ? 'yakunlangan' : stale ? 'instruktor yopmagan' : (left < 0 ? `${Math.abs(left)} daq oshdi` : `${left} daq qoldi`)}
     </div>
   </div>`;
 }
