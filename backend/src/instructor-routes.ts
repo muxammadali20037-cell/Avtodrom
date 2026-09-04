@@ -125,12 +125,33 @@ export async function registerInstructorRoutes(
       const id = String((request.params as any).id);
       const booking = await getOwnedBooking(id, String(instructor.id));
       if (!booking) return reply.code(404).send({ ok: false, error: 'Bron topilmadi yoki bu instruktorga biriktirilmagan' });
+
+      /* Bir vaqtda bitta dars. Bazada ham unique indeks bor —
+         bu tekshiruv tushunarli xabar berish uchun. */
+      const active = (await supabaseRest<any[]>('bookings', {
+        query: `?instructor_id=eq.${q(String(instructor.id))}&status=eq.in_progress&select=id,customer_id&limit=1`,
+      }))[0];
+      if (active && String(active.id) !== String(id)) {
+        const who = active.customer_id
+          ? (await supabaseRest<any[]>('users', {
+              query: `?id=eq.${q(String(active.customer_id))}&select=full_name&limit=1`,
+            }).catch(() => []))[0]?.full_name
+          : null;
+        return reply.code(409).send({
+          ok: false,
+          error: `Avvalgi dars yakunlanmagan${who ? ` (${who})` : ''}. Avval uni yakunlang.`,
+        });
+      }
+
       const rows = await supabaseRest<any[]>('rpc/instructor_mark_arrived', { method: 'POST', body: JSON.stringify({ p_booking_id: id, p_instructor_id: instructor.id }) });
       const updated = Array.isArray(rows) ? rows[0] : rows;
       await notifyBookingStatus(updated || booking, 'in_progress');
       return { ok: true, booking: updated || booking };
     } catch (e) {
       const message = e instanceof Error ? e.message : 'KELDI amalini bajarib bo‘lmadi';
+      if (/bookings_one_active_lesson/i.test(message)) {
+        return reply.code(409).send({ ok: false, error: 'Avvalgi dars yakunlanmagan. Avval uni yakunlang.' });
+      }
       if (/BOOKING_NOT_FOUND/i.test(message)) return reply.code(404).send({ ok: false, error: 'Bron topilmadi yoki bu instruktorga biriktirilmagan' });
       if (/BOOKING_NOT_CONFIRMED/i.test(message)) return reply.code(409).send({ ok: false, error: 'KELDI faqat tasdiqlangan bron uchun mumkin.' });
       return reply.code(400).send({ ok: false, error: message });
