@@ -176,6 +176,9 @@ button,input,select,textarea{font:inherit}.hidden{display:none!important}
  border:1.5px solid var(--line);display:grid;place-items:center;font-size:11px;font-weight:900;
  color:#fff;background:#fff;line-height:1}
 .pk.cat.on .tick{background:var(--g);border-color:var(--g)}
+
+.lv.done{border-color:#CFE8DA;background:#F6FCF9;opacity:.9}
+.lv.done .left b{color:var(--ok);font-size:26px}
 .warn{padding:11px;border-radius:11px;background:#fff8e6;color:#8a6500;border:1px solid #ffe6a8;font-size:13px}
 .top{height:70px;background:#fff;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:20}
 .topin{height:100%;max-width:1500px;margin:auto;padding:0 20px;display:flex;align-items:center;justify-content:space-between}
@@ -369,6 +372,9 @@ button,input,select,textarea{font:inherit}.hidden{display:none!important}
  border:1.5px solid var(--line);display:grid;place-items:center;font-size:11px;font-weight:900;
  color:#fff;background:#fff;line-height:1}
 .pk.cat.on .tick{background:var(--g);border-color:var(--g)}
+
+.lv.done{border-color:#CFE8DA;background:#F6FCF9;opacity:.9}
+.lv.done .left b{color:var(--ok);font-size:26px}
 .warn{padding:11px;border-radius:11px;background:#fff8e6;color:#8a6500;border:1px solid #ffe6a8;margin-bottom:12px;font-size:13px}
 .empty{padding:25px;text-align:center;color:var(--muted)}
 .actions{display:flex;gap:5px;flex-wrap:wrap}
@@ -2608,10 +2614,12 @@ async function loadLive(px){
     const set = (id, v) => { const el = $(id); if (el) el.textContent = v; };
     set(P + 'Red',    `${c.red || 0} ta — 10 daq`);
     set(P + 'Yellow', `${c.yellow || 0} ta — 20 daq`);
+    set('liveCount',  c.active ?? c.total ?? 0);
+    set('kliveCount', c.active ?? c.total ?? 0);
     set('liveCount',  c.total || 0);
     set('kliveCount', c.total || 0);
     set(P + 'Sub', rows.length
-      ? `${rows.length} ta dars ketmoqda${c.stale ? ` · ${c.stale} ta unutilgan` : ''}`
+      ? `${c.active ?? 0} ta dars ketmoqda${c.done ? ` · bugun ${c.done} ta yakunlandi` : ''}${c.stale ? ` · ${c.stale} ta unutilgan` : ''}`
       : 'Hozircha jarayondagi dars yo‘q. Instruktor chekni skanerlagach shu yerda paydo bo‘ladi.');
     const html = rows.length ? rows.map(liveRow).join('') : '<div class="card empty">Jarayonda dars yo‘q.</div>';
     const box = $(P + 'List'); if (box) box.innerHTML = html;
@@ -2620,26 +2628,48 @@ async function loadLive(px){
   }
 }
 
+/** Jarayondagi (va bugun yakunlangan) dars qatori.
+    Har bir vaqt alohida ko'rsatiladi: chek nechada urilgan,
+    instruktor nechada boshlagan, nechada yopgan. */
 function liveRow(r){
+  const hhmm = v => v ? dt(v).split(' ').pop() : '—';
   const left = Number(r.minutes_left);
+  const done = r.level === 'done';
   const stale = r.level === 'stale';
-  const leftTxt = stale ? 'unutilgan — yakunlanmagan'
-                : left < 0 ? `${Math.abs(left)} daq oshdi` : `${left} daq qoldi`;
+
+  const bigNum = done ? '✓' : stale ? '—' : (left < 0 ? '0' : left);
+  const bigLbl = done ? 'yakunlandi' : stale ? 'eskirgan' : (left < 0 ? 'vaqt tugadi' : 'daqiqa');
+
+  // Vaqtlar zanjiri
+  const chain = [
+    r.paid_at    ? `Chek <b>${esc(hhmm(r.paid_at))}</b>`        : null,
+    r.scanned_at ? `Skaner <b>${esc(hhmm(r.scanned_at))}</b>`   : null,
+    r.started_at ? `Boshladi <b>${esc(hhmm(r.started_at))}</b>` : null,
+    r.departed_at? `Yopdi <b>${esc(hhmm(r.departed_at))}</b>`   : null,
+  ].filter(Boolean).join(' → ');
+
+  let dur = '';
+  if (r.started_at && r.departed_at) {
+    const mins = Math.round((new Date(r.departed_at) - new Date(r.started_at)) / 60000);
+    dur = ` · haqiqiy ${fmtDur(mins)}`;
+  }
+
   return `<div class="lv ${esc(r.level)}">
-    <div class="left"><b>${stale ? '—' : esc(left < 0 ? '0' : left)}</b>
-      <span>${esc(stale ? 'eskirgan' : left < 0 ? 'vaqt tugadi' : 'daqiqa')}</span></div>
+    <div class="left"><b>${esc(bigNum)}</b><span>${esc(bigLbl)}</span></div>
     <div class="mid">
       <b>${esc(r.customer?.full_name || 'Mijoz')}</b>
-      <div class="r2">Instruktor: <b>${esc(r.instructor?.full_name || '—')}</b> · ${esc(r.course?.name || 'Mashg‘ulot')} · ${esc(fmtDur(r.duration_minutes))}</div>
+      <div class="r2">Instruktor: <b>${esc(r.instructor?.full_name || '—')}</b>
+        · ${esc(r.course?.name || 'Mashg‘ulot')} · rejada ${esc(fmtDur(r.duration_minutes))}${esc(dur)}</div>
       <div class="r3">
-        ${r.receipt_code ? `Chek <span class="rcp">${esc(r.receipt_code)}</span> · ${dt(r.paid_at)}` : 'Chek yo‘q'}
+        ${chain || 'vaqt yozuvi yo‘q'}
+        ${r.receipt_code ? ` · <span class="rcp">${esc(r.receipt_code)}</span>` : ''}
         ${r.register ? ` · ${esc(r.register)}` : ''}
-        ${r.scanned_at ? ` · skaner ${dt(r.scanned_at).split(' ').pop()}` : ''}
       </div>
     </div>
     <div class="right">
-      <b>${dt(r.started_at).split(' ').pop()} → ${dt(r.ends_at).split(' ').pop()}</b>
-      ${esc(leftTxt)}${r.customer?.phone ? `<br>${esc(r.customer.phone)}` : ''}
+      <b>${esc(hhmm(r.started_at))} → ${esc(hhmm(r.departed_at || r.ends_at))}</b>
+      ${done ? 'tugadi' : stale ? 'yakunlanmagan' : (left < 0 ? `${Math.abs(left)} daq oshdi` : `${left} daq qoldi`)}
+      ${r.customer?.phone ? `<br>${esc(r.customer.phone)}` : ''}
       ${r.amount ? `<br><b>${esc(money(r.amount))}</b>` : ''}
     </div>
   </div>`;
