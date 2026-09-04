@@ -788,10 +788,37 @@ async function startFromScan(code){
   const btn = $('scStart'); if (btn) { btn.disabled = true; btn.textContent = '…'; }
   try {
     await api('/api/instructor/scan/start', { method:'POST', body: JSON.stringify({ code }) });
-    closeSheet(); toast('Dars boshlandi ✓');
+    closeSheet(); toast('Dars boshlandi');
     await Promise.allSettled([loadBookings(), loadStats()]);
   } catch (e) {
     if (btn) { btn.disabled = false; btn.textContent = '🚗 Bronni boshlash'; }
+    /* Oldingi dars yakunlanmagan bo'lsa — shunchaki toast emas,
+       ekranda tushuntirish va yakunlash tugmasi bo'lishi kerak. */
+    if (/yakunlanmagan/i.test(String(e.message))) {
+      const active = (S.bookings || []).find(b => b.status === 'in_progress');
+      sheet(`<h2 style="margin:0 0 4px">Avvalgi dars yakunlanmagan</h2>
+        <p class="sub">${esc(e.message)}</p>
+        ${active ? `<div class="scanres" style="margin-top:12px">
+          <span class="st-pill p-in_progress" style="margin:0">Dars ketmoqda</span>
+          <div class="big">${esc(active.customer?.full_name || 'Mijoz')}</div>
+          <div class="sub" style="margin:0">${esc(hhmm(active.start_at || active.booking_date))} · ${esc(active.course?.name || '')}</div>
+        </div>` : ''}
+        <div class="acts ${active ? '' : 'two'}" style="padding:0">
+          ${active ? `<button class="btn ok" id="fbFinish">Avvalgisini yakunlash</button>` : ''}
+          <button class="btn" id="fbClose">Yopish</button>
+        </div>`);
+      $('fbClose').onclick = closeSheet;
+      if (active) $('fbFinish').onclick = async () => {
+        const b2 = $('fbFinish'); b2.disabled = true; b2.textContent = '…';
+        try {
+          await api(`/api/instructor/bookings/${encodeURIComponent(active.id)}/departed`, { method:'POST', body:'{}' });
+          closeSheet(); toast('Avvalgi dars yakunlandi');
+          await Promise.allSettled([loadBookings(), loadStats()]);
+          setTimeout(() => verifyCode(code), 400);   // yangisini qayta urinamiz
+        } catch (err) { b2.disabled = false; b2.textContent = 'Avvalgisini yakunlash'; toast(err.message); }
+      };
+      return;
+    }
     toast(e.message);
   }
 }
