@@ -474,7 +474,11 @@ export async function registerInstructorRoutes(
       }
       if (b.bio !== undefined) {
         const bio = String(b.bio).trim();
-        if (bio.length > 600) return reply.code(400).send({ ok: false, error: 'Bio 600 belgidan oshmasin' });
+        // Instruktorlar tavsifni batafsil yozadi (xizmatlar ro'yxati bilan),
+        // shuning uchun chegara keng: 2000 belgi.
+        if (bio.length > 2000) {
+          return reply.code(400).send({ ok: false, error: `Bio juda uzun: ${bio.length} belgi. Eng ko'pi 2000.` });
+        }
         insPatch.bio = bio || null;
       }
       if (b.avatar_url !== undefined) {
