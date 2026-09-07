@@ -338,3 +338,36 @@ describe('To‘lovni bekor qilish', () => {
     expect(r.status).toBe(404);
   });
 });
+
+describe('Null instruktor xavfsizligi (regressiya)', () => {
+  it('instructor_id=null bo‘lgan bron ro‘yxatni buzmaydi', async () => {
+    // ARALASH: bittasida instruktor bor, bittasida null.
+    // Shunda in.(...) ro'yxatiga null tushib qolishi mumkin edi.
+    h.db.bookings.push({
+      id: 'b-real', customer_id: 'u-mijoz', instructor_id: 'ip-1', course_id: 'c-b',
+      booking_date: new Date().toISOString(), status: 'confirmed',
+    });
+    h.db.bookings.push({
+      id: 'b-null', customer_id: 'u-mijoz', instructor_id: null, course_id: null,
+      booking_date: new Date().toISOString(), status: 'confirmed', instructor_name: 'O‘chirilgan',
+    });
+    const r = await h.call('GET', '/api/admin/bookings', { cookie: admin });
+    expect(r.status).toBe(200);
+    // "null" matni so'rovga ketmaganini bilvosita tekshiramiz:
+    // ro'yxat qaytdi va ogohlantirish yo'q
+    expect(r.body.warnings || []).toEqual([]);
+    expect(r.body.bookings.length).toBeGreaterThan(0);
+  });
+
+  it('barcha instruktori null bronlar ham ishlaydi', async () => {
+    for (let i = 0; i < 5; i++) {
+      h.db.bookings.push({
+        id: `bn-${i}`, customer_id: 'u-mijoz', instructor_id: null, course_id: null,
+        booking_date: new Date().toISOString(), status: 'pending',
+      });
+    }
+    const r = await h.call('GET', '/api/admin/bookings', { cookie: admin });
+    expect(r.status).toBe(200);
+    expect(r.body.warnings || []).toEqual([]);
+  });
+});
