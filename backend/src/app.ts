@@ -7,7 +7,7 @@ import { registerBookingRoutes } from './booking-routes.js';
 import { registerInstructorRoutes } from './instructor-routes.js';
 import { registerInstructorRegistrationRoutes } from './instructor-registration-routes.js';
 import { handleInstructorStart } from './instructor-start.js';
-import { registerAdminPasswordRoutes, guard as requireAdmin, adminUser, audit } from './admin-password-routes.js';
+import { registerAdminPasswordRoutes, guard as requireAdmin, guardAdmin, adminUser, audit } from './admin-password-routes.js';
 import { registerContentRoutes } from './content-routes.js';
 import { registerCourseRoutes } from './courses-routes.js';
 import { registerReviewRoutes } from './review-routes.js';
@@ -16,6 +16,7 @@ import { sendDueReminders, handleReminderCallback } from './reminders.js';
 import { registerCashierRoutes } from './cashier-routes.js';
 import { registerAnalyticsRoutes } from './analytics-routes.js';
 import { registerShiftRoutes } from './shift-routes.js';
+import { registerMediaRoutes } from './media-routes.js';
 
 const app = Fastify({ logger: true });
 
@@ -95,6 +96,11 @@ await registerShiftRoutes(app, requireAdmin, adminUser, audit);
 // Fastify FST_ERR_DUPLICATED_ROUTE during Vercel cold starts.
 await registerAdminPasswordRoutes(app);
 await registerContentRoutes(app);
+
+/* Media endpointlari ilgari `api/admin/media/*` da Fastify'dan
+   TASHQARIDA edi — o'z auth'i va o'z xato formati bilan. Endi shu
+   yerda va umumiy rol tekshiruvi (guardAdmin) ostida. */
+registerMediaRoutes(app, guardAdmin);
 
 async function handleTelegramWebhook(request: any, reply: any, token: string, miniAppUrl: string, role: 'customer' | 'admin') {
   /* FAIL-CLOSED: sir sozlanmagan bo'lsa webhook ISHLAMAYDI.
@@ -210,6 +216,90 @@ async function runReminders(request: any, reply: any) {
 }
 app.get('/api/cron/reminders', runReminders);
 app.post('/api/cron/reminders', runReminders);
+
+
+/* ---------------- XATO KUZATUVI ----------------
+   Production'da xatolarni ko'rish uchun. Sentry DSN sozlangan
+   bo'lsa unga yuboriladi, bo'lmasa strukturali log sifatida
+   Vercel jurnaliga yoziladi.
+
+   Nima uchun tashqi paket emas: Sentry SDK serverless'da sovuq
+   start vaqtini oshiradi va yana bir bog'liqlik qo'shadi. Bu yerda
+   faqat kerakli minimum — HTTP orqali yuborish. */
+const SENTRY_DSN = String(process.env.SENTRY_DSN || '').trim();
+
+function sentryEndpoint(dsn: string) {
+  try {
+    const u = new URL(dsn);
+    const projectId = u.pathname.replace(/^\//, '');
+    return {
+      url: `${u.protocol}//${u.host}/api/${projectId}/store/`,
+      key: u.username,
+    };
+  } catch { return null; }
+}
+
+async function reportError(err: any, context: Record<string, unknown>) {
+  // Har doim jurnalga — Sentry bo'lmasa ham iz qolsin
+  app.log.error({ err, ...context }, 'unhandled error');
+
+  if (!SENTRY_DSN) return;
+  const ep = sentryEndpoint(SENTRY_DSN);
+  if (!ep) return;
+
+  try {
+    await fetch(ep.url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Sentry-Auth': `Sentry sentry_version=7, sentry_key=${ep.key}, sentry_client=avtodrom/1.0`,
+      },
+      body: JSON.stringify({
+        timestamp: new Date().toISOString(),
+        platform: 'node',
+        environment: process.env.VERCEL_ENV || 'production',
+        level: 'error',
+        logger: 'avtodrom',
+        exception: {
+          values: [{
+            type: err?.name || 'Error',
+            value: String(err?.message || err).slice(0, 500),
+            stacktrace: { frames: String(err?.stack || '').split('\n').slice(1, 12).map((l: string) => ({ function: l.trim() })) },
+          }],
+        },
+        extra: context,
+      }),
+    });
+  } catch {
+    // Kuzatuv yiqilsa ham so'rov javobiga ta'sir qilmasin
+  }
+}
+
+/* Ushlanmagan xatolar. Foydalanuvchiga texnik tafsilot BERILMAYDI —
+   faqat qisqa xabar; batafsili jurnalda qoladi. */
+app.setErrorHandler(async (error: any, request, reply) => {
+  const status = Number(error?.statusCode) || 500;
+
+  if (status >= 500) {
+    await reportError(error, {
+      url: request.url,
+      method: request.method,
+      requestId: request.id,
+    });
+    return reply.code(500).send({
+      ok: false,
+      error: 'Serverda xato yuz berdi. Qayta urinib ko‘ring.',
+      request_id: String(request.id),
+    });
+  }
+
+  return reply.code(status).send({ ok: false, error: error?.message || 'So‘rov bajarilmadi' });
+});
+
+/* Topilmagan yo'llar — HTML emas, JSON qaytadi */
+app.setNotFoundHandler((request, reply) => {
+  reply.code(404).send({ ok: false, error: `Topilmadi: ${request.method} ${request.url}` });
+});
 
 export default app;
 export { app };
