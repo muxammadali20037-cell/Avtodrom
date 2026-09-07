@@ -992,7 +992,16 @@ async function api(path,opt={}){
   setOffline(false);
   const raw=await r.text();
   let d={}; try{ d=raw?JSON.parse(raw):{} }catch{ d={} }
-  if(r.status===401 && !PIN_PATHS.test(String(path))){ showLogin(); throw Error(errText(d,401,path)||'Admin sessiyasi tugagan'); }
+  if(r.status===401 && !PIN_PATHS.test(String(path))){
+    /* Sessiya tugagan — login ekranini ko'rsatamiz va sokin
+       (silent) xato tashlaymiz. Chaqiruvchilar buni ushlab, konsolni
+       401 bilan to'ldirmaydi. Deploydan keyin bir marta shunday bo'ladi:
+       eski token rolsiz, yangi tizim uni rad etadi. */
+    showLogin();
+    const e = Error(errText(d,401,path)||'Admin sessiyasi tugagan. Qayta kiring.');
+    e.silent = true;
+    throw e;
+  }
   if(!r.ok||d.ok===false) throw Error(errText(d,r.status,path));
   return d;
 }
@@ -1039,8 +1048,14 @@ $('modal').onclick=e=>{if(e.target.id==='modal')closeModal()};
 $('loginForm').addEventListener('submit',async e=>{
   e.preventDefault();$('loginBtn').disabled=true;$('loginError').classList.add('hidden');
   try{
-    await api('/api/admin/login',{method:'POST',body:JSON.stringify({login:$('loginUser').value.trim(),password:$('loginPass').value})});
-    showApp();await loadAll(true);
+    const res = await api('/api/admin/login',{method:'POST',body:JSON.stringify({login:$('loginUser').value.trim(),password:$('loginPass').value})});
+    /* Login javobida rol keladi — uni darhol qo'llaymiz, aks holda
+       kassir kirsa ham boshqaruv menyusi ko'rinib qolardi. */
+    S.me = { ok:true, login:res.login, role:res.role, register_id:res.register_id, full_name:res.full_name, legacy:res.legacy };
+    showApp();
+    await loadAll(true);
+    try { applyRole(); } catch(err){ console.warn('applyRole:', err); }
+    applyMode(adminMode);
   }catch(e){$('loginError').textContent=e.message;$('loginError').classList.remove('hidden')}
   finally{$('loginBtn').disabled=false}
 });
@@ -3394,11 +3409,29 @@ function applyRole(){
   }
 }
 
-async function boot(){try{
-  S.me = await api('/api/admin/me');
-  applyRole();
-  showApp();if(!$('dDate').value)$('dDate').value=kToday();await loadAll();initCheckout(); applyMode(adminMode);
-  await Promise.allSettled([loadAnalytics(),loadSupport(),loadCancels()]);}catch{showLogin()}}
+async function boot(){
+  try{
+    // Sessiyani tekshiramiz. 401 bo'lsa — to'g'ridan login ekraniga.
+    S.me = await api('/api/admin/me');
+  }catch(e){
+    showLogin();
+    return;   // qolgan so'rovlar yuborilmaydi — konsol toza qoladi
+  }
+  try{
+    try { applyRole(); } catch(e){ console.warn('applyRole:', e); }
+    showApp();
+    if(!$('dDate').value)$('dDate').value=kToday();
+    await loadAll();
+    initCheckout();
+    applyMode(adminMode);
+    await Promise.allSettled([loadAnalytics(),loadSupport(),loadCancels()]);
+  }catch(e){
+    // Bu yergacha yetgan xato sessiya emas — panelni yopmaymiz,
+    // shunchaki bildiramiz.
+    if(e && e.silent) showLogin();
+    else notice(e.message || 'Yuklashda xato');
+  }
+}
 // Avtomatik yangilanish: modal ochiq bo'lsa yoki sozlama tahrirlanayotgan bo'lsa TO'XTAYDI.
 setInterval(()=>{
   if($('app').classList.contains('hidden')) return;
