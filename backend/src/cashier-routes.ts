@@ -28,9 +28,9 @@ function dayRange(date: string) {
 }
 
 async function loadMaps(bookings: any[]) {
-  const uids = [...new Set(bookings.map((b) => String(b.customer_id)).filter(Boolean))];
-  const iids = [...new Set(bookings.map((b) => String(b.instructor_id)).filter(Boolean))];
-  const cids = [...new Set(bookings.map((b) => String(b.course_id)).filter(Boolean))];
+  const uids = [...new Set(bookings.map((b) => b.customer_id).filter(Boolean).map(String))];
+  const iids = [...new Set(bookings.map((b) => b.instructor_id).filter(Boolean).map(String))];
+  const cids = [...new Set(bookings.map((b) => b.course_id).filter(Boolean).map(String))];
   const bids = bookings.map((b) => String(b.id));
 
   const [users, ips, courses, pays] = await Promise.all([
@@ -40,7 +40,7 @@ async function loadMaps(bookings: any[]) {
     bids.length ? supabaseRest<any[]>('payments', { query: `?booking_id=in.(${bids.map(q).join(',')})&select=*` }) : [],
   ]);
   const um = new Map(users.map((u) => [String(u.id), u]));
-  const iuids = [...new Set(ips.map((i) => String(i.user_id)).filter(Boolean))];
+  const iuids = [...new Set(ips.map((i) => i.user_id).filter(Boolean).map(String))];
   const iu = iuids.length
     ? await supabaseRest<any[]>('users', { query: `?id=in.(${iuids.map(q).join(',')})&select=id,full_name,phone` })
     : [];
@@ -304,7 +304,7 @@ export async function registerCashierRoutes(
       });
       if (!ips.length) return { ok: true, free: [], busy: [] };
 
-      const uids = [...new Set(ips.map((i) => String(i.user_id)).filter(Boolean))];
+      const uids = [...new Set(ips.map((i) => i.user_id).filter(Boolean).map(String))];
       const users = uids.length
         ? await supabaseRest<any[]>('users', { query: `?id=in.(${uids.map(q).join(',')})&select=id,full_name,phone` })
         : [];
