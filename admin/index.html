@@ -667,11 +667,26 @@ pre.json{background:#F7FAFF;border:1px solid var(--line);border-radius:8px;paddi
           <button type="button" class="pk" id="coWalk">Bronsiz — hozir keldi</button>
         </div></div>
 
-      <!-- 2. Mijoz -->
-      <div class="field"><label id="coNameLabel">2. MIJOZNI TOPING *</label>
-        <input id="coName" class="input" autocomplete="off" placeholder="Ism yoki telefon bo'yicha qidiring...">
+      <!-- BRONLI: bron kodi bilan qidirish -->
+      <div class="field" id="coCodeWrap">
+        <label>2. BRON KODINI KIRITING *</label>
+        <div style="display:flex;gap:8px">
+          <input id="coCode" class="input" autocomplete="off" placeholder="AVD-4821"
+                 style="text-transform:uppercase;font-size:18px;font-weight:700;letter-spacing:1px"
+                 inputmode="text" maxlength="9">
+          <button type="button" class="btn primary" id="coCodeFind" style="white-space:nowrap">Topish</button>
+        </div>
+        <div class="muted" style="font-size:12px;margin-top:6px">
+          Mijoz bron qilganda kod olgan (AVD-4821). Faqat raqamni yozsangiz ham bo‘ladi.
+        </div>
+        <div id="coCodeErr"></div>
+      </div>
+
+      <!-- BRONSIZ: ism/telefon -->
+      <div class="field hidden" id="coNameWrap"><label id="coNameLabel">2. ISM FAMILIYA *</label>
+        <input id="coName" class="input" autocomplete="off" placeholder="Mijoz ismini yozing...">
         <div id="coSuggest" class="suggest hidden"></div></div>
-      <div class="field" id="coPhoneWrap"><label>TELEFON</label>
+      <div class="field hidden" id="coPhoneWrap"><label>TELEFON</label>
         <input id="coPhone" class="input" autocomplete="off" placeholder="+998901234567"></div>
 
       <!-- BRONLI: mijozning bronlari (ismdan darhol keyin) -->
@@ -2353,8 +2368,14 @@ function coUpdateFormView(){
   const booked = CO.mode === 'booked';
   const hasPick = booked && CO.booking;
 
-  // Bronli rejimda bron ro'yxati ko'rinadi (bron tanlanmaguncha)
-  $('coBookWrap').classList.toggle('hidden', !booked || !!CO.booking);
+  // Kod maydoni — bronli rejimda, bron tanlanmagunicha
+  $('coCodeWrap').classList.toggle('hidden', !booked || !!CO.booking);
+  // Ism/telefon — faqat bronsizda
+  $('coNameWrap').classList.toggle('hidden', booked);
+  $('coPhoneWrap').classList.toggle('hidden', booked);
+
+  // Bronli: eski ro'yxat usuli endi ishlatilmaydi (kod bilan topamiz)
+  $('coBookWrap').classList.add('hidden');
   // Tanlangan bron xulosasi
   $('coPickedWrap').classList.toggle('hidden', !hasPick);
   /* Qo'lda tanlash maydonlari:
@@ -2424,6 +2445,54 @@ async function loadCoBookings(){
   }catch(e){ box.innerHTML = `<div class="error">${esc(e.message)}</div>`; }
 }
 
+
+/* =========================================================================
+   BRON KODI BILAN TOPISH
+   Mijoz AVD-4821 kodini aytadi, kassir kiritadi, hamma ma'lumot
+   avtomatik chiqadi. Ism/telefon qidirish shart emas.
+   ========================================================================= */
+async function coFindByCode(){
+  const raw = $('coCode').value.trim().toUpperCase();
+  $('coCodeErr').innerHTML = '';
+  if (!raw) { $('coCodeErr').innerHTML = '<div class="error">Kodni kiriting</div>'; return; }
+
+  const btn = $('coCodeFind'); btn.disabled = true; btn.textContent = '...';
+  try{
+    const d = await api(`/api/admin/cashier/by-code?code=${encodeURIComponent(raw)}`);
+    const b = d.booking;
+
+    // Bronni CO ga yozamiz — chek chiqarish shundan foydalanadi
+    CO.customer = b.customer || null;
+    CO.booking = {
+      id: b.id, start_at: b.start_at, category: b.category,
+      course: b.course, duration_minutes: b.duration_minutes,
+      customer: b.customer, instructor: b.instructor, instructor_id: b.instructor_id,
+      price: b.price,
+    };
+    CO.minutes = Number(b.duration_minutes || 60);
+    CO.category = String(b.category || '').toUpperCase();
+    CO.instructor = { id: b.instructor_id, name: b.instructor?.profile?.full_name || '—' };
+    const st = new Date(b.start_at);
+    if ($('coDate')) $('coDate').value = new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Tashkent'}).format(st);
+    if ($('coTime')) $('coTime').value = kHour(b.start_at);
+
+    coUpdateFormView();
+    coRenderPicked();
+    coRender();
+  }catch(e){
+    $('coCodeErr').innerHTML = `<div class="error">${esc(e.message)}</div>`;
+  }finally{
+    btn.disabled = false; btn.textContent = 'Topish';
+  }
+}
+$('coCodeFind').onclick = coFindByCode;
+$('coCode').addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); coFindByCode(); } });
+// Kiritishda avtomatik katta harf va AVD- prefiks
+$('coCode').addEventListener('input', () => {
+  let v = $('coCode').value.toUpperCase().replace(/[^A-Z0-9-]/g, '');
+  $('coCode').value = v;
+});
+
 /* Tanlangan bron xulosasi — kassir nima chek chiqarayotganini ko'radi. */
 function coRenderPicked(){
   if (!CO.booking) return;
@@ -2441,9 +2510,9 @@ function coRenderPicked(){
 /* "Boshqa bron tanlash" — ro'yxatga qaytamiz */
 document.addEventListener('click', (e) => {
   if (e.target && e.target.id === 'coChangeBk') {
-    CO.booking = null; CO.instructor = null;
+    CO.booking = null; CO.instructor = null; CO.customer = null;
+    if ($('coCode')) $('coCode').value = '';
     coUpdateFormView();
-    if (CO.customer) loadCoBookings();
     coRender();
   }
 });
