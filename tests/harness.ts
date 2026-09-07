@@ -105,6 +105,15 @@ export async function makeHarness(): Promise<Harness> {
     const m = /\/rest\/v1\/([a-z_]+)(\?.*)?$/.exec(url);
     if (!m) return { ok: true, status: 200, text: async () => '[]', headers: H } as any;
 
+    /* Supabase kabi: so'rovda "null" yoki "undefined" matni UUID
+       o'rnida kelsa 400 qaytaramiz. Shunday bug qaytib kelsa,
+       test darhol tushadi. */
+    // eq.null yoki in.(...) ichida yakka null/undefined element
+    if (/=eq\.(null|undefined)(&|$)/.test(url) || /=in\.\([^)]*(^|,)(null|undefined)(,|\))/.test(url)) {
+      return { ok: false, status: 400, text: async () => JSON.stringify({
+        message: 'invalid input syntax for type uuid: "null"' }), headers: H } as any;
+    }
+
     const table = m[1];
     const query = m[2] || '';
     db[table] = db[table] || [];
