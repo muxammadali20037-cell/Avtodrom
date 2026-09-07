@@ -92,7 +92,7 @@ export async function registerAnalyticsRoutes(
         period, label, anchor,
         from: from.toISOString(), to: to.toISOString(), bucket,
         totals: t,
-        previous: p,
+        previous: { totals: p },
         change: {
           bookings: delta(t.bookings, p.bookings),
           completed: delta(t.completed, p.completed),
@@ -102,7 +102,9 @@ export async function registerAnalyticsRoutes(
         series: current.series || [],
         instructors: current.instructors || [],
         courses: current.courses || [],
+        categories: current.categories || [],
         hours: current.hours || [],
+        heatmap: current.heatmap || [],
       };
     } catch (e: any) {
       return reply.code(e?.statusCode ?? 500).send({ ok: false, error: e?.message || 'Hisobot yuklanmadi' });
