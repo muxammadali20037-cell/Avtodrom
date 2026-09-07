@@ -201,6 +201,13 @@ button,input,select,textarea{font:inherit}.hidden{display:none!important}
 .picked{border:1.5px solid var(--g);background:var(--soft);border-radius:14px;padding:14px}
 .picked .row{display:flex;justify-content:space-between;font-size:13px;padding:3px 0}
 .picked .big{font-size:16px;font-weight:800;margin-bottom:8px;color:var(--g)}
+
+#mgmtLock{position:fixed;inset:0;z-index:200;display:grid;place-items:center;background:rgba(20,24,60,.35);backdrop-filter:blur(4px)}
+#mgmtLock.hidden{display:none}
+.lockbox{background:#fff;border-radius:20px;padding:32px 28px;width:min(360px,90vw);box-shadow:0 20px 60px rgba(0,0,0,.2);text-align:center}
+.lockbox h2{margin:0 0 6px;font-size:19px}
+.lockbox p{margin:0 0 18px}
+.lockbox .input{margin-bottom:14px}
 .warn{padding:11px;border-radius:11px;background:#fff8e6;color:#8a6500;border:1px solid #ffe6a8;font-size:13px}
 .top{height:70px;background:#fff;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:20}
 .topin{height:100%;max-width:1500px;margin:auto;padding:0 20px;display:flex;align-items:center;justify-content:space-between}
@@ -419,6 +426,13 @@ button,input,select,textarea{font:inherit}.hidden{display:none!important}
 .picked{border:1.5px solid var(--g);background:var(--soft);border-radius:14px;padding:14px}
 .picked .row{display:flex;justify-content:space-between;font-size:13px;padding:3px 0}
 .picked .big{font-size:16px;font-weight:800;margin-bottom:8px;color:var(--g)}
+
+#mgmtLock{position:fixed;inset:0;z-index:200;display:grid;place-items:center;background:rgba(20,24,60,.35);backdrop-filter:blur(4px)}
+#mgmtLock.hidden{display:none}
+.lockbox{background:#fff;border-radius:20px;padding:32px 28px;width:min(360px,90vw);box-shadow:0 20px 60px rgba(0,0,0,.2);text-align:center}
+.lockbox h2{margin:0 0 6px;font-size:19px}
+.lockbox p{margin:0 0 18px}
+.lockbox .input{margin-bottom:14px}
 .warn{padding:11px;border-radius:11px;background:#fff8e6;color:#8a6500;border:1px solid #ffe6a8;margin-bottom:12px;font-size:13px}
 .empty{padding:25px;text-align:center;color:var(--muted)}
 .actions{display:flex;gap:5px;flex-wrap:wrap}
@@ -515,6 +529,7 @@ pre.json{background:#F7FAFF;border:1px solid var(--line);border-radius:8px;paddi
 
 <main>
 <div id="regLock" class="hidden"></div>
+<div id="mgmtLock" class="hidden"></div>
 <div id="notice"></div>
 <div id="warnings"></div>
 
@@ -908,6 +923,14 @@ pre.json{background:#F7FAFF;border:1px solid var(--line);border-radius:8px;paddi
     <div class="field"><label>ALOQA TELEFONI <span class="muted">(mijoz panelida ko‘rinadi)</span></label><input id="contactPhone" class="input" autocomplete="off" placeholder="+998901234567"></div>
     <div class="field"><label>KASSA PIN KODLARI <span class="muted">(kassir kassani shu bilan ochadi)</span></label>
       <div id="pinSetters" style="display:grid;gap:9px"></div>
+      <div style="border-top:1px solid var(--line);margin:16px 0"></div>
+      <label style="font-weight:700">BOSHQARUV PIN KODI</label>
+      <div class="muted" style="font-size:12px;margin:4px 0 10px">BOSHQARUV bo‘limi ochilganda so‘raladi. Admin login’dan tashqari qo‘shimcha himoya.</div>
+      <div style="display:flex;gap:9px;align-items:center;flex-wrap:wrap">
+        <input class="input" type="password" inputmode="numeric" maxlength="8" placeholder="Yangi PIN" id="mgmtPinInput" style="max-width:160px" autocomplete="new-password">
+        <button class="btn small" id="mgmtPinSave">Saqlash</button>
+        <span id="mgmtPinState" class="warn" style="padding:3px 9px;border-radius:99px;font-size:11px">tekshirilmoqda…</span>
+      </div>
       <div class="muted" style="font-size:12px;margin-top:6px">4–8 raqam. PIN xeshlanib saqlanadi — hech kim, hatto bazani ko‘rgan odam ham uni o‘qiy olmaydi.</div></div>
 
     <div class="field"><label>SOATLIK TARIF <span class="muted">(chek chiqarishda ishlatiladi)</span></label>
@@ -1115,7 +1138,7 @@ function showPage(id){
   if(id==='checkout'){ initCheckout(); }
   if(id==='dashboard'){ if(!$('dDate').value)$('dDate').value=kToday(); loadAnalytics(); }
   if(id==='control'){ if(!$('cDate').value)$('cDate').value=kToday(); renderCtlPicker(); loadControl(); }
-  if(id==='settings') renderPinSetters();
+  if(id==='settings'){ renderPinSetters(); loadMgmtPinState(); }
   if(id==='cashier'){ if(!$('kDate').value) $('kDate').value=kToday(); fillCashierInstructors(); loadCashier(); }
 }
 document.querySelectorAll('.nav').forEach(x=>x.addEventListener('click',()=>showPage(x.dataset.p)));
@@ -2748,7 +2771,14 @@ function applyMode(mode){
   if (mode === 'admin') {
     REGISTER = null; REG_TOKEN = '';
     $('regLock').classList.add('hidden');
-    showPage('dashboard');
+    /* Boshqaruv PIN darvozasi: token bo'lmasa yoki muddati o'tган
+       bo'lsa, sahifa ochilmaydi — avval PIN so'raladi. */
+    if (mgmtTokenValid()) {
+      hideMgmtLock();
+      showPage('dashboard');
+    } else {
+      showMgmtLock();
+    }
     return;
   }
   // Kassa rejimi — saqlangan token bormi?
@@ -3220,6 +3250,99 @@ function initManual(){
   mbPaintCats(); mbPaintDurs(); mbLoadFree(); mbSum();
 }
 
+
+
+/* =========================================================================
+   BOSHQARUV PIN QULFI
+   Admin login qiladi (1-qatlam). BOSHQARUV ochilganda PIN so'raladi
+   (2-qatlam). Token 12 soat saqlanadi — har safar so'ralmaydi.
+   Bu FRONTEND darvoza; server himoyasi baribir rol orqali (kassir 403).
+   ========================================================================= */
+const MGMT_TOKEN_KEY = 'avtodrom_mgmt_token';
+let MGMT_TOKEN = '';
+try { MGMT_TOKEN = localStorage.getItem(MGMT_TOKEN_KEY) || ''; } catch (e) {}
+
+function mgmtTokenValid(){
+  // Token formati: mgmt.<exp>.<sig> — muddatini frontend tekshiradi
+  const p = String(MGMT_TOKEN).split('.');
+  if (p.length !== 3 || p[0] !== 'mgmt') return false;
+  return Number(p[1]) > Date.now();
+}
+
+/** BOSHQARUV bo'limlarini yashiradi va PIN oynasini ko'rsatadi. */
+function showMgmtLock(){
+  document.querySelectorAll('.page').forEach(pg => {
+    const btn = document.querySelector(`.nav[data-p="${pg.id}"]`);
+    if (btn && btn.dataset.grp === 'admin') pg.classList.remove('on');
+  });
+  document.querySelectorAll('.nav[data-grp="admin"]').forEach(b => b.classList.add('hidden'));
+
+  const box = $('mgmtLock');
+  box.classList.remove('hidden');
+  box.innerHTML = `
+    <div class="lockbox">
+      <h2>BOSHQARUV himoyalangan</h2>
+      <p class="muted">Davom etish uchun boshqaruv PIN kodini kiriting.</p>
+      <input id="mgmtPin" class="input" type="password" inputmode="numeric" maxlength="8"
+             placeholder="PIN" autocomplete="off" style="text-align:center;font-size:22px;letter-spacing:6px">
+      <div id="mgmtLockErr"></div>
+      <button class="btn primary" id="mgmtEnter" style="width:100%;height:48px">Kirish</button>
+    </div>`;
+  const inp = $('mgmtPin');
+  inp.focus();
+  const go = () => mgmtUnlock(inp.value);
+  $('mgmtEnter').onclick = go;
+  inp.onkeydown = e => { if (e.key === 'Enter') go(); };
+}
+
+function hideMgmtLock(){
+  $('mgmtLock').classList.add('hidden');
+  $('mgmtLock').innerHTML = '';
+  // BOSHQARUV bo'limlarini qaytaramiz
+  document.querySelectorAll('.nav[data-grp="admin"]').forEach(b => b.classList.remove('hidden'));
+}
+
+async function mgmtUnlock(pin){
+  const err = m => { const e = $('mgmtLockErr'); if (e) e.innerHTML = `<div class="error">${esc(m)}</div>`; };
+  if (!pin || !/^\d{4,8}$/.test(pin)) return err('PIN 4-8 raqam');
+  const btn = $('mgmtEnter'); if (btn) { btn.disabled = true; btn.textContent = '...'; }
+  try{
+    const d = await api('/api/admin/mgmt-unlock', { method:'POST', body: JSON.stringify({ pin }) });
+    MGMT_TOKEN = d.token || '';
+    try { localStorage.setItem(MGMT_TOKEN_KEY, MGMT_TOKEN); } catch (e) {}
+    hideMgmtLock();
+    showPage('dashboard');
+  }catch(e){
+    if (btn) { btn.disabled = false; btn.textContent = 'Kirish'; }
+    // PIN o'rnatilmagan bo'lsa — birinchi marta, o'rnatishga yuboramiz
+    if (/o‘rnatilmagan|ornatilmagan|needs_setup/i.test(String(e.message))) {
+      err('PIN hali o‘rnatilmagan. Sozlamalar → Boshqaruv PIN dan o‘rnating.');
+    } else {
+      err(e.message);
+    }
+  }
+}
+
+/* ---------- Sozlamalarda PIN o'rnatish ---------- */
+async function loadMgmtPinState(){
+  const el = $('mgmtPinState'); if (!el) return;
+  try{
+    const d = await api('/api/admin/mgmt-pin');
+    el.textContent = d.is_set ? 'PIN o‘rnatilgan' : 'PIN o‘rnatilmagan';
+    el.className = d.is_set ? 'status ok' : 'warn';
+    el.style.padding = '3px 9px'; el.style.borderRadius = '99px'; el.style.fontSize = '11px';
+  }catch(e){ el.textContent = e.message; }
+}
+if ($('mgmtPinSave')) $('mgmtPinSave').onclick = async () => {
+  const pin = String($('mgmtPinInput').value || '').trim();
+  if (!/^\d{4,8}$/.test(pin)) { notice('PIN 4-8 raqam bo‘lsin'); return; }
+  try{
+    await api('/api/admin/mgmt-pin', { method:'PUT', body: JSON.stringify({ pin }) });
+    $('mgmtPinInput').value = '';
+    toast('Boshqaruv PIN saqlandi');
+    loadMgmtPinState();
+  }catch(e){ notice(e.message); }
+};
 
 /** Kassa PIN kodlarini o'rnatish. PIN'ning o'zi hech qayerda
     saqlanmaydi — server uni xeshlab qo'yadi. */
