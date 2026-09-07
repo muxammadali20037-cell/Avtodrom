@@ -46,9 +46,17 @@ export function verifyPassword(plain: string, stored: string): boolean {
   try {
     const [algo, saltHex, hashHex] = String(stored).split('$');
     if (algo !== 'scrypt' || !saltHex || !hashHex) return false;
+
+    const salt = Buffer.from(saltHex, 'hex');
     const expected = Buffer.from(hashHex, 'hex');
-    const actual = scryptSync(String(plain), Buffer.from(saltHex, 'hex'), expected.length);
-    // Uzunlik mos kelmasa timingSafeEqual xato tashlaydi
+
+    /* MUHIM: bo'sh yoki kalta xeshni RAD ETAMIZ.
+       `scrypt$$` kabi buzuq yozuv salt va xeshni bo'sh qoldiradi;
+       timingSafeEqual(bo'sh, bo'sh) esa TRUE qaytaradi — ya'ni
+       har qanday parol o'tib ketardi. Bu xatoni test topdi. */
+    if (salt.length < 8 || expected.length < 32) return false;
+
+    const actual = scryptSync(String(plain), salt, expected.length);
     if (actual.length !== expected.length) return false;
     return timingSafeEqual(actual, expected);
   } catch {
