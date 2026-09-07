@@ -1,0 +1,48 @@
+# .github/workflows/check.yml
+#
+# Har push va PR da: TypeScript tekshiruvi, forwarder yo'llari,
+# va 50 ta avtomatik test. Deploydan OLDIN xatoni tutadi.
+
+name: check
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - name: Root TypeScript
+        run: npx tsc --noEmit -p tsconfig.json
+
+      - name: Backend TypeScript
+        run: cd backend && npx tsc --noEmit -p tsconfig.json
+
+      - name: Forwarder yo'llari to'g'rimi
+        run: |
+          bad=0
+          for f in $(find api -name '*.ts' ! -name '_forward.ts'); do
+            grep -q "_forward" "$f" || continue
+            depth=$(echo "${f#api/}" | tr -cd '/' | wc -c)
+            want=""; for i in $(seq 1 $depth); do want="../$want"; done
+            [ -z "$want" ] && want="./"
+            have=$(grep -o "'[^']*_forward.js'" "$f" | tr -d "'")
+            if [ "$have" != "${want}_forward.js" ]; then
+              echo "❌ $f: '$have' bo'lishi kerak '${want}_forward.js'"
+              bad=1
+            fi
+          done
+          exit $bad
+
+      - name: Testlar
+        run: npm test
