@@ -129,8 +129,8 @@ export async function registerAnalyticsRoutes(
       });
 
       const ids = bookings.map((b) => String(b.id));
-      const uids = [...new Set(bookings.map((b) => String(b.customer_id)).filter(Boolean))];
-      const cids = [...new Set(bookings.map((b) => String(b.course_id)).filter(Boolean))];
+      const uids = [...new Set(bookings.map((b) => b.customer_id).filter(Boolean).map(String))];
+      const cids = [...new Set(bookings.map((b) => b.course_id).filter(Boolean).map(String))];
 
       /* Kassa rejimida faqat o'sha kassaning to'lovlari ko'rinadi —
          P1 kassiri P2 yiqqan pulni ko'rmasligi kerak. Kassa ID'si
