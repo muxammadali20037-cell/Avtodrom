@@ -123,6 +123,73 @@ export async function registerCashierRoutes(
     }
   });
 
+
+  /* =====================================================================
+     BRON KODI BO'YICHA TOPISH
+     Mijoz bron qilganda AVD-XXXX kodini oladi. Kassaga kelib shu kodni
+     aytadi — kassir kiritadi, hamma ma'lumot avtomatik chiqadi.
+     Ism yozish, telefon qidirish shart emas.
+     ===================================================================== */
+  app.get('/api/admin/cashier/by-code', async (req: any, reply: any) => {
+    try {
+      await requireAdmin(req);
+      let code = String(req.query?.code || '').trim().toUpperCase();
+      if (!code) return reply.code(400).send({ ok: false, error: 'Kodni kiriting' });
+
+      // Foydalanuvchi faqat raqam yozsa ham topamiz: "4821" -> "AVD-4821"
+      if (/^\d{4,5}$/.test(code)) code = `AVD-${code}`;
+      if (!/^AVD-\d{4,5}$/.test(code)) {
+        return reply.code(400).send({ ok: false, error: 'Kod formati: AVD-4821' });
+      }
+
+      const rows = await supabaseRest<any[]>('bookings', {
+        query: `?pickup_code=eq.${q(code)}&select=*&limit=1`,
+      });
+      const b = rows[0];
+      if (!b) return reply.code(404).send({ ok: false, error: `${code} — bunday bron topilmadi` });
+
+      // Allaqachon to'langanmi?
+      const paid = (await supabaseRest<any[]>('payments', {
+        query: `?booking_id=eq.${q(String(b.id))}&status=eq.paid&select=id,receipt_code&limit=1`,
+      }).catch(() => []))[0];
+      if (paid) {
+        return reply.code(409).send({
+          ok: false,
+          error: `Bu bron uchun chek allaqachon chiqarilgan (${paid.receipt_code || 'to‘langan'})`,
+        });
+      }
+
+      // Bog'liq ma'lumotlar
+      const [cust, ip, course] = await Promise.all([
+        b.customer_id ? supabaseRest<any[]>('users', { query: `?id=eq.${q(String(b.customer_id))}&select=id,full_name,phone&limit=1` }) : Promise.resolve([]),
+        b.instructor_id ? supabaseRest<any[]>('instructor_profiles', { query: `?id=eq.${q(String(b.instructor_id))}&select=id,user_id&limit=1` }) : Promise.resolve([]),
+        b.course_id ? supabaseRest<any[]>('courses', { query: `?id=eq.${q(String(b.course_id))}&select=id,name,category,price,duration_minutes&limit=1` }) : Promise.resolve([]),
+      ]);
+      const insUser = ip[0]?.user_id
+        ? (await supabaseRest<any[]>('users', { query: `?id=eq.${q(String(ip[0].user_id))}&select=full_name&limit=1` }).catch(() => []))[0]
+        : null;
+
+      return {
+        ok: true,
+        booking: {
+          id: b.id,
+          pickup_code: b.pickup_code,
+          status: b.status,
+          start_at: b.start_at,
+          duration_minutes: b.duration_minutes || course[0]?.duration_minutes || 60,
+          category: String(b.category || course[0]?.category || '').toUpperCase(),
+          customer: cust[0] || (b.customer_name ? { full_name: b.customer_name } : null),
+          instructor_id: b.instructor_id,
+          instructor: insUser ? { profile: { full_name: insUser.full_name } } : null,
+          course: course[0] || null,
+          price: course[0]?.price ?? null,
+        },
+      };
+    } catch (e: any) {
+      return reply.code(e?.statusCode ?? 500).send({ ok: false, error: e?.message || 'Qidiruv ishlamadi' });
+    }
+  });
+
   /* =====================================================================
      2. BRONSIZ MIJOZ — kassada joyida bron yaratish
      ===================================================================== */
