@@ -471,6 +471,283 @@ pre.json{background:#F7FAFF;border:1px solid var(--line);border-radius:8px;paddi
 #receiptPaper .row b{font-weight:900}
 #receiptPaper .big{font-size:19px;font-weight:900;margin:4px 0}
 #receiptPaper .code{text-align:center;font-size:22px;font-weight:900;letter-spacing:.14em;margin-top:6px;color:#000}
+
+/* =========================================================
+   DASHBOARD PRO UI — faqat #dashboard uchun.
+   Boshqa bo'limlarning markup, JS va funksiyalariga tegmaydi.
+   ========================================================= */
+#dashboard{
+  --dash-primary:#3158d8;
+  --dash-primary-2:#5b7cfa;
+  --dash-ink:#17233f;
+  --dash-muted:#71809f;
+  --dash-line:#e4e9f4;
+  --dash-soft:#f5f7fc;
+  font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+}
+#dashboard *{font-family:inherit}
+#dashboard .dashHero{
+  display:flex;justify-content:space-between;align-items:flex-end;gap:24px;
+  padding:4px 2px 20px;flex-wrap:wrap;
+}
+#dashboard .dashTitle h1{
+  margin:4px 0 5px;font-size:32px;line-height:1.08;letter-spacing:-.035em;color:var(--dash-ink);
+  font-weight:800;
+}
+#dashboard .dashTitle p{margin:0;color:var(--dash-muted);font-size:13px}
+#dashboard .dashEyebrow{
+  display:flex;align-items:center;gap:8px;font-size:10px;letter-spacing:.13em;
+  font-weight:800;color:var(--dash-primary);
+}
+#dashboard .dashLive{
+  width:7px;height:7px;border-radius:50%;background:#16a36b;
+  box-shadow:0 0 0 4px rgba(22,163,107,.10);
+}
+#dashboard .dashControls{display:flex;align-items:flex-end;gap:10px;flex-wrap:wrap}
+#dashboard .dashDate{display:grid;gap:5px}
+#dashboard .dashDate span{
+  font-size:9px;text-transform:uppercase;letter-spacing:.08em;font-weight:800;color:var(--dash-muted)
+}
+#dashboard .dashDate .input{
+  height:40px;border:1px solid var(--dash-line);border-radius:11px;background:#fff;
+  color:var(--dash-ink);padding:0 11px;box-shadow:0 3px 12px rgba(30,42,71,.04)
+}
+#dashboard .segs{
+  background:#eef2fa;border:1px solid #e3e8f3;border-radius:11px;padding:3px;gap:2px
+}
+#dashboard .seg{height:32px;padding:0 12px;border-radius:8px;font-size:11.5px;font-weight:750}
+#dashboard .seg.on{background:#fff;color:var(--dash-primary);box-shadow:0 2px 8px rgba(36,56,103,.10)}
+#dashboard .dashSectionLabel{
+  display:flex;align-items:center;justify-content:space-between;margin:0 0 9px;padding:0 2px
+}
+#dashboard .dashSectionLabel span{
+  display:block;color:var(--dash-ink);font-size:12px;font-weight:800;letter-spacing:.02em
+}
+#dashboard .dashSectionLabel small{display:block;color:var(--dash-muted);font-size:10.5px;margin-top:2px}
+#dashboard .kpis{
+  grid-template-columns:repeat(6,minmax(0,1fr));gap:10px;margin-bottom:15px
+}
+#dashboard .kpi{
+  position:relative;min-height:112px;padding:15px 16px 13px;border:1px solid var(--dash-line);
+  border-radius:14px;background:#fff;box-shadow:0 5px 18px rgba(33,52,91,.045);
+  overflow:hidden;
+}
+#dashboard .kpi:after{
+  content:"";position:absolute;left:0;bottom:0;width:100%;height:2px;
+  background:linear-gradient(90deg,var(--dash-primary),var(--dash-primary-2));opacity:.75
+}
+#dashboard .kpi span{font-size:9px;letter-spacing:.08em;color:#8190ad;font-weight:800}
+#dashboard .kpi b{
+  color:var(--dash-ink);font-size:24px;line-height:1.15;margin-top:8px;letter-spacing:-.025em;
+  white-space:nowrap
+}
+#dashboard .kpi i{margin-top:9px;font-size:9.5px;padding:3px 7px}
+#dashboard .dashGrid{
+  display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px;margin-bottom:14px
+}
+#dashboard .dashGridTop{grid-template-columns:minmax(0,1.35fr) minmax(0,.65fr)}
+#dashboard .dashCard{
+  min-width:0;background:#fff;border:1px solid var(--dash-line);border-radius:17px;
+  padding:17px 18px;box-shadow:0 6px 22px rgba(33,52,91,.045);
+}
+#dashboard .dashCardHead{
+  display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:13px
+}
+#dashboard .dashCardHead h3{
+  margin:3px 0 3px;color:var(--dash-ink);font-size:17px;line-height:1.15;letter-spacing:-.02em;font-weight:800
+}
+#dashboard .dashCardHead p{margin:0;color:var(--dash-muted);font-size:11px}
+#dashboard .dashCardKicker{
+  color:#8a98b3;font-size:8.5px;letter-spacing:.13em;font-weight:900
+}
+#dashboard .dashCardIcon{
+  width:32px;height:32px;display:grid;place-items:center;flex:none;border-radius:10px;
+  color:var(--dash-primary);background:#eef2ff;font-size:14px;font-weight:900
+}
+#dashboard .dashChartLegend{
+  display:flex;align-items:center;gap:7px;color:#7c89a3;font-size:10px;margin:-2px 0 5px
+}
+#dashboard .legendDot{width:7px;height:7px;border-radius:50%;background:var(--dash-primary)}
+#dashboard .bars{
+  height:205px;gap:7px;padding:10px 4px 0;border-bottom:1px solid #edf0f6;align-items:flex-end
+}
+#dashboard .bar{gap:6px}
+#dashboard .bar .v{
+  min-height:4px;border-radius:6px 6px 2px 2px;
+  background:linear-gradient(180deg,var(--dash-primary-2),var(--dash-primary));
+  box-shadow:0 4px 10px rgba(49,88,216,.13)
+}
+#dashboard .bar .v:hover{filter:brightness(1.05);transform:translateY(-2px)}
+#dashboard .bar small{
+  font-size:8.5px;color:#8793ab;transform:none;height:18px;line-height:18px
+}
+#dashboard .dashChartCard .muted,
+#dashboard .dashPaymentCard .muted{
+  color:#8a96ad!important;font-size:10.5px!important
+}
+#dashboard .pie{
+  min-height:205px;display:flex;justify-content:center;gap:28px;align-items:center;flex-wrap:nowrap
+}
+#dashboard .pie svg{width:166px;height:166px;filter:drop-shadow(0 7px 15px rgba(30,50,100,.08))}
+#dashboard .pie .legend{
+  gap:11px;font-size:11px;min-width:145px
+}
+#dashboard .pie .legend div{gap:7px;color:#64728d;white-space:nowrap}
+#dashboard .pie .legend i{width:8px;height:8px;border-radius:50%}
+#dashboard .rank{gap:7px;max-height:246px;overflow:auto;padding-right:2px}
+#dashboard .rankrow{
+  grid-template-columns:1fr auto;gap:8px;padding:11px 12px;border:1px solid #e9edf5;
+  border-radius:11px;background:#fafbfe
+}
+#dashboard .rankrow b{font-size:12.5px;color:var(--dash-ink)}
+#dashboard .rankrow .met{font-size:10px;color:#8a96ad;margin-top:3px}
+#dashboard .rankbar{height:5px;background:#e7ebf4}
+#dashboard .rankbar i{background:linear-gradient(90deg,var(--dash-primary-2),var(--dash-primary));border-radius:99px}
+#dashboard #dHours .bars{height:205px}
+#dashboard #dHours .bar .v{box-shadow:none;opacity:.95}
+#dashboard #dHours .bar .v:hover{filter:brightness(1.08)}
+#dashboard #dHours .muted{padding-top:1px}
+#dashboard .dashCourses{margin-bottom:0}
+#dashboard .dashCourses .tableWrap{
+  border:1px solid #e8ecf4;border-radius:12px;box-shadow:none
+}
+#dashboard .dashCourses .table{
+  min-width:620px;border-collapse:separate;border-spacing:0
+}
+#dashboard .dashCourses .table th{
+  background:#f7f8fb;color:#8793ab;font-size:8.5px;letter-spacing:.08em;
+  padding:11px 12px;border-bottom:1px solid #e6eaf2
+}
+#dashboard .dashCourses .table td{
+  padding:11px 12px;font-size:11.5px;color:#52617d;border-bottom:1px solid #edf0f5
+}
+#dashboard .dashCourses .table tr:last-child td{border-bottom:0}
+#dashboard .dashCourses .table td b{color:var(--dash-ink)}
+#dashboard .empty{
+  border:1px dashed #dfe5f0;border-radius:11px;background:#fafbfe;color:#8995ad;
+  font-size:11px;padding:24px
+}
+#dashboard .error{font-size:12px;border-radius:11px}
+@media(max-width:1250px){
+  #dashboard .kpis{grid-template-columns:repeat(3,minmax(0,1fr))}
+}
+@media(max-width:900px){
+  #dashboard .dashGrid,#dashboard .dashGridTop{grid-template-columns:1fr}
+  #dashboard .pie{justify-content:flex-start}
+}
+@media(max-width:700px){
+  #dashboard .dashHero{padding-bottom:14px}
+  #dashboard .dashTitle h1{font-size:27px}
+  #dashboard .dashControls{width:100%;align-items:stretch}
+  #dashboard .dashDate{flex:1}
+  #dashboard .dashControls .segs{flex:1;display:flex}
+  #dashboard .dashControls .seg{flex:1;padding:0 7px}
+  #dashboard .kpis{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+  #dashboard .kpi{min-height:100px;padding:13px}
+  #dashboard .kpi b{font-size:20px}
+  #dashboard .dashCard{padding:14px}
+  #dashboard .bars,#dashboard #dHours .bars{height:165px}
+  #dashboard .pie{min-height:180px;gap:15px;justify-content:center}
+  #dashboard .pie svg{width:135px;height:135px}
+  #dashboard .pie .legend{min-width:125px;font-size:10px}
+}
+@media(max-width:430px){
+  #dashboard .dashControls{display:grid;grid-template-columns:1fr}
+  #dashboard .dashControls .segs{width:100%}
+  #dashboard .kpi b{font-size:18px}
+  #dashboard .pie{flex-direction:column}
+}
+
+
+/* =========================================================
+   AVTODROM DASHBOARD — PREMIUM SaaS POLISH
+   Visual layer only. Existing IDs, markup, JS and APIs stay intact.
+   ========================================================= */
+#dashboard{
+  --dash-primary:#2f55d4; --dash-primary-2:#6b8cff; --dash-ink:#14213d;
+  --dash-muted:#71809a; --dash-line:#e5eaf3; --dash-soft:#f6f8fc;
+  position:relative;
+}
+#dashboard:before{content:"";position:absolute;inset:-18px -22px auto;height:260px;pointer-events:none;
+  background:radial-gradient(ellipse at 15% 0%,rgba(91,124,250,.12),transparent 58%),
+             radial-gradient(ellipse at 88% 0%,rgba(47,85,212,.07),transparent 55%);z-index:-1}
+#dashboard .dashHero{padding:8px 4px 22px;align-items:center}
+#dashboard .dashTitle{position:relative}
+#dashboard .dashTitle h1{font-size:34px;letter-spacing:-.045em;font-weight:850;margin:5px 0 7px}
+#dashboard .dashTitle p{font-size:13px;color:#7c89a1}
+#dashboard .dashEyebrow{font-size:9px;letter-spacing:.16em;color:#496be0}
+#dashboard .dashLive{width:8px;height:8px;background:#1ca56f;box-shadow:0 0 0 5px rgba(28,165,111,.09)}
+#dashboard .dashControls{gap:9px}
+#dashboard .dashDate .input{height:42px;border-radius:12px;padding:0 13px;box-shadow:0 5px 16px rgba(29,45,78,.045)}
+#dashboard .dashDate span{font-size:8.5px;letter-spacing:.11em}
+#dashboard .segs{background:#eef2f8;border-color:#e3e8f1;border-radius:12px;padding:4px}
+#dashboard .seg{height:32px;border-radius:9px;font-size:11px;padding:0 13px;color:#6c7890}
+#dashboard .seg.on{color:#2f55d4;box-shadow:0 3px 10px rgba(31,53,103,.11)}
+#dashboard .dashSectionLabel{margin:0 0 10px;padding:0 3px}
+#dashboard .dashSectionLabel span{font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:#63718a}
+#dashboard .dashSectionLabel small{font-size:10px;color:#9aa5b8}
+#dashboard .kpis{gap:10px;margin-bottom:16px}
+#dashboard .kpi{min-height:124px;padding:17px 17px 15px;border-radius:16px;box-shadow:0 8px 24px rgba(32,50,88,.055);transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease}
+#dashboard .kpi:hover{transform:translateY(-2px);box-shadow:0 12px 28px rgba(32,50,88,.09);border-color:#d8e0f0}
+#dashboard .kpi:before{content:"";position:absolute;right:13px;top:13px;width:30px;height:30px;border-radius:10px;background:#f1f4ff}
+#dashboard .kpi:nth-child(1):before{content:"₽";display:grid;place-items:center;color:#3f62da;font-weight:900;font-size:13px}
+#dashboard .kpi:nth-child(2):before{content:"⌁";display:grid;place-items:center;color:#3f62da;font-weight:900;font-size:17px}
+#dashboard .kpi:nth-child(3):before{content:"✓";display:grid;place-items:center;color:#13865c;font-weight:900;font-size:13px;background:#ecf8f2}
+#dashboard .kpi:nth-child(4):before{content:"!";display:grid;place-items:center;color:#a16d00;font-weight:900;font-size:13px;background:#fff7df}
+#dashboard .kpi:nth-child(5):before{content:"●";display:grid;place-items:center;color:#3f62da;font-size:11px}
+#dashboard .kpi:nth-child(6):before{content:"◷";display:grid;place-items:center;color:#3f62da;font-weight:900;font-size:13px}
+#dashboard .kpi span{font-size:8.5px;letter-spacing:.11em;color:#8793aa}
+#dashboard .kpi b{font-size:25px;margin-top:10px;color:#17233f;font-weight:820}
+#dashboard .kpi i{margin-top:10px;font-size:9px;border:1px solid transparent}
+#dashboard .kpi i.up{border-color:#d5eee2}.kpi i.dn{border-color:#f3d3d3}.kpi i.fl{border-color:#e0e6f2}
+#dashboard .dashGrid{gap:15px;margin-bottom:15px}
+#dashboard .dashGridTop{grid-template-columns:minmax(0,1.38fr) minmax(350px,.62fr)}
+#dashboard .dashCard{border-radius:18px;padding:19px 20px;box-shadow:0 8px 26px rgba(31,49,85,.05);border-color:#e2e7f0}
+#dashboard .dashCardHead{margin-bottom:14px}
+#dashboard .dashCardHead h3{font-size:17px;font-weight:820;margin:4px 0 4px}
+#dashboard .dashCardHead p{font-size:10.5px;color:#8a96ab}
+#dashboard .dashCardKicker{font-size:8px;letter-spacing:.15em;color:#8d99ae}
+#dashboard .dashCardIcon{width:34px;height:34px;border-radius:11px;background:#eff3ff;color:#3b5ed9;font-size:14px;box-shadow:inset 0 0 0 1px #e3e9ff}
+#dashboard .dashChartLegend{font-size:10px;color:#8793a8;margin:0 0 3px}
+#dashboard .legendDot{width:7px;height:7px;box-shadow:0 0 0 4px rgba(47,85,212,.08)}
+#dashboard .bars{height:218px;padding:13px 7px 0;gap:9px;border-bottom:1px solid #edf0f5}
+#dashboard .bar .v{border-radius:7px 7px 3px 3px;background:linear-gradient(180deg,#7390ff 0%,#3158d8 100%);box-shadow:0 6px 13px rgba(49,88,216,.13)}
+#dashboard .bar .v:hover{transform:translateY(-3px);filter:brightness(1.06)}
+#dashboard .bar small{font-size:8px;color:#8b96a9}
+#dashboard .dashChartCard>.muted{margin-top:18px!important;color:#98a2b3!important;font-size:9.5px!important}
+#dashboard .pie{min-height:218px;gap:30px}
+#dashboard .pie svg{width:172px;height:172px;filter:drop-shadow(0 10px 18px rgba(31,51,98,.10))}
+#dashboard .pie .legend{gap:12px;font-size:11px}
+#dashboard .pie .legend div{color:#697690}
+#dashboard .pie .legend b{color:#24304a}
+#dashboard .rank{gap:8px;max-height:255px}
+#dashboard .rankrow{padding:12px 13px;border-radius:12px;background:#fbfcfe;border-color:#e7ebf2;transition:.18s ease}
+#dashboard .rankrow:hover{background:#f6f8fd;border-color:#dce3f0;transform:translateX(2px)}
+#dashboard .rankrow b{font-size:12.5px}
+#dashboard .rankrow .met{font-size:9.5px;color:#8a96aa}
+#dashboard .rankbar{height:5px;background:#e9edf4}
+#dashboard .rankbar i{background:linear-gradient(90deg,#718eff,#3158d8)}
+#dashboard #dHours .bars{height:218px}
+#dashboard #dHours .bar .v{box-shadow:none;border-radius:7px 7px 2px 2px}
+#dashboard #dHours .bar small{font-size:8px}
+#dashboard .dashCourses .tableWrap{border-radius:13px;border-color:#e5e9f1}
+#dashboard .dashCourses .table th{padding:12px 13px;background:#f8f9fb;font-size:8px;letter-spacing:.1em;color:#8b96aa}
+#dashboard .dashCourses .table td{padding:12px 13px;font-size:11px;color:#596781}
+#dashboard .dashCourses .table tbody tr{transition:.15s ease}
+#dashboard .dashCourses .table tbody tr:hover{background:#fafbff}
+#dashboard .dashCourses .table td b{font-weight:800;color:#1b2741}
+#dashboard .empty{padding:28px;border-radius:12px;background:#fafbfe;border-color:#e1e6ef}
+#dashboard .error{border-radius:12px}
+@media(max-width:1250px){#dashboard .kpis{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:900px){#dashboard .dashGridTop{grid-template-columns:1fr}.dashGrid{grid-template-columns:1fr!important}}
+@media(max-width:700px){
+ #dashboard .dashHero{padding-bottom:16px}.dashTitle h1{font-size:28px!important}
+ #dashboard .kpis{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+ #dashboard .kpi{min-height:108px;padding:14px}.dashCard{padding:15px!important}
+ #dashboard .bars,#dashboard #dHours .bars{height:175px}
+}
+@media(max-width:430px){#dashboard .kpis{grid-template-columns:1fr 1fr}#dashboard .kpi b{font-size:18px}#dashboard .kpi:before{display:none!important}}
+
 </style>
 </head>
 <body>
@@ -534,27 +811,100 @@ pre.json{background:#F7FAFF;border:1px solid var(--line);border-radius:8px;paddi
 <div id="warnings"></div>
 
 <section id="dashboard" class="page">
-  <div class="head"><div><h1>Dashboard</h1><p id="dPeriodLabel">Kunlik ko‘rsatkichlar</p></div>
-    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-      <input id="dDate" type="date" class="input">
-      <div class="segs" id="dSegs">
+  <div class="dashHero">
+    <div class="dashTitle">
+      <div class="dashEyebrow"><span class="dashLive"></span> AVTODROM ANALYTICS</div>
+      <h1>Dashboard</h1>
+      <p id="dPeriodLabel">Kunlik ko‘rsatkichlar</p>
+    </div>
+    <div class="dashControls">
+      <label class="dashDate">
+        <span>Sana</span>
+        <input id="dDate" type="date" class="input">
+      </label>
+      <div class="segs" id="dSegs" aria-label="Hisobot davri">
         <button class="seg on" data-per="day">Kunlik</button>
         <button class="seg" data-per="week">Haftalik</button>
         <button class="seg" data-per="month">Oylik</button>
         <button class="seg" data-per="year">Yillik</button>
       </div>
-    </div></div>
+    </div>
+  </div>
+
   <div id="dAlert"></div>
+
+  <div class="dashSectionLabel">
+    <div>
+      <span>Asosiy ko‘rsatkichlar</span>
+      <small>Tanlangan davr bo‘yicha umumiy natija</small>
+    </div>
+  </div>
   <div class="kpis" id="dKpis"></div>
-  <div class="grid2">
-    <div class="card"><h3 style="margin-top:0">Dinamika</h3><div id="dChart"></div></div>
-    <div class="card"><h3 style="margin-top:0">To‘lov turlari</h3><div id="dPie"></div></div>
+
+  <div class="dashGrid dashGridTop">
+    <article class="dashCard dashChartCard">
+      <div class="dashCardHead">
+        <div>
+          <span class="dashCardKicker">DAROMAD</span>
+          <h3>Dinamika</h3>
+          <p>Davr davomida tushum o‘zgarishi</p>
+        </div>
+        <div class="dashCardIcon">↗</div>
+      </div>
+      <div class="dashChartLegend"><span class="legendDot"></span> Tushum</div>
+      <div id="dChart"></div>
+    </article>
+
+    <article class="dashCard dashPaymentCard">
+      <div class="dashCardHead">
+        <div>
+          <span class="dashCardKicker">TO‘LOVLAR</span>
+          <h3>To‘lov turlari</h3>
+          <p>Naqd va karta bo‘yicha taqsimot</p>
+        </div>
+        <div class="dashCardIcon">₸</div>
+      </div>
+      <div id="dPie"></div>
+    </article>
   </div>
-  <div class="grid2">
-    <div class="card"><h3 style="margin-top:0">Instruktorlar reytingi</h3><div id="dIns"></div></div>
-    <div class="card"><h3 style="margin-top:0">Soatlar bo‘yicha band-band</h3><div id="dHours"></div></div>
+
+  <div class="dashGrid">
+    <article class="dashCard">
+      <div class="dashCardHead">
+        <div>
+          <span class="dashCardKicker">PERFORMANCE</span>
+          <h3>Instruktorlar reytingi</h3>
+          <p>Tushum va yakunlangan mashg‘ulotlar</p>
+        </div>
+        <div class="dashCardIcon">★</div>
+      </div>
+      <div id="dIns"></div>
+    </article>
+
+    <article class="dashCard">
+      <div class="dashCardHead">
+        <div>
+          <span class="dashCardKicker">YUKLAMA</span>
+          <h3>Soatlar bo‘yicha bandlik</h3>
+          <p>Qaysi vaqtda avtodrom eng faol</p>
+        </div>
+        <div class="dashCardIcon">◷</div>
+      </div>
+      <div id="dHours"></div>
+    </article>
   </div>
-  <div class="card"><h3 style="margin-top:0">Mashg‘ulotlar bo‘yicha</h3><div id="dCourses"></div></div>
+
+  <article class="dashCard dashCourses">
+    <div class="dashCardHead">
+      <div>
+        <span class="dashCardKicker">TAHLIL</span>
+        <h3>Mashg‘ulotlar bo‘yicha</h3>
+        <p>Mashg‘ulotlar kesimida bronlar va tushum</p>
+      </div>
+      <div class="dashCardIcon">▤</div>
+    </div>
+    <div id="dCourses"></div>
+  </article>
 </section>
 
 <section id="kdash" class="page">
