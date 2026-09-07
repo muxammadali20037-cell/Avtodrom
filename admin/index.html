@@ -197,6 +197,10 @@ button,input,select,textarea{font:inherit}.hidden{display:none!important}
 
 .who{font-size:12px;font-weight:700;padding:5px 11px;border-radius:99px;background:var(--soft);color:var(--g)}
 .who.cashier{background:#FFF4E0;color:#8a5a00}
+
+.picked{border:1.5px solid var(--g);background:var(--soft);border-radius:14px;padding:14px}
+.picked .row{display:flex;justify-content:space-between;font-size:13px;padding:3px 0}
+.picked .big{font-size:16px;font-weight:800;margin-bottom:8px;color:var(--g)}
 .warn{padding:11px;border-radius:11px;background:#fff8e6;color:#8a6500;border:1px solid #ffe6a8;font-size:13px}
 .top{height:70px;background:#fff;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:20}
 .topin{height:100%;max-width:1500px;margin:auto;padding:0 20px;display:flex;align-items:center;justify-content:space-between}
@@ -411,6 +415,10 @@ button,input,select,textarea{font:inherit}.hidden{display:none!important}
 
 .who{font-size:12px;font-weight:700;padding:5px 11px;border-radius:99px;background:var(--soft);color:var(--g)}
 .who.cashier{background:#FFF4E0;color:#8a5a00}
+
+.picked{border:1.5px solid var(--g);background:var(--soft);border-radius:14px;padding:14px}
+.picked .row{display:flex;justify-content:space-between;font-size:13px;padding:3px 0}
+.picked .big{font-size:16px;font-weight:800;margin-bottom:8px;color:var(--g)}
 .warn{padding:11px;border-radius:11px;background:#fff8e6;color:#8a6500;border:1px solid #ffe6a8;margin-bottom:12px;font-size:13px}
 .empty{padding:25px;text-align:center;color:var(--muted)}
 .actions{display:flex;gap:5px;flex-wrap:wrap}
@@ -660,35 +668,39 @@ pre.json{background:#F7FAFF;border:1px solid var(--line);border-radius:8px;paddi
         </div></div>
 
       <!-- 2. Mijoz -->
-      <div class="field"><label>2. ISM FAMILIYA *</label>
-        <input id="coName" class="input" autocomplete="off" placeholder="Mijoz ismini yozing...">
+      <div class="field"><label id="coNameLabel">2. MIJOZNI TOPING *</label>
+        <input id="coName" class="input" autocomplete="off" placeholder="Ism yoki telefon bo'yicha qidiring...">
         <div id="coSuggest" class="suggest hidden"></div></div>
       <div class="field" id="coPhoneWrap"><label>TELEFON</label>
         <input id="coPhone" class="input" autocomplete="off" placeholder="+998901234567"></div>
 
-      <!-- bronli: mijozning bronlari -->
-      <div class="field hidden" id="coBookWrap"><label>MIJOZNING BRONI *</label>
+      <!-- BRONLI: mijozning bronlari (ismdan darhol keyin) -->
+      <div class="field hidden" id="coBookWrap"><label>3. MIJOZNING BRONINI TANLANG *</label>
         <div id="coBookings" class="bklist"></div></div>
 
-      <!-- 3. Kategoriya -->
-      <div class="field"><label>3. KATEGORIYA *</label>
-        <div class="pick3" id="coCats"></div></div>
-
-      <!-- 4. Davomiylik -->
-      <div class="field"><label>4. DAVOMIYLIK *</label>
-        <div class="durs" id="coDurs"></div>
-        <div style="display:flex;gap:8px;align-items:center;margin-top:9px">
-          <input id="coCustomMin" class="input" type="number" min="15" max="600" step="5" placeholder="Qo‘lda: daqiqa" style="max-width:180px">
-          <span class="muted" style="font-size:12px">15–600 daqiqa</span>
-        </div></div>
-
-      <!-- 5. Vaqt va instruktor -->
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-        <div class="field"><label>SANA</label><input id="coDate" class="input" type="date"></div>
-        <div class="field"><label>VAQT</label><input id="coTime" class="input" type="time" step="900"></div>
+      <!-- BRONLI: tanlangan bron xulosasi -->
+      <div class="field hidden" id="coPickedWrap">
+        <div id="coPicked" class="picked"></div>
+        <button type="button" class="btn small" id="coChangeBk" style="margin-top:8px">Boshqa bron tanlash</button>
       </div>
-      <div class="field"><label>5. INSTRUKTOR *</label>
-        <div id="coInsBox" class="inslist"><div class="muted" style="font-size:13px">Vaqt tanlansa bo‘sh instruktorlar chiqadi.</div></div></div>
+
+      <!-- QO'LDA TANLASH: bronsizda doim; bronlida bron tanlangach berkitiladi -->
+      <div id="coManualFields">
+        <div class="field"><label>3. KATEGORIYA *</label>
+          <div class="pick3" id="coCats"></div></div>
+        <div class="field"><label>4. DAVOMIYLIK *</label>
+          <div class="durs" id="coDurs"></div>
+          <div style="display:flex;gap:8px;align-items:center;margin-top:9px">
+            <input id="coCustomMin" class="input" type="number" min="15" max="600" step="5" placeholder="Qo'lda: daqiqa" style="max-width:150px">
+            <span class="muted" style="font-size:12px">15-600 daqiqa</span>
+          </div></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <div class="field"><label>SANA</label><input id="coDate" class="input" type="date"></div>
+          <div class="field"><label>VAQT</label><input id="coTime" class="input" type="time" step="900"></div>
+        </div>
+        <div class="field"><label>5. INSTRUKTOR *</label>
+          <div id="coInsBox" class="inslist"><div class="muted" style="font-size:13px">Vaqt tanlansa bo'sh instruktorlar chiqadi.</div></div>
+      </div>
     </div>
 
     <div class="card" style="position:sticky;top:88px">
@@ -2327,10 +2339,29 @@ function coSetMode(m){
   CO.mode = m; CO.booking = null; CO.instructor = null;
   $('coBooked').classList.toggle('on', m==='booked');
   $('coWalk').classList.toggle('on', m==='walk_in');
-  $('coBookWrap').classList.toggle('hidden', m!=='booked');
+  coUpdateFormView();
   if (m==='booked' && CO.customer) loadCoBookings();
   if (m==='walk_in') loadFreeInstructors();
   coRender();
+}
+
+/* Bronli va bronsiz rejimda forma boshqacha:
+   · BRONSIZ — hamma qo'lda tanlanadi (kategoriya, vaqt, instruktor)
+   · BRONLI  — avval bron tanlanadi, keyin qolgani AVTOMATIK to'ladi
+     va berkitiladi. Kassir bron tafsilotini o'zgartirmaydi. */
+function coUpdateFormView(){
+  const booked = CO.mode === 'booked';
+  const hasPick = booked && CO.booking;
+
+  // Bronli rejimda bron ro'yxati ko'rinadi (bron tanlanmaguncha)
+  $('coBookWrap').classList.toggle('hidden', !booked || !!CO.booking);
+  // Tanlangan bron xulosasi
+  $('coPickedWrap').classList.toggle('hidden', !hasPick);
+  /* Qo'lda tanlash maydonlari:
+     · BRONSIZ — doim ko'rinadi
+     · BRONLI  — HECH QACHON ko'rinmaydi (bron tanlanmagan bo'lsa ro'yxat,
+       tanlangach xulosa). Kassir bron tafsilotini o'zgartirmaydi. */
+  $('coManualFields').classList.toggle('hidden', booked);
 }
 $('coBooked').onclick = () => coSetMode('booked');
 $('coWalk').onclick   = () => coSetMode('walk_in');
@@ -2386,10 +2417,36 @@ async function loadCoBookings(){
         const cat = String(CO.booking.category || CO.booking.course?.category || '').toUpperCase();
         if (cat) CO.category = cat;
       }
-      loadCoBookings(); coRender();
+      coUpdateFormView();
+      coRenderPicked();
+      coRender();
     });
   }catch(e){ box.innerHTML = `<div class="error">${esc(e.message)}</div>`; }
 }
+
+/* Tanlangan bron xulosasi — kassir nima chek chiqarayotganini ko'radi. */
+function coRenderPicked(){
+  if (!CO.booking) return;
+  const b = CO.booking;
+  const cat = String(b.category || b.course?.category || CO.category || '—').toUpperCase();
+  $('coPicked').innerHTML = `
+    <div class="big">${esc(b.customer?.full_name || CO.customer?.full_name || 'Mijoz')}</div>
+    <div class="row"><span>Vaqt</span><b>${esc(kHour(b.start_at))} · ${esc(new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Tashkent'}).format(new Date(b.start_at)))}</b></div>
+    <div class="row"><span>Kategoriya</span><b>${esc(cat)}</b></div>
+    <div class="row"><span>Mashg‘ulot</span><b>${esc(b.course?.name || '—')}</b></div>
+    <div class="row"><span>Davomiylik</span><b>${esc(fmtDur(CO.minutes))}</b></div>
+    <div class="row"><span>Instruktor</span><b>${esc(b.instructor?.profile?.full_name || CO.instructor?.name || '—')}</b></div>`;
+}
+
+/* "Boshqa bron tanlash" — ro'yxatga qaytamiz */
+document.addEventListener('click', (e) => {
+  if (e.target && e.target.id === 'coChangeBk') {
+    CO.booking = null; CO.instructor = null;
+    coUpdateFormView();
+    if (CO.customer) loadCoBookings();
+    coRender();
+  }
+});
 
 /* ---- kategoriya ---- */
 function renderCats(){
@@ -2568,6 +2625,7 @@ function initCheckout(){
     const first = (S.courses||[]).find(c => c.is_active && c.category);
     CO.category = String(first?.category || 'B').toUpperCase();
   }
+  coUpdateFormView();
   coRender();
   if (CO.mode === 'walk_in') loadFreeInstructors();
 }
