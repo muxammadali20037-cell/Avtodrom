@@ -79,3 +79,57 @@ export async function supabaseRest<T>(
 
   throw new Error(`Supabase ${lastStatus}: ${reason(lastStatus, lastBody)}`);
 }
+
+/**
+ * Sahifalangan o'qish — qatorlar bilan birga UMUMIY SONNI ham qaytaradi.
+ *
+ * PostgREST bir so'rovda ko'pi bilan 1000 qator beradi va bu haqda xato
+ * bermaydi. Shuning uchun sahifalash shart. `Prefer: count=exact` sarlavhasi
+ * `Content-Range: 0-24/1337` ko'rinishida umumiy sonni qaytaradi —
+ * shundan "nechta sahifa bor" ni bilamiz.
+ *
+ * Diqqat: count=exact katta jadvalda sekin. 100k+ qatorda
+ * `count=planned` ga o'tish kerak (taxminiy, lekin tez).
+ */
+export async function supabaseRestPaged<T>(
+  table: string,
+  query: string,
+  page: number,
+  perPage: number,
+): Promise<{ rows: T[]; total: number; page: number; per_page: number; has_more: boolean }> {
+  requireSupabase();
+
+  const size = Math.max(1, Math.min(200, Math.trunc(perPage) || 50));
+  const p = Math.max(1, Math.trunc(page) || 1);
+  const from = (p - 1) * size;
+  const to = from + size - 1;
+
+  const url = `${SUPABASE_URL}/rest/v1/${table}${query}`;
+  const headers = new Headers();
+  headers.set('apikey', SUPABASE_SERVICE_ROLE_KEY);
+  headers.set('Authorization', `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`);
+  headers.set('Content-Type', 'application/json');
+  headers.set('Range-Unit', 'items');
+  headers.set('Range', `${from}-${to}`);
+  headers.set('Prefer', 'count=exact');
+
+  const response = await fetch(url, { headers });
+  const text = await response.text();
+  if (!response.ok) {
+    throw new Error(`Supabase ${response.status}: ${reason(response.status, text)}`);
+  }
+
+  const rows = text ? (JSON.parse(text) as T[]) : [];
+  // Content-Range: 0-24/1337  yoki  */0 (bo'sh natija)
+  const cr = String(response.headers.get('content-range') || '');
+  const totalRaw = cr.split('/')[1];
+  const total = totalRaw && totalRaw !== '*' ? Number(totalRaw) : rows.length;
+
+  return {
+    rows,
+    total: Number.isFinite(total) ? total : rows.length,
+    page: p,
+    per_page: size,
+    has_more: from + rows.length < total,
+  };
+}
