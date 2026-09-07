@@ -2777,7 +2777,7 @@ function applyMode(mode){
       hideMgmtLock();
       showPage('dashboard');
     } else {
-      showMgmtLock();
+      showMgmtLock();   // async — o'zi PIN holatini tekshiradi
     }
     return;
   }
@@ -3270,7 +3270,7 @@ function mgmtTokenValid(){
 }
 
 /** BOSHQARUV bo'limlarini yashiradi va PIN oynasini ko'rsatadi. */
-function showMgmtLock(){
+async function showMgmtLock(){
   document.querySelectorAll('.page').forEach(pg => {
     const btn = document.querySelector(`.nav[data-p="${pg.id}"]`);
     if (btn && btn.dataset.grp === 'admin') pg.classList.remove('on');
@@ -3279,6 +3279,33 @@ function showMgmtLock(){
 
   const box = $('mgmtLock');
   box.classList.remove('hidden');
+
+  /* PIN o'rnatilganmi? O'rnatilmagan bo'lsa — "tovuq va tuxum"
+     muammosi (PIN Sozlamalarда, Sozlamalar qulf ortida). Shuning
+     uchun birinchi marta shu yerda O'RNATISH oynasi ko'rsatiladi. */
+  let isSet = true;
+  try { isSet = (await api('/api/admin/mgmt-pin')).is_set; }
+  catch (e) { /* xato bo'lsa oddiy kirish oynasini ko'rsatamiz */ }
+
+  if (!isSet) {
+    box.innerHTML = `
+      <div class="lockbox">
+        <h2>Boshqaruv PIN o‘rnating</h2>
+        <p class="muted">Birinchi kirish. BOSHQARUV uchun PIN kod yarating (4-8 raqam).</p>
+        <input id="mgmtPin" class="input" type="password" inputmode="numeric" maxlength="8"
+               placeholder="Yangi PIN" autocomplete="new-password" style="text-align:center;font-size:22px;letter-spacing:6px">
+        <input id="mgmtPin2" class="input" type="password" inputmode="numeric" maxlength="8"
+               placeholder="PIN ni takrorlang" autocomplete="new-password" style="text-align:center;font-size:22px;letter-spacing:6px;margin-top:10px">
+        <div id="mgmtLockErr"></div>
+        <button class="btn primary" id="mgmtSetup" style="width:100%;height:48px">O‘rnatish va kirish</button>
+      </div>`;
+    $('mgmtPin').focus();
+    const doSetup = () => mgmtFirstSetup($('mgmtPin').value, $('mgmtPin2').value);
+    $('mgmtSetup').onclick = doSetup;
+    $('mgmtPin2').onkeydown = e => { if (e.key === 'Enter') doSetup(); };
+    return;
+  }
+
   box.innerHTML = `
     <div class="lockbox">
       <h2>BOSHQARUV himoyalangan</h2>
@@ -3293,6 +3320,22 @@ function showMgmtLock(){
   const go = () => mgmtUnlock(inp.value);
   $('mgmtEnter').onclick = go;
   inp.onkeydown = e => { if (e.key === 'Enter') go(); };
+}
+
+/** Birinchi marta PIN o'rnatish — qulf oynasidan to'g'ridan-to'g'ri. */
+async function mgmtFirstSetup(pin, pin2){
+  const err = m => { const e = $('mgmtLockErr'); if (e) e.innerHTML = `<div class="error">${esc(m)}</div>`; };
+  if (!/^\d{4,8}$/.test(pin)) return err('PIN 4-8 raqam bo‘lsin');
+  if (pin !== pin2) return err('PIN kodlar mos kelmadi');
+  const btn = $('mgmtSetup'); if (btn) { btn.disabled = true; btn.textContent = '...'; }
+  try{
+    await api('/api/admin/mgmt-pin', { method:'PUT', body: JSON.stringify({ pin }) });
+    // Darhol ochamiz
+    await mgmtUnlock(pin);
+  }catch(e){
+    if (btn) { btn.disabled = false; btn.textContent = 'O‘rnatish va kirish'; }
+    err(e.message);
+  }
 }
 
 function hideMgmtLock(){
