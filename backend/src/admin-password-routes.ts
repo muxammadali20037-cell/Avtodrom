@@ -219,9 +219,13 @@ async function notifyCustomer(booking: any, event: BookingEvent, extra: string) 
 
 export async function registerAdminPasswordRoutes(app: FastifyInstance) {
   /* Login uchun ALOHIDA cheklov. Global limit 120/min — bu parol
-     tanlash uchun juda ko'p. 15 daqiqada 5 urinish yetarli. */
+     tanlash uchun juda ko'p. 15 daqiqada 5 urinish yetarli.
+
+     Sozlanadigan: testlarda va ko'p xodimli muhitda chegara boshqacha
+     bo'lishi kerak. LOGIN_RATE_MAX orqali o'zgartiriladi. */
+  const loginMax = Math.max(1, Number(process.env.LOGIN_RATE_MAX) || 5);
   app.post('/api/admin/login', {
-    config: { rateLimit: { max: 5, timeWindow: '15 minutes' } },
+    config: { rateLimit: { max: loginMax, timeWindow: '15 minutes' } },
   }, async (req: any, reply: any) => {
     try {
       const login = String(req.body?.login || '').trim(), password = String(req.body?.password || '');
@@ -246,6 +250,7 @@ export async function registerAdminPasswordRoutes(app: FastifyInstance) {
         role: identity.role,
         register_id: identity.register_id,
         full_name: identity.full_name,
+        legacy: identity.legacy,
       };
     } catch (e) { return err(reply, e, 'Admin login failed'); }
   });
@@ -302,6 +307,8 @@ export async function registerAdminPasswordRoutes(app: FastifyInstance) {
             login, password_hash: hashPassword(password), role,
             register_id: role === 'cashier' ? registerId : null,
             full_name: String(b.full_name || '').trim() || null,
+            // Aniq yozamiz — baza standartiga tayanmaymiz
+            is_active: true,
           }),
         });
         /* Audit YOZUVI IXTIYORIY: u yiqilsa ham xodim yaratilgan bo'ladi.
@@ -412,6 +419,163 @@ export async function registerAdminPasswordRoutes(app: FastifyInstance) {
       } catch (auditErr) { console.warn('STAFF_DELETED audit yozilmadi:', auditErr); }
       return { ok: true };
     } catch (e) { return err(reply, e, 'Xodim o‘chirilmadi'); }
+  });
+
+
+  /* =====================================================================
+     LOKATSIYA — avtodrom manzili va koordinatalari
+     Ilgari `api/admin/settings/location/` da alohida auth bilan edi;
+     u eski token formatini ishlatardi va rol modelidan keyin
+     butunlay ishlamay qolardi.
+     ===================================================================== */
+
+  app.get('/api/admin/settings/location', async (req: any, reply: any) => {
+    try {
+      await guardAdmin(req);
+      const rows = await supabaseRest<any[]>('admin_settings', {
+        query: '?key=eq.location&select=key,value,updated_at&limit=1',
+      });
+      return { ok: true, setting: rows[0] || null };
+    } catch (e: any) {
+      return reply.code(e?.statusCode ?? 500).send({ ok: false, error: e?.message || 'Lokatsiya o‘qilmadi' });
+    }
+  });
+
+  const saveLocation = async (req: any, reply: any) => {
+    try {
+      await guardAdmin(req);
+      const body = (req.body || {}) as any;
+      const raw = body.value !== undefined ? body.value : body;
+      const v = raw && typeof raw === 'object' ? raw : {};
+
+      const name = String(v.name || '').trim();
+      const address = String(v.address || '').trim();
+      const latitude = Number(v.latitude ?? v.lat);
+      const longitude = Number(v.longitude ?? v.lng);
+
+      if (!name) return reply.code(400).send({ ok: false, error: 'Lokatsiya nomi majburiy' });
+      if (!address) return reply.code(400).send({ ok: false, error: 'Manzilni kiriting' });
+      if (!Number.isFinite(latitude) || latitude < -90 || latitude > 90) {
+        return reply.code(400).send({ ok: false, error: 'Latitude noto‘g‘ri (-90 dan 90 gacha)' });
+      }
+      if (!Number.isFinite(longitude) || longitude < -180 || longitude > 180) {
+        return reply.code(400).send({ ok: false, error: 'Longitude noto‘g‘ri (-180 dan 180 gacha)' });
+      }
+
+      const value = {
+        name, address, latitude, longitude,
+        google_url: String(v.google_url || v.google || '').trim(),
+        yandex_url: String(v.yandex_url || v.yandex || '').trim(),
+        two_gis_url: String(v.two_gis_url || v['2gis'] || '').trim(),
+      };
+
+      const old = await supabaseRest<any[]>('admin_settings', { query: '?key=eq.location&select=*&limit=1' });
+      const updated_at = new Date().toISOString();
+      const rows = old[0]
+        ? await supabaseRest<any[]>('admin_settings', {
+            method: 'PATCH', headers: { Prefer: 'return=representation' },
+            query: '?key=eq.location', body: JSON.stringify({ value, updated_at }),
+          })
+        : await supabaseRest<any[]>('admin_settings', {
+            method: 'POST', headers: { Prefer: 'return=representation' },
+            body: JSON.stringify({ key: 'location', value, updated_at }),
+          });
+
+      try {
+        const admin = await adminUser();
+        await audit(admin.id, 'SETTINGS_UPDATED', 'admin_settings', 'location', old[0]?.value ?? null, value);
+      } catch { /* audit ixtiyoriy */ }
+
+      return { ok: true, setting: rows[0] ?? null };
+    } catch (e: any) {
+      return reply.code(e?.statusCode ?? 500).send({ ok: false, error: e?.message || 'Lokatsiya saqlanmadi' });
+    }
+  };
+  app.put('/api/admin/settings/location', saveLocation);
+  app.patch('/api/admin/settings/location', saveLocation);
+
+
+  /* =====================================================================
+     TO'LOVNI BEKOR QILISH (refund)
+     Xato chek chiqarilsa yoki mijoz pulini qaytarsa. To'lov yozuvi
+     O'CHIRILMAYDI — holati o'zgaradi. Aks holda kassa hisoboti
+     buzilardi va nima bo'lganini bilib bo'lmasdi.
+     ===================================================================== */
+  app.post('/api/admin/payments/:id/refund', async (req: any, reply: any) => {
+    try {
+      const me = await currentStaff(req);
+      const id = String(req.params.id);
+      const reason = String((req.body as any)?.reason || '').trim();
+
+      if (reason.length < 3) {
+        return reply.code(400).send({ ok: false, error: 'Bekor qilish sababini yozing' });
+      }
+
+      const pay = (await supabaseRest<any[]>('payments', {
+        query: `?id=eq.${q(id)}&select=*&limit=1`,
+      }))[0];
+      if (!pay) return reply.code(404).send({ ok: false, error: 'To‘lov topilmadi' });
+
+      if (String(pay.status) === 'refunded') {
+        return reply.code(409).send({ ok: false, error: 'Bu to‘lov allaqachon bekor qilingan' });
+      }
+      if (String(pay.status) !== 'paid') {
+        return reply.code(409).send({ ok: false, error: `To‘lov holati "${pay.status}" — bekor qilib bo‘lmaydi` });
+      }
+
+      /* Kassir FAQAT o'z kassasining va FAQAT bugungi to'lovini
+         bekor qila oladi. Eskisini bekor qilish — admin ishi,
+         chunki smena yopilgan bo'lishi mumkin. */
+      if (me.role !== 'admin') {
+        if (!pay.register_id || String(pay.register_id) !== String(me.register_id)) {
+          return reply.code(403).send({ ok: false, error: 'Bu to‘lov sizning kassangizga tegishli emas' });
+        }
+        const paidAt = new Date(pay.paid_at || pay.created_at || 0).getTime();
+        if (Date.now() - paidAt > 12 * 3600e3) {
+          return reply.code(403).send({
+            ok: false,
+            error: 'Eski to‘lovni faqat administrator bekor qila oladi',
+          });
+        }
+      }
+
+      const now = new Date().toISOString();
+      const rows = await supabaseRest<any[]>('payments', {
+        method: 'PATCH', headers: { Prefer: 'return=representation' },
+        query: `?id=eq.${q(id)}&status=eq.paid`,
+        body: JSON.stringify({
+          status: 'refunded',
+          refunded_at: now,
+          refund_reason: reason,
+          refunded_by: me.login,
+          updated_at: now,
+        }),
+      });
+      if (!rows.length) {
+        // status=eq.paid sharti tushmadi — kimdir bir vaqtda bekor qilgan
+        return reply.code(409).send({ ok: false, error: 'To‘lov holati o‘zgargan, sahifani yangilang' });
+      }
+
+      /* Bron ham qaytariladi: to'lovi bekor qilingan dars
+         "to'langan" bo'lib qolmasin. */
+      if (pay.booking_id) {
+        await supabaseRest('bookings', {
+          method: 'PATCH', query: `?id=eq.${q(String(pay.booking_id))}&status=in.(confirmed,in_progress)`,
+          body: JSON.stringify({ status: 'cancelled', updated_at: now }),
+        }).catch(() => {});
+      }
+
+      try {
+        const admin = await adminUser();
+        await audit(admin.id, 'PAYMENT_REFUNDED', 'payments', id,
+          { status: pay.status, amount: pay.amount },
+          { status: 'refunded', reason, by: me.login });
+      } catch { /* audit ixtiyoriy */ }
+
+      return { ok: true, payment: rows[0] };
+    } catch (e: any) {
+      return reply.code(e?.statusCode ?? 400).send({ ok: false, error: e?.message || 'Bekor qilinmadi' });
+    }
   });
 
   app.post('/api/admin/logout', async (_req: any, reply: any) => { clearCookie(reply); return { ok: true }; });
