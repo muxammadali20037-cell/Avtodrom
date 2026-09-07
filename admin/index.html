@@ -2189,6 +2189,32 @@ function receiptModal(r){
    Kutubxona cdnjs dan bir marta yuklanadi va keshlanadi.
    Yuklanmasa chek baribir yaroqli: kod katta harflar bilan bosiladi va
    instruktor uni qo'lda kiritadi (alifboda chalkash 0/O/1/I yo'q). */
+/* Chart.js loader — cdnjs, bir marta. Yuklanmasa CSS fallback. */
+let chartLoading = null;
+function loadChart(){
+  if (window.Chart) return Promise.resolve(window.Chart);
+  if (chartLoading) return chartLoading;
+  chartLoading = new Promise(resolve => {
+    const sc = document.createElement('script');
+    sc.src = 'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js';
+    sc.onload = () => resolve(window.Chart || null);
+    sc.onerror = () => resolve(null);
+    document.head.appendChild(sc);
+    setTimeout(() => resolve(window.Chart || null), 6000);
+  });
+  return chartLoading;
+}
+const _charts = {};
+function drawChart(id, config){
+  loadChart().then(Chart => {
+    if (!Chart) return;
+    const cv = document.getElementById(id);
+    if (!cv) return;
+    if (_charts[id]) _charts[id].destroy();
+    _charts[id] = new Chart(cv, config);
+  });
+}
+
 let qrLib = null, qrLoading = null;
 function loadQR(){
   if (qrLib) return Promise.resolve(qrLib);
@@ -2390,15 +2416,16 @@ function renderDHours(hours){
 function renderDFunnel(t){
   const total = Number(t.bookings || 0);
   const box = $('dFunnel');
-  if (!total) { box.innerHTML = '<div class="empty">Ma\u2019lumot yo\u2018q.</div>'; return; }
+  const base = total || (Number(t.completed||0) + Number(t.no_show||0) + Number(t.cancelled||0));
+  if (!base) { box.innerHTML = '<div class="empty">Bu davrda bron yo\u2018q.</div>'; return; }
   const steps = [
-    ['Jami bron', total, '#3B5BDB'],
+    ['Jami bron', base, '#3B5BDB'],
     ['Yakunlangan', Number(t.completed || 0), '#0d7a4a'],
     ['Kelmagan', Number(t.no_show || 0), '#E8A23D'],
     ['Bekor', Number(t.cancelled || 0), '#c0392b'],
   ];
   box.innerHTML = `<div class="funnel">${steps.map(([label, n, col]) => {
-    const pc = Math.round(n / total * 100);
+    const pc = Math.round(n / base * 100);
     return `<div class="frow">
       <div class="ft"><span>${esc(label)}</span><b>${nf(n)} \u00b7 ${pc}%</b></div>
       <div class="fbar"><i style="width:${Math.max(2,pc)}%;background:${col}"></i></div>
