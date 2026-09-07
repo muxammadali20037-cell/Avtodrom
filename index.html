@@ -289,6 +289,12 @@ details.faq[open] summary{border-bottom:1px solid var(--line)}
 .bottom-btn:active{transform:scale(.96)}
 @media(max-width:360px){.bottom-btn .bl{font-size:9.5px}.bottom-btn .bi{width:21px;height:21px}}
 .warnline{color:#8a6500;font-weight:700}
+
+.pickup-code{display:flex;align-items:center;justify-content:space-between;gap:10px;
+ margin:12px 0;padding:12px 16px;border-radius:14px;
+ background:linear-gradient(135deg,var(--brand),#4348C4);color:#fff}
+.pickup-code span{font-size:12px;opacity:.9;font-weight:600}
+.pickup-code b{font-size:24px;font-weight:900;letter-spacing:2px;font-family:ui-monospace,monospace}
 .hide{display:none!important}
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
 @media(max-width:900px){.grid{grid-template-columns:repeat(2,1fr)}}
@@ -566,6 +572,7 @@ const I18N = {
     faq_a_cancel:'Ha. Hali tasdiqlanmagan bron darhol bekor bo‘ladi.\nTasdiqlangan bron uchun sabab yozib so‘rov yuborasiz — Admin ko‘rib chiqadi va javob beradi.',
     faq_q_pick:'Instruktorni o‘zim tanlaysanmi?', faq_a_pick:'Ha. «Instruktorlar» bo‘limida reyting, tajriba va sharhlarni ko‘rib, o‘zingizga mosini tanlaysiz.',
     faq_q_pay:'To‘lov qanday amalga oshiriladi?', faq_a_pay:'To‘lov turlari va shartlari bo‘yicha Admin bilan bog‘laning — bosh sahifadagi «Bog‘lanish» tugmasi.',
+    pickup_label:'Kassa uchun kod:',
     nav_home:'Asosiy', nav_instructors:'Instruktor', nav_book:'Bron', nav_bookings:'Bronlarim', nav_chat:'Chat', nav_profile:'Profil',
     hero_eyebrow:'Professional haydash tajribasi',
     hero_title:'Haydashni ishonch bilan o‘rganing.',
@@ -692,6 +699,7 @@ const I18N = {
     faq_a_cancel:'Да. Ещё не подтверждённая бронь отменяется сразу.\nДля подтверждённой брони вы отправляете запрос с указанием причины — администратор рассмотрит и ответит.',
     faq_q_pick:'Могу ли я сам выбрать инструктора?', faq_a_pick:'Да. В разделе «Инструкторы» вы видите рейтинг, опыт и отзывы, и выбираете подходящего.',
     faq_q_pay:'Как производится оплата?', faq_a_pay:'По способам и условиям оплаты свяжитесь с администратором — кнопка «Связаться» на главной странице.',
+    pickup_label:'Код для кассы:',
     nav_home:'Главная', nav_instructors:'Инструктор', nav_book:'Бронь', nav_bookings:'Мои брони', nav_chat:'Чат', nav_profile:'Профиль',
     hero_eyebrow:'Профессиональное обучение вождению',
     hero_title:'Учитесь водить уверенно.',
@@ -1201,6 +1209,11 @@ function renderBookings(){
       <div class="booking-row">
         <div><span class="status ${esc(st)}">${esc(stLabel(st))}</span><h3>${esc(b.course?.name||t('lesson'))}</h3></div>
         <b style="color:var(--brand);white-space:nowrap">${(b.total_price||b.course?.price)!=null?esc(money(b.total_price||b.course?.price)):''}</b></div>
+      ${b.pickup_code && ['pending','confirmed'].includes(st) ? `
+      <div class="pickup-code">
+        <span>${esc(t('pickup_label'))}</span>
+        <b>${esc(b.pickup_code)}</b>
+      </div>` : ''}
       <div class="booking-info">
         <div class="info"><span>${esc(t('instructor'))}</span><b>${esc(iName(b.instructor))}</b></div>
         <div class="info"><span>${esc(t('date'))}</span><b>${esc(fDate(b.start_at))}</b></div>
