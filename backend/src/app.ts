@@ -36,7 +36,13 @@ const INSTRUCTOR_MINI_APP_URL = process.env.INSTRUCTOR_MINI_APP_URL || 'https://
 const ADMIN_MINI_APP_URL = process.env.ADMIN_MINI_APP_URL || 'https://avtodrom.vercel.app/admin';
 const TELEGRAM_WEBHOOK_SECRET = process.env.TELEGRAM_WEBHOOK_SECRET || '';
 
-await app.register(cors, { origin: process.env.FRONTEND_ORIGIN ? [process.env.FRONTEND_ORIGIN] : true, credentials: true });
+/* CORS: FRONTEND_ORIGIN sozlanmagan bo'lsa cross-origin so'rovlarga
+   cookie yubormaymiz. Ilgari `origin: true` + `credentials: true`
+   birga ishlatilardi — har qanday sayt cookie bilan so'rov yubora olardi. */
+const ALLOWED_ORIGIN = String(process.env.FRONTEND_ORIGIN || '').trim();
+await app.register(cors, ALLOWED_ORIGIN
+  ? { origin: [ALLOWED_ORIGIN], credentials: true }
+  : { origin: false, credentials: false });
 await app.register(rateLimit, { max: 120, timeWindow: '1 minute' });
 app.get('/api/health', async () => ({ ok: true, service: 'avtodrom-api', bots: { customer: Boolean(CUSTOMER_BOT_TOKEN), instructor: Boolean(INSTRUCTOR_BOT_TOKEN), admin: Boolean(ADMIN_BOT_TOKEN) }, supabase: Boolean(process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY) }));
 
@@ -91,8 +97,15 @@ await registerAdminPasswordRoutes(app);
 await registerContentRoutes(app);
 
 async function handleTelegramWebhook(request: any, reply: any, token: string, miniAppUrl: string, role: 'customer' | 'admin') {
+  /* FAIL-CLOSED: sir sozlanmagan bo'lsa webhook ISHLAMAYDI.
+     Ilgari tekshiruv o'tkazib yuborilardi va begona odam soxta
+     callback yuborib bron holatini o'zgartira olardi. */
   const secret = String(request.headers['x-telegram-bot-api-secret-token'] || '');
-  if (TELEGRAM_WEBHOOK_SECRET && secret !== TELEGRAM_WEBHOOK_SECRET) return reply.code(401).send({ ok: false, error: 'Invalid webhook secret' });
+  if (!TELEGRAM_WEBHOOK_SECRET) {
+    request.log.error('TELEGRAM_WEBHOOK_SECRET sozlanmagan — webhook yopiq');
+    return reply.code(503).send({ ok: false, error: 'Webhook not configured' });
+  }
+  if (secret !== TELEGRAM_WEBHOOK_SECRET) return reply.code(401).send({ ok: false, error: 'Invalid webhook secret' });
   if (!token || !miniAppUrl) return reply.code(503).send({ ok: false, error: `${role} bot is not configured` });
   const message = (request.body as any)?.message;
   const text = typeof message?.text === 'string' ? message.text.trim() : '';
@@ -125,8 +138,15 @@ app.post('/api/telegram/customer/webhook', async (request, reply) => {
   return handleTelegramWebhook(request, reply, CUSTOMER_BOT_TOKEN, CUSTOMER_MINI_APP_URL, 'customer');
 });
 app.post('/api/telegram/instructor/webhook', async (request, reply) => {
+  /* FAIL-CLOSED: sir sozlanmagan bo'lsa webhook ISHLAMAYDI.
+     Ilgari tekshiruv o'tkazib yuborilardi va begona odam soxta
+     callback yuborib bron holatini o'zgartira olardi. */
   const secret = String(request.headers['x-telegram-bot-api-secret-token'] || '');
-  if (TELEGRAM_WEBHOOK_SECRET && secret !== TELEGRAM_WEBHOOK_SECRET) return reply.code(401).send({ ok: false, error: 'Invalid webhook secret' });
+  if (!TELEGRAM_WEBHOOK_SECRET) {
+    request.log.error('TELEGRAM_WEBHOOK_SECRET sozlanmagan — webhook yopiq');
+    return reply.code(503).send({ ok: false, error: 'Webhook not configured' });
+  }
+  if (secret !== TELEGRAM_WEBHOOK_SECRET) return reply.code(401).send({ ok: false, error: 'Invalid webhook secret' });
   const message = (request.body as any)?.message;
   const text = typeof message?.text === 'string' ? message.text.trim() : '';
   const chatId = Number(message?.chat?.id);
@@ -167,8 +187,14 @@ app.post<{ Body: { chatId?: number } }>('/api/telegram/admin/start', async (requ
  * (Vercel Cron `Authorization: Bearer <CRON_SECRET>` yuboradi.)
  */
 async function runReminders(request: any, reply: any) {
+  /* FAIL-CLOSED: CRON_SECRET yo'q bo'lsa endpoint yopiq.
+     Bu endpoint Telegram xabar yuboradi — himoyasiz qoldirib
+     bo'lmaydi. */
   const expected = String(process.env.CRON_SECRET || '').trim();
-  if (expected) {
+  if (!expected) {
+    return reply.code(503).send({ ok: false, error: 'CRON_SECRET sozlanmagan' });
+  }
+  {
     const auth = String(request.headers['authorization'] || '');
     const hdr = String(request.headers['x-cron-secret'] || '');
     const qs = String((request.query as any)?.key || '');
