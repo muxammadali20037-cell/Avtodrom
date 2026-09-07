@@ -348,9 +348,9 @@ export async function registerShiftRoutes(
       }
 
       const ids  = bookings.map((b) => String(b.id));
-      const uids = [...new Set(bookings.map((b) => String(b.customer_id)).filter(Boolean))];
-      const iids = [...new Set(bookings.map((b) => String(b.instructor_id)).filter(Boolean))];
-      const cids = [...new Set(bookings.map((b) => String(b.course_id)).filter(Boolean))];
+      const uids = [...new Set(bookings.map((b) => b.customer_id).filter(Boolean).map(String))];
+      const iids = [...new Set(bookings.map((b) => b.instructor_id).filter(Boolean).map(String))];
+      const cids = [...new Set(bookings.map((b) => b.course_id).filter(Boolean).map(String))];
 
       const [ips, courses, pays, scans] = await Promise.all([
         iids.length ? supabaseRest<any[]>('instructor_profiles', { query: `?id=in.(${iids.map(q).join(',')})&select=id,user_id` }) : [],
