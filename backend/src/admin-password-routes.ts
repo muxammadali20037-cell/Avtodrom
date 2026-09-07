@@ -1,8 +1,12 @@
 import type { FastifyInstance } from 'fastify';
 import { createHmac, timingSafeEqual } from 'node:crypto';
-import { supabaseRest } from './supabase.js';
+import { supabaseRest, supabaseRestPaged } from './supabase.js';
 import { sendBookingNotification } from './telegram.js';
 import { loadBookingDetails, bookingMessage, inAppMessage, type BookingEvent } from './notify.js';
+import {
+  authenticateStaff, assertRole, hashPassword,
+  type StaffIdentity, type StaffRole,
+} from './staff-auth.js';
 
 const COOKIE = 'avtodrom_admin_session', TTL = 60 * 60 * 12;
 const q = (v: string) => encodeURIComponent(v);
@@ -14,28 +18,77 @@ function cookie(req: any) {
   try { return decodeURIComponent(x.slice(COOKIE.length + 1)); } catch { return ''; }
 }
 function secret() { return String(process.env.ADMIN_SESSION_SECRET || process.env.ADMIN_PASSWORD || '').trim(); }
-function token(login: string) {
+
+/* Sessiya tokeni endi ROLNI ham olib yuradi.
+   Format (imzolangan): login|staffId|role|registerId|timestamp
+
+   Ilgari faqat login bor edi va har kim admin hisoblanardi.
+   Eski tokenlar endi yaroqsiz — bir marta qayta kirish kerak,
+   bu ataylab: eski token rolsiz bo'lgani uchun ishonib bo'lmaydi. */
+const SEP = '|';
+
+function token(identity: StaffIdentity) {
   const s = secret();
   if (!s) throw Error('ADMIN_SESSION_SECRET yoki ADMIN_PASSWORD sozlanmagan');
-  const ts = Date.now(), p = `${login}:${ts}`, sig = createHmac('sha256', s).update(p).digest('hex');
-  return Buffer.from(`${p}:${sig}`).toString('base64url');
+  const parts = [
+    identity.login,
+    identity.id ?? '-',
+    identity.role,
+    identity.register_id ?? '-',
+    String(Date.now()),
+  ];
+  const payload = parts.join(SEP);
+  const sig = createHmac('sha256', s).update(payload).digest('hex');
+  return Buffer.from(`${payload}${SEP}${sig}`).toString('base64url');
 }
-function valid(t: string) {
+
+/** Tokenni ochadi va kimligini qaytaradi. Yaroqsiz bo'lsa null. */
+function readToken(t: string): StaffIdentity | null {
   try {
-    const s = secret(), loginExpected = String(process.env.ADMIN_LOGIN || '').trim();
-    const d = Buffer.from(t || '', 'base64url').toString('utf8');
-    const a = d.indexOf(':'), b = d.indexOf(':', a + 1);
-    if (!s || !loginExpected || a <= 0 || b <= a) return false;
-    const login = d.slice(0, a), ts = Number(d.slice(a + 1, b)), sig = d.slice(b + 1);
-    if (login !== loginExpected || !Number.isFinite(ts) || Date.now() - ts < 0 || Date.now() - ts > TTL * 1000) return false;
-    const e = createHmac('sha256', s).update(`${login}:${ts}`).digest('hex');
-    const x = Buffer.from(sig), y = Buffer.from(e);
-    return x.length === y.length && timingSafeEqual(x, y);
-  } catch { return false; }
+    const s = secret();
+    if (!s || !t) return null;
+    const d = Buffer.from(t, 'base64url').toString('utf8');
+    const parts = d.split(SEP);
+    if (parts.length !== 6) return null;
+
+    const [login, staffId, role, registerId, tsRaw, sig] = parts;
+    const payload = parts.slice(0, 5).join(SEP);
+    const expected = createHmac('sha256', s).update(payload).digest('hex');
+    const x = Buffer.from(sig), y = Buffer.from(expected);
+    if (x.length !== y.length || !timingSafeEqual(x, y)) return null;
+
+    const ts = Number(tsRaw);
+    if (!Number.isFinite(ts) || Date.now() - ts < 0 || Date.now() - ts > TTL * 1000) return null;
+    if (role !== 'admin' && role !== 'cashier') return null;
+
+    return {
+      id: staffId === '-' ? null : staffId,
+      login,
+      role: role as StaffRole,
+      register_id: registerId === '-' ? null : registerId,
+      full_name: null,
+      legacy: staffId === '-',
+    };
+  } catch { return null; }
 }
+
+/** Kirganmi — kimligini qaytaradi. Kirmagan bo'lsa 401. */
+export async function currentStaff(req: any): Promise<StaffIdentity> {
+  const id = readToken(cookie(req));
+  if (!id) { const e: any = new Error('Admin login talab qilinadi'); e.statusCode = 401; throw e; }
+  return id;
+}
+
+/** Eski nom — mavjud chaqiruvlar buzilmasin. */
 export async function guard(req: any) {
-  if (!valid(cookie(req))) { const e: any = new Error('Admin login talab qilinadi'); e.statusCode = 401; throw e; }
+  await currentStaff(req);
 }
+
+/** Faqat administrator uchun. Kassir 403 oladi. */
+export async function guardAdmin(req: any) {
+  assertRole(await currentStaff(req), 'admin');
+}
+
 function setCookie(reply: any, t: string) {
   reply.header('Set-Cookie', `${COOKIE}=${encodeURIComponent(t)}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=${TTL}`);
 }
@@ -51,9 +104,48 @@ function err(reply: any, e: any, msg: string, status = 500) {
  * ogohlantirishni birga oladi. Buzuq jadval "bo'sh ro'yxat" bo'lib
  * ko'rinmasin, degan audit talabi shu yerda bajarilgan.
  */
+/* PostgREST bir so'rovda ko'pi bilan 1000 qator qaytaradi va bu haqda
+   XATO BERMAYDI — shunchaki kam ma'lumot keladi. Pagination qo'shilgunicha
+   hech bo'lmasa buni SEZAMIZ: aynan 1000 qator kelsa, demak kesilgan
+   bo'lishi mumkin va admin ogohlantiriladi.
+
+   Busiz hisobotlar jimgina noto'g'ri chiqa boshlardi. */
+const PGRST_MAX_ROWS = 1000;
+
+
+/* Sahifalash parametrlari so'rovdan olinadi.
+   Standart 50 — admin ekraniga sig'adigan miqdor. */
+function pageParams(req: any) {
+  const page = Math.max(1, Math.trunc(Number(req.query?.page)) || 1);
+  const perPage = Math.max(1, Math.min(200, Math.trunc(Number(req.query?.per_page)) || 50));
+  return { page, perPage };
+}
+
+/** Sahifalangan ro'yxat — xato bo'lsa bo'sh qaytaradi, yiqilmaydi. */
+async function safePaged<T = any>(table: string, query: string, page: number, perPage: number) {
+  try {
+    return { ...(await supabaseRestPaged<T>(table, query, page, perPage)), warning: null as string | null };
+  } catch (e) {
+    console.error('Admin paged read failed', table, e);
+    return {
+      rows: [] as T[], total: 0, page, per_page: perPage, has_more: false,
+      warning: `"${table}" o‘qilmadi: ${e instanceof Error ? e.message : 'noma’lum xato'}`,
+    };
+  }
+}
+
 async function safeR<T = any>(table: string, query: string): Promise<{ rows: T[]; warning: string | null }> {
-  try { return { rows: await supabaseRest<T[]>(table, { query }), warning: null }; }
-  catch (e) {
+  try {
+    const rows = await supabaseRest<T[]>(table, { query });
+    const truncated = Array.isArray(rows) && rows.length >= PGRST_MAX_ROWS && !/limit=/.test(query);
+    return {
+      rows,
+      warning: truncated
+        ? `"${table}": ${rows.length} qator keldi — ro‘yxat KESILGAN bo‘lishi mumkin. ` +
+          'Hisobotlar to‘liq emas. Sahifalash qo‘shilishi kerak.'
+        : null,
+    };
+  } catch (e) {
     console.error('Admin read failed', table, e);
     return { rows: [], warning: `"${table}" o‘qilmadi: ${e instanceof Error ? e.message : 'noma’lum xato'}` };
   }
@@ -126,28 +218,218 @@ async function notifyCustomer(booking: any, event: BookingEvent, extra: string) 
 }
 
 export async function registerAdminPasswordRoutes(app: FastifyInstance) {
-  app.post('/api/admin/login', async (req: any, reply: any) => {
+  /* Login uchun ALOHIDA cheklov. Global limit 120/min — bu parol
+     tanlash uchun juda ko'p. 15 daqiqada 5 urinish yetarli. */
+  app.post('/api/admin/login', {
+    config: { rateLimit: { max: 5, timeWindow: '15 minutes' } },
+  }, async (req: any, reply: any) => {
     try {
       const login = String(req.body?.login || '').trim(), password = String(req.body?.password || '');
-      const el = String(process.env.ADMIN_LOGIN || '').trim(), ep = String(process.env.ADMIN_PASSWORD || '');
-      if (!el || !ep) return err(reply, null, 'ADMIN_LOGIN yoki ADMIN_PASSWORD Vercelda sozlanmagan', 500);
-      if (login !== el || password !== ep) return reply.code(401).send({ ok: false, error: 'Login yoki parol noto‘g‘ri' });
-      setCookie(reply, token(login));
-      try { const admin = await adminUser(); await audit(admin.id, 'LOGIN', 'admin', admin.id, null, null); } catch { /* audit ixtiyoriy */ }
-      return { ok: true, login };
+      if (!login || !password) return reply.code(400).send({ ok: false, error: 'Login va parolni kiriting' });
+
+      /* Avval xodim jadvalidan, topilmasa eski ADMIN_LOGIN dan.
+         Ikkinchisi ataylab qoldirilgan — xodimlarni qo'shishdan oldin
+         paneldan qulflanib qolmaslik uchun. */
+      const identity = await authenticateStaff(login, password);
+      if (!identity) return reply.code(401).send({ ok: false, error: 'Login yoki parol noto‘g‘ri' });
+
+      setCookie(reply, token(identity));
+      try {
+        const admin = await adminUser();
+        await audit(admin.id, 'LOGIN', 'staff', identity.id ?? 'env', null,
+          { login: identity.login, role: identity.role, legacy: identity.legacy });
+      } catch { /* audit ixtiyoriy */ }
+
+      return {
+        ok: true,
+        login: identity.login,
+        role: identity.role,
+        register_id: identity.register_id,
+        full_name: identity.full_name,
+      };
     } catch (e) { return err(reply, e, 'Admin login failed'); }
+  });
+
+
+  /* =====================================================================
+     XODIMLAR — faqat administrator boshqaradi
+     ===================================================================== */
+
+  app.get('/api/admin/staff', async (req: any, reply: any) => {
+    try {
+      await guardAdmin(req);
+      const rows = await supabaseRest<any[]>('staff', {
+        query: '?select=id,login,full_name,role,register_id,is_active,last_login_at,created_at&order=role.asc,login.asc',
+      }).catch(() => []);
+      const regs = await supabaseRest<any[]>('cash_registers', { query: '?select=id,code,name' }).catch(() => []);
+      const rm = new Map(regs.map((r: any) => [String(r.id), r]));
+      return {
+        ok: true,
+        staff: rows.map((x: any) => ({ ...x, register: x.register_id ? rm.get(String(x.register_id)) ?? null : null })),
+        registers: regs,
+        // Eski env admin hali ishlayotganini bildiramiz
+        legacy_admin: String(process.env.ADMIN_LOGIN || '').trim() || null,
+      };
+    } catch (e) { return err(reply, e, 'Xodimlar yuklanmadi'); }
+  });
+
+  app.post('/api/admin/staff', async (req: any, reply: any) => {
+    try {
+      await guardAdmin(req);
+      const b = req.body || {};
+      const login = String(b.login || '').trim();
+      const password = String(b.password || '');
+      const role = String(b.role || '').trim();
+      const registerId = b.register_id ? String(b.register_id) : null;
+
+      if (!/^[a-zA-Z0-9_.-]{3,32}$/.test(login)) {
+        return reply.code(400).send({ ok: false, error: 'Login 3–32 belgi: harf, raqam, _ . - ' });
+      }
+      if (password.length < 8) {
+        return reply.code(400).send({ ok: false, error: 'Parol kamida 8 belgi bo‘lsin' });
+      }
+      if (role !== 'admin' && role !== 'cashier') {
+        return reply.code(400).send({ ok: false, error: 'Rol: admin yoki cashier' });
+      }
+      if (role === 'cashier' && !registerId) {
+        return reply.code(400).send({ ok: false, error: 'Kassirga kassa biriktirilishi shart' });
+      }
+
+      try {
+        const rows = await supabaseRest<any[]>('staff', {
+          method: 'POST', headers: { Prefer: 'return=representation' },
+          body: JSON.stringify({
+            login, password_hash: hashPassword(password), role,
+            register_id: role === 'cashier' ? registerId : null,
+            full_name: String(b.full_name || '').trim() || null,
+          }),
+        });
+        /* Audit YOZUVI IXTIYORIY: u yiqilsa ham xodim yaratilgan bo'ladi.
+           Ilgari adminUser() yuqorida chaqirilardi va u yiqilsa
+           validatsiya xatolari ham 500 bo'lib ko'rinardi. */
+        try {
+          const admin = await adminUser();
+          await audit(admin.id, 'STAFF_CREATED', 'staff', rows[0]?.id ?? null, null, { login, role });
+        } catch (auditErr) { console.warn('STAFF_CREATED audit yozilmadi:', auditErr); }
+        const { password_hash, ...safe } = rows[0] ?? {};
+        return reply.code(201).send({ ok: true, staff: safe });
+      } catch (e: any) {
+        if (/staff_login_key/i.test(String(e?.message))) {
+          return reply.code(409).send({ ok: false, error: 'Bu login band' });
+        }
+        throw e;
+      }
+    } catch (e) { return err(reply, e, 'Xodim qo‘shilmadi'); }
+  });
+
+  app.patch('/api/admin/staff/:id', async (req: any, reply: any) => {
+    try {
+      const me = await currentStaff(req);
+      assertRole(me, 'admin');
+      const id = String(req.params.id);
+      const b = req.body || {};
+
+      const cur = (await supabaseRest<any[]>('staff', { query: `?id=eq.${q(id)}&select=*&limit=1` }))[0];
+      if (!cur) return reply.code(404).send({ ok: false, error: 'Xodim topilmadi' });
+
+      const patch: Record<string, unknown> = {};
+      if (b.full_name !== undefined) patch.full_name = String(b.full_name).trim() || null;
+      if (b.role !== undefined) {
+        const role = String(b.role);
+        if (role !== 'admin' && role !== 'cashier') return reply.code(400).send({ ok: false, error: 'Noto‘g‘ri rol' });
+        patch.role = role;
+        if (role === 'admin') patch.register_id = null;
+      }
+      if (b.register_id !== undefined) patch.register_id = b.register_id ? String(b.register_id) : null;
+      if (b.password !== undefined) {
+        const p = String(b.password);
+        if (p.length < 8) return reply.code(400).send({ ok: false, error: 'Parol kamida 8 belgi' });
+        patch.password_hash = hashPassword(p);
+      }
+      if (typeof b.is_active === 'boolean') {
+        /* O'zini o'chirib qo'yishdan himoya — aks holda admin
+           paneldan chiqib ketib, qayta kira olmay qoladi. */
+        if (!b.is_active && me.id && String(me.id) === id) {
+          return reply.code(409).send({ ok: false, error: 'O‘z hisobingizni o‘chira olmaysiz' });
+        }
+        patch.is_active = b.is_active;
+      }
+
+      const finalRole = (patch.role ?? cur.role) as string;
+      const finalReg = patch.register_id !== undefined ? patch.register_id : cur.register_id;
+      if (finalRole === 'cashier' && !finalReg) {
+        return reply.code(400).send({ ok: false, error: 'Kassirga kassa biriktirilishi shart' });
+      }
+
+      /* Oxirgi faol adminni yo'qotmaslik: rolni o'zgartirish yoki
+         o'chirish natijasida admin qolmasa — rad etamiz. */
+      const losingAdmin = (cur.role === 'admin')
+        && ((patch.role && patch.role !== 'admin') || patch.is_active === false);
+      if (losingAdmin) {
+        const admins = await supabaseRest<any[]>('staff', {
+          query: `?role=eq.admin&is_active=eq.true&select=id`,
+        }).catch(() => []);
+        if (admins.length <= 1) {
+          return reply.code(409).send({ ok: false, error: 'Oxirgi administratorni o‘chirib bo‘lmaydi' });
+        }
+      }
+
+      if (!Object.keys(patch).length) return { ok: true, unchanged: true };
+      patch.updated_at = new Date().toISOString();
+      await supabaseRest('staff', { method: 'PATCH', query: `?id=eq.${q(id)}`, body: JSON.stringify(patch) });
+      try {
+        const admin = await adminUser();
+        await audit(admin.id, 'STAFF_UPDATED', 'staff', id, { role: cur.role, is_active: cur.is_active },
+          { ...patch, password_hash: patch.password_hash ? '***' : undefined });
+      } catch (auditErr) { console.warn('STAFF_UPDATED audit yozilmadi:', auditErr); }
+      return { ok: true };
+    } catch (e) { return err(reply, e, 'Xodim saqlanmadi'); }
+  });
+
+  app.delete('/api/admin/staff/:id', async (req: any, reply: any) => {
+    try {
+      const me = await currentStaff(req);
+      assertRole(me, 'admin');
+      const id = String(req.params.id);
+      if (me.id && String(me.id) === id) {
+        return reply.code(409).send({ ok: false, error: 'O‘z hisobingizni o‘chira olmaysiz' });
+      }
+      const cur = (await supabaseRest<any[]>('staff', { query: `?id=eq.${q(id)}&select=*&limit=1` }))[0];
+      if (!cur) return reply.code(404).send({ ok: false, error: 'Xodim topilmadi' });
+
+      if (cur.role === 'admin') {
+        const admins = await supabaseRest<any[]>('staff', {
+          query: `?role=eq.admin&is_active=eq.true&select=id`,
+        }).catch(() => []);
+        if (admins.length <= 1) {
+          return reply.code(409).send({ ok: false, error: 'Oxirgi administratorni o‘chirib bo‘lmaydi' });
+        }
+      }
+      await supabaseRest('staff', { method: 'DELETE', query: `?id=eq.${q(id)}` });
+      try {
+        const admin = await adminUser();
+        await audit(admin.id, 'STAFF_DELETED', 'staff', id, { login: cur.login, role: cur.role }, null);
+      } catch (auditErr) { console.warn('STAFF_DELETED audit yozilmadi:', auditErr); }
+      return { ok: true };
+    } catch (e) { return err(reply, e, 'Xodim o‘chirilmadi'); }
   });
 
   app.post('/api/admin/logout', async (_req: any, reply: any) => { clearCookie(reply); return { ok: true }; });
 
   app.get('/api/admin/me', async (req: any, reply: any) => {
-    try { await guard(req); return { ok: true, login: String(process.env.ADMIN_LOGIN || 'admin') }; }
+    try {
+      const me = await currentStaff(req);
+      return {
+        ok: true, login: me.login, role: me.role,
+        register_id: me.register_id, full_name: me.full_name, legacy: me.legacy,
+      };
+    }
     catch (e) { return err(reply, e, 'Unauthorized', 401); }
   });
 
   app.get('/api/admin/stats', async (req: any, reply: any) => {
     try {
-      await guard(req);
+      await guardAdmin(req);
       const [users, ips, bookings, reviews, payments] = await Promise.all([
         safe<any>('users', '?role=eq.customer&select=id'),
         safe<any>('instructor_profiles', '?select=id,user_id,is_available,rating,total_reviews,is_verified'),
@@ -180,7 +462,7 @@ export async function registerAdminPasswordRoutes(app: FastifyInstance) {
 
   app.get('/api/admin/instructors', async (req: any, reply: any) => {
     try {
-      await guard(req);
+      await guardAdmin(req);
       const [ipsR, usersR] = await Promise.all([
         safeR<any>('instructor_profiles', '?select=*&order=created_at.desc'),
         safeR<any>('users', '?select=id,telegram_id,phone,full_name,role,is_active,is_blocked,created_at'),
@@ -209,7 +491,7 @@ export async function registerAdminPasswordRoutes(app: FastifyInstance) {
    */
   app.delete('/api/admin/instructors/:id', async (req: any, reply: any) => {
     try {
-      await guard(req);
+      await guardAdmin(req);
       const admin = await adminUser();
       const id = String(req.params.id);
 
@@ -274,7 +556,7 @@ export async function registerAdminPasswordRoutes(app: FastifyInstance) {
    */
   app.post('/api/admin/instructors/:id/photo', async (req: any, reply: any) => {
     try {
-      await guard(req);
+      await guardAdmin(req);
       const admin = await adminUser();
       const id = String(req.params.id);
       const dataUrl = String((req.body as any)?.photo_data_url || '');
@@ -320,7 +602,7 @@ export async function registerAdminPasswordRoutes(app: FastifyInstance) {
 
   app.post('/api/admin/instructors', async (req: any, reply: any) => {
     try {
-      await guard(req);
+      await guardAdmin(req);
       const admin = await adminUser();
       const b = req.body || {};
       const first = String(b.first_name || '').trim(), last = String(b.last_name || '').trim();
@@ -361,7 +643,7 @@ export async function registerAdminPasswordRoutes(app: FastifyInstance) {
 
   app.patch('/api/admin/instructors/:id', async (req: any, reply: any) => {
     try {
-      await guard(req);
+      await guardAdmin(req);
       const admin = await adminUser();
       const id = String(req.params.id), b = req.body || {};
       const ip = (await supabaseRest<any[]>('instructor_profiles', { query: `?id=eq.${q(id)}&select=*` }))[0];
@@ -475,14 +757,38 @@ export async function registerAdminPasswordRoutes(app: FastifyInstance) {
 
   app.get('/api/admin/bookings', async (req: any, reply: any) => {
     try {
-      await guard(req);
+      await guardAdmin(req);
       const st = String(req.query?.status || ''), filter = st ? `&status=eq.${q(st)}` : '';
-      const [bookingsR, usersR, ipsR, coursesR, paymentsR] = await Promise.all([
-        safeR<any>('bookings', `?select=*&order=booking_date.desc${filter}`),
-        safeR<any>('users', '?select=id,telegram_id,phone,full_name,role'),
-        safeR<any>('instructor_profiles', '?select=id,user_id,rating,total_reviews'),
-        safeR<any>('courses', '?select=id,name,duration_minutes,price,is_active'),
-        safeR<any>('payments', '?select=booking_id,amount,status'),
+      const { page, perPage } = pageParams(req);
+
+      /* Bronlar SAHIFALANADI. Ilgari butun jadval so'ralardi va PostgREST
+         1000 qatorda jimgina kesardi — hisobotlar noto'g'ri chiqardi. */
+      const bookingsR = await safePaged<any>('bookings', `?select=*&order=booking_date.desc${filter}`, page, perPage);
+
+      /* Yordamchi jadvallar faqat SHU SAHIFADAGI ID'lar bo'yicha olinadi.
+         Ilgari har safar butun users/courses jadvali yuklanardi. */
+      const bIds = bookingsR.rows;
+      const cuIds = [...new Set(bIds.map((b: any) => String(b.customer_id)).filter(Boolean))];
+      const inIds = [...new Set(bIds.map((b: any) => String(b.instructor_id)).filter(Boolean))];
+      const coIds = [...new Set(bIds.map((b: any) => String(b.course_id)).filter(Boolean))];
+      const bkIds = bIds.map((b: any) => String(b.id));
+
+      const ipsR = inIds.length
+        ? await safeR<any>('instructor_profiles', `?id=in.(${inIds.map(q).join(',')})&select=id,user_id,rating,total_reviews`)
+        : { rows: [] as any[], warning: null };
+      const insUserIds = [...new Set(ipsR.rows.map((i: any) => String(i.user_id)).filter(Boolean))];
+      const allUserIds = [...new Set([...cuIds, ...insUserIds])];
+
+      const [usersR, coursesR, paymentsR] = await Promise.all([
+        allUserIds.length
+          ? safeR<any>('users', `?id=in.(${allUserIds.map(q).join(',')})&select=id,telegram_id,phone,full_name,role`)
+          : Promise.resolve({ rows: [] as any[], warning: null }),
+        coIds.length
+          ? safeR<any>('courses', `?id=in.(${coIds.map(q).join(',')})&select=id,name,duration_minutes,price,is_active`)
+          : Promise.resolve({ rows: [] as any[], warning: null }),
+        bkIds.length
+          ? safeR<any>('payments', `?booking_id=in.(${bkIds.map(q).join(',')})&select=booking_id,amount,status`)
+          : Promise.resolve({ rows: [] as any[], warning: null }),
       ]);
       // To'lov yozuvi bron tasdiqlangan paytdagi narxni saqlaydi.
       // Kurs narxi keyin o'zgarsa ham eski bron narxi o'zgarmasligi uchun
@@ -495,6 +801,10 @@ export async function registerAdminPasswordRoutes(app: FastifyInstance) {
       return {
         ok: true,
         warnings,
+        total: bookingsR.total,
+        page: bookingsR.page,
+        per_page: bookingsR.per_page,
+        has_more: bookingsR.has_more,
         bookings: bookingsR.rows.map((b: any) => {
           const i = im.get(String(b.instructor_id)), c = cm.get(String(b.course_id));
           const u = i ? um.get(String(i.user_id)) : null;
@@ -515,7 +825,7 @@ export async function registerAdminPasswordRoutes(app: FastifyInstance) {
 
   app.patch('/api/admin/bookings/:id/status', async (req: any, reply: any) => {
     try {
-      await guard(req);
+      await guardAdmin(req);
       const admin = await adminUser();
       const id = String(req.params.id), status = String(req.body?.status || '');
       const allowed = ['pending', 'confirmed', 'cancelled', 'rejected', 'in_progress', 'completed', 'no_show'];
@@ -617,14 +927,14 @@ export async function registerAdminPasswordRoutes(app: FastifyInstance) {
 
   app.get('/api/admin/customers', async (req: any, reply: any) => {
     try {
-      await guard(req);
+      await guardAdmin(req);
       return { ok: true, customers: await safe<any>('users', '?role=eq.customer&select=id,telegram_id,full_name,phone,role,is_active,is_blocked,created_at&order=created_at.desc') };
     } catch (e) { return err(reply, e, 'Failed to load customers'); }
   });
 
   app.patch('/api/admin/customers/:id', async (req: any, reply: any) => {
     try {
-      await guard(req);
+      await guardAdmin(req);
       const admin = await adminUser();
       const id = String(req.params.id), b = req.body || {};
       const old = (await safe<any>('users', `?id=eq.${q(id)}&role=eq.customer&select=id,is_active,is_blocked&limit=1`))[0];
@@ -650,7 +960,7 @@ export async function registerAdminPasswordRoutes(app: FastifyInstance) {
 
   app.get('/api/admin/reviews', async (req: any, reply: any) => {
     try {
-      await guard(req);
+      await guardAdmin(req);
       const [rows, users, ips] = await Promise.all([
         safe<any>('reviews', '?select=*&order=created_at.desc'),
         safe<any>('users', '?select=id,full_name,phone'),
@@ -670,7 +980,7 @@ export async function registerAdminPasswordRoutes(app: FastifyInstance) {
 
   app.patch('/api/admin/reviews/:id', async (req: any, reply: any) => {
     try {
-      await guard(req);
+      await guardAdmin(req);
       const admin = await adminUser();
       const s = String(req.body?.status || '');
       if (!['pending', 'approved', 'rejected'].includes(s)) return reply.code(400).send({ ok: false, error: 'Sharh holati noto‘g‘ri' });
@@ -694,7 +1004,7 @@ export async function registerAdminPasswordRoutes(app: FastifyInstance) {
   });
 
   const applications = async (req: any, reply: any) => {
-    try { await guard(req); return { ok: true, applications: await supabaseRest<any[]>('instructor_applications', { query: '?select=*&order=created_at.desc' }) }; }
+    try { await guardAdmin(req); return { ok: true, applications: await supabaseRest<any[]>('instructor_applications', { query: '?select=*&order=created_at.desc' }) }; }
     catch (e) { return err(reply, e, 'Failed to load applications'); }
   };
   app.get('/api/admin/applications', applications);
@@ -792,7 +1102,7 @@ async function notifyInstructorDecision(
 
   const approve = async (req: any, reply: any) => {
     try {
-      await guard(req);
+      await guardAdmin(req);
       const admin = await adminUser();
       const rows = await supabaseRest<any[]>('rpc/admin_approve_instructor', { method: 'POST', body: JSON.stringify({ p_application_id: String(req.params.id), p_admin_id: admin.id }) });
       const application = Array.isArray(rows) ? rows[0] : rows;
@@ -803,7 +1113,7 @@ async function notifyInstructorDecision(
   };
   const reject = async (req: any, reply: any) => {
     try {
-      await guard(req);
+      await guardAdmin(req);
       const admin = await adminUser();
       const reason = String(req.body?.reason || '').trim() || null;
       const rows = await supabaseRest<any[]>('rpc/admin_reject_instructor', { method: 'POST', body: JSON.stringify({ p_application_id: String(req.params.id), p_admin_id: admin.id, p_reason: reason }) });
@@ -819,12 +1129,12 @@ async function notifyInstructorDecision(
   app.post('/api/admin/instructor-applications/:id/reject', reject);
 
   app.get('/api/admin/settings', async (req: any, reply: any) => {
-    try { await guard(req); return { ok: true, settings: await safe<any>('admin_settings', '?select=key,value,updated_at&order=key.asc') }; }
+    try { await guardAdmin(req); return { ok: true, settings: await safe<any>('admin_settings', '?select=key,value,updated_at&order=key.asc') }; }
     catch (e) { return err(reply, e, 'Failed to load settings'); }
   });
   app.put('/api/admin/settings/:key', async (req: any, reply: any) => {
     try {
-      await guard(req);
+      await guardAdmin(req);
       const admin = await adminUser();
       const key = String(req.params.key), value = req.body?.value !== undefined ? req.body.value : req.body;
       const old = await safe<any>('admin_settings', `?key=eq.${q(key)}&select=*`);
@@ -837,12 +1147,12 @@ async function notifyInstructorDecision(
   });
 
   app.get('/api/admin/courses', async (req: any, reply: any) => {
-    try { await guard(req); return { ok: true, courses: await safe<any>('courses', '?select=*&order=created_at.desc') }; }
+    try { await guardAdmin(req); return { ok: true, courses: await safe<any>('courses', '?select=*&order=created_at.desc') }; }
     catch (e) { return err(reply, e, 'Failed to load courses'); }
   });
   app.post('/api/admin/courses', async (req: any, reply: any) => {
     try {
-      await guard(req);
+      await guardAdmin(req);
       const admin = await adminUser();
       const b = req.body || {};
       const name = String(b.name || '').trim();
@@ -861,7 +1171,7 @@ async function notifyInstructorDecision(
   });
   app.patch('/api/admin/courses/:id', async (req: any, reply: any) => {
     try {
-      await guard(req);
+      await guardAdmin(req);
       const admin = await adminUser();
       const id = String(req.params.id), b = req.body || {};
       const old = (await safe<any>('courses', `?id=eq.${q(id)}&select=*&limit=1`))[0];
@@ -924,7 +1234,7 @@ async function notifyInstructorDecision(
 
   app.get('/api/admin/cancellation-requests', async (req: any, reply: any) => {
     try {
-      await guard(req);
+      await guardAdmin(req);
       const [rows, users, ips, courses] = await Promise.all([
         safe<any>('bookings', '?cancel_requested_at=not.is.null&cancel_reviewed_at=is.null&select=*&order=cancel_requested_at.asc'),
         safe<any>('users', '?select=id,full_name,phone,telegram_id'),
@@ -955,7 +1265,7 @@ async function notifyInstructorDecision(
   /** So'rovni tasdiqlash — bron bekor qilinadi. */
   app.post('/api/admin/bookings/:id/cancel-approve', async (req: any, reply: any) => {
     try {
-      await guard(req);
+      await guardAdmin(req);
       const admin = await adminUser();
       const id = String(req.params.id);
       const b = (await supabaseRest<any[]>('bookings', { query: `?id=eq.${q(id)}&select=*&limit=1` }))[0];
@@ -990,7 +1300,7 @@ async function notifyInstructorDecision(
   /** So'rovni rad etish — bron kuchda qoladi. */
   app.post('/api/admin/bookings/:id/cancel-reject', async (req: any, reply: any) => {
     try {
-      await guard(req);
+      await guardAdmin(req);
       const admin = await adminUser();
       const id = String(req.params.id);
       const note = String(req.body?.note || '').trim();
@@ -1023,7 +1333,7 @@ async function notifyInstructorDecision(
 
   app.get('/api/admin/audit-logs', async (req: any, reply: any) => {
     try {
-      await guard(req);
+      await guardAdmin(req);
       const limit = Math.min(500, Number(req.query?.limit) || 200);
       const [logs, users] = await Promise.all([
         safe<any>('admin_audit_logs', `?select=*&order=created_at.desc&limit=${limit}`),
