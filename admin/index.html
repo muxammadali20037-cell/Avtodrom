@@ -2341,7 +2341,20 @@ function coRate(){
     ? fromSettings
     : (DEFAULT_RATE[CO.category] || 0);
 }
-function coPrice(){ return Math.round((coRate() * CO.minutes) / 60); }
+function coPrice(){
+  /* Bron kodi bilan topilганда narx SERVERDAN keladi (booking.price yoki
+     course.price). Uni ishlatamiz — kategoriyaga bog'liq hisobga tayanmaymiz,
+     chunki kursda kategoriya belgilanmagan bo'lsa ham narx bor. */
+  if (CO.mode === 'booked' && CO.booking) {
+    const p = Number(CO.booking.price ?? CO.booking.course?.price);
+    if (Number.isFinite(p) && p > 0) {
+      // Narx soatlik bo'lsa davomiylikка moslaymiz
+      const dur = Number(CO.booking.course?.duration_minutes || 60);
+      return Math.round((p * CO.minutes) / (dur > 0 ? dur : 60));
+    }
+  }
+  return Math.round((coRate() * CO.minutes) / 60);
+}
 function coStartAt(){
   const d = $('coDate').value, t = $('coTime').value;
   if (!d || !t) return null;
@@ -2470,7 +2483,7 @@ async function coFindByCode(){
       price: b.price,
     };
     CO.minutes = Number(b.duration_minutes || 60);
-    CO.category = String(b.category || '').toUpperCase();
+    CO.category = String(b.category || b.course?.category || 'B').toUpperCase();
     CO.instructor = { id: b.instructor_id, name: b.instructor?.profile?.full_name || '—' };
     const st = new Date(b.start_at);
     if ($('coDate')) $('coDate').value = new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Tashkent'}).format(st);
@@ -2497,7 +2510,7 @@ $('coCode').addEventListener('input', () => {
 function coRenderPicked(){
   if (!CO.booking) return;
   const b = CO.booking;
-  const cat = String(b.category || b.course?.category || CO.category || '—').toUpperCase();
+  const cat = String(CO.category || b.category || b.course?.category || 'B').toUpperCase();
   $('coPicked').innerHTML = `
     <div class="big">${esc(b.customer?.full_name || CO.customer?.full_name || 'Mijoz')}</div>
     <div class="row"><span>Vaqt</span><b>${esc(kHour(b.start_at))} · ${esc(new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Tashkent'}).format(new Date(b.start_at)))}</b></div>
@@ -2634,7 +2647,8 @@ $('coIssue').onclick = async () => {
   const total = Number($('coAmount').value || 0);
   if (!CO.pay) return err('To‘lov turini tanlang');
   if (!(total > 0)) return err('Summani kiriting');
-  if (!CO.category) return err('Kategoriyani tanlang');
+  // Bronli rejimda kategoriya brondan keladi; faqat bronsizda majburiy
+  if (CO.mode !== 'booked' && !CO.category) return err('Kategoriyani tanlang');
 
   let cash = 0, card = 0;
   if (CO.pay === 'cash') cash = total;
