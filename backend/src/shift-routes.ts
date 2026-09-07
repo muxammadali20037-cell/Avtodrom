@@ -539,6 +539,100 @@ export async function registerShiftRoutes(
   });
 
   /* ---------------- PIN ni o'rnatish (faqat admin) ---------------- */
+
+  /* =====================================================================
+     BOSHQARUV PIN — kassa PIN kabi, lekin butun BOSHQARUV bo'limi uchun.
+     Admin login qiladi (1-qatlam), keyin BOSHQARUV ochilganda PIN
+     so'raladi (2-qatlam). PIN admin_settings da xeshlanган holda.
+     ===================================================================== */
+  const MGMT_KEY = 'mgmt_pin';   // admin_settings.key
+
+  function mgmtPinHash(pin: string) { return hmac(`mgmt:${pin}`); }
+  function makeMgmtToken() {
+    const exp = Date.now() + TOKEN_TTL_MS;
+    return `mgmt.${exp}.${hmac(`mgmt-tok:${exp}`)}`;
+  }
+  function readMgmtToken(token: string): boolean {
+    const parts = String(token || '').split('.');
+    if (parts.length !== 3 || parts[0] !== 'mgmt') return false;
+    const [, expStr, sig] = parts;
+    if (!safeEq(sig, hmac(`mgmt-tok:${expStr}`))) return false;
+    if (!Number(expStr) || Number(expStr) < Date.now()) return false;
+    return true;
+  }
+
+  /** PIN o'rnatilganmi (holat). */
+  app.get('/api/admin/mgmt-pin', async (req: any, reply: any) => {
+    try {
+      await requireAdmin(req);
+      const rows = await supabaseRest<any[]>('admin_settings', {
+        query: `?key=eq.${MGMT_KEY}&select=value&limit=1`,
+      }).catch(() => []);
+      const val = rows[0]?.value;
+      const hash = val?.hash || val;
+      return { ok: true, is_set: !!(hash && String(hash).length > 10) };
+    } catch (e: any) {
+      return reply.code(e?.statusCode ?? 500).send({ ok: false, error: e?.message || 'Holatni o‘qib bo‘lmadi' });
+    }
+  });
+
+  /** PIN o'rnatish / o'zgartirish. */
+  app.put('/api/admin/mgmt-pin', async (req: any, reply: any) => {
+    try {
+      await requireAdmin(req);
+      const pin = String(req.body?.pin ?? '').trim();
+      if (!/^\d{4,8}$/.test(pin)) {
+        return reply.code(400).send({ ok: false, error: 'PIN 4 dan 8 tagacha raqam bo‘lsin' });
+      }
+
+      const exists = (await supabaseRest<any[]>('admin_settings', {
+        query: `?key=eq.${MGMT_KEY}&select=key&limit=1`,
+      }).catch(() => []))[0];
+      const value = { hash: mgmtPinHash(pin), set_at: new Date().toISOString() };
+
+      if (exists) {
+        await supabaseRest('admin_settings', {
+          method: 'PATCH', query: `?key=eq.${MGMT_KEY}`,
+          body: JSON.stringify({ value, updated_at: new Date().toISOString() }),
+        });
+      } else {
+        await supabaseRest('admin_settings', {
+          method: 'POST',
+          body: JSON.stringify({ key: MGMT_KEY, value, updated_at: new Date().toISOString() }),
+        });
+      }
+      try { const admin = await adminUser(); await audit(admin.id, 'MGMT_PIN_SET', 'admin_settings', MGMT_KEY, null, null); }
+      catch (e) { console.warn('MGMT_PIN_SET audit:', e); }
+      return { ok: true };
+    } catch (e: any) {
+      return reply.code(e?.statusCode ?? 400).send({ ok: false, error: e?.message || 'PIN saqlanmadi' });
+    }
+  });
+
+  /** BOSHQARUV ni ochish — PIN tekshiriladi, token beriladi. */
+  app.post('/api/admin/mgmt-unlock', async (req: any, reply: any) => {
+    try {
+      await requireAdmin(req);
+      const pin = String(req.body?.pin ?? '').trim();
+
+      const rows = await supabaseRest<any[]>('admin_settings', {
+        query: `?key=eq.${MGMT_KEY}&select=value&limit=1`,
+      }).catch(() => []);
+      const stored = rows[0]?.value?.hash || rows[0]?.value;
+
+      // PIN hali o'rnatilmagan bo'lsa — birinchi kirishда o'rnatishga yo'l qo'yamiz
+      if (!stored || String(stored).length < 10) {
+        return reply.code(409).send({ ok: false, error: 'PIN o‘rnatilmagan', needs_setup: true });
+      }
+      if (!safeEq(String(stored), mgmtPinHash(pin))) {
+        return reply.code(401).send({ ok: false, error: 'PIN noto‘g‘ri' });
+      }
+      return { ok: true, token: makeMgmtToken() };
+    } catch (e: any) {
+      return reply.code(e?.statusCode ?? 400).send({ ok: false, error: e?.message || 'Ochib bo‘lmadi' });
+    }
+  });
+
   app.put('/api/admin/registers/:id/pin', async (req: any, reply: any) => {
     try {
       await requireAdmin(req);
