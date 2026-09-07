@@ -144,12 +144,20 @@ export function bookingMessage(
   if (d.reason) lines.push(`ℹ️ Sabab: ${d.reason}`);
 
   const tail = TAIL[event]?.[audience];
-  const code = shortCode(booking?.id);
+
+  /* Kassaga aytiladigan KOD — pickup_code (AVD-4821). Mijoz panelidagi
+     kod bilan bir xil bo'lishi shart, aks holda kassir topa olmaydi.
+     shortCode(id) eski usul edi va mos kelmasdi. */
+  const pickup = booking?.pickup_code ? String(booking.pickup_code) : '';
+
+  const codeLine = (audience === 'customer' && pickup && (event === 'created' || event === 'confirmed'))
+    ? `\n🎫 Kassa uchun kod: ${pickup}\nKassaga shu kodni ayting.`
+    : (pickup ? `\nBron kodi: ${pickup}` : '');
 
   const body = [
     lines.join('\n'),
     tail ? `\n${tail}` : '',
-    code ? `\nBron raqami: ${code}` : '',
+    codeLine,
   ].filter(Boolean).join('\n');
 
   return { title, body, full: `${title}\n\n${body}` };
