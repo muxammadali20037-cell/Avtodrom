@@ -932,15 +932,15 @@ export async function registerAdminPasswordRoutes(app: FastifyInstance) {
       /* Yordamchi jadvallar faqat SHU SAHIFADAGI ID'lar bo'yicha olinadi.
          Ilgari har safar butun users/courses jadvali yuklanardi. */
       const bIds = bookingsR.rows;
-      const cuIds = [...new Set(bIds.map((b: any) => String(b.customer_id)).filter(Boolean))];
-      const inIds = [...new Set(bIds.map((b: any) => String(b.instructor_id)).filter(Boolean))];
-      const coIds = [...new Set(bIds.map((b: any) => String(b.course_id)).filter(Boolean))];
+      const cuIds = [...new Set(bIds.map((b: any) => b.customer_id).filter(Boolean).map(String))];
+      const inIds = [...new Set(bIds.map((b: any) => b.instructor_id).filter(Boolean).map(String))];
+      const coIds = [...new Set(bIds.map((b: any) => b.course_id).filter(Boolean).map(String))];
       const bkIds = bIds.map((b: any) => String(b.id));
 
       const ipsR = inIds.length
         ? await safeR<any>('instructor_profiles', `?id=in.(${inIds.map(q).join(',')})&select=id,user_id,rating,total_reviews`)
         : { rows: [] as any[], warning: null };
-      const insUserIds = [...new Set(ipsR.rows.map((i: any) => String(i.user_id)).filter(Boolean))];
+      const insUserIds = [...new Set(ipsR.rows.map((i: any) => i.user_id).filter(Boolean).map(String))];
       const allUserIds = [...new Set([...cuIds, ...insUserIds])];
 
       const [usersR, coursesR, paymentsR] = await Promise.all([
