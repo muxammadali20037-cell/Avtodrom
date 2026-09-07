@@ -187,6 +187,16 @@ button,input,select,textarea{font:inherit}.hidden{display:none!important}
 .lv .tm2 span{font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.02em}
 .lv .tm2 b{font-size:14px;font-family:ui-monospace,Menlo,monospace}
 .lv .tm2.miss b{color:#bbb;font-weight:400}
+
+.pager{display:flex;gap:8px;align-items:center;justify-content:center;flex-wrap:wrap;padding:14px 0 4px}
+.pager button{min-width:38px;height:36px;padding:0 12px;border:1px solid var(--line);background:#fff;
+ border-radius:9px;font:inherit;font-size:13px;font-weight:600;cursor:pointer}
+.pager button:disabled{opacity:.4;cursor:default}
+.pager button.on{background:var(--g);color:#fff;border-color:var(--g)}
+.pager .info{color:var(--muted);font-size:12.5px;margin:0 6px}
+
+.who{font-size:12px;font-weight:700;padding:5px 11px;border-radius:99px;background:var(--soft);color:var(--g)}
+.who.cashier{background:#FFF4E0;color:#8a5a00}
 .warn{padding:11px;border-radius:11px;background:#fff8e6;color:#8a6500;border:1px solid #ffe6a8;font-size:13px}
 .top{height:70px;background:#fff;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:20}
 .topin{height:100%;max-width:1500px;margin:auto;padding:0 20px;display:flex;align-items:center;justify-content:space-between}
@@ -391,6 +401,16 @@ button,input,select,textarea{font:inherit}.hidden{display:none!important}
 .lv .tm2 span{font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.02em}
 .lv .tm2 b{font-size:14px;font-family:ui-monospace,Menlo,monospace}
 .lv .tm2.miss b{color:#bbb;font-weight:400}
+
+.pager{display:flex;gap:8px;align-items:center;justify-content:center;flex-wrap:wrap;padding:14px 0 4px}
+.pager button{min-width:38px;height:36px;padding:0 12px;border:1px solid var(--line);background:#fff;
+ border-radius:9px;font:inherit;font-size:13px;font-weight:600;cursor:pointer}
+.pager button:disabled{opacity:.4;cursor:default}
+.pager button.on{background:var(--g);color:#fff;border-color:var(--g)}
+.pager .info{color:var(--muted);font-size:12.5px;margin:0 6px}
+
+.who{font-size:12px;font-weight:700;padding:5px 11px;border-radius:99px;background:var(--soft);color:var(--g)}
+.who.cashier{background:#FFF4E0;color:#8a5a00}
 .warn{padding:11px;border-radius:11px;background:#fff8e6;color:#8a6500;border:1px solid #ffe6a8;margin-bottom:12px;font-size:13px}
 .empty{padding:25px;text-align:center;color:var(--muted)}
 .actions{display:flex;gap:5px;flex-wrap:wrap}
@@ -451,7 +471,7 @@ pre.json{background:#F7FAFF;border:1px solid var(--line);border-radius:8px;paddi
     <button class="ms" data-mode="P2">KASSA P2</button>
     <button class="ms" data-mode="admin">BOSHQARUV</button>
   </div>
-  <div class="tools"><span id="lastSync" class="muted" style="font-size:11px"></span><button class="btn" id="refreshBtn">Yangilash</button><button class="btn red" id="logoutBtn">Chiqish</button></div>
+  <div class="tools"><span class="who" id="whoami"></span><span id="lastSync" class="muted" style="font-size:11px"></span><button class="btn" id="refreshBtn">Yangilash</button><button class="btn red" id="logoutBtn">Chiqish</button></div>
 </div></header>
 
 <div class="layout">
@@ -481,6 +501,7 @@ pre.json{background:#F7FAFF;border:1px solid var(--line);border-radius:8px;paddi
   <button class="nav" data-grp="admin" data-p="courses">Mashg‘ulotlar</button>
   <button class="nav" data-grp="admin" data-p="reviews">Sharhlar <span id="revCount" class="count">0</span></button>
   <button class="nav" data-grp="admin" data-p="media">Media</button>
+  <button class="nav" data-grp="admin" data-p="staff">Xodimlar</button>
   <button class="nav" data-grp="admin" data-p="settings">Sozlamalar</button>
 </aside>
 
@@ -732,6 +753,7 @@ pre.json{background:#F7FAFF;border:1px solid var(--line);border-radius:8px;paddi
     </div>
     <div class="tableWrap"><table class="table"><thead><tr><th>Sana</th><th>Mijoz</th><th>Telefon</th><th>Instruktor</th><th>Mashg‘ulot</th><th>Narx</th><th>Izoh</th><th>Status</th><th>Amal</th></tr></thead><tbody id="bookingRows"></tbody></table></div>
   </div>
+    <div class="pager" id="bkPager"></div>
 </section>
 
 <section id="cancels" class="page">
@@ -837,6 +859,17 @@ pre.json{background:#F7FAFF;border:1px solid var(--line);border-radius:8px;paddi
   <div class="card">
     <div class="toolbar"><input id="auditSearch" class="search" placeholder="Amal, obyekt, admin..."></div>
     <div class="tableWrap"><table class="table"><thead><tr><th>Vaqt</th><th>Admin</th><th>Amal</th><th>Obyekt</th><th>Eski</th><th>Yangi</th></tr></thead><tbody id="auditRows"></tbody></table></div>
+  </div>
+</section>
+
+<section id="staff" class="page">
+  <div class="head"><div><h1>Xodimlar</h1><p>Har bir xodimga alohida hisob. Kassir faqat o‘z kassasini ko‘radi.</p></div>
+    <button class="btn primary" id="staffAdd">Xodim qo‘shish</button></div>
+  <div id="staffAlert"></div>
+  <div class="card">
+    <div class="tableWrap"><table class="table">
+      <thead><tr><th>Login</th><th>Ism</th><th>Rol</th><th>Kassa</th><th>Oxirgi kirish</th><th>Holat</th><th>Amal</th></tr></thead>
+      <tbody id="staffRows"></tbody></table></div>
   </div>
 </section>
 
@@ -1031,6 +1064,7 @@ function showPage(id){
   if(id==='audit')loadAudit();
   if(id==='support')loadSupport();
   if(id==='cancels')loadCancels();
+  if(id==='staff')loadStaff();
   if(id==='manual')initManual();
   if(id==='live')loadLive('live');
   if(id==='klive')loadLive('klive');
@@ -1702,7 +1736,7 @@ $('saveSettingsBtn').onclick=async()=>{
    Endi allSettled: yiqilgani o'tkazib yuboriladi, qolgani yangilanadi. */
 async function loadAll(show){
   try{
-    const urls = ['/api/admin/stats','/api/admin/bookings','/api/admin/instructors',
+    const urls = ['/api/admin/stats',`/api/admin/bookings?page=${S.bkPage||1}&per_page=${S.bkPerPage||50}`,'/api/admin/instructors',
       '/api/admin/applications','/api/admin/customers','/api/admin/reviews',
       '/api/admin/settings','/api/admin/courses',payUrl()];
     const res = await Promise.allSettled(urls.map(u => api(u)));
@@ -1711,7 +1745,7 @@ async function loadAll(show){
     const [st,b,i,a,u,r2,set,c,p] = [0,1,2,3,4,5,6,7,8].map(val);
 
     if (st)  S.stats       = st.stats       || {};
-    if (b)   S.bookings    = b.bookings     || [];
+    if (b) { S.bookings = b.bookings || []; S.bkTotal = Number(b.total || 0); renderBkPager(b); }
     if (i)   S.instructors = i.instructors  || [];
     if (a)   S.applications= a.applications || [];
     if (u)   S.users       = u.customers    || [];
@@ -3065,6 +3099,197 @@ async function renderPinSetters(){
   });
 }
 
+
+/* =========================================================================
+   BRONLAR SAHIFALASHI
+   Ilgari butun jadval so'ralardi va PostgREST 1000 qatorda jimgina
+   kesardi. Endi sahifa-sahifa yuklanadi va umumiy son ko'rinadi.
+   ========================================================================= */
+S.bkPage = 1;
+S.bkPerPage = 50;
+S.bkTotal = 0;
+
+async function loadBookingsPage(page){
+  S.bkPage = Math.max(1, page || 1);
+  const st = S.bookingFilter || '';
+  const qs = new URLSearchParams({ page: String(S.bkPage), per_page: String(S.bkPerPage) });
+  if (st) qs.set('status', st);
+  try{
+    const d = await api(`/api/admin/bookings?${qs}`);
+    S.bookings = d.bookings || [];
+    S.bkTotal = Number(d.total || 0);
+    renderBookings();
+    renderBkPager(d);
+    showWarnings(d.warnings || []);
+  }catch(e){ notice(e.message); }
+}
+
+function renderBkPager(d){
+  const box = $('bkPager'); if (!box) return;
+  const total = Number(d.total || 0), per = Number(d.per_page || S.bkPerPage);
+  const pages = Math.max(1, Math.ceil(total / per));
+  const cur = Number(d.page || 1);
+
+  if (pages <= 1) {
+    box.innerHTML = total ? `<span class="info">Jami ${nf(total)} ta</span>` : '';
+    return;
+  }
+
+  /* Ko'p sahifada hammasini chizmaymiz: birinchi, oxirgi va
+     joriysining atrofi. Aks holda 27 ta tugma chiqadi. */
+  const nums = new Set([1, pages, cur, cur - 1, cur + 1]);
+  const list = [...nums].filter(n => n >= 1 && n <= pages).sort((a, b) => a - b);
+
+  let html = `<button ${cur <= 1 ? 'disabled' : ''} data-bkpage="${cur - 1}">‹</button>`;
+  let prev = 0;
+  for (const n of list) {
+    if (prev && n - prev > 1) html += `<span class="info">…</span>`;
+    html += `<button class="${n === cur ? 'on' : ''}" data-bkpage="${n}">${n}</button>`;
+    prev = n;
+  }
+  html += `<button ${cur >= pages ? 'disabled' : ''} data-bkpage="${cur + 1}">›</button>`;
+  html += `<span class="info">${nf(total)} ta bron · ${pages} sahifa</span>`;
+
+  box.innerHTML = html;
+  box.querySelectorAll('[data-bkpage]').forEach(b => b.onclick = () => {
+    loadBookingsPage(Number(b.dataset.bkpage));
+    document.querySelector('#bookings .card')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
+}
+
+
+/* =========================================================================
+   XODIMLAR
+   Har bir xodimga alohida hisob va rol. Kassir boshqaruv bo'limlarini
+   ko'ra olmaydi — bu server tomonda ham majburlanadi (403).
+   ========================================================================= */
+S.staff = [];
+S.registers2 = [];
+
+async function loadStaff(){
+  $('staffRows').innerHTML = '<tr><td colspan="7" class="empty">Yuklanmoqda…</td></tr>';
+  try{
+    const d = await api('/api/admin/staff');
+    S.staff = d.staff || [];
+    S.registers2 = d.registers || [];
+    renderStaff(d.legacy_admin);
+  }catch(e){
+    $('staffRows').innerHTML = '';
+    $('staffAlert').innerHTML = `<div class="error">${esc(e.message)}</div>`;
+  }
+}
+
+function renderStaff(legacyAdmin){
+  const rows = S.staff;
+  $('staffAlert').innerHTML = legacyAdmin
+    ? `<div class="warn">Zaxira kirish yoqilgan: <b>${esc(legacyAdmin)}</b> (muhit o‘zgaruvchisi).
+       Xodimlar qo‘shilgach uni Vercel’dan olib tashlashingiz mumkin.</div>`
+    : '';
+
+  $('staffRows').innerHTML = rows.length ? rows.map(x => `<tr>
+    <td><b>${esc(x.login)}</b></td>
+    <td>${esc(x.full_name || '—')}</td>
+    <td>${x.role === 'admin'
+      ? '<span class="status ok">Administrator</span>'
+      : '<span class="status">Kassir</span>'}</td>
+    <td>${esc(x.register?.code || (x.role === 'admin' ? 'hammasi' : '—'))}</td>
+    <td>${x.last_login_at ? esc(dt(x.last_login_at)) : '—'}</td>
+    <td>${x.is_active ? '<span class="status ok">Faol</span>' : '<span class="status">O‘chirilgan</span>'}</td>
+    <td><div style="display:flex;gap:6px;flex-wrap:wrap">
+      <button class="btn small" data-stedit="${esc(x.id)}">Tahrirlash</button>
+      <button class="btn small red" data-stdel="${esc(x.id)}">O‘chirish</button>
+    </div></td></tr>`).join('')
+    : '<tr><td colspan="7" class="empty">Xodim qo‘shilmagan. Hozircha zaxira admin ishlatilmoqda.</td></tr>';
+
+  document.querySelectorAll('[data-stedit]').forEach(b => b.onclick = () => staffForm(b.dataset.stedit));
+  document.querySelectorAll('[data-stdel]').forEach(b => b.onclick = () => staffDelete(b.dataset.stdel));
+}
+
+/** Qo'shish va tahrirlash bitta oynada — farqi parol majburiyligida. */
+function staffForm(id){
+  const x = id ? S.staff.find(v => String(v.id) === String(id)) : null;
+  const regOpts = S.registers2.map(r =>
+    `<option value="${esc(r.id)}" ${x && String(x.register_id) === String(r.id) ? 'selected' : ''}>${esc(r.code)} — ${esc(r.name)}</option>`).join('');
+
+  openModal(x ? 'Xodimni tahrirlash' : 'Yangi xodim', `
+    <div class="field"><label>LOGIN *</label>
+      <input id="stLogin" class="input" value="${esc(x?.login || '')}" ${x ? 'disabled' : ''} autocomplete="off"
+             placeholder="masalan: kassir1">
+      ${x ? '<div class="muted" style="font-size:11.5px;margin-top:4px">Login o‘zgartirilmaydi</div>' : ''}</div>
+    <div class="field"><label>ISM FAMILIYA</label>
+      <input id="stName" class="input" value="${esc(x?.full_name || '')}" autocomplete="off"></div>
+    <div class="field"><label>PAROL ${x ? '<span class="muted">(bo‘sh qoldirsangiz o‘zgarmaydi)</span>' : '*'}</label>
+      <input id="stPass" class="input" type="password" autocomplete="new-password" placeholder="kamida 8 belgi"></div>
+    <div class="field"><label>ROL *</label>
+      <div class="pick3" id="stRoles"></div></div>
+    <div class="field" id="stRegWrap"><label>KASSA *</label>
+      <select id="stReg" class="input"><option value="">Tanlang…</option>${regOpts}</select>
+      <div class="muted" style="font-size:11.5px;margin-top:4px">Kassir faqat shu kassaning tushumini ko‘radi</div></div>
+    ${x ? `<label class="chk" style="display:flex;gap:9px;align-items:center;margin:4px 0 12px;font-size:13px">
+      <input id="stActive" type="checkbox" ${x.is_active ? 'checked' : ''} style="width:20px;height:20px">
+      <span>Faol — kira oladi</span></label>` : ''}
+    <div id="stAlert"></div>
+    <div style="display:flex;gap:8px">
+      <button class="btn" style="flex:1" id="stCancel">Bekor</button>
+      <button class="btn primary" style="flex:1" id="stSave">Saqlash</button>
+    </div>`);
+
+  let role = x?.role || 'cashier';
+  const paintRoles = () => {
+    $('stRoles').innerHTML = [['cashier','Kassir'],['admin','Administrator']].map(([v,l]) =>
+      `<button type="button" class="pk ${role===v?'on':''}" data-strole="${v}">${l}</button>`).join('');
+    $('stRoles').querySelectorAll('[data-strole]').forEach(b => b.onclick = () => {
+      role = b.dataset.strole; paintRoles();
+    });
+    // Adminga kassa kerak emas
+    $('stRegWrap').style.display = role === 'cashier' ? '' : 'none';
+  };
+  paintRoles();
+
+  $('stCancel').onclick = closeModal;
+  $('stSave').onclick = async () => {
+    $('stAlert').innerHTML = '';
+    const bad = m => { $('stAlert').innerHTML = `<div class="error">${esc(m)}</div>`; };
+    const pass = $('stPass').value;
+
+    if (!x && !/^[a-zA-Z0-9_.-]{3,32}$/.test($('stLogin').value.trim()))
+      return bad('Login 3–32 belgi: harf, raqam, _ . -');
+    if (!x && pass.length < 8) return bad('Parol kamida 8 belgi');
+    if (pass && pass.length < 8) return bad('Parol kamida 8 belgi');
+    if (role === 'cashier' && !$('stReg').value) return bad('Kassirga kassa tanlang');
+
+    const body = {
+      full_name: $('stName').value.trim(),
+      role,
+      register_id: role === 'cashier' ? $('stReg').value : null,
+    };
+    if (!x) { body.login = $('stLogin').value.trim(); body.password = pass; }
+    else {
+      if (pass) body.password = pass;
+      if ($('stActive')) body.is_active = $('stActive').checked;
+    }
+
+    const btn = $('stSave'); btn.disabled = true; btn.textContent = 'Saqlanmoqda…';
+    try{
+      if (x) await api(`/api/admin/staff/${encodeURIComponent(x.id)}`, { method:'PATCH', body: JSON.stringify(body) });
+      else   await api('/api/admin/staff', { method:'POST', body: JSON.stringify(body) });
+      closeModal(); toast(x ? 'Saqlandi' : 'Xodim qo‘shildi'); await loadStaff();
+    }catch(e){ bad(e.message); btn.disabled = false; btn.textContent = 'Saqlash'; }
+  };
+}
+
+async function staffDelete(id){
+  const x = S.staff.find(v => String(v.id) === String(id));
+  if (!x) return;
+  if (!confirm(`"${x.login}" o‘chirilsinmi?\n\nBu xodim endi tizimga kira olmaydi.`)) return;
+  try{
+    await api(`/api/admin/staff/${encodeURIComponent(id)}`, { method:'DELETE' });
+    toast('O‘chirildi'); await loadStaff();
+  }catch(e){ notice(e.message); }
+}
+
+$('staffAdd').onclick = () => staffForm(null);
+
 /* ---------- Bekor qilish so'rovlari ---------- */
 S.cancels=[];
 async function loadCancels(){
@@ -3123,7 +3348,56 @@ function fillCashierInstructors(){
   if(cur) $('kInstructor').value=cur;
 }
 
-async function boot(){try{await api('/api/admin/me');showApp();if(!$('dDate').value)$('dDate').value=kToday();await loadAll();initCheckout(); applyMode(adminMode);
+
+/** Rolga qarab interfeysni chegaralaydi.
+    Kassir uchun BOSHQARUV tugmasi va uning bo'limlari yashiriladi,
+    va u faqat o'z kassasiga o'ta oladi.
+
+    Bu qulaylik uchun — haqiqiy himoya serverda (403). Lekin
+    ko'rinmaydigan tugmani bosib 403 olishdan ko'ra, uni umuman
+    ko'rsatmaslik to'g'riroq. */
+function applyRole(){
+  const me = S.me || {};
+  const isAdmin = me.role !== 'cashier';
+
+  // BOSHQARUV tugmasi
+  const adminBtn = document.querySelector('[data-mode="admin"]');
+  if (adminBtn) adminBtn.classList.toggle('hidden', !isAdmin);
+
+  // Kassir faqat O'Z kassasiga o'ta oladi
+  if (!isAdmin && me.register_id) {
+    document.querySelectorAll('[data-mode]').forEach(b => {
+      const mode = b.dataset.mode;
+      if (mode === 'admin') return;
+      const reg = (S.registers || []).find(r => r.code === mode);
+      const mine = reg && String(reg.id) === String(me.register_id);
+      b.classList.toggle('hidden', !!reg && !mine);
+    });
+  }
+
+  // Boshqaruv bo'limlari
+  document.querySelectorAll('.nav[data-grp="admin"]').forEach(b => {
+    if (!isAdmin) b.classList.add('hidden');
+  });
+
+  // Kim kirgani yuqorida ko'rinsin
+  const badge = $('whoami');
+  if (badge) {
+    badge.textContent = `${me.full_name || me.login || ''} · ${isAdmin ? 'Administrator' : 'Kassir'}`;
+    badge.classList.toggle('cashier', !isAdmin);
+  }
+
+  // Kassir boshqaruv rejimida qolib ketmasin
+  if (!isAdmin && adminMode === 'admin') {
+    const own = (S.registers || []).find(r => String(r.id) === String(me.register_id));
+    applyMode(own?.code || 'P1');
+  }
+}
+
+async function boot(){try{
+  S.me = await api('/api/admin/me');
+  applyRole();
+  showApp();if(!$('dDate').value)$('dDate').value=kToday();await loadAll();initCheckout(); applyMode(adminMode);
   await Promise.allSettled([loadAnalytics(),loadSupport(),loadCancels()]);}catch{showLogin()}}
 // Avtomatik yangilanish: modal ochiq bo'lsa yoki sozlama tahrirlanayotgan bo'lsa TO'XTAYDI.
 setInterval(()=>{
