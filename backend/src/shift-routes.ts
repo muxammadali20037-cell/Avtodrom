@@ -37,6 +37,16 @@ function safeEq(a: string, b: string) {
   const x = Buffer.from(a), y = Buffer.from(b);
   return x.length === y.length && timingSafeEqual(x, y);
 }
+
+/* Rolni cookie'dan xavfsiz o'qiydi (xato bo'lsa null). */
+async function currentStaffSafe(req: any): Promise<{ role: string } | null> {
+  try {
+    const mod: any = await import('./admin-password-routes.js');
+    if (mod.currentStaff) return await mod.currentStaff(req);
+  } catch {}
+  return null;
+}
+
 export function makeRegisterToken(registerId: string) {
   const exp = Date.now() + TOKEN_TTL_MS;
   const body = `${registerId}.${exp}`;
@@ -742,6 +752,26 @@ export async function registerShiftRoutes(
   });
 
   /* ---------------- Kassani ochish ---------------- */
+  /* Admin uchun PINsiz kassa tokeni. Faqat administrator chaqira oladi
+     (guardAdmin). Kassir bunga muhtoj emas — tokeni login'да bor. */
+  app.post('/api/admin/registers/:id/token', async (req: any, reply: any) => {
+    try {
+      await requireAdmin(req);
+      const me = await currentStaffSafe(req);
+      if (me && me.role === 'cashier') {
+        return reply.code(403).send({ ok: false, error: 'Faqat administrator' });
+      }
+      const id = String(req.params.id);
+      const reg = (await supabaseRest<any[]>('cash_registers', {
+        query: `?id=eq.${q(id)}&select=id,code,name&limit=1`,
+      }))[0];
+      if (!reg) return reply.code(404).send({ ok: false, error: 'Kassa topilmadi' });
+      return { ok: true, token: makeRegisterToken(reg.id), register: reg };
+    } catch (e: any) {
+      return reply.code(e?.statusCode ?? 400).send({ ok: false, error: e?.message || 'Token berilmadi' });
+    }
+  });
+
   app.post('/api/admin/registers/:id/unlock', async (req: any, reply: any) => {
     try {
       await requireAdmin(req);
