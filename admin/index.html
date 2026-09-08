@@ -3913,37 +3913,33 @@ function applyRole(){
   const me = S.me || {};
   const isAdmin = me.role !== 'cashier';
 
-  // BOSHQARUV tugmasi
-  const adminBtn = document.querySelector('[data-mode="admin"]');
-  if (adminBtn) adminBtn.classList.toggle('hidden', !isAdmin);
-
-  // Kassir faqat O'Z kassasiga o'ta oladi
-  if (!isAdmin && me.register_id) {
-    document.querySelectorAll('[data-mode]').forEach(b => {
-      const mode = b.dataset.mode;
-      if (mode === 'admin') return;
-      const reg = (S.registers || []).find(r => r.code === mode);
-      const mine = reg && String(reg.id) === String(me.register_id);
-      b.classList.toggle('hidden', !!reg && !mine);
-    });
-  }
-
-  // Boshqaruv bo'limlari
-  document.querySelectorAll('.nav[data-grp="admin"]').forEach(b => {
-    if (!isAdmin) b.classList.add('hidden');
+  /* TO'LIQ AJRATISH:
+     · Admin — uchala tugma (P1, P2, BOSHQARUV), hammasini boshqaradi
+     · Kassir — FAQAT o'z kassasi tugmasi ko'rinadi, boshqasi umuman yo'q.
+       Rejim almashtira olmaydi, boshqaruvni ko'rmaydi. */
+  document.querySelectorAll('[data-mode]').forEach(b => {
+    const mode = b.dataset.mode;
+    if (isAdmin) { b.classList.remove('hidden'); return; }
+    // kassir: faqat o'z kassasi
+    const reg = (S.registers || []).find(r => r.code === mode);
+    const mine = reg && String(reg.id) === String(me.register_id);
+    b.classList.toggle('hidden', !mine);   // admin tugmasi va boshqa kassa yashiriladi
   });
 
-  // Kim kirgani yuqorida ko'rinsin
+  // Kassirга rejim almashtirgich butunlay kerak emas (bitta tugma qoladi)
+  const sw = $('modeSwitch');
+  if (sw) sw.classList.toggle('single', !isAdmin);
+
+  // Boshqaruv bo'limlari — kassir umuman ko'rmaydi
+  document.querySelectorAll('.nav[data-grp="admin"]').forEach(b => {
+    b.classList.toggle('hidden', !isAdmin);
+  });
+
+  // Kim kirgani
   const badge = $('whoami');
   if (badge) {
-    badge.textContent = `${me.full_name || me.login || ''} · ${isAdmin ? 'Administrator' : 'Kassir'}`;
+    badge.textContent = `${me.full_name || me.login || ''} \u00b7 ${isAdmin ? 'Administrator' : 'Kassir'}`;
     badge.classList.toggle('cashier', !isAdmin);
-  }
-
-  // Kassir boshqaruv rejimida qolib ketmasin
-  if (!isAdmin && adminMode === 'admin') {
-    const own = (S.registers || []).find(r => String(r.id) === String(me.register_id));
-    applyMode(own?.code || 'P1');
   }
 }
 
