@@ -993,18 +993,6 @@ pre.json{background:#F7FAFF;border:1px solid var(--line);border-radius:8px;paddi
     <div class="field"><label>TIZIM NOMI</label><input id="systemName" class="input" value="AVTODROM INDEX"></div>
     <div class="field"><label>BRONLAR</label><select id="bookingEnabled" class="select"><option value="true">Yoqilgan</option><option value="false">O‘chirilgan</option></select></div>
     <div class="field"><label>ALOQA TELEFONI <span class="muted">(mijoz panelida ko‘rinadi)</span></label><input id="contactPhone" class="input" autocomplete="off" placeholder="+998901234567"></div>
-    <div class="field"><label>KASSA PIN KODLARI <span class="muted">(kassir kassani shu bilan ochadi)</span></label>
-      <div id="pinSetters" style="display:grid;gap:9px"></div>
-      <div style="border-top:1px solid var(--line);margin:16px 0"></div>
-      <label style="font-weight:700">BOSHQARUV PIN KODI</label>
-      <div class="muted" style="font-size:12px;margin:4px 0 10px">BOSHQARUV bo‘limi ochilganda so‘raladi. Admin login’dan tashqari qo‘shimcha himoya.</div>
-      <div style="display:flex;gap:9px;align-items:center;flex-wrap:wrap">
-        <input class="input" type="password" inputmode="numeric" maxlength="8" placeholder="Yangi PIN" id="mgmtPinInput" style="max-width:160px" autocomplete="new-password">
-        <button class="btn small" id="mgmtPinSave">Saqlash</button>
-        <span id="mgmtPinState" class="warn" style="padding:3px 9px;border-radius:99px;font-size:11px">tekshirilmoqda…</span>
-      </div>
-      <div class="muted" style="font-size:12px;margin-top:6px">4–8 raqam. PIN xeshlanib saqlanadi — hech kim, hatto bazani ko‘rgan odam ham uni o‘qiy olmaydi.</div></div>
-
     <div class="field"><label>SOATLIK TARIF <span class="muted">(chek chiqarishda ishlatiladi)</span></label>
       <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">
         <div><div class="muted" style="font-size:11px;margin-bottom:4px">A kategoriya</div>
@@ -1218,7 +1206,7 @@ function showPage(id){
   if(id==='checkout'){ initCheckout(); }
   if(id==='dashboard'){ if(!$('dDate').value)$('dDate').value=kToday(); loadAnalytics(); }
   if(id==='control'){ if(!$('cDate').value)$('cDate').value=kToday(); renderCtlPicker(); loadControl(); }
-  if(id==='settings'){ renderPinSetters(); loadMgmtPinState(); }
+  if(id==='settings'){ /* PIN olib tashlandi — login/parol yetarli */ }
   if(id==='cashier'){ if(!$('kDate').value) $('kDate').value=kToday(); fillCashierInstructors(); loadCashier(); }
 }
 document.querySelectorAll('.nav').forEach(x=>x.addEventListener('click',()=>showPage(x.dataset.p)));
