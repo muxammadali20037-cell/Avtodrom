@@ -969,7 +969,13 @@ function bindIns(){
     Mijoz C tanlasa, A/B instruktorlari ro'yxatda umuman ko'rinmaydi. */
 function pickedCategory(){
   const c = S.courses.find(x => x.id === S.course);
-  return String(c?.category || '').trim().toUpperCase();
+  if (!c) return '';
+  // 1) Kursда belgilangan kategoriya
+  let cat = String(c.category || '').trim().toUpperCase();
+  if (/^[ABC]$/.test(cat)) return cat;
+  // 2) Zaxira: kurs nomiдан topamiz ("Amaliy haydash C" -> C, "B kategoriya" -> B)
+  const m = String(c.name || '').toUpperCase().match(/\b([ABC])\b/);
+  return m ? m[1] : '';
 }
 function instructorsForCategory(){
   const cat = pickedCategory();
