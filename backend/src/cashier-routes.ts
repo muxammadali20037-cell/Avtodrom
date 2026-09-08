@@ -1,5 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 import { supabaseRest } from './supabase.js';
+import { loadTariffs, computePrice } from './pricing.js';
 import { q, findUserByTelegram, toProfile } from './identity.js';
 import { fmtWhen, fmtMoney } from './notify.js';
 import { readRegisterToken } from './shift-routes.js';
@@ -355,6 +356,22 @@ export async function registerCashierRoutes(
      Berilgan vaqt oralig'ida kim bo'sh. Hech kim bo'sh bo'lmasa — kim
      eng tez bo'shashini ham qaytaradi, kassir kutish vaqtini ko'radi.
      ===================================================================== */
+
+  /* Narx taklifi — kassa va mijoz paneli shundan foydalanadi.
+     Narx BITTA joyда hisoblanadi, shuning uchun uch panel bir xil
+     raqamни ko'rsatadi. */
+  app.get('/api/admin/price', async (req: any, reply: any) => {
+    try {
+      await requireAdmin(req);
+      const category = String(req.query?.category || 'B');
+      const minutes = Math.max(1, Math.min(600, Math.round(Number(req.query?.minutes || 60))));
+      const tariffs = await loadTariffs();
+      return { ok: true, category: category.toUpperCase(), minutes, price: computePrice(category, minutes, tariffs), tariffs };
+    } catch (e: any) {
+      return reply.code(e?.statusCode ?? 400).send({ ok: false, error: e?.message || 'Narx hisoblanmadi' });
+    }
+  });
+
   app.get('/api/admin/cashier/free-instructors', async (req: any, reply: any) => {
     try {
       await requireAdmin(req);
@@ -435,7 +452,12 @@ export async function registerCashierRoutes(
       const minutes = Math.max(15, Math.min(600, Math.round(Number(b.duration_minutes || 60))));
       const cash = Math.max(0, Number(b.cash_amount || 0));
       const card = Math.max(0, Number(b.card_amount || 0));
-      const total = Number(b.amount ?? (cash + card));
+      /* Server narxni O'ZI hisoblaydi. Kassir summani o'zgartirishi
+         mumkin (chegirma, qo'shimcha), lekin katta farq bo'lsa
+         bu xato belgisi — yozib qo'yamiz va javobda qaytaramiz. */
+      const tariffs = await loadTariffs();
+      const suggested = computePrice(String(b.category || 'B'), minutes, tariffs);
+      const total = Number(b.amount ?? suggested);
 
       if (!(total > 0)) return reply.code(400).send({ ok: false, error: 'Summani kiriting' });
       if (cash + card !== total) {
@@ -540,7 +562,7 @@ export async function registerCashierRoutes(
             method: 'POST', headers: { Prefer: 'return=representation' }, body: JSON.stringify(payload) }))[0];
 
       await audit(admin.id, 'RECEIPT_ISSUED', 'payments', payment?.id ?? null, null,
-        { amount: total, method, cash, card, receipt_code: receiptCode, booking_id: booking.id, mode, register: register.code });
+        { amount: total, suggested, method, cash, card, receipt_code: receiptCode, booking_id: booking.id, mode, register: register.code });
 
       const fresh = (await supabaseRest<any[]>('bookings', { query: `?id=eq.${q(String(booking.id))}&select=*&limit=1` }))[0];
       const m = await loadMaps([fresh]);
