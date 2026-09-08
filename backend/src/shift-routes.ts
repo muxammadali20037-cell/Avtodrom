@@ -538,6 +538,89 @@ export async function registerShiftRoutes(
     }
   });
 
+
+  /* =====================================================================
+     ESLATMA TIZIMI TASHXISI
+     Admin bir tugma bosib, eslatma botga ketadimi yo'qmi — bilib oladi.
+     Barcha shartlarni tekshiradi: bot tokeni, kutilayotgan bronlar,
+     yaqin darslar. Hech nima o'zgartirmaydi — faqat ko'rsatadi.
+     ===================================================================== */
+  app.get('/api/admin/reminder-check', async (req: any, reply: any) => {
+    try {
+      await requireAdmin(req);
+      const checks: any[] = [];
+
+      // 1) Bot tokeni bormi
+      const botToken = String(process.env.CUSTOMER_BOT_TOKEN || process.env.TELEGRAM_CUSTOMER_BOT_TOKEN || '').trim();
+      checks.push({
+        name: 'Mijoz bot tokeni',
+        ok: !!botToken,
+        detail: botToken ? 'sozlangan' : 'CUSTOMER_BOT_TOKEN Vercelda yo\u2018q',
+      });
+
+      // 2) CRON_SECRET
+      const cronSecret = String(process.env.CRON_SECRET || '').trim();
+      checks.push({
+        name: 'CRON_SECRET',
+        ok: !!cronSecret,
+        detail: cronSecret ? 'sozlangan' : 'yo\u2018q \u2014 cron endpoint himoyasiz yoki ishlamaydi',
+      });
+
+      // 3) Yaqin 90 daqiqadagi tasdiqlangan bronlar (eslatma tegishlilari)
+      const now = Date.now();
+      const soon = new Date(now + 90 * 60000).toISOString();
+      const nowIso = new Date(now).toISOString();
+      const upcoming = await supabaseRest<any[]>('bookings', {
+        query: `?status=eq.confirmed&start_at=gte.${q(nowIso)}&start_at=lte.${q(soon)}&select=id,start_at,pickup_code&limit=20`,
+      }).catch(() => []);
+      checks.push({
+        name: 'Yaqin darslar (90 daq)',
+        ok: true,
+        detail: `${upcoming.length} ta bron eslatma kutmoqda`,
+      });
+
+      // 4) Bugun yuborilган eslatmalar
+      const dayStart = new Date(now - 18 * 3600e3).toISOString();
+      const sentToday = await supabaseRest<any[]>('booking_reminders', {
+        query: `?created_at=gte.${q(dayStart)}&select=kind&limit=200`,
+      }).catch(() => []);
+      const byKind: Record<string, number> = {};
+      sentToday.forEach((r: any) => { byKind[r.kind] = (byKind[r.kind] || 0) + 1; });
+      checks.push({
+        name: 'Bugun yuborilган eslatmalar',
+        ok: true,
+        detail: sentToday.length
+          ? Object.entries(byKind).map(([k, n]) => `${k}: ${n}`).join(', ')
+          : 'hali yo\u2018q (yaqin dars bo\u2018lmasa normal)',
+      });
+
+      const ready = !!botToken;
+      return {
+        ok: true,
+        ready,
+        summary: ready
+          ? 'Eslatma tizimi tayyor. Cron ishlаса, yaqin darslarga xabar ketadi.'
+          : 'Bot tokeni yo\u2018q \u2014 eslatma yuborilmaydi.',
+        checks,
+        note: 'Cron har 5 daqiqada ishlashi kerak. Vercel Hobby rejasi kuniga 1 marta ishlatadi \u2014 Supabase pg_cron tavsiya etiladi.',
+      };
+    } catch (e: any) {
+      return reply.code(e?.statusCode ?? 500).send({ ok: false, error: e?.message || 'Tekshiruv xatosi' });
+    }
+  });
+
+  /* Admin qo'lda eslatma yuborishni sinab ko'radi (haqiqiy yuboradi). */
+  app.post('/api/admin/reminder-test', async (req: any, reply: any) => {
+    try {
+      await requireAdmin(req);
+      const { sendDueReminders } = await import('./reminders.js');
+      const result = await sendDueReminders();
+      return { ok: true, result };
+    } catch (e: any) {
+      return reply.code(e?.statusCode ?? 500).send({ ok: false, error: e?.message || 'Sinov xatosi' });
+    }
+  });
+
   /* ---------------- PIN ni o'rnatish (faqat admin) ---------------- */
 
   /* =====================================================================
