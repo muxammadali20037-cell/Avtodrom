@@ -1369,6 +1369,11 @@ async function notifyInstructorDecision(
       if (b.description !== undefined) patch.description = String(b.description || '').trim() || null;
       if (b.duration_minutes !== undefined) patch.duration_minutes = Number(b.duration_minutes);
       if (b.price !== undefined) patch.price = Number(b.price);
+      if (b.category !== undefined) {
+        const cat = String(b.category).trim().toUpperCase();
+        if (!['A', 'B', 'C'].includes(cat)) return reply.code(400).send({ ok: false, error: 'Kategoriya A, B yoki C bo‘lsin' });
+        patch.category = cat;
+      }
       if (b.is_active !== undefined) patch.is_active = Boolean(b.is_active);
 
       const rows = await supabaseRest<any[]>('courses', { method: 'PATCH', headers: { Prefer: 'return=representation' }, query: `?id=eq.${q(id)}`, body: JSON.stringify(patch) });
