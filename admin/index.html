@@ -533,6 +533,105 @@ pre.json{background:#F7FAFF;border:1px solid var(--line);border-radius:8px;paddi
 .dtable .ini2{width:28px;height:28px;border-radius:8px;background:var(--soft,#EEF2FF);color:var(--g,#3B5BDB);display:inline-grid;place-items:center;font-weight:800;font-size:11px}
 .card.wide{grid-column:auto}
 @media(max-width:1000px){.kpigrid{grid-template-columns:repeat(3,1fr)}.dgrid,.dgrid3{grid-template-columns:1fr}}
+
+/* ============ SILLIQ ANIMATSIYALAR ============
+   Real ilova hissi: bosilganда javob, sahifa almashганда yumshoq
+   o'tish. Harakat kam, tez va tabiiy — chalg'itmaydi.
+   prefers-reduced-motion hurmat qilinadi. */
+
+:root{
+  --ease: cubic-bezier(.22,.61,.36,1);
+  --fast: .16s;
+  --med: .26s;
+}
+
+/* Bosiladigan hamma narsa — bosilganда kichrayadi */
+.btn, .nav, .ms, .pk, .dur, .card.click, [data-cat], [data-mbcat], [data-course]{
+  transition: transform var(--fast) var(--ease),
+              background-color var(--fast) var(--ease),
+              border-color var(--fast) var(--ease),
+              box-shadow var(--fast) var(--ease);
+}
+.btn:active, .nav:active, .ms:active, .pk:active, .dur:active,
+[data-cat]:active, [data-mbcat]:active, [data-course]:active{
+  transform: scale(.97);
+}
+.btn:hover:not(:disabled){ transform: translateY(-1px) }
+.btn:disabled{ opacity:.55; cursor:not-allowed; transform:none }
+
+/* Kartochkalar — hover'да yengil ko'tariladi */
+.card{ transition: box-shadow var(--med) var(--ease), transform var(--med) var(--ease) }
+
+/* Sahifa almashганда yumshoq paydo bo'lish */
+.page.on{ animation: pageIn var(--med) var(--ease) both }
+@keyframes pageIn{
+  from{ opacity:0; transform: translateY(6px) }
+  to{ opacity:1; transform: none }
+}
+
+/* Ro'yxat elementlari ketma-ket paydo bo'ladi */
+.kcard{ animation: cardIn .32s var(--ease) both }
+.kpigrid .kcard:nth-child(1){ animation-delay:.02s }
+.kpigrid .kcard:nth-child(2){ animation-delay:.05s }
+.kpigrid .kcard:nth-child(3){ animation-delay:.08s }
+.kpigrid .kcard:nth-child(4){ animation-delay:.11s }
+.kpigrid .kcard:nth-child(5){ animation-delay:.14s }
+.kpigrid .kcard:nth-child(6){ animation-delay:.17s }
+@keyframes cardIn{
+  from{ opacity:0; transform: translateY(10px) }
+  to{ opacity:1; transform: none }
+}
+
+/* Modal — yumshoq ochiladi */
+.modal{ transition: opacity var(--med) var(--ease) }
+.modal .box, .modal .sheet, .lockbox{
+  animation: modalIn var(--med) var(--ease) both;
+}
+@keyframes modalIn{
+  from{ opacity:0; transform: translateY(14px) scale(.98) }
+  to{ opacity:1; transform: none }
+}
+
+/* Tanlangan holat — yumshoq belgilanadi */
+.pk.on, .dur.on, .ms.on, .nav.on{
+  transition: background-color var(--fast) var(--ease), color var(--fast) var(--ease);
+}
+
+/* Toast — pastdan chiqadi */
+.toast{ animation: toastIn .3s var(--ease) both }
+@keyframes toastIn{
+  from{ opacity:0; transform: translateY(16px) }
+  to{ opacity:1; transform: none }
+}
+
+/* Yuklanish paytida yengil pulsatsiya */
+.loading, .skeleton{
+  background: linear-gradient(90deg,#F1F3F7 25%,#E8EBF2 37%,#F1F3F7 63%);
+  background-size: 400% 100%;
+  animation: shimmer 1.3s ease-in-out infinite;
+}
+@keyframes shimmer{
+  from{ background-position: 100% 50% }
+  to{ background-position: 0 50% }
+}
+
+/* Input fokusда yumshoq halqa */
+.input, .select, .search{
+  transition: border-color var(--fast) var(--ease), box-shadow var(--fast) var(--ease);
+}
+.input:focus, .select:focus, .search:focus{
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(59,91,219,.12);
+}
+
+/* Harakatni kamaytirish so'ralса — hurmat qilamiz */
+@media (prefers-reduced-motion: reduce){
+  *, *::before, *::after{
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+  }
+}
 </style>
 </head>
 <body>
@@ -688,6 +787,8 @@ pre.json{background:#F7FAFF;border:1px solid var(--line);border-radius:8px;paddi
         <div class="row"><span>Kategoriya</span><b id="mbSumCat">—</b></div>
         <div class="row"><span>Davomiylik</span><b id="mbSumDur">—</b></div>
         <div class="row"><span>Instruktor</span><b id="mbSumIns">—</b></div>
+        <div class="row" style="border-top:1px solid var(--line);padding-top:8px;margin-top:4px">
+          <span>Narx</span><b id="mbSumPrice" style="font-size:16px;color:var(--g)">—</b></div>
         <div class="row"><span>Vaqt</span><b id="mbSumTime">—</b></div>
       </div>
       <div id="mbAlert" style="margin-top:12px"></div>
@@ -994,15 +1095,23 @@ pre.json{background:#F7FAFF;border:1px solid var(--line);border-radius:8px;paddi
     <div class="field"><label>BRONLAR</label><select id="bookingEnabled" class="select"><option value="true">Yoqilgan</option><option value="false">O‘chirilgan</option></select></div>
     <div class="field"><label>ALOQA TELEFONI <span class="muted">(mijoz panelida ko‘rinadi)</span></label><input id="contactPhone" class="input" autocomplete="off" placeholder="+998901234567"></div>
     <div class="field"><label>SOATLIK TARIF <span class="muted">(chek chiqarishda ishlatiladi)</span></label>
-      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">
-        <div><div class="muted" style="font-size:11px;margin-bottom:4px">A kategoriya</div>
-          <input id="rateA" class="input" type="number" min="0" step="1000" placeholder="350000"></div>
-        <div><div class="muted" style="font-size:11px;margin-bottom:4px">B kategoriya</div>
-          <input id="rateB" class="input" type="number" min="0" step="1000" placeholder="250000"></div>
-        <div><div class="muted" style="font-size:11px;margin-bottom:4px">C kategoriya</div>
-          <input id="rateC" class="input" type="number" min="0" step="1000" placeholder="400000"></div>
+      <div style="display:grid;grid-template-columns:80px repeat(3,1fr);gap:10px;align-items:center">
+        <div></div>
+        <div class="muted" style="font-size:11px;text-align:center">A — Mototsikl</div>
+        <div class="muted" style="font-size:11px;text-align:center">B — Yengil</div>
+        <div class="muted" style="font-size:11px;text-align:center">C — Yuk</div>
+
+        <div class="muted" style="font-size:11px;font-weight:700">30 daqiqa</div>
+        <input id="halfA" class="input" type="number" min="0" step="1000" placeholder="200000">
+        <input id="halfB" class="input" type="number" min="0" step="1000" placeholder="150000">
+        <input id="halfC" class="input" type="number" min="0" step="1000" placeholder="250000">
+
+        <div class="muted" style="font-size:11px;font-weight:700">1 soat</div>
+        <input id="rateA" class="input" type="number" min="0" step="1000" placeholder="350000">
+        <input id="rateB" class="input" type="number" min="0" step="1000" placeholder="250000">
+        <input id="rateC" class="input" type="number" min="0" step="1000" placeholder="400000">
       </div>
-      <div class="muted" style="font-size:12px;margin-top:6px">Bir soatlik narx. 30 daqiqa — yarmi, 2 soat — ikki barobar.</div></div>
+      <div class="muted" style="font-size:12px;margin-top:6px">30 daqiqa — alohida narx. Undan uzun vaqt soatlik tarifga proporsional (1.5 soat = soat × 1.5).</div></div>
 
     <div class="field"><label>AVTODROM HAQIDA <span class="muted">(mijoz panelidagi «INDEX AVTODROM» bo‘limi)</span></label>
       <textarea id="aboutText" class="input" rows="3" placeholder="Maydoncha haqida qisqacha…"></textarea></div>
@@ -1789,6 +1898,9 @@ function loadSettings(){
   $('contactPhone').value=val('contact_phone');
   $('workingHours').value=val('working_hours');
   $('aboutText').value=val('about_text');
+  $('halfA').value=val('half_a')||200000;
+  $('halfB').value=val('half_b')||150000;
+  $('halfC').value=val('half_c')||250000;
   $('rateA').value=val('rate_a')||350000;
   $('rateB').value=val('rate_b')||250000;
   $('rateC').value=val('rate_c')||400000;
@@ -1851,6 +1963,9 @@ $('saveSettingsBtn').onclick=async()=>{
     await put('contact_phone',$('contactPhone').value.trim());
     await put('working_hours',$('workingHours').value.trim());
     await put('about_text',$('aboutText').value.trim());
+    await put('half_a',Number($('halfA').value)||200000);
+    await put('half_b',Number($('halfB').value)||150000);
+    await put('half_c',Number($('halfC').value)||250000);
     await put('rate_a',Number($('rateA').value)||350000);
     await put('rate_b',Number($('rateB').value)||250000);
     await put('rate_c',Number($('rateC').value)||400000);
@@ -2588,26 +2703,50 @@ function settingVal(key){
   const v = row?.value;
   return v == null ? null : (v.value !== undefined ? v.value : v);
 }
-function coRate(){
-  const fromSettings = Number(settingVal('rate_' + String(CO.category||'').toLowerCase()));
-  return Number.isFinite(fromSettings) && fromSettings > 0
-    ? fromSettings
-    : (DEFAULT_RATE[CO.category] || 0);
+/* NARX HISOBLASH — server bilan BIR XIL formula.
+   30 daqiqa alohida narx, undan uzun vaqt soatlik tarifga proporsional.
+   Yakuniy hisob serverда qayta bajariladi — bu yer ko'rsatish uchun. */
+const DEFAULT_TARIFF = {
+  A: { half: 200000, hour: 350000 },
+  B: { half: 150000, hour: 250000 },
+  C: { half: 250000, hour: 400000 },
+};
+
+function tariffFor(cat){
+  const k = String(cat || 'B').toUpperCase();
+  const half = Number(settingVal('half_' + k.toLowerCase()));
+  const hour = Number(settingVal('rate_' + k.toLowerCase()));
+  const d = DEFAULT_TARIFF[k] || DEFAULT_TARIFF.B;
+  return {
+    half: Number.isFinite(half) && half > 0 ? half : d.half,
+    hour: Number.isFinite(hour) && hour > 0 ? hour : d.hour,
+  };
 }
+
+/** Soatlik tarif (ko'rsatish uchun). */
+function coRate(){ return tariffFor(CO.category).hour; }
+
+/** Narx: 30 daqiqa maxsus, qolgani proporsional. */
+function priceOf(cat, minutes){
+  const t = tariffFor(cat);
+  const m = Math.max(1, Math.round(Number(minutes) || 0));
+  if (m === 30) return Math.round(t.half);
+  return Math.round((t.hour * m) / 60);
+}
+
 function coPrice(){
-  /* Bron kodi bilan topilганда narx SERVERDAN keladi (booking.price yoki
-     course.price). Uni ishlatamiz — kategoriyaga bog'liq hisobga tayanmaymiz,
-     chunki kursda kategoriya belgilanmagan bo'lsa ham narx bor. */
+  /* Bron kodi bilan topilганда narx brondan keladi (server hisoblaган).
+     Aks holда tarifдан hisoblaymiz. */
   if (CO.mode === 'booked' && CO.booking) {
     const p = Number(CO.booking.price ?? CO.booking.course?.price);
     if (Number.isFinite(p) && p > 0) {
-      // Narx soatlik bo'lsa davomiylikка moslaymiz
       const dur = Number(CO.booking.course?.duration_minutes || 60);
       return Math.round((p * CO.minutes) / (dur > 0 ? dur : 60));
     }
   }
-  return Math.round((coRate() * CO.minutes) / 60);
+  return priceOf(CO.category, CO.minutes);
 }
+
 function coStartAt(){
   const d = $('coDate').value, t = $('coTime').value;
   if (!d || !t) return null;
@@ -2787,9 +2926,11 @@ document.addEventListener('click', (e) => {
 function renderCats(){
   const cats = ['A','B','C'];
   $('coCats').innerHTML = cats.map(c => {
-    const r = Number(settingVal('rate_' + c.toLowerCase())) || DEFAULT_RATE[c] || 0;
+    const t = tariffFor(c);
     return `<button type="button" class="pk ${CO.category===c?'on':''}" data-cat="${c}">
-      ${c}<br><small style="font-weight:600;font-size:11px">${esc(money(r))}/soat</small></button>`;
+      <b style="font-size:17px">${c}</b>
+      <small style="font-weight:600;font-size:10.5px;display:block;line-height:1.4">
+        30daq ${esc(money(t.half))}<br>1soat ${esc(money(t.hour))}</small></button>`;
   }).join('');
   $('coCats').querySelectorAll('[data-cat]').forEach(b => b.onclick = () => {
     CO.category = b.dataset.cat;
@@ -3408,8 +3549,13 @@ function mbStart(){
   return Number.isNaN(x.getTime()) ? null : x;
 }
 function mbPaintCats(){
-  $('mbCats').innerHTML = ['A','B','C'].map(c =>
-    `<button type="button" class="pk ${MB.cat===c?'on':''}" data-mbcat="${c}">${c}</button>`).join('');
+  $('mbCats').innerHTML = ['A','B','C'].map(c => {
+    const t = tariffFor(c);
+    return `<button type="button" class="pk ${MB.cat===c?'on':''}" data-mbcat="${c}">
+      <b style="font-size:17px">${c}</b>
+      <small style="font-weight:600;font-size:10.5px;display:block;line-height:1.4">
+        30daq ${esc(money(t.half))}<br>1soat ${esc(money(t.hour))}</small></button>`;
+  }).join('');
   $('mbCats').querySelectorAll('[data-mbcat]').forEach(b => b.onclick = () => {
     MB.cat = b.dataset.mbcat; MB.ins = null; mbPaintCats(); mbLoadFree(); mbSum();
   });
@@ -3453,6 +3599,9 @@ function mbSum(){
   $('mbSumCat').textContent = MB.cat;
   $('mbSumDur').textContent = fmtDur(MB.minutes);
   $('mbSumIns').textContent = MB.ins?.name || '—';
+  // Narx — kassa bilan BIR XIL formula
+  const mbPrice = priceOf(MB.cat, MB.minutes);
+  $('mbSumPrice').textContent = money(mbPrice) + ' so‘m';
   const at = mbStart();
   $('mbSumTime').textContent = at ? `${$('mbDate').value} · ${$('mbTime').value}` : '—';
 }
