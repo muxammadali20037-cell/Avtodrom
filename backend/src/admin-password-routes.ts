@@ -244,6 +244,18 @@ export async function registerAdminPasswordRoutes(app: FastifyInstance) {
           { login: identity.login, role: identity.role, legacy: identity.legacy });
       } catch { /* audit ixtiyoriy */ }
 
+      /* Kassir bo'lsa — kassa tokenини DARHOL beramiz. Shunda kirгач
+         PIN so'ralmaydi, to'g'ridan o'z kassasiga tushadi.
+         Kassa ma'lumoti ham qo'shiladi (kod, nom). */
+      let register = null, register_token = null;
+      if (identity.role === 'cashier' && identity.register_id) {
+        const { makeRegisterToken } = await import('./shift-routes.js');
+        register_token = makeRegisterToken(identity.register_id);
+        register = (await supabaseRest<any[]>('cash_registers', {
+          query: `?id=eq.${q(String(identity.register_id))}&select=id,code,name&limit=1`,
+        }).catch(() => []))[0] || null;
+      }
+
       return {
         ok: true,
         login: identity.login,
@@ -251,6 +263,8 @@ export async function registerAdminPasswordRoutes(app: FastifyInstance) {
         register_id: identity.register_id,
         full_name: identity.full_name,
         legacy: identity.legacy,
+        register,
+        register_token,
       };
     } catch (e) { return err(reply, e, 'Admin login failed'); }
   });
@@ -583,9 +597,18 @@ export async function registerAdminPasswordRoutes(app: FastifyInstance) {
   app.get('/api/admin/me', async (req: any, reply: any) => {
     try {
       const me = await currentStaff(req);
+      let register = null, register_token = null;
+      if (me.role === 'cashier' && me.register_id) {
+        const { makeRegisterToken } = await import('./shift-routes.js');
+        register_token = makeRegisterToken(String(me.register_id));
+        register = (await supabaseRest<any[]>('cash_registers', {
+          query: `?id=eq.${q(String(me.register_id))}&select=id,code,name&limit=1`,
+        }).catch(() => []))[0] || null;
+      }
       return {
         ok: true, login: me.login, role: me.role,
         register_id: me.register_id, full_name: me.full_name, legacy: me.legacy,
+        register, register_token,
       };
     }
     catch (e) { return err(reply, e, 'Unauthorized', 401); }
