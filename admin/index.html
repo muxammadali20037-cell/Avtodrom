@@ -1177,11 +1177,14 @@ $('loginForm').addEventListener('submit',async e=>{
     toast(`Xush kelibsiz, ${res.full_name || res.login} · ${roleName}`);
     /* Login javobida rol keladi — uni darhol qo'llaymiz, aks holda
        kassir kirsa ham boshqaruv menyusi ko'rinib qolardi. */
-    S.me = { ok:true, login:res.login, role:res.role, register_id:res.register_id, full_name:res.full_name, legacy:res.legacy };
+    S.me = { ok:true, login:res.login, role:res.role, register_id:res.register_id, full_name:res.full_name, legacy:res.legacy, register:res.register };
+    // Kassir kassa tokenини login'да oladi — PIN so'ralmaydi
+    if (res.role === 'cashier' && res.register_token && res.register) {
+      const o = readTokens(); o[res.register.code] = { t: res.register_token, r: res.register }; writeTokens(o);
+    }
     showApp();
     await loadAll(true);
     try { applyRole(); } catch(err){ console.warn('applyRole:', err); }
-    // Rolга qarab to'g'ri joyga — kassir o'z kassasiga, admin boshqaruvga
     try { routeByRole(); } catch(err){ console.warn('routeByRole:', err); }
   }catch(e){$('loginError').textContent=e.message;$('loginError').classList.remove('hidden')}
   finally{$('loginBtn').disabled=false;$('loginBtn').textContent='Kirish'}
@@ -3000,28 +3003,45 @@ function applyMode(mode){
   document.querySelectorAll('[data-grp]').forEach(el => el.classList.toggle('hidden', el.dataset.grp !== grp));
 
   if (mode === 'admin') {
+    /* Admin: login/parol yetarli — PIN yo'q. To'g'ridan boshqaruvga. */
     REGISTER = null; REG_TOKEN = '';
-    $('regLock').classList.add('hidden');
-    /* Boshqaruv PIN darvozasi: token bo'lmasa yoki muddati o'tган
-       bo'lsa, sahifa ochilmaydi — avval PIN so'raladi. */
-    if (mgmtTokenValid()) {
-      hideMgmtLock();
-      showPage('dashboard');
-    } else {
-      showMgmtLock();   // async — o'zi PIN holatini tekshiradi
-    }
+    if ($('regLock')) $('regLock').classList.add('hidden');
+    if ($('mgmtLock')) $('mgmtLock').classList.add('hidden');
+    showPage('dashboard');
     return;
   }
-  // Kassa rejimi — saqlangan token bormi?
+
+  /* Kassa: token login paytida berilган (kassir) yoki admin
+     tanlaган kassa uchun. PIN so'ralmaydi. */
   const saved = tokenFor(mode);
   if (saved) {
-    REG_TOKEN = saved.t; REGISTER = saved.r; pinSeq++;
+    REG_TOKEN = saved.t; REGISTER = saved.r;
+    if ($('regLock')) $('regLock').classList.add('hidden');
     showPage('checkout'); showCheckout(); loadRegToday(); loadPayments();
   } else {
-    REGISTER = null; REG_TOKEN = '';
-    openPinFor(mode);          // sahifa ochilmaydi — faqat qulf
+    /* Token yo'q — bu faqat admin boshqa kassaga o'tганда bo'lishi
+       mumkin. Admin uchun tokenни so'rovda olamiz (PINsiz). */
+    unlockRegisterNoPin(mode);
   }
 }
+
+/* Admin kassaga o'tганда PINsiz token oladi (u allaqachon admin).
+   Kassir bunga umuman kirmaydi — uning tokeni login'да bor. */
+async function unlockRegisterNoPin(code){
+  try {
+    if (!S.registers.length) {
+      S.registers = (await api('/api/admin/registers')).registers || [];
+    }
+    const reg = S.registers.find(r => r.code === code);
+    if (!reg) { notice('Kassa topilmadi'); return; }
+    // Admin uchun token — server admin ekanini tekshiradi
+    const d = await api(`/api/admin/registers/${encodeURIComponent(reg.id)}/token`, { method:'POST', body:'{}' });
+    REG_TOKEN = d.token; REGISTER = d.register || reg;
+    const o = readTokens(); o[code] = { t: d.token, r: REGISTER }; writeTokens(o);
+    showPage('checkout'); showCheckout(); loadRegToday(); loadPayments();
+  } catch (e) { notice(e.message); }
+}
+
 document.querySelectorAll('.ms').forEach(b => b.onclick = () => applyMode(b.dataset.mode));
 
 /* ---------------- PIN ekrani ---------------- */
@@ -3728,7 +3748,15 @@ async function loadStaff(){
     renderStaff(d.legacy_admin);
   }catch(e){
     $('staffRows').innerHTML = '';
-    $('staffAlert').innerHTML = `<div class="error">${esc(e.message)}</div>`;
+    const tableMissing = /staff|relation|does not exist|schema/i.test(String(e.message));
+    $('staffAlert').innerHTML = tableMissing
+      ? `<div class="error" style="text-align:left">
+          <b>Xodimlar jadvali bazada yo‘q.</b><br>
+          Supabase → SQL Editor da <b>staff_roles</b> migratsiyasini ishga tushiring,
+          keyin xodim qo‘sha olasiz.<br>
+          <span class="muted" style="font-size:12px">Xato: ${esc(e.message)}</span>
+        </div>`
+      : `<div class="error">${esc(e.message)}</div>`;
   }
 }
 
@@ -3960,6 +3988,10 @@ async function boot(){
   try{
     // Sessiyani tekshiramiz. 401 bo'lsa — to'g'ridan login ekraniga.
     S.me = await api('/api/admin/me');
+    // Kassir tokenини tiklaymiz (qayta kirганда PIN so'ralmasin)
+    if (S.me && S.me.role === 'cashier' && S.me.register_token && S.me.register) {
+      const o = readTokens(); o[S.me.register.code] = { t: S.me.register_token, r: S.me.register }; writeTokens(o);
+    }
   }catch(e){
     showLogin();
     return;   // qolgan so'rovlar yuborilmaydi — konsol toza qoladi
