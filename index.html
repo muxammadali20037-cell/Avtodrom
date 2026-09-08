@@ -306,6 +306,105 @@ details.faq[open] summary{border-bottom:1px solid var(--line)}
  .time-grid{grid-template-columns:repeat(3,1fr)}.booking-info{grid-template-columns:1fr 1fr}
  .profile{grid-template-columns:80px 1fr;padding:15px}.profile-avatar{width:75px;height:75px;border-radius:22px;font-size:26px}.profile-grid{grid-template-columns:1fr}
 }
+
+/* ============ SILLIQ ANIMATSIYALAR ============
+   Real ilova hissi: bosilganда javob, sahifa almashганда yumshoq
+   o'tish. Harakat kam, tez va tabiiy — chalg'itmaydi.
+   prefers-reduced-motion hurmat qilinadi. */
+
+:root{
+  --ease: cubic-bezier(.22,.61,.36,1);
+  --fast: .16s;
+  --med: .26s;
+}
+
+/* Bosiladigan hamma narsa — bosilganда kichrayadi */
+.btn, .nav, .ms, .pk, .dur, .card.click, [data-cat], [data-mbcat], [data-course]{
+  transition: transform var(--fast) var(--ease),
+              background-color var(--fast) var(--ease),
+              border-color var(--fast) var(--ease),
+              box-shadow var(--fast) var(--ease);
+}
+.btn:active, .nav:active, .ms:active, .pk:active, .dur:active,
+[data-cat]:active, [data-mbcat]:active, [data-course]:active{
+  transform: scale(.97);
+}
+.btn:hover:not(:disabled){ transform: translateY(-1px) }
+.btn:disabled{ opacity:.55; cursor:not-allowed; transform:none }
+
+/* Kartochkalar — hover'да yengil ko'tariladi */
+.card{ transition: box-shadow var(--med) var(--ease), transform var(--med) var(--ease) }
+
+/* Sahifa almashганда yumshoq paydo bo'lish */
+.page.on{ animation: pageIn var(--med) var(--ease) both }
+@keyframes pageIn{
+  from{ opacity:0; transform: translateY(6px) }
+  to{ opacity:1; transform: none }
+}
+
+/* Ro'yxat elementlari ketma-ket paydo bo'ladi */
+.kcard{ animation: cardIn .32s var(--ease) both }
+.kpigrid .kcard:nth-child(1){ animation-delay:.02s }
+.kpigrid .kcard:nth-child(2){ animation-delay:.05s }
+.kpigrid .kcard:nth-child(3){ animation-delay:.08s }
+.kpigrid .kcard:nth-child(4){ animation-delay:.11s }
+.kpigrid .kcard:nth-child(5){ animation-delay:.14s }
+.kpigrid .kcard:nth-child(6){ animation-delay:.17s }
+@keyframes cardIn{
+  from{ opacity:0; transform: translateY(10px) }
+  to{ opacity:1; transform: none }
+}
+
+/* Modal — yumshoq ochiladi */
+.modal{ transition: opacity var(--med) var(--ease) }
+.modal .box, .modal .sheet, .lockbox{
+  animation: modalIn var(--med) var(--ease) both;
+}
+@keyframes modalIn{
+  from{ opacity:0; transform: translateY(14px) scale(.98) }
+  to{ opacity:1; transform: none }
+}
+
+/* Tanlangan holat — yumshoq belgilanadi */
+.pk.on, .dur.on, .ms.on, .nav.on{
+  transition: background-color var(--fast) var(--ease), color var(--fast) var(--ease);
+}
+
+/* Toast — pastdan chiqadi */
+.toast{ animation: toastIn .3s var(--ease) both }
+@keyframes toastIn{
+  from{ opacity:0; transform: translateY(16px) }
+  to{ opacity:1; transform: none }
+}
+
+/* Yuklanish paytida yengil pulsatsiya */
+.loading, .skeleton{
+  background: linear-gradient(90deg,#F1F3F7 25%,#E8EBF2 37%,#F1F3F7 63%);
+  background-size: 400% 100%;
+  animation: shimmer 1.3s ease-in-out infinite;
+}
+@keyframes shimmer{
+  from{ background-position: 100% 50% }
+  to{ background-position: 0 50% }
+}
+
+/* Input fokusда yumshoq halqa */
+.input, .select, .search{
+  transition: border-color var(--fast) var(--ease), box-shadow var(--fast) var(--ease);
+}
+.input:focus, .select:focus, .search:focus{
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(59,91,219,.12);
+}
+
+/* Harakatni kamaytirish so'ralса — hurmat qilamiz */
+@media (prefers-reduced-motion: reduce){
+  *, *::before, *::after{
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+  }
+}
 </style>
 </head>
 <body>
@@ -1062,7 +1161,40 @@ function unitMinutes(){
   return Number(c?.duration_minutes || 60);
 }
 function totalMinutes(){ return unitMinutes() * (S.hours || 1); }
+/* NARX — admin va server bilan BIR XIL formula.
+   30 daqiqa alohida narx, undan uzun vaqt soatlik tarifga proporsional.
+   Tariflar sozlamalardan keladi; yo'q bo'lsa standart ishlatiladi. */
+const DEFAULT_TARIFF = {
+  A: { half: 200000, hour: 350000 },
+  B: { half: 150000, hour: 250000 },
+  C: { half: 250000, hour: 400000 },
+};
+
+function tariffFor(cat){
+  const k = String(cat || 'B').toUpperCase();
+  const d = DEFAULT_TARIFF[k] || DEFAULT_TARIFF.B;
+  const get = key => {
+    const v = Number(S.settings?.[key]);
+    return Number.isFinite(v) && v > 0 ? v : null;
+  };
+  return {
+    half: get('half_' + k.toLowerCase()) ?? d.half,
+    hour: get('rate_' + k.toLowerCase()) ?? d.hour,
+  };
+}
+
 function totalPrice(){
+  const cat = pickedCategory();
+  const mins = totalMinutes();
+
+  // Kategoriya aniq bo'lsa — tarif bo'yicha
+  if (/^[ABC]$/.test(cat)) {
+    const t = tariffFor(cat);
+    if (mins === 30) return Math.round(t.half);
+    return Math.round((t.hour * mins) / 60);
+  }
+
+  // Zaxira: kategoriya yo'q bo'lsa eski usul (kurs narxi)
   const c = S.courses.find(x => x.id === S.course);
   return Number(c?.price || 0) * (S.hours || 1);
 }
