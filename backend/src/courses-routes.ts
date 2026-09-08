@@ -34,7 +34,9 @@ export async function registerCourseRoutes(
    */
   const PUBLIC_KEYS = ['system_name', 'contact_phone', 'address', 'working_hours', 'booking_enabled',
                        'location', 'work_start', 'work_end', 'slot_step_min',
-                       'about_text', 'facilities'];
+                       'about_text', 'facilities',
+                       // Tariflar — mijoz narxni ko'rishi kerak
+                       'half_a', 'half_b', 'half_c', 'rate_a', 'rate_b', 'rate_c'];
 
   app.get('/api/settings', async (_request, reply) => {
     try {
