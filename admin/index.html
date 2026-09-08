@@ -1868,6 +1868,13 @@ $('saveSettingsBtn').onclick=async()=>{
    qolardi. Saqlangandan keyin "o'zgarmadi" ko'rinishining sababi shu edi.
    Endi allSettled: yiqilgani o'tkazib yuboriladi, qolgani yangilanadi. */
 async function loadAll(show){
+  /* Kassir boshqaruv so'rovlarини UMUMAN yubormaydi — ular unга
+     403 qaytaradi va keraksiz ogohlantirish chiqarardi. Kassirга
+     faqat o'z kassasi kerak (u boshqa funksiyalar bilan yuklanadi). */
+  if (S.me && S.me.role === 'cashier') {
+    try { const p = await api(payUrl()); S.payments = p.payments || []; } catch (e) {}
+    return;
+  }
   try{
     const urls = ['/api/admin/stats',`/api/admin/bookings?page=${S.bkPage||1}&per_page=${S.bkPerPage||50}`,'/api/admin/instructors',
       '/api/admin/applications','/api/admin/customers','/api/admin/reviews',
