@@ -1570,7 +1570,8 @@ function courseModal(c){
   $('cCancel').onclick=closeModal;
   $('cSave').onclick=async()=>{
     $('cErr').innerHTML='';$('cSave').disabled=true;
-    const body={name:$('cName').value.trim(),description:$('cDesc').value.trim(),duration_minutes:Number($('cDur').value),price:Number($('cPrice').value)};
+    if(!/^[ABC]$/.test(cCat)){$('cErr').innerHTML='<div class="error">Kategoriyani tanlang (A/B/C)</div>';$('cSave').disabled=false;return;}
+    const body={name:$('cName').value.trim(),description:$('cDesc').value.trim(),duration_minutes:Number($('cDur').value),price:Number($('cPrice').value),category:cCat};
     try{
       if(isEdit)await api(`/api/admin/courses/${encodeURIComponent(c.id)}`,{method:'PATCH',body:JSON.stringify(body)});
       else await api('/api/admin/courses',{method:'POST',body:JSON.stringify(body)});
