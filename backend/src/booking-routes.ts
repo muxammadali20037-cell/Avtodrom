@@ -5,6 +5,7 @@
  */
 import type { FastifyInstance } from 'fastify';
 import { supabaseRest } from './supabase.js';
+import { loadTariffs, computePrice } from './pricing.js';
 import { loadBookingDetails, bookingMessage, inAppMessage, fmtWhen, type BookingEvent } from './notify.js';
 import { sendBookingNotification } from './telegram.js';
 import type { TelegramWebAppUser } from './telegram.js';
@@ -280,7 +281,7 @@ export async function registerBookingRoutes(
       }
 
       const courses = await supabaseRest<any[]>('courses', {
-        query: `?id=eq.${q(body.course_id)}&is_active=eq.true&select=id,duration_minutes,price&limit=1`,
+        query: `?id=eq.${q(body.course_id)}&is_active=eq.true&select=id,duration_minutes,price,category&limit=1`,
       });
       const course = courses[0];
       if (!course) return reply.code(400).send({ ok: false, error: 'Mashg‘ulot topilmadi yoki faol emas' });
@@ -289,6 +290,10 @@ export async function registerBookingRoutes(
          Frontend yuborgan end_at e'tiborga olinmaydi — aks holda mijoz
          2 soatlik narxga 4 soat band qilib qo'yishi mumkin edi. */
       const totalMinutes = Number(course.duration_minutes || 60) * hours;
+      const bookingCat = String(course.category || '').toUpperCase();
+      const bookingPrice = /^[ABC]$/.test(bookingCat)
+        ? computePrice(bookingCat, totalMinutes, await loadTariffs())
+        : Math.round(Number(course.price || 0) * hours);
       const end = new Date(start.getTime() + totalMinutes * 60000);
       if (Number.isNaN(end.getTime()) || !(start < end)) {
         return reply.code(400).send({ ok: false, error: 'Vaqt oralig‘i noto‘g‘ri' });
@@ -327,6 +332,14 @@ export async function registerBookingRoutes(
           end_at: end.toISOString(),
           hours,
           duration_minutes: totalMinutes,
+          /* Kategoriya bronда SAQLANADI. Ilgari yozilmasди va kassaда
+             bron kodi bilan topilганда kategoriya noma'lum bo'lib,
+             standart B ga tushardi — narx noto'g'ri chiqardi. */
+          category: String(course.category || '').toUpperCase() || null,
+          /* Narx ham SAQLANADI — kassaда bron kodi bilan topilганда
+             aynan shu summa chiqadi. Tarif keyinroq o'zgarsa ham
+             mijozga aytilган narx o'zgarmaydi. */
+          price: bookingPrice,
           customer_note: body.customer_note?.trim() || null,
           status: 'pending',
         }),
