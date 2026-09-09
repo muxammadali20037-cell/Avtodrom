@@ -966,7 +966,7 @@ export async function registerAdminPasswordRoutes(app: FastifyInstance) {
       const insUserIds = [...new Set(ipsR.rows.map((i: any) => i.user_id).filter(Boolean).map(String))];
       const allUserIds = [...new Set([...cuIds, ...insUserIds])];
 
-      const [usersR, coursesR, paymentsR] = await Promise.all([
+      const [usersR, coursesR, paymentsR, remindersR] = await Promise.all([
         allUserIds.length
           ? safeR<any>('users', `?id=in.(${allUserIds.map(q).join(',')})&select=id,telegram_id,phone,full_name,role`)
           : Promise.resolve({ rows: [] as any[], warning: null }),
@@ -976,11 +976,23 @@ export async function registerAdminPasswordRoutes(app: FastifyInstance) {
         bkIds.length
           ? safeR<any>('payments', `?booking_id=in.(${bkIds.map(q).join(',')})&select=booking_id,amount,status`)
           : Promise.resolve({ rows: [] as any[], warning: null }),
+        /* Yuborilган eslatmalar — admin qaysi bronга xabar ketganini
+           ko'rishi kerak (60/30/10 daqiqa oldin). */
+        bkIds.length
+          ? safeR<any>('booking_reminders', `?booking_id=in.(${bkIds.map(q).join(',')})&select=booking_id,kind`)
+          : Promise.resolve({ rows: [] as any[], warning: null }),
       ]);
       // To'lov yozuvi bron tasdiqlangan paytdagi narxni saqlaydi.
       // Kurs narxi keyin o'zgarsa ham eski bron narxi o'zgarmasligi uchun
       // avval payments.amount, faqat u yo'q bo'lsa joriy kurs narxi olinadi.
       const pm = new Map(paymentsR.rows.map((p: any) => [String(p.booking_id), p]));
+      // Bron -> yuborilган eslatma turlari (masalan ['60','30'])
+      const rem = new Map<string, string[]>();
+      for (const r of (remindersR?.rows || [])) {
+        const k = String(r.booking_id);
+        if (!rem.has(k)) rem.set(k, []);
+        rem.get(k)!.push(String(r.kind));
+      }
       const um = new Map(usersR.rows.map((u: any) => [String(u.id), u]));
       const im = new Map(ipsR.rows.map((i: any) => [String(i.id), i]));
       const cm = new Map(coursesR.rows.map((c: any) => [String(c.id), c]));
@@ -1004,6 +1016,8 @@ export async function registerAdminPasswordRoutes(app: FastifyInstance) {
             customer: um.get(String(b.customer_id)) || null,
             instructor: i ? { ...i, profile: u || null } : null,
             course: c || null,
+            // Yuborilган eslatmalar (60/30/10) — admin ko'radi
+            reminders: rem.get(String(b.id)) || [],
           };
         }),
       };
@@ -1316,7 +1330,7 @@ async function notifyInstructorDecision(
   app.post('/api/admin/instructor-applications/:id/reject', reject);
 
   app.get('/api/admin/settings', async (req: any, reply: any) => {
-    try { await guardAdmin(req); return { ok: true, settings: await safe<any>('admin_settings', '?select=key,value,updated_at&order=key.asc') }; }
+    try { await guard(req); return { ok: true, settings: await safe<any>('admin_settings', '?select=key,value,updated_at&order=key.asc') }; }
     catch (e) { return err(reply, e, 'Failed to load settings'); }
   });
   app.put('/api/admin/settings/:key', async (req: any, reply: any) => {
@@ -1334,7 +1348,7 @@ async function notifyInstructorDecision(
   });
 
   app.get('/api/admin/courses', async (req: any, reply: any) => {
-    try { await guardAdmin(req); return { ok: true, courses: await safe<any>('courses', '?select=*&order=created_at.desc') }; }
+    try { await guard(req); return { ok: true, courses: await safe<any>('courses', '?select=*&order=created_at.desc') }; }
     catch (e) { return err(reply, e, 'Failed to load courses'); }
   });
   app.post('/api/admin/courses', async (req: any, reply: any) => {
