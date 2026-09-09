@@ -963,10 +963,10 @@ pre.json{background:#F7FAFF;border:1px solid var(--line);border-radius:8px;paddi
   <div class="head"><div><h1>Bronlar</h1><p>Foydalanuvchi bronlari va holatlari.</p></div><button class="btn" id="expBookings">Excel/CSV</button></div>
   <div class="card">
     <div class="toolbar">
-      <select id="bookingFilter" class="select"><option value="pending" selected>Kutilmoqda</option><option value="">Barchasi</option><option value="confirmed">Tasdiqlangan</option><option value="in_progress">Jarayonda</option><option value="completed">Tugagan</option><option value="no_show">Kelmagan</option><option value="cancelled">Bekor</option><option value="rejected">Rad etilgan</option></select>
+      <select id="bookingFilter" class="select"><option value="" selected>Barchasi</option><option value="pending">Kutilmoqda</option><option value="confirmed">Tasdiqlangan</option><option value="in_progress">Jarayonda</option><option value="completed">Tugagan</option><option value="no_show">Kelmagan</option><option value="cancelled">Bekor</option><option value="rejected">Rad etilgan</option></select>
       <input id="bookingSearch" class="search" placeholder="Mijoz, telefon, instruktor...">
     </div>
-    <div class="tableWrap"><table class="table"><thead><tr><th>Sana</th><th>Mijoz</th><th>Telefon</th><th>Instruktor</th><th>Mashg‘ulot</th><th>Narx</th><th>Izoh</th><th>Status</th><th>Amal</th></tr></thead><tbody id="bookingRows"></tbody></table></div>
+    <div class="tableWrap"><table class="table"><thead><tr><th>Sana</th><th>Kod</th><th>Mijoz</th><th>Telefon</th><th>Instruktor</th><th>Mashg‘ulot</th><th>Narx</th><th>Eslatma</th><th>Status</th><th>Amal</th></tr></thead><tbody id="bookingRows"></tbody></table></div>
   </div>
     <div class="pager" id="bkPager"></div>
 </section>
@@ -1343,16 +1343,40 @@ async function applicationAction(id,a){
 }
 
 /* ---------- Bronlar ---------- */
+
+/* Eslatma holati: mijozga 60/30/10 daqiqa qolганда xabar yuborilganmi. */
+function reminderCell(b){
+  const sent = Array.isArray(b.reminders) ? b.reminders : [];
+  const past = new Date(b.start_at).getTime() < Date.now();
+  if (sent.length) {
+    return `<span class="status ok" title="Yuborildi: ${esc(sent.join(', '))} daq oldin">\u2713 ${sent.length} ta</span>`;
+  }
+  if (past) return '<span class="muted" style="font-size:11px">o\u2018tdi</span>';
+  if (!['pending','confirmed'].includes(String(b.status))) return '<span class="muted">\u2014</span>';
+  return '<span class="muted" style="font-size:11px">kutilmoqda</span>';
+}
+
 function renderBookings(){
   const q=$('bookingSearch').value.toLowerCase(),f=$('bookingFilter').value;
   const a=S.bookings.filter(x=>(!f||x.status===f)&&(!q||JSON.stringify(x).toLowerCase().includes(q)));
+  // Bo'sh bo'lса — nima uchunligini aytamiz (filtrmi yoki umuman yo'qmi)
+  if(!a.length && (f||q)){
+    $('bookingRows').innerHTML=`<tr><td colspan="10" class="empty">
+      Bu filtrga mos bron yo\u2018q. Jami ${S.bookings.length} ta bron bor \u2014
+      <a href="#" id="bkClearFilter" style="color:var(--g)">barchasini ko\u2018rish</a></td></tr>`;
+    const cl=document.getElementById('bkClearFilter');
+    if(cl) cl.onclick=(e)=>{e.preventDefault();$('bookingFilter').value='';$('bookingSearch').value='';renderBookings();};
+    return;
+  }
   $('bookingRows').innerHTML=a.length?a.map(b=>{
     let act='';
     if(b.status==='pending')act=`<button class="btn small green" data-bk="${esc(b.id)}" data-st="confirmed">Tasdiqlash</button> <button class="btn small red" data-bk="${esc(b.id)}" data-st="rejected">Rad etish</button>`;
     if(b.status==='confirmed')act=`<button class="btn small" data-bk="${esc(b.id)}" data-st="in_progress">Boshlash</button> <button class="btn small red" data-bk="${esc(b.id)}" data-st="no_show">Kelmadi</button> <button class="btn small red" data-bk="${esc(b.id)}" data-st="cancelled">Bekor</button>`;
     if(b.status==='in_progress')act=`<button class="btn small green" data-bk="${esc(b.id)}" data-st="completed">Tugatish</button>`;
-    return `<tr><td>${dt(b.start_at)}<br><span class="muted">${dt(b.end_at)}</span></td><td><b>${esc(uname(b.customer))}</b></td><td>${esc(b.customer?.phone||'—')}</td><td>${esc(iname(b.instructor))}</td><td>${esc(b.course?.name||'—')}${b.course?.duration_minutes?`<br><span class="muted" style="font-size:11px">${esc(fmtDur(b.course.duration_minutes))}</span>`:''}</td><td>${money(b.price)}</td><td>${esc(b.customer_note||'—')}</td><td>${badge(b.status)}</td><td class="actions">${act}</td></tr>`;
-  }).join(''):'<tr><td colspan="9" class="empty">Bronlar yo‘q.</td></tr>';
+    return `<tr><td>${dt(b.start_at)}<br><span class="muted">${dt(b.end_at)}</span></td>
+      <td><code style="font-size:12px;font-weight:800;color:var(--g)">${esc(b.pickup_code||'—')}</code></td>
+      <td><b>${esc(uname(b.customer))}</b></td><td>${esc(b.customer?.phone||'—')}</td><td>${esc(iname(b.instructor))}</td><td>${esc(b.course?.name||'—')}${b.course?.duration_minutes?`<br><span class="muted" style="font-size:11px">${esc(fmtDur(b.course.duration_minutes))}</span>`:''}</td><td>${money(b.price)}</td><td>${reminderCell(b)}</td><td>${badge(b.status)}</td><td class="actions">${act}</td></tr>`;
+  }).join(''):'<tr><td colspan="10" class="empty">Bronlar yo‘q.</td></tr>';
   document.querySelectorAll('[data-bk]').forEach(btn=>btn.onclick=()=>bookingAction(btn.dataset.bk,btn.dataset.st));
 }
 async function bookingAction(id,s){
@@ -1988,7 +2012,20 @@ async function loadAll(show){
      403 qaytaradi va keraksiz ogohlantirish chiqarardi. Kassirга
      faqat o'z kassasi kerak (u boshqa funksiyalar bilan yuklanadi). */
   if (S.me && S.me.role === 'cashier') {
-    try { const p = await api(payUrl()); S.payments = p.payments || []; } catch (e) {}
+    /* Kassirга boshqaruv ma'lumoti kerak emas, LEKIN ishlashi uchun
+       kerakli uchtasi yuklanadi:
+         · courses  — chek chiqarish mashg'ulotга bog'lanadi
+         · settings — narx tariflari (30daq / 1soat)
+         · payments — o'z kassasi tushumi
+       Ilgari faqat payments yuklanardi va "mashg'ulot topilmadi"
+       xatosi chiqardi. */
+    const [pay, crs, st] = await Promise.allSettled([
+      api(payUrl()), api('/api/admin/courses'), api('/api/admin/settings'),
+    ]);
+    if (pay.status === 'fulfilled') S.payments = pay.value.payments || [];
+    if (crs.status === 'fulfilled') S.courses  = crs.value.courses  || [];
+    if (st.status  === 'fulfilled') S.settings = st.value.settings  || [];
+    try { renderCats(); renderDurs(); coRender(); } catch (e) {}
     return;
   }
   try{
