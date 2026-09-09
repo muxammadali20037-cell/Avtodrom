@@ -2794,6 +2794,25 @@ function coStartAt(){
 /* ---- rejim ---- */
 function coSetMode(m){
   CO.mode = m; CO.booking = null; CO.instructor = null;
+
+  /* BRONLI rejimda kategoriya, davomiylik va narx FAQAT brondan keladi.
+     Bronsizда tanlangan qiymatlar tozalanadi — aks holда A tanlab
+     bronliga o'tsangiz, kod topilgangacha A ko'rinib turardi va
+     mijozning haqiqiy kategoriyasi bilan chalkashardi. */
+  if (m === 'booked') {
+    CO.category = '';
+    CO.minutes = 0;
+    CO.customer = null;
+    if ($('coAmount')) $('coAmount').value = '';
+    if ($('coCode')) $('coCode').value = '';
+  } else {
+    // Bronsizда standart qiymat kerak
+    if (!CO.category) {
+      const first = (S.courses || []).find(c => c.is_active && c.category);
+      CO.category = String(first?.category || 'B').toUpperCase();
+    }
+    if (!CO.minutes) CO.minutes = 60;
+  }
   $('coBooked').classList.toggle('on', m==='booked');
   $('coWalk').classList.toggle('on', m==='walk_in');
   coUpdateFormView();
@@ -2912,7 +2931,10 @@ async function coFindByCode(){
       price: b.price,
     };
     CO.minutes = Number(b.duration_minutes || 60);
-    CO.category = String(b.category || b.course?.category || 'B').toUpperCase();
+    /* Kategoriya FAQAT brondan. Zaxira 'B' olib tashlandi — u jimgina
+       noto'g'ri narx chiqarardi (A bron B narxida). Bo'sh bo'lsa
+       kassirni ogohlantiramiz. */
+    CO.category = String(b.category || b.course?.category || '').toUpperCase();
     CO.instructor = { id: b.instructor_id, name: b.instructor?.profile?.full_name || '—' };
     const st = new Date(b.start_at);
     if ($('coDate')) $('coDate').value = new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Tashkent'}).format(st);
@@ -2921,6 +2943,13 @@ async function coFindByCode(){
     coUpdateFormView();
     coRenderPicked();
     coRender();
+
+    // Kategoriya aniqlanmasa — narx to'g'ri bo'lmaydi, ogohlantiramiz
+    if (!/^[ABC]$/.test(CO.category)) {
+      $('coCodeErr').innerHTML = `<div class="warn">
+        Bu bronда kategoriya belgilanmagan \u2014 narxni tekshiring.
+        Mashg\u2018ulotlar bo\u2018limida kursga kategoriya qo\u2018ying.</div>`;
+    }
   }catch(e){
     $('coCodeErr').innerHTML = `<div class="error">${esc(e.message)}</div>`;
   }finally{
