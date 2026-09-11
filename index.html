@@ -83,6 +83,53 @@ button,input,textarea,select{font:inherit}button{cursor:pointer}button:disabled{
 .course.on{border-color:var(--brand);background:#f4f5fd;box-shadow:0 0 0 3px rgba(46,49,146,.09)}
 .course b{display:block;font-size:14px}.course .sub{font-size:11px;color:var(--muted);margin-top:3px}
 .course .price{font-weight:950;color:var(--brand);white-space:nowrap;font-size:15px}
+/* ====== QADAM-BAQADAM BRON (yoshi kattalar uchun katta va sodda) ====== */
+.wz{padding:16px}
+.wztop{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+.wzback{width:46px;height:46px;flex:none;border:1px solid var(--line);background:#fff;border-radius:14px;
+ font-size:26px;line-height:1;color:var(--brand);display:grid;place-items:center}
+.wzback[disabled]{opacity:.35}
+.wzinfo{display:flex;flex-direction:column;line-height:1.25}
+.wzinfo b{font-size:20px}
+.wzinfo span{font-size:13px;color:var(--muted);font-weight:700;margin-top:2px}
+.wzbar{height:8px;border-radius:99px;background:#e7eaf6;overflow:hidden;margin-bottom:16px}
+.wzbar i{display:block;height:100%;border-radius:99px;background:var(--brand);transition:width .25s ease}
+.wzpane.hide{display:none}
+/* Kurs kartochkalari kattaroq */
+.wz .course{padding:16px;border-radius:15px;min-height:68px}
+.wz .course b{font-size:16px}
+.wz .course .price{font-size:17px}
+/* Soat tugmalari kattaroq */
+.wz .hours{grid-template-columns:repeat(2,1fr);gap:10px}
+.wz .hours button{padding:18px 6px;font-size:19px;border-radius:15px}
+.wz .hours button small{font-size:12px;margin-top:3px}
+/* Instruktor kartochkalari — ochiluvchi ro'yxat o'rniga */
+.inscard{display:flex;align-items:center;gap:13px;width:100%;text-align:left;background:#fff;
+ border:1.5px solid var(--line);border-radius:15px;padding:14px;margin-bottom:10px;min-height:74px}
+.inscard.on{border-color:var(--brand);background:#f3f4fd;box-shadow:0 0 0 3px rgba(46,49,146,.10)}
+.inscard .ava{width:52px;height:52px;border-radius:15px;flex:none;display:grid;place-items:center;
+ background:var(--brand-soft);color:var(--brand);font-weight:900;font-size:17px;overflow:hidden}
+.inscard .ava img{width:100%;height:100%;object-fit:cover}
+.inscard .txt{flex:1;min-width:0}
+.inscard .txt b{display:block;font-size:16.5px}
+.inscard .txt span{display:block;font-size:13px;color:var(--muted);margin-top:3px}
+.inscard .go{font-size:24px;color:var(--muted);flex:none}
+/* Kun tugmalari — kalendarsiz tanlash */
+.days{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.days button{border:1.5px solid var(--line);background:#fff;border-radius:15px;padding:15px 10px;
+ text-align:left;min-height:68px;display:flex;flex-direction:column;justify-content:center}
+.days button b{font-size:16.5px;color:var(--text)}
+.days button span{font-size:12.5px;color:var(--muted);margin-top:3px}
+.days button.on{border-color:var(--brand);background:#f3f4fd}
+.days button.on b{color:var(--brand)}
+.wzmore{width:100%;margin-top:12px;border:1px dashed var(--line);background:#fff;border-radius:14px;
+ padding:14px;font-size:14.5px;font-weight:700;color:var(--brand)}
+/* Vaqt tugmalari kattaroq */
+.wz .time-grid{grid-template-columns:repeat(3,1fr);gap:10px}
+.wz .time{padding:16px 4px;font-size:16px;border-radius:14px}
+.wzsubmit{width:100%;margin-top:14px;height:58px;font-size:18px;border-radius:16px}
+@media(max-width:380px){.days{grid-template-columns:1fr}.wz .hours{grid-template-columns:1fr 1fr}}
+
 .time-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
 .time{border:1px solid var(--line);background:#fff;border-radius:11px;padding:10px 5px;text-align:center;font-size:12px;font-weight:900}
 /* Bo'sh vaqt — yashil, ajralib turadi va bosiladi */
@@ -519,26 +566,46 @@ details.faq[open] summary{border-bottom:1px solid var(--line)}
 
 <section id="book" class="view hide">
   <div class="section-head"><div><h2 data-i18n="book_h"></h2><p data-i18n="book_p"></p></div></div>
-  <div class="card booking-box">
-    <div class="steps"><div id="step1" class="step active" data-i18n="s1"></div><div id="step2" class="step" data-i18n="s2h"></div><div id="step3" class="step" data-i18n="s3i"></div><div id="step4" class="step" data-i18n="s4t"></div></div>
+  <div class="card booking-box wz">
+    <!-- Qadam-baqadam: bitta ekranda bitta savol. Yoshi kattalar uchun
+         katta tugmalar, avtomatik keyingi qadam, doim "Orqaga" bor. -->
+    <div class="wztop">
+      <button type="button" id="wzBack" class="wzback" aria-label="Orqaga">‹</button>
+      <div class="wzinfo"><b id="wzTitle"></b><span id="wzStep"></span></div>
+    </div>
+    <div class="wzbar"><i id="wzFill"></i></div>
     <div id="bookAlert"></div>
-    <div class="field full" style="margin-bottom:14px"><label data-i18n="l_course"></label><div id="courseList" class="courses"><div class="skeleton" style="height:60px"></div></div></div>
-    <div class="field full" style="margin-bottom:14px">
-      <label data-i18n="l_hours"></label>
+
+    <div class="wzpane" data-wz="1">
+      <div id="courseList" class="courses"><div class="skeleton" style="height:60px"></div></div>
+    </div>
+
+    <div class="wzpane hide" data-wz="2">
       <div id="hourPick" class="hours"></div>
-      <p class="meta" id="hoursHint" style="margin:8px 0 0"></p>
+      <p class="meta" id="hoursHint" style="margin:10px 0 0"></p>
     </div>
-    <div class="form-grid">
-      <div class="field full"><label data-i18n="l_instructor"></label>
-        <select id="bookInstructor"><option value="" data-i18n="loading"></option></select>
-        <p class="meta" id="insHint" style="margin:6px 0 0"></p></div>
-      <div class="field"><label data-i18n="l_date"></label><input id="bookDate" type="date"></div>
-      <div class="field"><label data-i18n="l_note"></label><input id="bookNote" data-i18n-ph="ph_note"></div>
+
+    <div class="wzpane hide" data-wz="3">
+      <div id="insCards"></div>
+      <p class="meta" id="insHint" style="margin:8px 0 0"></p>
+      <select id="bookInstructor" class="hide"><option value=""></option></select>
     </div>
-    <div class="field full" style="margin-top:14px"><label data-i18n="l_time"></label><div id="timeGrid" class="time-grid"></div>
-      <p class="meta" id="availabilityHint" style="margin-top:8px" data-i18n="hint_pick"></p></div>
-    <div class="booking-summary" id="bookingSummary" data-i18n="sum_placeholder"></div>
-    <div style="margin-top:14px"><button class="primary solid" id="submitBooking" style="width:100%" data-i18n="submit"></button></div>
+
+    <div class="wzpane hide" data-wz="4">
+      <div id="dayPick" class="days"></div>
+      <button type="button" class="wzmore" id="wzOtherDate" data-i18n="wz_other_date"></button>
+      <div id="otherDateWrap" class="hide" style="margin-top:10px"><input id="bookDate" type="date"></div>
+    </div>
+
+    <div class="wzpane hide" data-wz="5">
+      <div id="timeGrid" class="time-grid"></div>
+      <p class="meta" id="availabilityHint" style="margin-top:10px" data-i18n="hint_pick"></p>
+      <div id="confirmWrap" class="hide">
+        <div class="booking-summary" id="bookingSummary"></div>
+        <div class="field" style="margin-top:12px"><label data-i18n="l_note"></label><input id="bookNote" data-i18n-ph="ph_note"></div>
+        <button class="primary solid wzsubmit" id="submitBooking" data-i18n="submit"></button>
+      </div>
+    </div>
   </div>
 </section>
 
@@ -633,7 +700,9 @@ if (tg) { try { tg.ready(); tg.expand(); } catch(e) {} }
 
 const $ = id => document.getElementById(id);
 const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const money = v => new Intl.NumberFormat(LOCALE()).format(Number(v || 0)) + (LANG==='ru'?' сум':' so‘m');
+/* Pul: "250 000 so'm" — mingliklar probel bilan (O'zbekistonda shunday yoziladi)
+   va har qurilmada bir xil ko'rinadi. */
+const money = v => String(Math.round(Number(v || 0))).replace(/\B(?=(\d{3})+(?!\d))/g, ' ') + (LANG==='ru'?' сум':' so‘m');
 const TZ = 'Asia/Tashkent';
 
 /* =========================================================================
@@ -708,6 +777,10 @@ const I18N = {
     addr_nophone:'Telefon raqami Admin panel sozlamalarida kiritilmagan',
     book_h:'Bron qilish', book_p:'4 bosqichda mashg‘ulot vaqtini belgilang.',
     s1:'1. Mashg‘ulot', s2h:'2. Soat', s3i:'3. Instruktor', s4t:'4. Vaqt',
+    wz_t1:'Qaysi mashg‘ulot?', wz_t2:'Necha soat?', wz_t3:'Qaysi instruktor?',
+    wz_t4:'Qaysi kun?', wz_t5:'Soat nechada?',
+    wz_step:'{n}-qadam / 5', wz_other_date:'📅 Boshqa sana tanlash',
+    wz_today:'Bugun', wz_tomorrow:'Ertaga', wz_pick_ins:'Instruktorni tanlang',
     ins_cat_ok:'{c} kategoriya uchun {n} ta instruktor', ins_cat_none:'{c} kategoriyani o‘rgatadigan instruktor hozircha yo‘q',
     l_hours:'2. Necha soat?', hours_hint:'Jami: {dur} · {sum}', hours_pick_course:'Avval mashg‘ulot turini tanlang.',
     s2:'2. Instruktor', s3:'3. Sana', s4:'4. Vaqt',
@@ -835,6 +908,10 @@ const I18N = {
     addr_nophone:'Номер телефона не указан в настройках админ-панели',
     book_h:'Бронирование', book_p:'Выберите время занятия за 4 шага.',
     s1:'1. Занятие', s2h:'2. Часы', s3i:'3. Инструктор', s4t:'4. Время',
+    wz_t1:'Какое занятие?', wz_t2:'Сколько часов?', wz_t3:'Какой инструктор?',
+    wz_t4:'Какой день?', wz_t5:'Во сколько?',
+    wz_step:'Шаг {n} / 5', wz_other_date:'📅 Выбрать другую дату',
+    wz_today:'Сегодня', wz_tomorrow:'Завтра', wz_pick_ins:'Выберите инструктора',
     ins_cat_ok:'Для категории {c} — {n} инструктор(ов)', ins_cat_none:'Инструкторов для категории {c} пока нет',
     l_hours:'2. Сколько часов?', hours_hint:'Итого: {dur} · {sum}', hours_pick_course:'Сначала выберите тип занятия.',
     s2:'2. Инструктор', s3:'3. Дата', s4:'4. Время',
@@ -964,8 +1041,22 @@ async function api(path, opt = {}) {
 
 const todayTk = () => new Intl.DateTimeFormat('en-CA',{timeZone:TZ}).format(new Date());
 const tkDT = (d,t) => { const m=String(t).match(/^(\d{2}):(\d{2})$/); return m ? new Date(`${d}T${m[1]}:${m[2]}:00+05:00`) : null; };
-const fDate = v => { if(!v) return '—'; const d=new Date(v); return isNaN(d)?'—':d.toLocaleDateString(LOCALE(),{timeZone:TZ,day:'2-digit',month:'short',year:'numeric'}); };
-const fTime = v => { if(!v) return '—'; const d=new Date(v); return isNaN(d)?'—':d.toLocaleTimeString(LOCALE(),{timeZone:TZ,hour:'2-digit',minute:'2-digit'}); };
+/* Sana nomini O'ZIMIZ yozamiz. Ilgari toLocaleDateString('uz-UZ') ishlatilardi,
+   lekin u qurilmaga qarab "2026 M09 13" kabi tushunarsiz chiqardi (brauzerning
+   til bazasi har xil). Endi hamma telefonda bir xil va o'qiladigan bo'ladi. */
+const MONTHS_UZ = ['yanvar','fevral','mart','aprel','may','iyun','iyul','avgust','sentabr','oktabr','noyabr','dekabr'];
+const MONTHS_RU = ['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'];
+const fDate = v => {
+  if(!v) return '—';
+  const d=new Date(v); if(isNaN(d)) return '—';
+  // Toshkent vaqtidagi kun/oy/yilni aniq olamiz
+  const p=new Intl.DateTimeFormat('en-CA',{timeZone:TZ,year:'numeric',month:'2-digit',day:'2-digit'}).format(d).split('-');
+  const y=+p[0], mo=+p[1], da=+p[2];
+  const name=(LANG==='ru'?MONTHS_RU:MONTHS_UZ)[mo-1];
+  return LANG==='ru' ? `${da} ${name} ${y}` : `${da}-${name}, ${y}`;
+};
+/* Vaqt har doim 24 soatlik HH:MM (en-GB barcha qurilmada bir xil beradi). */
+const fTime = v => { if(!v) return '—'; const d=new Date(v); return isNaN(d)?'—':d.toLocaleTimeString('en-GB',{timeZone:TZ,hour:'2-digit',minute:'2-digit'}); };
 const fFull = v => v ? `${fDate(v)} · ${fTime(v)}` : '—';
 const iName = x => { const p=x?.profile||x||{}; return [p.first_name,p.last_name].filter(Boolean).join(' ')||p.full_name||x?.full_name||t('ins_default'); };
 const initials = n => { const p=String(n||'').trim().split(/\s+/); return ((p[0]?.[0]||'')+(p[1]?.[0]||'')).toUpperCase()||'👤'; };
@@ -996,7 +1087,7 @@ function go(sec){
   history.replaceState(null,'','#'+sec);
   window.scrollTo({top:0,behavior:'smooth'});
   if(sec==='bookings') loadBookings();
-  if(sec==='book'){ if(!S.courses.length) loadCourses(); loadInstructors(); onBookingChange(); }
+  if(sec==='book'){ if(!S.courses.length) loadCourses(); loadInstructors(); onBookingChange(); wzGo(1); }
   if(sec==='faq') renderFaq();
 }
 document.querySelectorAll('.bottom-btn').forEach(b=>b.onclick=()=>go(b.dataset.nav));
@@ -1141,6 +1232,7 @@ function fillInstructorSelect(){
       : t('ins_cat_none', { c: cat });
     hint.classList.toggle('warnline', !!cat && !list.length);
   }
+  if ($('insCards')) renderInsCards();
 }
 
 /* ---------------- Kurslar ---------------- */
@@ -1156,7 +1248,7 @@ function renderCourses(){
     <button type="button" class="course ${S.course===c.id?'on':''}" data-course="${esc(c.id)}">
       <span><b>${esc(c.name)}</b><span class="sub">${esc(fmtDur(c.duration_minutes))}${c.description?' · '+esc(c.description):''}</span></span>
       <span class="price">${money(c.price)}</span></button>`).join('');
-  $('courseList').querySelectorAll('[data-course]').forEach(el=>el.onclick=()=>{ S.course=el.dataset.course; S.time=''; renderCourses(); renderHours(); fillInstructorSelect(); onBookingChange(); });
+  $('courseList').querySelectorAll('[data-course]').forEach(el=>el.onclick=()=>{ S.course=el.dataset.course; S.time=''; renderCourses(); renderHours(); fillInstructorSelect(); onBookingChange(); wzGo(2); });
 }
 
 /* -------- Necha soat? --------
@@ -1226,7 +1318,7 @@ function renderHours(){
   }).join('');
   box.querySelectorAll('[data-h]:not([disabled])').forEach(b => b.onclick = () => {
     S.hours = Number(b.dataset.h); S.time = '';
-    renderHours(); onBookingChange();
+    renderHours(); onBookingChange(); wzGo(3);
   });
   $('hoursHint').textContent = c
     ? t('hours_hint', { dur: fmtDur(totalMinutes()), sum: money(totalPrice()) })
@@ -1297,7 +1389,8 @@ function renderTimes(){
     const tip = clash ? ' title="Bu instruktor bu vaqtda band"' : '';
     return `<button type="button" class="time ${cls}"${tip} ${off?'disabled':''} data-time="${t}">${t}</button>`;
   }).join('');
-  box.querySelectorAll('.time:not([disabled])').forEach(b=>b.onclick=()=>{ S.time=b.dataset.time; renderTimes(); updateSummary(); updateSteps(); });
+  box.querySelectorAll('.time:not([disabled])').forEach(b=>b.onclick=()=>{ S.time=b.dataset.time; renderTimes(); updateSummary(); updateSteps();
+    const cw=$('confirmWrap'); if(cw){ cw.classList.remove('hide'); cw.scrollIntoView({behavior:'smooth',block:'nearest'}); } });
   const free=box.querySelectorAll('.time:not([disabled])').length;
   const hint=$('availabilityHint');
   if(S.busyError){
@@ -1310,11 +1403,86 @@ function renderTimes(){
     hint.textContent = free ? t('hint_free',{date:fDate(date),n:free}) : t('hint_none');
   }
 }
+/* ================= QADAM-BAQADAM BRON =================
+   Bitta ekranda bitta savol. Tanlagan zahoti keyingi qadamga o'tadi —
+   "keyingi" tugmasini qidirish shart emas. Doim "‹" bilan orqaga qaytadi. */
+const WEEKDAYS_UZ = ['yakshanba','dushanba','seshanba','chorshanba','payshanba','juma','shanba'];
+const WEEKDAYS_RU = ['воскресенье','понедельник','вторник','среда','четверг','пятница','суббота'];
+let WZ = 1;
+
+function wzGo(n){
+  WZ = Math.max(1, Math.min(5, n));
+  document.querySelectorAll('.wzpane').forEach(p => p.classList.toggle('hide', Number(p.dataset.wz) !== WZ));
+  $('wzTitle').textContent = t('wz_t' + WZ);
+  $('wzStep').textContent = t('wz_step', { n: WZ });
+  $('wzFill').style.width = (WZ * 20) + '%';
+  $('wzBack').disabled = WZ === 1;
+  if (WZ === 3) renderInsCards();
+  if (WZ === 4) renderDayPick();
+  if (WZ === 5) { $('confirmWrap').classList.toggle('hide', !S.time); onBookingChange(); }
+  const box = document.querySelector('#book .wz');
+  if (box) box.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+/* Eski nom saqlanadi — boshqa joylarda chaqiriladi */
 function updateSteps(){
-  $('step1').classList.toggle('active',!!S.course);
-  $('step2').classList.toggle('active',!!S.course);
-  $('step3').classList.toggle('active',!!$('bookInstructor').value && !!$('bookDate').value);
-  $('step4').classList.toggle('active',!!S.time);
+  if ($('wzTitle')) { $('wzTitle').textContent = t('wz_t' + WZ); $('wzStep').textContent = t('wz_step', { n: WZ }); }
+}
+$('wzBack').onclick = () => wzGo(WZ - 1);
+$('wzOtherDate').onclick = () => {
+  $('otherDateWrap').classList.toggle('hide');
+  if (!$('otherDateWrap').classList.contains('hide')) $('bookDate').focus();
+};
+
+/** Instruktorlar — kichkina ochiluvchi ro'yxat o'rniga katta kartochkalar */
+function renderInsCards(){
+  const box = $('insCards'); if (!box) return;
+  const list = instructorsForCategory();
+  const cur = $('bookInstructor').value;
+  if (!list.length) { box.innerHTML = `<div class="alert info" style="margin:0">${esc(t('ins_cat_none',{c:pickedCategory()||'—'}))}</div>`; return; }
+  box.innerHTML = list.map(x => {
+    const nm = iName(x);
+    const bits = [`★ ${Number(x.rating||0).toFixed(1)}`];
+    if (x.experience_years) bits.push(t('ins_years',{n:x.experience_years}));
+    const ava = x.avatar_url ? `<img src="${esc(x.avatar_url)}" alt="">` : esc(initials(nm));
+    return `<button type="button" class="inscard ${String(cur)===String(x.id)?'on':''}" data-insc="${esc(x.id)}">
+      <span class="ava">${ava}</span>
+      <span class="txt"><b>${esc(nm)}</b><span>${esc(bits.join(' · '))}</span></span>
+      <span class="go">›</span></button>`;
+  }).join('');
+  box.querySelectorAll('[data-insc]').forEach(b => b.onclick = async () => {
+    $('bookInstructor').value = b.dataset.insc;
+    S.time = '';
+    renderInsCards();
+    await onBookingChange();
+    wzGo(4);
+  });
+}
+
+/** Kun tanlash — kalendar ochmasdan, 8 kunlik katta tugmalar */
+function renderDayPick(){
+  const box = $('dayPick'); if (!box) return;
+  const cur = $('bookDate').value;
+  const out = [];
+  for (let i = 0; i < 8; i++) {
+    const dd = new Date(Date.now() + i * 864e5);
+    const val = new Intl.DateTimeFormat('en-CA', { timeZone: TZ }).format(dd);
+    const p = new Intl.DateTimeFormat('en-CA', { timeZone: TZ, year:'numeric', month:'2-digit', day:'2-digit' }).format(dd).split('-');
+    const wdEn = new Intl.DateTimeFormat('en-US', { timeZone: TZ, weekday:'short' }).format(dd);
+    const wi = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].indexOf(wdEn);
+    const months = LANG==='ru' ? MONTHS_RU : MONTHS_UZ;
+    const wdays  = LANG==='ru' ? WEEKDAYS_RU : WEEKDAYS_UZ;
+    const title = i===0 ? t('wz_today') : i===1 ? t('wz_tomorrow') : `${+p[2]}-${months[+p[1]-1]}`;
+    const sub   = i<2 ? `${+p[2]}-${months[+p[1]-1]}, ${wdays[wi]}` : wdays[wi];
+    out.push(`<button type="button" data-day="${val}" class="${cur===val?'on':''}"><b>${esc(title)}</b><span>${esc(sub)}</span></button>`);
+  }
+  box.innerHTML = out.join('');
+  box.querySelectorAll('[data-day]').forEach(b => b.onclick = async () => {
+    $('bookDate').value = b.dataset.day;
+    S.time = '';
+    renderDayPick();
+    await onBookingChange();
+    wzGo(5);
+  });
 }
 /** Xulosa uchun matn: kurs birligi 60 daqiqa bo'lsa oddiy «4 soat»,
     aks holda takrorlamay «4 × 90 daq = 6 soat». */
@@ -1865,7 +2033,9 @@ function renderAd(){
 function rerenderAll(){
   renderHomeInstructors(); renderInstructors(); fillInstructorSelect();
   if(S.courses.length) renderCourses();
-  renderTimes(); updateSummary();
+  renderTimes(); updateSummary(); updateSteps();
+  if ($('insCards')) renderInsCards();
+  if ($('dayPick')) renderDayPick();
   renderBookings(); renderNext(); renderReviewBanner();
   renderProfile(); renderFaq(); renderAbout(); renderGallery(); if($('tour').classList.contains('on')) renderTour(); adIndex=0; renderAd();
   const loc=S.settings?.location||{};
