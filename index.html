@@ -1252,10 +1252,19 @@ function slots(){
 async function onBookingChange(){
   updateSteps();
   const date=$('bookDate').value, ins=$('bookInstructor').value;
-  S.busy=[];
+  S.busy=[]; S.busyError='';
   if(date&&ins){
-    try{ const d=await api(`/api/instructors/${encodeURIComponent(ins)}/availability?date=${encodeURIComponent(date)}`); S.busy=d.busy||[]; }
-    catch(e){ /* yuborishda backend baribir tekshiradi */ }
+    try{
+      const d=await api(`/api/instructors/${encodeURIComponent(ins)}/availability?date=${encodeURIComponent(date)}`);
+      S.busy=d.busy||[];
+    }
+    catch(e){
+      /* MUHIM: ilgari bu xato jimgina yutilardi va band vaqtlar
+         yuklanmagani uchun HAMMA vaqt "bo'sh" (yashil) bo'lib ko'rinardi.
+         Endi xato ko'rsatiladi — aks holda mijoz band vaqtni tanlab,
+         faqat yuborishda xato oladi. */
+      S.busyError = e && e.message ? e.message : 'nomaʼlum xato';
+    }
   }
   renderTimes(); updateSummary();
 }
@@ -1290,7 +1299,16 @@ function renderTimes(){
   }).join('');
   box.querySelectorAll('.time:not([disabled])').forEach(b=>b.onclick=()=>{ S.time=b.dataset.time; renderTimes(); updateSummary(); updateSteps(); });
   const free=box.querySelectorAll('.time:not([disabled])').length;
-  $('availabilityHint').textContent = free ? t('hint_free',{date:fDate(date),n:free}) : t('hint_none');
+  const hint=$('availabilityHint');
+  if(S.busyError){
+    // Band vaqtlar yuklanmadi — buni yashirmaymiz, aks holda hamma vaqt
+    // "bo'sh" ko'rinib, mijoz band vaqtni tanlab qo'yadi.
+    hint.textContent = `Band vaqtlarni yuklab bo‘lmadi (${S.busyError}). Ro‘yxat to‘liq bo‘lmasligi mumkin — sahifani yangilang.`;
+    hint.style.color = 'var(--danger)';
+  } else {
+    hint.style.color = '';
+    hint.textContent = free ? t('hint_free',{date:fDate(date),n:free}) : t('hint_none');
+  }
 }
 function updateSteps(){
   $('step1').classList.toggle('active',!!S.course);
@@ -1333,7 +1351,13 @@ $('submitBooking').onclick=async()=>{
       instructor_id:$('bookInstructor').value, course_id:S.course, hours:S.hours,
       start_at:tkDT($('bookDate').value,S.time).toISOString(),
       customer_note:$('bookNote').value.trim()||null })});
-    $('bookNote').value=''; S.time=''; S.course=null; S.hours=1; renderCourses(); renderHours();
+    /* Kurs/instruktor/sana tanlovi SAQLANADI — faqat vaqt tozalanadi.
+       Shu bilan jadval darhol qayta yuklanadi va endigina bron qilingan
+       vaqt QIZIL (band) bo'lib ko'rinadi. Ilgari kurs null qilinar va
+       jadval bo'shab qolardi, shuning uchun "bron qildim, lekin vaqt
+       yopilmadi" degan taassurot tug'ilardi. */
+    $('bookNote').value=''; S.time='';
+    await onBookingChange();          // band vaqtlarni serverdan qayta olamiz
     await loadBookings(); toast(t('ok_booked')); go('bookings');
   }catch(e){ alertBox('bookAlert',e.message); }
   finally{ b.disabled=false; b.textContent=t('submit'); }
