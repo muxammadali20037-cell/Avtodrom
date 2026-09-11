@@ -35,6 +35,18 @@ button,input,select,textarea{font:inherit}.hidden{display:none!important}
 .free{color:var(--muted);font-size:13px;padding:9px 2px}
 .rcp{font-family:ui-monospace,Menlo,monospace;font-weight:900;letter-spacing:.06em}
 
+/* Kassa navbati — bugungi to'lanmagan bronlar, bir bosishda tanlanadi */
+.coq{margin-top:10px;display:grid;gap:6px;max-height:240px;overflow:auto}
+.coqh{font-size:10px;font-weight:900;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;padding:3px 2px}
+.coqi{display:flex;align-items:center;gap:10px;border:1px solid var(--line);background:#fff;
+ border-radius:11px;padding:11px 12px;text-align:left;cursor:pointer;font:inherit}
+.coqi:hover{background:var(--soft);border-color:var(--g)}
+.coqi b{font-size:14px;min-width:48px;color:var(--g)}
+.coqi span{flex:1;font-size:13.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.coqi i{font-style:normal;font-family:ui-monospace,Menlo,monospace;font-size:12px;color:var(--muted);font-weight:800}
+.kbdhint{font-size:11.5px;color:var(--muted);margin-top:8px;text-align:center}
+.kbdhint kbd{background:#eef1fa;border:1px solid var(--line);border-radius:5px;padding:1px 5px;font-size:11px;font-family:inherit;font-weight:800}
+
 .segs{display:inline-flex;background:var(--soft);border-radius:11px;padding:3px;gap:2px}
 .seg{border:0;background:transparent;border-radius:9px;padding:8px 13px;font-weight:800;font-size:12.5px;color:#5A6B93;cursor:pointer}
 .seg.on{background:#fff;color:var(--g);box-shadow:0 2px 6px rgba(59,91,219,.1)}
@@ -885,6 +897,7 @@ pre.json{background:#F7FAFF;border:1px solid var(--line);border-radius:8px;paddi
           Mijoz bron qilganda kod olgan (AVD-4821). Faqat raqamni yozsangiz ham bo‘ladi.
         </div>
         <div id="coCodeErr"></div>
+        <div id="coQueue" class="coq"></div>
       </div>
 
       <!-- BRONSIZ: ism/telefon -->
@@ -956,6 +969,7 @@ pre.json{background:#F7FAFF;border:1px solid var(--line);border-radius:8px;paddi
       <div id="coAlert"></div>
       <button class="btn primary" id="coIssue" style="width:100%;height:52px;font-size:16px">Chek chiqarish</button>
       <div class="muted" style="font-size:11.5px;margin-top:8px;text-align:center">Chek avtomatik chop etishga yuboriladi</div>
+      <div class="kbdhint"><kbd>F2</kbd> naqd &nbsp;<kbd>F3</kbd> terminal &nbsp;<kbd>F4</kbd> aralash &nbsp;<kbd>Enter</kbd> chek</div>
     </div>
   </div>
 </section>
@@ -1180,7 +1194,9 @@ const $=id=>document.getElementById(id);
 const S={stats:{},bookings:[],applications:[],instructors:[],users:[],reviews:[],media:[],settings:[],courses:[],payments:[],audit:[]};
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const fmtDur=m=>{const n=Number(m)||0,h=Math.floor(n/60),r=n%60;return h?(r?`${h} soat ${r} daq`:`${h} soat`):`${r} daq`};
-const money=v=>new Intl.NumberFormat('uz-UZ').format(Number(v||0))+' so‘m';
+/* Pul: "250 000 so'm" — mingliklar probel bilan, mijoz paneli bilan bir xil
+   va har qurilmada bir xil ko'rinadi (Intl brauzerga qarab vergul qo'yardi). */
+const money=v=>String(Math.round(Number(v||0))).replace(/\B(?=(\d{3})+(?!\d))/g,' ')+' so‘m';
 const dt=v=>v?new Date(v).toLocaleString('uz-UZ',{timeZone:'Asia/Tashkent',day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}):'—';
 const day=v=>v?new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Tashkent'}).format(new Date(v)):'';
 const uname=x=>x?.full_name||[x?.first_name,x?.last_name].filter(Boolean).join(' ')||'—';
@@ -2392,11 +2408,13 @@ function receiptModal(r){
       <div class="c" style="font-size:10px;margin-top:6px">Instruktorga ushbu chekni ko‘rsating</div>
     </div>
     <div style="display:flex;gap:8px;margin-top:16px">
-      <button class="btn" style="flex:1" id="rcClose">Yopish</button>
+      <button class="btn primary" style="flex:1" id="rcClose">\u2713 Keyingi mijoz</button>
       <button class="btn primary" style="flex:1" id="rcPrint">Chop etish</button>
     </div>`);
   drawQR(document.getElementById('qrBox'), r.code);
-  $('rcClose').onclick = closeModal;
+  // Chek chiqqach darhol keyingi mijozga tayyor bo'lamiz
+  $('rcClose').onclick = () => { closeModal(); setTimeout(() => { if ($('coCode')) $('coCode').focus(); }, 60); };
+  setTimeout(() => { const c = $('rcClose'); if (c) c.focus(); }, 120);
   $('rcPrint').onclick = () => window.print();
 }
 
@@ -2471,7 +2489,7 @@ async function drawQR(box, text){
    Hisob bazada bajariladi (analytics_report), bu yerga tayyor yig'indi keladi.
    ========================================================================= */
 S.an = null; S.anPeriod = 'day';
-const nf = n => new Intl.NumberFormat('uz-UZ').format(Number(n || 0));
+const nf = n => String(Math.round(Number(n || 0))).replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
 
 function segBind(wrap, onPick){
   document.querySelectorAll(`#${wrap} .seg`).forEach(b => b.onclick = () => {
@@ -3016,56 +3034,53 @@ async function loadCoBookings(){
    Mijoz AVD-4821 kodini aytadi, kassir kiritadi, hamma ma'lumot
    avtomatik chiqadi. Ism/telefon qidirish shart emas.
    ========================================================================= */
-async function coFindByCode(){
+/** Topilgan bronni kassa formasiga qo'yadi — kod bilan ham, navbatdan ham. */
+function coApplyBooking(b){
+  CO.customer = b.customer || null;
+  CO.booking = {
+    id: b.id, start_at: b.start_at, category: b.category,
+    course: b.course, duration_minutes: b.duration_minutes,
+    customer: b.customer, instructor: b.instructor, instructor_id: b.instructor_id,
+    price: b.price,
+  };
+  CO.minutes = Number(b.duration_minutes || 60);
+  CO.category = String(b.category || b.course?.category || '').toUpperCase();
+  CO.instructor = { id: b.instructor_id, name: b.instructor?.profile?.full_name || '\u2014' };
+  const st = new Date(b.start_at);
+  if ($('coDate')) $('coDate').value = new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Tashkent'}).format(st);
+  if ($('coTime')) $('coTime').value = kHour(b.start_at);
+  if (!CO.pay) coSetPay('cash');   // navbat tez ketsin: naqd oldindan tanlangan
+  coUpdateFormView(); coRenderPicked(); coRender();
+  if (!/^[ABC]$/.test(CO.category)) {
+    $('coCodeErr').innerHTML = '<div class="warn">Bu bronda kategoriya belgilanmagan \u2014 narxni tekshiring.</div>';
+  }
+  // Darhol chek chiqarishga tayyor — Enter bosilsa chek chiqadi
+  setTimeout(() => { const b2=$('coIssue'); if(b2) b2.focus(); }, 60);
+}
+
+async function coFindByCode(silent){
   const raw = $('coCode').value.trim().toUpperCase();
   $('coCodeErr').innerHTML = '';
-  if (!raw) { $('coCodeErr').innerHTML = '<div class="error">Kodni kiriting</div>'; return; }
-
+  if (!raw) { if(!silent) $('coCodeErr').innerHTML = '<div class="error">Kodni kiriting</div>'; return; }
   const btn = $('coCodeFind'); btn.disabled = true; btn.textContent = '...';
   try{
     const d = await api(`/api/admin/cashier/by-code?code=${encodeURIComponent(raw)}`);
-    const b = d.booking;
-
-    // Bronni CO ga yozamiz — chek chiqarish shundan foydalanadi
-    CO.customer = b.customer || null;
-    CO.booking = {
-      id: b.id, start_at: b.start_at, category: b.category,
-      course: b.course, duration_minutes: b.duration_minutes,
-      customer: b.customer, instructor: b.instructor, instructor_id: b.instructor_id,
-      price: b.price,
-    };
-    CO.minutes = Number(b.duration_minutes || 60);
-    /* Kategoriya FAQAT brondan. Zaxira 'B' olib tashlandi — u jimgina
-       noto'g'ri narx chiqarardi (A bron B narxida). Bo'sh bo'lsa
-       kassirni ogohlantiramiz. */
-    CO.category = String(b.category || b.course?.category || '').toUpperCase();
-    CO.instructor = { id: b.instructor_id, name: b.instructor?.profile?.full_name || '—' };
-    const st = new Date(b.start_at);
-    if ($('coDate')) $('coDate').value = new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Tashkent'}).format(st);
-    if ($('coTime')) $('coTime').value = kHour(b.start_at);
-
-    coUpdateFormView();
-    coRenderPicked();
-    coRender();
-
-    // Kategoriya aniqlanmasa — narx to'g'ri bo'lmaydi, ogohlantiramiz
-    if (!/^[ABC]$/.test(CO.category)) {
-      $('coCodeErr').innerHTML = `<div class="warn">
-        Bu bronда kategoriya belgilanmagan \u2014 narxni tekshiring.
-        Mashg\u2018ulotlar bo\u2018limida kursga kategoriya qo\u2018ying.</div>`;
-    }
+    coApplyBooking(d.booking);
   }catch(e){
-    $('coCodeErr').innerHTML = `<div class="error">${esc(e.message)}</div>`;
-  }finally{
-    btn.disabled = false; btn.textContent = 'Topish';
-  }
+    if(!silent) $('coCodeErr').innerHTML = `<div class="error">${esc(e.message)}</div>`;
+  }finally{ btn.disabled = false; btn.textContent = 'Topish'; }
 }
 $('coCodeFind').onclick = coFindByCode;
 $('coCode').addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); coFindByCode(); } });
 // Kiritishda avtomatik katta harf va AVD- prefiks
+let coCodeTimer = null;
 $('coCode').addEventListener('input', () => {
   let v = $('coCode').value.toUpperCase().replace(/[^A-Z0-9-]/g, '');
   $('coCode').value = v;
+  clearTimeout(coCodeTimer);
+  /* Kod to'liq yozilishi bilan avtomatik qidiradi — kassir "Topish"ni
+     bosmaydi. Navbatda har bir ortiqcha bosish vaqt yeydi. */
+  if (/^(AVD-)?\d{4,5}$/.test(v)) coCodeTimer = setTimeout(() => coFindByCode(true), 300);
 });
 
 /* Tanlangan bron xulosasi — kassir nima chek chiqarayotganini ko'radi. */
@@ -3167,12 +3182,24 @@ $('coTime').addEventListener('change', () => { if (CO.mode==='walk_in') loadFree
 /* data-paytype — chek chiqarish uchun. To'lovlar bo'limi ham `data-pay`
    ishlatadi va butun sahifadan qidiradi; bir xil nom bo'lsa uning
    ishlovchisi bu tugmalarni ham ushlab olardi. */
-document.querySelectorAll('[data-paytype]').forEach(b => b.onclick = () => {
-  CO.pay = b.dataset.paytype;
-  document.querySelectorAll('[data-paytype]').forEach(x => x.classList.toggle('on', x.dataset.paytype===CO.pay));
-  $('coSplit').classList.toggle('hidden', CO.pay!=='mixed');
-  if (CO.pay!=='mixed') { $('coCash').value = 0; $('coCard').value = 0; }
+function coSetPay(m){
+  CO.pay = m;
+  document.querySelectorAll('[data-paytype]').forEach(x => x.classList.toggle('on', x.dataset.paytype===m));
+  $('coSplit').classList.toggle('hidden', m!=='mixed');
+  if (m!=='mixed') { $('coCash').value = 0; $('coCard').value = 0; }
   coRender();
+}
+document.querySelectorAll('[data-paytype]').forEach(b => b.onclick = () => coSetPay(b.dataset.paytype));
+
+/* Kassa klaviatura yorliqlari — sichqonchaga tegmasdan ishlash uchun.
+   F2 naqd, F3 terminal, F4 aralash. Faqat chek chiqarish ekranida. */
+document.addEventListener('keydown', (e) => {
+  const on = $('checkout') && $('checkout').classList.contains('on');
+  const modalOpen = $('modal') && $('modal').classList.contains('open');
+  if (!on || modalOpen) return;
+  if (e.key === 'F2') { e.preventDefault(); coSetPay('cash'); }
+  else if (e.key === 'F3') { e.preventDefault(); coSetPay('card'); }
+  else if (e.key === 'F4') { e.preventDefault(); coSetPay('mixed'); }
 });
 ['coCash','coCard','coAmount'].forEach(id => $(id).addEventListener('input', coRender));
 
@@ -3261,7 +3288,16 @@ function coResetForm(){
   $('coSuggest').classList.add('hidden'); $('coSplit').classList.add('hidden');
   document.querySelectorAll('[data-paytype]').forEach(x => x.classList.remove('on'));
   $('coBookings').innerHTML = '';
+  if ($('coCode')) $('coCode').value = '';
+  if ($('coCodeErr')) $('coCodeErr').innerHTML = '';
+  /* MUHIM: formani "kod kiritish" holatiga qaytaramiz. Busiz chek
+     chiqqandan keyin kod maydoni yashirin qolib, kassir keyingi
+     mijozga o'tolmasdi (navbat to'xtab qolardi). */
+  coUpdateFormView();
   coRender();
+  coSetPay('cash');       // keyingi mijoz uchun naqd tayyor
+  loadCoQueue();          // navbat yangilanadi
+  setTimeout(() => { if ($('coCode')) $('coCode').focus(); }, 60);
 }
 $('coReset').onclick = coResetForm;
 
@@ -3274,7 +3310,30 @@ function initCheckout(){
   }
   coUpdateFormView();
   coRender();
+  if (!CO.pay) coSetPay('cash');   // eng ko'p ishlatiladigan tur oldindan tanlangan
+  loadCoQueue();
+  // Kursor darhol kod maydonida — kassir yozishni boshlayveradi
+  setTimeout(() => { if (CO.mode === 'booked' && !CO.booking && $('coCode')) $('coCode').focus(); }, 80);
   if (CO.mode === 'walk_in') loadFreeInstructors();
+}
+
+/** Bugungi TO'LANMAGAN bronlar — kod yozmasdan bosib tanlash uchun. */
+async function loadCoQueue(){
+  const box = $('coQueue'); if (!box) return;
+  try{
+    const d = await api(`/api/admin/cashier/day?date=${encodeURIComponent(kToday())}`);
+    const rows = (d.bookings || []).filter(b => !b.is_paid);
+    if (!rows.length) { box.innerHTML = '<div class="muted" style="font-size:12px;padding:6px 2px">Bugun to\u2018lanmagan bron yo\u2018q.</div>'; return; }
+    box.innerHTML = `<div class="coqh">Bugungi navbat \u2014 bosib tanlang (${rows.length})</div>` +
+      rows.map(b => `<button type="button" class="coqi" data-qb="${esc(b.id)}">
+        <b>${esc(kHour(b.start_at))}</b>
+        <span>${esc(uname(b.customer))}</span>
+        <i>${esc(b.pickup_code || '')}</i></button>`).join('');
+    box.querySelectorAll('[data-qb]').forEach(btn => btn.onclick = () => {
+      const b = rows.find(x => String(x.id) === btn.dataset.qb);
+      if (b) { $('coCode').value = b.pickup_code || ''; coApplyBooking(b); }
+    });
+  }catch(e){ box.innerHTML = ''; }
 }
 
 
