@@ -1361,10 +1361,15 @@ async function notifyInstructorDecision(
       const price = Number(b.price); const duration = Number(b.duration_minutes);
       if (!Number.isFinite(price) || price < 0) return reply.code(400).send({ ok: false, error: 'Narx noto‘g‘ri' });
       if (!Number.isInteger(duration) || duration <= 0) return reply.code(400).send({ ok: false, error: 'Davomiylik noto‘g‘ri' });
+      // Kategoriya YARATISHDA ham saqlanishi shart. Aks holda yangi kurs
+      // kategoriyasiz qoladi va mijoz panelida instruktor filtri hamda
+      // narx (tarif) noto'g'ri ishlaydi.
+      const cat = String(b.category || '').trim().toUpperCase();
+      if (!['A', 'B', 'C'].includes(cat)) return reply.code(400).send({ ok: false, error: 'Kategoriya A, B yoki C bo‘lsin' });
 
       const rows = await supabaseRest<any[]>('courses', {
         method: 'POST', headers: { Prefer: 'return=representation' },
-        body: JSON.stringify({ name, description: String(b.description || '').trim() || null, duration_minutes: duration, price, is_active: b.is_active !== false }),
+        body: JSON.stringify({ name, description: String(b.description || '').trim() || null, duration_minutes: duration, price, category: cat, is_active: b.is_active !== false }),
       });
       await audit(admin.id, 'COURSE_CREATED', 'courses', rows[0]?.id ?? null, null, rows[0]);
       return reply.code(201).send({ ok: true, course: rows[0] });
