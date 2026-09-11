@@ -678,17 +678,17 @@ pre.json{background:#F7FAFF;border:1px solid var(--line);border-radius:8px;paddi
   <button class="nav" data-grp="kassa" data-p="payments">To‘lovlar</button>
   
 
-  <div class="navgroup" data-grp="admin">BOSHQARUV</div>
+  <div class="navgroup" data-grp="admin">ASOSIY</div>
   <span id="supCount" class="hidden">0</span>
+  <button class="nav" data-grp="admin" data-p="bookings">Bron qabul qilish <span id="bookCount" class="count">0</span></button>
+  <button class="nav" data-grp="admin" data-p="manual">Qo‘lda bron</button>
+  <button class="nav" data-grp="admin" data-p="reports">Hisobot</button>
+  <button class="nav" data-grp="admin" data-p="cancels">Bekor so‘rovlari <span id="cxCount" class="count">0</span></button>
+
+  <div class="navgroup" data-grp="admin">BOSHQARUV</div>
   <button class="nav" data-grp="admin" data-p="dashboard">Dashboard</button>
   <button class="nav" data-grp="admin" data-p="live">Jarayonda <span id="liveCount" class="count">0</span></button>
-  
-  
-  <button class="nav" data-grp="admin" data-p="reports">Hisobot</button>
   <button class="nav" data-grp="admin" data-p="applications">Arizalar <span id="appCount" class="count">0</span></button>
-  <button class="nav" data-grp="admin" data-p="manual">Qo‘lda bron</button>
-  <button class="nav" data-grp="admin" data-p="bookings">Bronlar <span id="bookCount" class="count">0</span></button>
-  <button class="nav" data-grp="admin" data-p="cancels">Bekor so‘rovlari <span id="cxCount" class="count">0</span></button>
   <button class="nav" data-grp="admin" data-p="instructors">Instruktorlar</button>
   <button class="nav" data-grp="admin" data-p="users">Foydalanuvchilar</button>
   <button class="nav" data-grp="admin" data-p="courses">Mashg‘ulotlar</button>
@@ -4329,10 +4329,11 @@ async function boot(){
     if(!$('dDate').value)$('dDate').value=kToday();
     await loadAll();
     initCheckout();
-    /* Saqlangan rejimга qaytamiz, lekin kassir bo'lsa o'z kassasiga.
-       Birinchi kirishда routeByRole to'g'ri joyni tanlaydi. */
-    if (S.me && S.me.role === 'cashier') routeByRole();
-    else applyMode(adminMode);
+    /* Rolga qarab TO'G'RI joyga tushamiz: kassir -> o'z kassasi,
+       admin -> BOSHQARUV. Ilgari admin uchun oxirgi saqlangan rejim
+       (ko'pincha KASSA P1) ochilardi va admin kassaga tushib qolardi.
+       Endi har doim routeByRole hal qiladi. */
+    routeByRole();
     await Promise.allSettled([loadAnalytics(),loadSupport(),loadCancels()]);
   }catch(e){
     // Bu yergacha yetgan xato sessiya emas — panelni yopmaymiz,
