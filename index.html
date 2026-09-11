@@ -1265,29 +1265,27 @@ function renderTimes(){
   if(!date||!ins||!c){ box.innerHTML=''; $('availabilityHint').textContent=t('hint_pick'); return; }
   const dur=totalMinutes(), now=Date.now();
   const {end:closeMin}=workRange();
-  // Mijozning O'Z faol bronlari — istalgan instruktorda. Mijoz bir vaqtda
-  // faqat bitta darsda bo'la oladi, shuning uchun o'zi bron qilgan vaqt
-  // hamma instruktorda band ko'rinadi (aks holda "15:00 ga bron qildim,
-  // lekin hali yashil" chalkashligi va bron yuborishda xato bo'lardi).
-  const mineBusy=(S.bookings||[]).filter(b=>['pending','confirmed','in_progress'].includes(b.status)&&b.start_at&&b.end_at);
   box.innerHTML=slots().map(t=>{
     const st=tkDT(date,t), en=new Date(st.getTime()+dur*60000);
-    // clash = shu instruktor bu vaqtda allaqachon band (boshqa mijoz bron qilgan)
+    /* HAR INSTRUKTOR ALOHIDA: faqat SHU tanlangan instruktorning
+       o'sha kundagi bandligi tekshiriladi. Bir instruktorga bron
+       qilingani boshqa instruktorning vaqtiga ta'sir qilmaydi.
+       Ma'lumot serverdan (/api/instructors/:id/availability) keladi,
+       shuning uchun kim qaysi oynada bron qilmasin — o'sha instruktorning
+       vaqti hamma joyda bir xil (band/bo'sh) ko'rinadi. Bekor qilingan
+       bron bu ro'yxatdan chiqadi, ya'ni vaqt yana yashil bo'ladi. */
     const clash=S.busy.some(b=>new Date(b.start_at)<en && new Date(b.end_at)>st);
-    // mine = shu mijozning o'zi shu vaqtga allaqachon bron qilgan
-    const mine=mineBusy.some(b=>new Date(b.start_at)<en && new Date(b.end_at)>st);
     // Dars ish vaqti tugagandan keyin tugamasin; o'tib ketgan vaqt ham yopiq
     const startMin=hhmmToMin(t,0), pastClose=startMin+dur>closeMin;
     const gone=pastClose||st.getTime()<now;
-    const busyAny=clash||mine;
-    const off=busyAny||gone;
+    const off=clash||gone;
     /* Rang mantiqi:
-         band (boshqa bron)  -> qizil, bosilmaydi
-         o'tgan / yopiq       -> kulrang, bosilmaydi
-         bo'sh                -> yashil, tanlanadi
+         band (shu instruktor)  -> qizil, bosilmaydi
+         o'tgan / yopiq          -> kulrang, bosilmaydi
+         bo'sh                   -> yashil, tanlanadi
        Tanlangan vaqt -> brend rangi. */
-    const cls = S.time===t ? 'selected' : busyAny ? 'busy' : gone ? 'gone' : 'free';
-    const tip = mine ? ' title="Siz bu vaqtga allaqachon bron qilgansiz"' : (clash ? ' title="Band"' : '');
+    const cls = S.time===t ? 'selected' : clash ? 'busy' : gone ? 'gone' : 'free';
+    const tip = clash ? ' title="Bu instruktor bu vaqtda band"' : '';
     return `<button type="button" class="time ${cls}"${tip} ${off?'disabled':''} data-time="${t}">${t}</button>`;
   }).join('');
   box.querySelectorAll('.time:not([disabled])').forEach(b=>b.onclick=()=>{ S.time=b.dataset.time; renderTimes(); updateSummary(); updateSteps(); });
