@@ -121,7 +121,24 @@ export async function registerAnalyticsRoutes(
       await requireAdmin(req);
       const instructorId = String(req.params.id);
       const period = String(req.query?.period || 'day');
-      const { from, to, label, anchor } = periodRange(period, req.query?.date);
+
+      /* YANGI: dan-gacha oraliq qo'llab-quvvatlash.
+         Agar from va to berilsa, periodRange() o'rniga to'g'ridan ishlatamiz. */
+      let from: Date, to: Date, label: string, anchor: string;
+      const qFrom = String(req.query?.from || '');
+      const qTo = String(req.query?.to || '');
+      if (/^\d{4}-\d{2}-\d{2}$/.test(qFrom) && /^\d{4}-\d{2}-\d{2}$/.test(qTo)) {
+        const [fY, fM, fD] = qFrom.split('-').map(Number);
+        const [tY, tM, tD] = qTo.split('-').map(Number);
+        from = new Date(Date.UTC(fY, fM - 1, fD, 0, 0, 0) - 5 * 3600e3);
+        to = new Date(Date.UTC(tY, tM - 1, tD + 1, 0, 0, 0) - 5 * 3600e3); // keyingi kun boshigacha
+        label = `${qFrom} — ${qTo}`;
+        anchor = qFrom;
+      } else {
+        const pr = periodRange(period, req.query?.date);
+        from = pr.from; to = pr.to; label = pr.label; anchor = pr.anchor;
+      }
+
 
       const bookings = await supabaseRest<any[]>('bookings', {
         query:
