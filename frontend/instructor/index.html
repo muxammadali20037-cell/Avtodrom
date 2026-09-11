@@ -2,675 +2,1091 @@
 <html lang="uz">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>INDEX INSTRUKTOR — AVTODROM</title>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1">
+<meta name="theme-color" content="#2E3192">
+<title>AVTODROM — Instruktor</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <style>
 :root{
-  --green:#087443;--green2:#0b8a50;--soft:#edf8f2;--text:#14221b;
-  --muted:#66756d;--line:#dce7e1;--danger:#b42318;--dangerSoft:#fff1f0;
-  --warn:#9a6700;--warnSoft:#fff8df;--white:#fff;--bg:#f5f8f6;
-  --shadow:0 8px 30px rgba(20,34,27,.07);--radius:18px
+ --brand:#2E3192;--brand2:#4348C4;--soft:#EEF0FB;--dark:#12143A;
+ --bg:#f4f5fa;--card:#fff;--text:#15173a;--muted:#6f739b;--line:#e2e4f2;
+ --ok:#0d7a4a;--okbg:#e7f6ee;--warn:#8a6500;--warnbg:#fff6d9;
+ --red:#c62828;--redbg:#fdecec;--blue:#2457a6;--bluebg:#e9efff;--gold:#b8860b;
+ --r:16px;--shadow:0 6px 20px rgba(20,25,80,.07);
+ --tap:52px;                 /* barmoq uchun eng kichik o'lcham */
 }
-*{box-sizing:border-box}
-html,body{margin:0;padding:0;background:var(--bg);color:var(--text);
-  font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
-body{min-height:100vh}
-button,input,textarea{font:inherit}
-button{cursor:pointer}
-.app{width:min(680px,100%);margin:0 auto;min-height:100vh;background:var(--bg)}
-.top{position:sticky;top:0;z-index:20;background:rgba(255,255,255,.96);
-  backdrop-filter:blur(12px);border-bottom:1px solid var(--line);
-  padding:14px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px}
-.brand{font-weight:950;font-size:17px;letter-spacing:.2px}
-.brand small{display:block;color:var(--muted);font-size:10px;letter-spacing:.7px;margin-top:2px}
-.userName{font-weight:850;font-size:14px;max-width:160px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.content{padding:14px 14px 92px}
-.page{display:none}.page.active{display:block}
-.hero,.card{background:var(--white);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
-.hero{padding:18px;margin-bottom:12px}
-.hero h2{margin:0 0 8px;font-size:22px}.hero p{margin:0;line-height:1.55}
-.card{padding:16px;margin-bottom:12px}
-.field{margin:0 0 13px}.field label{display:block;font-weight:850;font-size:13px;margin-bottom:7px}
-.required{color:var(--danger)}
-input,textarea{width:100%;border:1px solid #cddbd4;background:#fff;border-radius:11px;
-  padding:12px 13px;outline:none;color:var(--text)}
-input:focus,textarea:focus{border-color:var(--green2);box-shadow:0 0 0 3px rgba(11,138,80,.09)}
-textarea{resize:vertical;min-height:100px}
-.btn{border:1px solid var(--line);background:#fff;border-radius:11px;padding:12px 14px;
-  font-weight:900;width:100%}
-.btn.primary{background:var(--green);border-color:var(--green);color:#fff}
-.btn.primary:disabled{opacity:.6;cursor:not-allowed}
-.btn.outline{background:#fff;color:var(--text)}
-.btn.danger{background:#fff3f2;color:var(--danger);border-color:#f2c7c3}
-.check{display:flex;align-items:flex-start;gap:9px;font-size:12px;color:var(--muted);line-height:1.4;margin:12px 0}
-.check input{width:auto;margin-top:2px}
-.notice{border-radius:12px;padding:12px 13px;margin-bottom:12px;line-height:1.45;font-size:13px}
-.notice.error{background:var(--dangerSoft);border:1px solid #ffc9c4;color:var(--danger)}
-.notice.success{background:#effaf4;border:1px solid #bfe6cf;color:#087443}
-.notice.info{background:#f1f6f3;border:1px solid var(--line);color:#52635a}
-.notice.warn{background:var(--warnSoft);border:1px solid #f2df9e;color:var(--warn)}
-.status{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:6px 10px;
-  font-size:11px;font-weight:950}
-.status.pending{background:var(--warnSoft);color:var(--warn)}
-.status.approved{background:#e9f8ef;color:var(--green)}
-.status.rejected{background:var(--dangerSoft);color:var(--danger)}
-.statGrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
-.stat{background:#fff;border:1px solid var(--line);border-radius:15px;padding:14px}
-.stat b{display:block;font-size:26px;margin-top:4px}.stat span{font-size:11px;color:var(--muted);font-weight:800}
-.booking{background:#fff;border:1px solid var(--line);border-radius:15px;padding:14px;margin-bottom:10px}
-.bookingTop{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
-.bookingName{font-weight:900;font-size:15px}.bookingMeta{color:var(--muted);font-size:12px;line-height:1.6;margin-top:8px}
-.actions{display:flex;gap:8px;margin-top:12px}.actions .btn{flex:1}
-.nav{position:fixed;left:50%;bottom:0;transform:translateX(-50%);width:min(680px,100%);
-  background:rgba(255,255,255,.97);backdrop-filter:blur(12px);border-top:1px solid var(--line);
-  display:grid;grid-template-columns:repeat(3,1fr);padding:7px;z-index:30}
-.nav button{border:0;background:none;padding:7px 3px;color:#75827c;font-size:11px;font-weight:900}
-.nav button.active{color:var(--green)}
-.hidden{display:none!important}
-.loading{padding:24px;text-align:center;color:var(--muted)}
-.small{font-size:12px;color:var(--muted);line-height:1.5}
-.row{display:flex;justify-content:space-between;align-items:center;gap:10px}
-.divider{height:1px;background:var(--line);margin:14px 0}
-.toast{position:fixed;left:50%;bottom:78px;transform:translateX(-50%);
-  background:#14221b;color:#fff;padding:11px 14px;border-radius:12px;z-index:50;
-  max-width:92%;font-size:13px;text-align:center;box-shadow:var(--shadow)}
-@media(max-width:420px){.content{padding:10px 10px 88px}.hero,.card{border-radius:15px;padding:14px}.hero h2{font-size:20px}}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--text);
+ font:15px/1.5 Inter,system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+ overscroll-behavior-y:contain}
+button,input,textarea,select{font:inherit;color:inherit}
+button{cursor:pointer;border:0;background:none}
+button:disabled{opacity:.5}
+a{color:inherit;text-decoration:none}
+
+.scanbtn{width:100%;height:64px;font-size:17px;margin-bottom:16px;gap:10px;
+ background:linear-gradient(135deg,#2E3192,#4348C4);border:0;color:#fff;
+ box-shadow:0 6px 18px rgba(46,49,146,.28)}
+.scanres{border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:12px;background:#fff}
+.scanres .big{font-size:19px;font-weight:900;margin:6px 0 2px}
+.codebox{font-family:ui-monospace,Menlo,monospace;font-weight:900;letter-spacing:.1em;font-size:17px;
+ text-align:center;background:var(--soft);color:var(--brand);border-radius:11px;padding:11px;margin:10px 0}
+.rep{display:flex;align-items:center;gap:12px;background:#fff;border:1px solid var(--line);
+ border-radius:13px;padding:12px 14px;margin-bottom:9px}
+.rep .tm{font-weight:900;font-size:17px;min-width:56px}
+.rep .nm{flex:1;min-width:0}
+.rep .nm b{display:block;font-size:14px}
+.rep .nm span{display:block;font-size:12px;color:var(--muted);margin-top:2px}
+
+.segs{display:flex;background:var(--soft);border-radius:12px;padding:4px;gap:3px}
+.seg{flex:1;border:0;background:transparent;border-radius:9px;padding:11px 6px;font-weight:800;font-size:13px;color:#5b6091}
+.seg.on{background:#fff;color:var(--brand);box-shadow:0 2px 6px rgba(20,25,80,.12)}
+.chg{display:block;font-style:normal;font-size:10px;font-weight:800;margin-top:4px}
+.chg.up{color:var(--ok)}.chg.dn{color:var(--red)}.chg.fl{color:var(--muted)}
+.mbars{display:flex;align-items:flex-end;gap:4px;height:120px}
+.mbar{flex:1;min-width:6px;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:4px;height:100%}
+.mbar .v{width:100%;border-radius:5px 5px 0 0;background:linear-gradient(180deg,#4348C4,#2E3192);min-height:3px}
+.mbar small{font-size:8.5px;color:var(--muted);white-space:nowrap}
+.hide{display:none!important}
+
+/* ---------- karkas ---------- */
+.app{max-width:560px;margin:auto;min-height:100dvh;background:var(--bg);
+ padding-bottom:calc(78px + env(safe-area-inset-bottom))}
+.top{position:sticky;top:0;z-index:30;background:rgba(255,255,255,.96);
+ backdrop-filter:blur(14px);border-bottom:1px solid var(--line);
+ padding:10px 14px calc(10px);display:flex;align-items:center;gap:11px}
+.ini img{width:100%;height:100%;object-fit:cover}
+.topLogo{width:44px;height:44px;flex:none;object-fit:contain;display:block}
+.ini{width:44px;height:44px;border-radius:14px;flex:none;display:grid;place-items:center;
+ background:linear-gradient(140deg,var(--brand),#1b1e66);color:#fff;font-weight:900;font-size:15px}
+.who{flex:1;min-width:0}
+.who b{display:block;font-size:15px;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.who span{display:block;font-size:11px;color:var(--muted);font-weight:700;letter-spacing:.04em}
+/* bandlik tugmasi — katta, barmoqqa qulay */
+.sw{width:60px;height:34px;border-radius:99px;background:#d5d8ea;position:relative;flex:none;transition:.18s}
+.sw::after{content:"";position:absolute;top:3px;left:3px;width:28px;height:28px;border-radius:50%;
+ background:#fff;transition:.18s;box-shadow:0 2px 6px rgba(0,0,0,.18)}
+.sw.on{background:var(--ok)}.sw.on::after{left:29px}
+
+.wrap{padding:14px}
+.page{display:none}.page.on{display:block}
+h2{font-size:20px;margin:0 0 3px}
+.sub{color:var(--muted);font-size:13px;margin:0 0 14px}
+
+/* ---------- kartochkalar ---------- */
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);
+ padding:15px;margin-bottom:12px;box-shadow:var(--shadow)}
+.hero{background:linear-gradient(135deg,#12143A,#2E3192);color:#fff;border:0}
+.hero h2{margin:0 0 4px;font-size:19px}
+.hero p{margin:0;color:#c9cdf0;font-size:13px}
+
+/* ---------- statistika ---------- */
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-bottom:14px}
+.st{background:#fff;border:1px solid var(--line);border-radius:14px;padding:12px 10px;text-align:center}
+.st span{display:block;font-size:10px;color:var(--muted);font-weight:800;text-transform:uppercase;letter-spacing:.03em}
+.st b{display:block;font-size:24px;margin-top:4px;line-height:1}
+.st.gold b{color:var(--gold)}.st.warn b{color:var(--warn)}.st.ok b{color:var(--ok)}
+
+/* ---------- bron kartochkasi ---------- */
+.bk{background:#fff;border:1px solid var(--line);border-radius:var(--r);
+ margin-bottom:12px;overflow:hidden;box-shadow:var(--shadow)}
+.bk.now{border-color:var(--brand);box-shadow:0 0 0 2px rgba(46,49,146,.12)}
+.bk-h{display:flex;align-items:center;gap:12px;padding:14px 15px 0}
+.clock{flex:none;text-align:center;min-width:62px}
+.clock b{display:block;font-size:22px;font-weight:900;line-height:1;letter-spacing:-.02em}
+.clock span{display:block;font-size:11px;color:var(--muted);margin-top:3px}
+.bk-h .t{flex:1;min-width:0}
+.bk-h .t b{display:block;font-size:16px;line-height:1.25}
+.bk-h .t span{display:block;font-size:12.5px;color:var(--muted);margin-top:2px}
+.st-pill{display:inline-flex;align-items:center;border-radius:99px;padding:5px 10px;
+ font-size:11px;font-weight:900;white-space:nowrap;margin:12px 15px 0}
+.p-pending{background:var(--warnbg);color:var(--warn)}
+.p-confirmed{background:var(--bluebg);color:var(--blue)}
+.p-in_progress{background:var(--okbg);color:var(--ok)}
+.p-completed{background:#eef0fb;color:var(--brand)}
+.p-cancelled,.p-rejected,.p-no_show{background:var(--redbg);color:var(--red)}
+
+/* telefon — eng katta tugma, bir barmoq bilan */
+.callrow{display:flex;gap:9px;padding:12px 15px 0}
+.call{flex:1;height:var(--tap);border-radius:13px;background:var(--soft);color:var(--brand);
+ display:flex;align-items:center;justify-content:center;gap:8px;font-weight:900;font-size:15px}
+.call.tg{background:#e8f3fd;color:#1d7fc4}
+.note{margin:12px 15px 0;background:#f7f8fd;border-radius:11px;padding:10px 12px;font-size:13px;color:#4a4f7a}
+
+/* amal tugmalari — to'liq kenglik, katta */
+.acts{display:grid;gap:8px;padding:13px 15px 15px}
+.acts.two{grid-template-columns:1fr 1fr}
+.btn{height:var(--tap);border-radius:13px;font-weight:900;font-size:15px;
+ display:flex;align-items:center;justify-content:center;gap:7px;border:1.5px solid var(--line);background:#fff}
+.btn.go{background:var(--brand);border-color:var(--brand);color:#fff}
+.btn.ok{background:var(--ok);border-color:var(--ok);color:#fff}
+.btn.bad{border-color:#f1d0d0;color:var(--red);background:#fff}
+.btn.sm{height:44px;font-size:14px}
+.btn:active{transform:scale(.98)}
+
+/* ---------- filtrlar ---------- */
+.tabs{display:flex;gap:7px;overflow-x:auto;padding:0 0 10px;margin:0 -14px 4px;padding-left:14px;padding-right:14px;
+ scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{flex:none;height:40px;padding:0 15px;border-radius:99px;background:#fff;border:1px solid var(--line);
+ font-size:13px;font-weight:800;color:#575c8a;display:flex;align-items:center;gap:6px}
+.tab.on{background:var(--dark);color:#fff;border-color:var(--dark)}
+.tab i{font-style:normal;background:rgba(255,255,255,.22);border-radius:99px;padding:1px 6px;font-size:11px}
+.tab:not(.on) i{background:var(--soft);color:var(--brand)}
+
+/* ---------- sharhlar ---------- */
+.rev{background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:10px}
+.stars{color:var(--gold);font-size:15px;letter-spacing:2px}
+
+/* ---------- ro'yxatdan o'tish ---------- */
+.field{margin-bottom:13px}
+.field label{display:block;font-size:12px;font-weight:900;color:#565b88;margin-bottom:6px}
+.field input,.field textarea{width:100%;min-height:var(--tap);border:1.5px solid #d9dcee;border-radius:13px;
+ padding:13px;background:#fff;outline:none;font-size:16px}  /* 16px — iOS zoom qilmasin */
+.field textarea{min-height:92px;resize:vertical}
+.field input:focus,.field textarea:focus{border-color:var(--brand);box-shadow:0 0 0 3px rgba(46,49,146,.1)}
+.chk{display:flex;gap:10px;align-items:flex-start;margin:14px 0;font-size:13px;color:#565b88}
+.chk input{width:22px;height:22px;flex:none;margin-top:1px}
+
+/* ---------- xabarlar ---------- */
+.alert{border-radius:13px;padding:12px 14px;margin-bottom:12px;font-size:13.5px;line-height:1.5;white-space:pre-line}
+.a-err{background:var(--redbg);border:1px solid #f5cfcf;color:#a52020}
+.a-ok{background:var(--okbg);border:1px solid #cbe9d9;color:var(--ok)}
+.a-info{background:#eaf0fb;border:1px solid #d3ddf3;color:var(--blue)}
+.empty{text-align:center;padding:38px 18px;color:var(--muted);font-size:14px}
+.empty .big{font-size:40px;display:block;margin-bottom:10px}
+.sk{height:104px;border-radius:var(--r);margin-bottom:12px;
+ background:linear-gradient(90deg,#eef0f7 25%,#f8f9fc 50%,#eef0f7 75%);background-size:200% 100%;animation:sk 1.2s infinite}
+@keyframes sk{to{background-position:-200% 0}}
+
+/* ---------- pastki menyu ---------- */
+.nav{position:fixed;left:0;right:0;bottom:0;z-index:40;background:rgba(255,255,255,.97);
+ backdrop-filter:blur(14px);border-top:1px solid var(--line);
+ padding:6px 4px calc(6px + env(safe-area-inset-bottom))}
+.navin{max-width:560px;margin:auto;display:grid;grid-template-columns:repeat(4,1fr)}
+.nb{height:60px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
+ color:var(--muted);font-size:11px;font-weight:800;position:relative;border-radius:12px}
+.nb span{font-size:21px;line-height:1}
+.nb.on{color:var(--brand);background:var(--soft)}
+.nb i{position:absolute;top:6px;right:calc(50% - 26px);background:var(--red);color:#fff;
+ border-radius:99px;font-size:10px;font-style:normal;padding:1px 5px;min-width:17px;text-align:center}
+
+.toast{position:fixed;left:50%;bottom:96px;transform:translateX(-50%) translateY(14px);
+ background:var(--dark);color:#fff;padding:13px 17px;border-radius:13px;font-size:13.5px;font-weight:700;
+ z-index:90;opacity:0;pointer-events:none;transition:.22s;max-width:88%;text-align:center}
+.toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+
+.sheet{display:none;position:fixed;inset:0;background:rgba(8,10,35,.55);z-index:100;align-items:flex-end}
+.sheet.on{display:flex}
+.sheetbox{background:#fff;width:100%;border-radius:22px 22px 0 0;padding:20px 18px calc(20px + env(safe-area-inset-bottom));max-height:88dvh;overflow:auto}
+.grab{width:40px;height:4px;border-radius:99px;background:#dcdff0;margin:0 auto 16px}
+@media(min-width:560px){.sheet{align-items:center;justify-content:center}.sheetbox{max-width:460px;border-radius:20px}}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+/* ============ SILLIQ ANIMATSIYALAR ============
+   Real ilova hissi: bosilganда javob, sahifa almashганда yumshoq
+   o'tish. Harakat kam, tez va tabiiy — chalg'itmaydi.
+   prefers-reduced-motion hurmat qilinadi. */
+
+:root{
+  --ease: cubic-bezier(.22,.61,.36,1);
+  --fast: .16s;
+  --med: .26s;
+}
+
+/* Bosiladigan hamma narsa — bosilganда kichrayadi */
+.btn, .nav, .ms, .pk, .dur, .card.click, [data-cat], [data-mbcat], [data-course]{
+  transition: transform var(--fast) var(--ease),
+              background-color var(--fast) var(--ease),
+              border-color var(--fast) var(--ease),
+              box-shadow var(--fast) var(--ease);
+}
+.btn:active, .nav:active, .ms:active, .pk:active, .dur:active,
+[data-cat]:active, [data-mbcat]:active, [data-course]:active{
+  transform: scale(.97);
+}
+.btn:hover:not(:disabled){ transform: translateY(-1px) }
+.btn:disabled{ opacity:.55; cursor:not-allowed; transform:none }
+
+/* Kartochkalar — hover'да yengil ko'tariladi */
+.card{ transition: box-shadow var(--med) var(--ease), transform var(--med) var(--ease) }
+
+/* Sahifa almashганда yumshoq paydo bo'lish */
+.page.on{ animation: pageIn var(--med) var(--ease) both }
+@keyframes pageIn{
+  from{ opacity:0; transform: translateY(6px) }
+  to{ opacity:1; transform: none }
+}
+
+/* Ro'yxat elementlari ketma-ket paydo bo'ladi */
+.kcard{ animation: cardIn .32s var(--ease) both }
+.kpigrid .kcard:nth-child(1){ animation-delay:.02s }
+.kpigrid .kcard:nth-child(2){ animation-delay:.05s }
+.kpigrid .kcard:nth-child(3){ animation-delay:.08s }
+.kpigrid .kcard:nth-child(4){ animation-delay:.11s }
+.kpigrid .kcard:nth-child(5){ animation-delay:.14s }
+.kpigrid .kcard:nth-child(6){ animation-delay:.17s }
+@keyframes cardIn{
+  from{ opacity:0; transform: translateY(10px) }
+  to{ opacity:1; transform: none }
+}
+
+/* Modal — yumshoq ochiladi */
+.modal{ transition: opacity var(--med) var(--ease) }
+.modal .box, .modal .sheet, .lockbox{
+  animation: modalIn var(--med) var(--ease) both;
+}
+@keyframes modalIn{
+  from{ opacity:0; transform: translateY(14px) scale(.98) }
+  to{ opacity:1; transform: none }
+}
+
+/* Tanlangan holat — yumshoq belgilanadi */
+.pk.on, .dur.on, .ms.on, .nav.on{
+  transition: background-color var(--fast) var(--ease), color var(--fast) var(--ease);
+}
+
+/* Toast — pastdan chiqadi */
+.toast{ animation: toastIn .3s var(--ease) both }
+@keyframes toastIn{
+  from{ opacity:0; transform: translateY(16px) }
+  to{ opacity:1; transform: none }
+}
+
+/* Yuklanish paytida yengil pulsatsiya */
+.loading, .skeleton{
+  background: linear-gradient(90deg,#F1F3F7 25%,#E8EBF2 37%,#F1F3F7 63%);
+  background-size: 400% 100%;
+  animation: shimmer 1.3s ease-in-out infinite;
+}
+@keyframes shimmer{
+  from{ background-position: 100% 50% }
+  to{ background-position: 0 50% }
+}
+
+/* Input fokusда yumshoq halqa */
+.input, .select, .search{
+  transition: border-color var(--fast) var(--ease), box-shadow var(--fast) var(--ease);
+}
+.input:focus, .select:focus, .search:focus{
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(59,91,219,.12);
+}
+
+/* Harakatni kamaytirish so'ralса — hurmat qilamiz */
+@media (prefers-reduced-motion: reduce){
+  *, *::before, *::after{
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+  }
+}
 </style>
 </head>
 <body>
 <div class="app">
-<header class="top">
-  <div class="brand">👨‍🏫 AVTODROM<small>INDEX INSTRUKTOR MINI APP</small></div>
-  <div id="userName" class="userName">Tekshirilmoqda...</div>
+
+<header class="top" id="topBar">
+  <img class="topLogo" src="data:image/webp;base64,UklGRrAVAABXRUJQVlA4WAoAAAAQAAAAXwAAXwAAQUxQSFEEAAABoK5tmyFJeiO+sW3bOoS1bdu2bdu2vTu2bdue2d3xxBff+6NRVZlxABExASi5r+IBoE6v46574r0fBo8aNfjH95+8/vjedQHAV/HItxMHoOVJT/29cg8L3LNq8DOntAbgxOXHCYCetw/bxbIWo2osqzEay+4eeVdvAOLz4QVodPnwgyRj0Ggs0KKGSPLQqGuaAuKz5wTo+NQ6kkGNRTcNJDc+3xUQlzEBOr62m1Q1lthUyf/e7gJIlpxH/Ud3kGrMpCm5+8mG8C4zApy+mAzGzFogl58LSEYEzb4ggzHTFsjvWkKy4DyOXsUYmfmoXHsCvCuZB+43BuYykI8CvkQeNT6jReY0Rn5TB1ISQZORDMbcWuCElpASeLSZzcBcBy7qACmaR+uFDMx54NKOkCJ5NJnNwNwrF7aEL4rzNUYzMIGBk2o7VwRXBZ8zMImB3ztxhVXBfQxMZODjkIIER6haKkx5AqQA55usZWQyzTa1dL5ygi+oTKjyJ0ilBKdSmdTA8yCVcL7ucotpibauoXcVCR5lYGKVz0Eq8K7tv9FSY3FvZ+fLE7xOZXKVH0LK8a79/2bpMdvf1fkygqcZmGDlKxAADg02WEyR2dYmcEAVXEplkpXXQQCP4ZYqG+8cPLoeYLIP94WvgtuoqVI+gCoew1I23jm0+JeWKuPedsBJjEx25FnAUwzpCnwZ+IeaLuUo1FnBmC7juka99tDSRR4YeByNCY884zrGtN3+ROpefI+aMuUXP6Qt8p/BjGkbOyp1E9M3JHVjf0zdP+9RU6b88knGtL18Q9oi7ziBlrYze++lJYwHB9ZdyZgu4/rGGExNl3IM8AxDugJfBU5hTFfkOUCr/2ipMu7rAI+R1FRFTnSuCu5Ml/IhVPHocdBSxdAfHg6jTNOkNsk7QHAFU8WbIIBDo00WU2S2oxkcAMHz1BQp34QAgHed9pglyA72cL4MBO9Q06P8DIJyvevwf7TUWNzf3fnyIHiKmhrlyxBU6Hz91RbTEm1jE+8qguAshrQEXgxBZQXfU1Oi/B2CSnvXYiNjOsy2tXG+chAcZ2qpMOVpEBQqeIwhFYHPQ1Cwq4LvGNIQ+JsXVxicqz2JIQWBM+s7h2J6tFhAzZ9yaTt4FFfQYSlD3gJXdoWg2IIOixjyFbi8CwTFF7ScyGA5CpzeDoJSCup+xxjzEiN/bQBBaT3wOBnyoeRzgEepncdJ66kxe6bcfBqcQwaroPUPZLBsWSB/bQ9BNgW4YBWplh1Tct1lgCCr3qPxs/+RatkwJfe+1AzeI8MCdH9/D6lqpbKo5L5PegGCbDsBeryylWRQK55pILnjzT6AOGTeC9DixnGBZAzRrBCzGCJJnXhLK0A8cukFQP8Hx+9h2RijxnI1RmPZfRMfHgRAPHLrxAFof9ZLo9YdYIEH14959dwOACAO+fZVHAA0GnjG7S998feYSZPG/vPly3ecOagxALgq3qHUAFZQOCA4EQAAkD8AnQEqYABgAD45FohDIiEhGxs2iCADhLMAXG3cqNZNtk/wP4u5WwuncFnL/y3+39j/6P9gD9Vemf5gP1C/bX3evRV/dfUA/p/+09aH1Df7r/1vYA/YD01/Yv/r3/I/bf4Df2A/9XsAf//XAPoA+MffZ9w/JXzp/FvlH7N/XP1x/eP3jsm/Qt/e+h38X+wH3H+u/s3/af29+Q/894X/D3989QL8W/kf9y/IL+4fuNx3VlfQC9aPmv99/r37qf4DnZ+ov+b9wD+Qfyr/EfmX/ff//9S/4rw2PF/YA/kn9Y/3H+D/LL6VP37/f/5f+6fst7UPyj+2/7r/Cf5f/0/5v7Bf47/Pf9H/av81/2P8/////Z92vsp/YT2Wv2QdJAC1g78BcRowWmc6fDV//p7lLXuvk1kIPElodfzSjLNYARG5l2T6OryCbSz5GwH7NraMKg/8bTuNVXkH5m0cm/sFzNpe+rrnUv0zDVy9pIWszGR3GGMtONUiK3Fy7GNmI98fKZ2AxvjUmNt1aP4/+esxyJrk8b3O2JIzN975v+vlEr+Ra1mMTmW+rSb6ahdNsyU5hhPHIXO4jg2c+rm4TBA9e4pu5y8gE39EGvfdMHXavleY6FuZoVmG1zqPyQFbvtNoTJHU2ftH9b55Ps7pLE3wijt3bwtw96225Q1F0q1Ov/2yg2OQAAD+/rWYt//K+aHWwnFDXz8ksBn5GZ0ttvbXM0rUqA3XpAtoZZnWFqHYDE5TIrLZlgH8BaH/kYgonp1wM9bH4OkptGWiv+GNGUHxo9T/xduhIHNq1PWippUSpo//QsFv/Tm8BcifvE6p8A/bXjJBhA8WzgePspXspjul8OihMkp49oPvxzacORfTDAsY8zrSzUlRWg0HuXuEhG4BdYEOjV/dx3NmEbfFf0fk2PmdNdK7+cNHb8BU15oOA6gh/nHvLMKP3PCH2XigAn8G9Y0OLb3czzWoxps+jEx4Ahf420pHeOlVSj8vO4crg7DQOBuq0QiRaQLiIiyiRHU37xEXJvRi5okMm6mf/5Gvjck3q5CUreO5jumXL2cAeVgDCX4QdXi7n3tLBJLy50VEtVQKiAVBpjV2MHDZgS/KG1rS0FQpe71UhowOV/+NKFzU1meTmJ9JQHGmAxEr4tCkMDQ71+0jyop8XK3jJDcsDPHGA6XcepTOK7sP/+V65TjMAAvDXEgUxGORMgptXSv0S2E33kP+YzrxrmDGdl8A1pujyv+F1VnH1Mge9OheZerCRggrrcUZC2BiXIVIqSSldge4kL66VdG5yglswuyFTaExAzd7pkOA8/NqgJzxU6mGwDMrBvrJmJVatBOXeQsm/hnjZQi5kvh3qUu5wONCBBc/SiyBK7/QKBA8pullYUhhGfbiZffkJn3zlCm2VIOX/y9gHT7vH+UHzRjGYzZv79c97Y+NTaeWaeJxqcnA5ZwkZOnFJwd255dt2yHGD9WHojbsvY6mSU5FjLO2XV0Rb937QEpWVgZa1u2GPiZhpY9mhXgNSIQK88m3hBghBcQwybUCg0kOyijoJJDD2wLFQYqNJKld9ZEWfK899Ej1+xR90cUXRBy5v3gps6MuVYvHY+KNFZoExIiMwAHLb/+kRIcWLAs5p3+cAljbXsXwaqhuzgcwV7thzlUE7ZiOdASKSVL2s7pUf9E0gmAoDuGb7fMZbrp6D+UXD1eq9I1kSybxlg8T3pVkGB5w1gXV6G3WH+93WDAqYFkCJnHdZHmtWp4v1wpEhKodZahNusBn/WHmY6X11hqAD/qyI3R2yvQu7zjXoEyjezr5A9xQbjsUmItfnxDXiaHbnX1qClSqOTSQpOMIYhs9K9YCjqCREaqP4lqoI2aLOqhkcdx4DnWshKcjT6U+FsJ766UM9YtRpaF+QOYmfaSNwf6wgHeKm9UR8WBtxH9ekW0FvXltrQaikotRebzUXilJsby4fGwoEBPEPOw/R95WF5hfgm7eF9sqExzV68JnsHfCxVEvfLa6qQEz0Lnk4bn0kpfiHkoM/MiizXJXpVbkkPBlrDfm5acEoCZPIU4g/odwJlzeBsMXZ7JTD+zm5tr2Yr+YbSW6CiDg7XFQnYfbcSCcwNYC50INP8FaD4KuG26YN1dmVf9ajvL3m7/k0M0yHs0d2pb1CGoSF8k7iKNosbXQ/s8y+DW/ARgJoU7+2MAZzAt2p566mV6uzqLHvMy/k2TAizxBg+AupKkQyW3xeYJhaIIpWUXEXMIju/iwudjrQpXZO/LMQtoGe94ScRHbyEmRuXUu1h1HkD9U81B3hA+VV/zydF/BeBpy8gYKNYhAabktwtTrLcBu5LYnvQNTbDw38oxcWF6V2yVA45mJioPrqRFB/36oUsLs/z2Zuec1nKTkxeKtqXFNso0QkLpDc+M3JpPjpKW86sh91WmQ9hHQ3T3xXfpcgYh62mGTqZa5/0s8SbWtzPMUbq02pXdaphhPMc4NWShyn09qDnlRmr99hdyYw14QTPUmw18CgOZGg58Y8J0xT//ILaY5BN2wdEGYJlzzoV4qz/xN/j6BlPmm1TKlYMZKNoCiAq0r/g6aj+TZBUDhNuOvJ42DWS0cBiqHyBCtnoD4D82x0kgNAZMmZA7M6Ytws7ZZMG/DPJDtEgv4I1smqfuATedSA1o84wPhY56rn/S5PuPnEvtzqok6tfpzo7MW5hgpml/Q3Sw+QXwczAEsYN796ZjzdYjFNPKHlojriv4qNWsgIUX0ulxuYXqjnHaX48yOmAH1a67wfHRI9XDdHJ1nUGET+DlusvyrtBungS3ygjX+l4LmDrRBetFu4dZP++/SvUFt4l04QAgKW4Mu0PvXWpojfec/SOj/bTH6AIrHUUhsUQ3Boh6fcOv7SKpqUwILwFhReReb3PoaZn/fgkaED21UaHqtqmwn+OTEU8378fE4QWGgbl6hje20k38HKOxT+MJucQZxD/+ZXMB5lP1msmvnI0MA/xdBKYZRqHk+bRdSgNR0o0CZsiYzJD5z0SiznXyMi781nAA1L452ScUeU3l9AP6F96paMz5uIJFj1i6dQcESBOpgzi/56sB8GKWz6LX5nyZeE12V1i452OGCFVco+48uRf8tZxdxQb9uKFkcCqlEe7k6XGd2NXC9OYW8HDR+sz67ySRrnJqVhJ//RaL7ylBAA96B37Gdzc3OuxTo8LUuciTJUOuEYZZ3x42xYJ2K0Ce67oypa7Gf9strOd/RrsmcbUAqziIusR7bBbTc92eypTgXOVG/Z2TbcMhREXaErcn1gf3FR7VaJQAnEre2FQKf+1R06ANyf4wWXdKBDVdxNSW4sSIgo+Z8lD6Jk1fj+/u3WKbRR8OV6hEkYQaGF/x/7hILiGLg7f/ucgUh9nMTv5efUDTtshPiHMgmQSxFKuUWLgPufbnymX8E6USra1vZUzN+2fPFYopHJmPgfkXp5eriPcNT5qP/1pKHyjrysNtxIJTIh8e+SirVMSvZybtYeIhNS6DffCqNAE8IT7GxTnrLA5iCoYRs1eCWZ/3/o85BY0SEadRBicxWp23bnn5LFVaLIiICm7h9GhUMICIFLW88VlN/cIgv/d8IwC0QOYLnh+vLzdjqjWqjKU5sEiv0aQXsTRscyLc8oV71gYC/kyNC4mgyTzWxHEhTxw189Ddru6QKBK/O3btdfrrP1zy0t3RonM5OleUmR1yo/3TWBD+viWzpnVzs0292BRq8ukS/EQYH2DspsNvcqDf5aHPXbJLs3qwwOVWVLXYfsurNFWVJaI5uckAYJ52tV9SNJBMEfPRTdEyjkZBBOg7zo1/Yri/UqCCAsNwcWZVGrDYDpcwe5VazAjCWF59giEzU59YjXKXy8TnwKNNa8NPdyqMMCGujY37Sy71o4eCsDdPnl1KqvFdU+8wnPLrY1dwVVjSOS1dlZ/3rJ8fYah3giK2A8IpfEsEeTGWYd9DNAyFTZUVR6ggN75Ac/dJ51gehAn5fBDVD9cuhvhn11aIrisA+ZzAtiz6bNNcFtpXDo+rykAJgL+1rsdoCs2wdBL4G1LM5s+lvd5KXry8tk3F+3SS4/ucgH3qoUCK7xkri04mXqezTCDAYTnHfuF1EpnFqlZYjNjde0q1v9l8VIy0YneIsnb5VIPcxkToS1H1D9G/ebkTBVjLYDoJ6fC0Ap/43A25dv2cziiDqieHTOInXpc0JNWHvgdLaFGU2y4L3Py3wBcoHiqWOuoEj0Nnrf7qsMOHb/9kb6L/oyd9ePVRDHQH++gxGFoEF2+TfNEGu7oc4A1b9KTpidXFhHhbndoKw4B05JuORiWCuk8aP1o+LhqJvBZ1t5czcWFLDRRbx4GnnQlYmrYRtE8pZ6g2BD8fdpBk0jDFps5D1kfdTF8hBGsNekVnZTPov7ykIzM4/j+VnIzYkQjaYah0uYKgiAqjFn1vM6oO5T+gWefz6FpsG9G5yYm51OYSifRLfNYQ/sIULy4ZSEWwkX5Fh92k/hgtW0HmE/c1rNvp+unw8emi9vr5JJbv7vi1JMWDEtNlyu0JtJjkDFgCH8Agn9i9XwFQvkmQ/k814WroyzcQ+rVGTMdpgGVTwdAM5v5pknD5C2Qvi6QV0nmaNEw3JZvqsxOptH+41ASgvBoHweNdaDwptzIlrzL+D/iC1JHfFxfDClm6BtSpRbX5nE0qutmnsadFJ7l4FtOzd5RJ/M2IbOnSlrkM4643xFr9JPKo3fmJnvWerhaLiDlTqksMf+VfWSR88n1OwxlCsm8xymyiCtiZQuE7HNSHtwJLvFnjQ0Cnv6vKixmRHuU5ft9uP72zoKL7cftYB5vYcQUZED2QaVildNhvtgD4GWl02QZcI6gd0NtvygOiWoMMZVPeEnhepHP6E1BXc9ZP5TOkwpJb9Bzp3E7Kc/FOPpV3lcH9MjK+/8JqRViU1ZWmBxf444azZXmf+RdTywqz6HrpbhBEFMIzOn4k1tyGkHZSyiJ4LAuPzD3L0hga2DSo44Gl2eBYYCGEAsFkSwuO1ANT+vg4/DFnjrxuaHLfSO550nV6xzskPJVtnlDnsisKFlI9MmcH0gD43lvhTvgFlixv4DCX6+0KyLrZLrTX2OwneBtprkrZcZ6KBcRFht5EQAkHsBhG6qwbRlLmVINy0mz+jqOuLrlqmEpVxXLd63+FrwtV7DByaWPwqpC/esT7TL4vZ7QrX/NHqs0tggaUrg5FEN4rZ98iWFj9vSwaX/2LL6Bf8nzQcIoafum9C9srzVkFUbln9gzZ7Sizkk4erurMj93GULwpodeugjhrGTNNoEDS5wEqjrlKtdlVCIM+SAI1F5TA4qOC/4+XXTWdieA86462Epnh1xhVUhtiNsb+SOMR4DIQJGpXnC5IcIjQVwiXAjOdV+MlaEVVpxppsBMRNrzcih2ru4mdXhSc2R4rIBFdD+3oOyUrCSy0Hv/2JxXPc1nkq8aavbjV8mhv3JyDzAGY17qfeEETCm8NpcuGIqrU1c6XqGBBmgShQoE/mEYZut+WcsYgxbbW1R75pF4uJcwNh2R9lSMKwyCPOftaroVPei2OIun19z8rILNtuAm44fsdCXHew0XxB544+lTI+/xnX/5A0UqPxlN543Hsuyzsh5YzPllXVm8NG2vo+t4ySqd/KvTPN1CwDTatAJjrmdt/8CX9S0Wq7h73jvl0zWjJoRRJ2NUGv5PzEDeKlKbGep7n8pEADY3cgP1bPaP7HQV7j0cXMwHToXE381X9UY9HaXE+90m/n4/Nvb5iLQDwwH1llJ9eH/mQuec3LS3sr/cV+UkC3PXJZPKJzBCu9b2Jnf+KQfeV3nsPOJHR684WF3qhxsRg98FrFj9Ys3BlQUPindzoDmfgpllwZ/qrb5ceAHDdwrQAAAA==" alt="TASH INDEX AVTODROM">
+  <div class="ini hide" id="topIni">—</div>
+  <div class="who"><b id="topName">AVTODROM</b><span id="topRole">INSTRUKTOR</span></div>
+  <button class="sw" id="availSw" aria-label="Bandlik holati"></button>
 </header>
 
-<main class="content">
-  <div id="errorBox" class="notice error hidden"></div>
-  <div id="successBox" class="notice success hidden"></div>
+<main class="wrap">
+<div id="alert"></div>
 
-  <!-- REGISTRATION -->
-  <section id="registerPage" class="page active">
-    <div class="hero">
-      <h2>👋 Instructor bo‘lish</h2>
-      <p>Avval ro‘yxatdan o‘ting. Arizangiz to‘g‘ridan-to‘g‘ri Admin paneliga yuboriladi. Admin tasdiqlamaguncha Instructor paneli ochilmaydi.</p>
+<!-- ============ ARIZA ============ -->
+<section id="register" class="page on">
+  <div class="card hero"><h2>👋 Instruktor bo‘lish</h2><p>Ariza Admin paneliga tushadi. Tasdiqlangach panel avtomatik ochiladi.</p></div>
+  <div class="card">
+    <div class="field"><label>ISM *</label><input id="rFirst" autocomplete="given-name" enterkeyhint="next"></div>
+    <div class="field"><label>FAMILIYA *</label><input id="rLast" autocomplete="family-name" enterkeyhint="next"></div>
+    <div class="field"><label>TELEFON *</label><input id="rPhone" type="tel" inputmode="tel" placeholder="+998901234567" enterkeyhint="next"></div>
+    <div class="field"><label>TAJRIBA (YIL)</label><input id="rExp" type="number" inputmode="numeric" min="0" max="60" placeholder="3"></div>
+    <div class="field"><label>O‘ZINGIZ HAQINGIZDA</label><textarea id="rMsg" placeholder="Qisqacha..."></textarea></div>
+    <label class="chk"><input id="rAgree" type="checkbox"><span>Ma’lumotlarimni Admin ko‘rib chiqishiga roziman.</span></label>
+    <button class="btn go" id="rSubmit" style="width:100%">Ariza yuborish</button>
+  </div>
+</section>
+
+<section id="pending" class="page">
+  <div class="card hero"><h2>⏳ Ko‘rib chiqilmoqda</h2><p>Arizangiz Admin paneliga yuborildi.</p></div>
+  <div class="card">
+    <span class="st-pill p-pending" style="margin:0">KUTILMOQDA</span>
+    <p class="sub" style="margin:12px 0 14px">Admin tasdiqlagach botga xabar keladi.</p>
+    <button class="btn" id="recheck" style="width:100%">🔄 Holatni tekshirish</button>
+  </div>
+</section>
+
+<section id="rejected" class="page">
+  <div class="card">
+    <h2>❌ Ariza rad etildi</h2>
+    <div class="alert a-err" id="reason" style="margin-top:12px">Sabab ko‘rsatilmagan.</div>
+    <button class="btn go" id="reapply" style="width:100%">Qayta ariza yuborish</button>
+  </div>
+</section>
+
+<!-- ============ BUGUN ============ -->
+<section id="today" class="page">
+  <h2 id="greet">Bugungi ishlar</h2>
+  <p class="sub" id="todayDate"></p>
+  <button class="btn go scanbtn" id="scanBtn">
+    <span style="font-size:22px">▣</span> Chekni skanerlash
+  </button>
+  <div class="stats">
+    <div class="st"><span>Bugun</span><b id="sToday">0</b></div>
+    <div class="st warn"><span>Admin kutmoqda</span><b id="sPending">0</b></div>
+    <div class="st gold"><span>Reyting</span><b id="sRating">0</b></div>
+  </div>
+  <div id="todayList"></div>
+</section>
+
+<!-- ============ BRONLAR ============ -->
+<section id="bookings" class="page">
+  <h2>Bronlar</h2><p class="sub">Bronni qabul qiling va dars jarayonini belgilang.</p>
+  <div class="tabs" id="tabs">
+    <button class="tab on" data-f="">Barchasi</button>
+    <button class="tab" data-f="pending">Kutmoqda <i id="cPending">0</i></button>
+    <button class="tab" data-f="confirmed">Tasdiqlangan <i id="cConfirmed">0</i></button>
+    <button class="tab" data-f="in_progress">Jarayonda <i id="cProgress">0</i></button>
+    <button class="tab" data-f="completed">Tugagan</button>
+  </div>
+  <div id="bkList"><div class="sk"></div><div class="sk"></div></div>
+</section>
+
+<!-- ============ KUNLIK HISOBOT ============ -->
+<section id="report" class="page">
+  <h2 id="repTitle">Hisobot</h2><p class="sub" id="repSub">Kunlik ko‘rsatkichlar</p>
+  <div class="segs" id="repSegs">
+    <button class="seg on" data-per="day">Kun</button>
+    <button class="seg" data-per="week">Hafta</button>
+    <button class="seg" data-per="month">Oy</button>
+    <button class="seg" data-per="year">Yil</button>
+  </div>
+  <div class="card" style="padding:12px;margin-top:12px">
+    <input id="repDate" type="date" style="width:100%;min-height:var(--tap);border:1.5px solid #d9dcee;border-radius:13px;padding:12px;font-size:16px">
+  </div>
+  <div class="stats">
+    <div class="st ok"><span>Uchurdim</span><b id="rDone">0</b><i id="rDoneD" class="chg"></i></div>
+    <div class="st"><span>Soat</span><b id="rHours">0</b><i id="rHoursD" class="chg"></i></div>
+    <div class="st warn"><span>Kelmagan</span><b id="rNoShow">0</b></div>
+  </div>
+  <div class="stats">
+    <div class="st"><span>Mijozlar</span><b id="rCust">0</b></div>
+    <div class="st"><span>Skanerlangan</span><b id="rScan">0</b></div>
+    <div class="st"><span>Jami bron</span><b id="rAll">0</b></div>
+  </div>
+  <div class="card"><b style="font-size:14px">Dinamika</b><div id="repChart" style="margin-top:10px"></div></div>
+  <div class="card" id="repHoursCard"><b style="font-size:14px">Qaysi soatlarda ishlagansiz</b><div id="repHours" style="margin-top:10px"></div></div>
+  <div id="repList"></div>
+</section>
+
+<!-- ============ SHARHLAR ============ -->
+<section id="reviews" class="page">
+  <h2>Sharhlar</h2><p class="sub">Faqat Admin tasdiqlagan sharhlar reytingga qo‘shiladi.</p>
+  <div class="card" style="display:flex;align-items:center;justify-content:space-between">
+    <div><span class="sub" style="margin:0;font-size:11px">O‘RTACHA</span>
+      <div style="font-size:32px;font-weight:900;color:var(--gold);line-height:1.1" id="rvAvg">0.0</div></div>
+    <div style="text-align:right"><span class="sub" style="margin:0;font-size:11px">JAMI</span>
+      <div style="font-size:32px;font-weight:900;line-height:1.1" id="rvCount">0</div></div>
+  </div>
+  <div id="rvList"></div>
+</section>
+
+<!-- ============ PROFIL ============ -->
+<section id="profile" class="page">
+  <h2>Profilim</h2><p class="sub">Ma’lumotlaringiz Admin tomonidan tasdiqlangan.</p>
+  <div class="card">
+    <div style="display:flex;gap:14px;align-items:center">
+      <div class="ini" id="pIni" style="width:66px;height:66px;border-radius:20px;font-size:21px;overflow:hidden">—</div>
+      <div style="min-width:0;flex:1"><b style="font-size:18px;display:block" id="pName">—</b>
+        <span class="sub" style="margin:0" id="pPhone">—</span></div>
     </div>
-
-    <div class="card">
-      <h2 style="margin-top:0">📝 Ro‘yxatdan o‘tish</h2>
-
-      <div class="field">
-        <label>Ism <span class="required">*</span></label>
-        <input id="firstName" autocomplete="given-name" placeholder="Ismingiz">
-      </div>
-
-      <div class="field">
-        <label>Familiya <span class="required">*</span></label>
-        <input id="lastName" autocomplete="family-name" placeholder="Familiyangiz">
-      </div>
-
-      <div class="field">
-        <label>Telefon raqami <span class="required">*</span></label>
-        <input id="phone" inputmode="tel" autocomplete="tel" placeholder="+998 90 123 45 67">
-      </div>
-
-      <div class="field">
-        <label>Tajriba (yil)</label>
-        <input id="experienceYears" type="number" min="0" max="60" placeholder="Masalan: 3">
-      </div>
-
-      <div class="field">
-        <label>Qo‘shimcha ma’lumot</label>
-        <textarea id="message" placeholder="O‘zingiz haqingizda qisqacha..."></textarea>
-      </div>
-
-      <label class="check">
-        <input id="agree" type="checkbox">
-        <span>Ma’lumotlarimni Admin ko‘rib chiqishiga roziman.</span>
-      </label>
-
-      <button id="submitBtn" class="btn primary">📝 ARIZA YUBORISH</button>
+    <button class="btn go" id="pEdit" style="width:100%;margin-top:14px">Profilni tahrirlash</button>
+    <div class="stats" style="margin:16px 0 0">
+      <div class="st"><span>Tajriba</span><b id="pExp">—</b></div>
+      <div class="st gold"><span>Reyting</span><b id="pRating">—</b></div>
+      <div class="st ok"><span>Tugagan</span><b id="pDone">0</b></div>
     </div>
-
-    <div class="notice info">
-      ℹ️ Ariza yuborilgach holat <b>KUTILMOQDA</b> bo‘ladi. Admin tasdiqlasa, bot orqali xabar keladi va shu Mini App qayta ochilganda Instructor paneli avtomatik ochiladi.
-    </div>
-  </section>
-
-  <!-- PENDING -->
-  <section id="pendingPage" class="page">
-    <div class="hero">
-      <h2>⏳ Ariza ko‘rib chiqilmoqda</h2>
-      <p>Arizangiz Admin paneliga yuborildi. Admin tasdiqlashini kuting.</p>
-    </div>
-    <div class="card">
-      <div class="row"><b>Ariza holati</b><span class="status pending">KUTILMOQDA</span></div>
-      <div class="divider"></div>
-      <p class="small">Admin tasdiqlagandan keyin bu sahifani yopib qayta ochish shart emas — tizim holatni avtomatik tekshiradi.</p>
-      <button id="checkBtn" class="btn outline">🔄 Holatni tekshirish</button>
-    </div>
-  </section>
-
-  <!-- REJECTED -->
-  <section id="rejectedPage" class="page">
-    <div class="hero">
-      <h2>❌ Ariza rad etildi</h2>
-      <p>Admin arizangizni tasdiqlamadi.</p>
-    </div>
-    <div class="card">
-      <b>Rad etish sababi:</b>
-      <p id="rejectReason" class="small">Sabab ko‘rsatilmagan.</p>
-      <button id="editAgainBtn" class="btn primary">↩️ Qayta ariza yuborish</button>
-    </div>
-  </section>
-
-  <!-- APPROVED HOME -->
-  <section id="homePage" class="page">
-    <div class="hero">
-      <h2>👋 Xush kelibsiz, <span id="welcomeName">Instructor</span>!</h2>
-      <p>Admin tomonidan tasdiqlangansiz. Bugungi bronlaringiz va mijozlaringiz shu yerda ko‘rinadi.</p>
-    </div>
-    <div class="statGrid">
-      <div class="stat"><span>BUGUNGI BRONLAR</span><b id="todayCount">0</b></div>
-      <div class="stat"><span>JARAYONDAGI</span><b id="activeCount">0</b></div>
-      <div class="stat"><span>TUGALLANGAN</span><b id="doneCount">0</b></div>
-      <div class="stat"><span>KELMAGAN</span><b id="noShowCount">0</b></div>
-    </div>
-    <div class="card">
-      <div class="row"><h3 style="margin:0">📋 Bugungi ishlar</h3><button id="refreshBtn" class="btn outline" style="width:auto;padding:8px 11px">↻</button></div>
-      <p class="small">Mijoz kelganda <b>KELDI</b>, dars tugaganda <b>KETDI</b> tugmasini bosing.</p>
-    </div>
-    <div id="homeBookings"><div class="loading">Yuklanmoqda...</div></div>
-  </section>
-
-  <!-- BOOKINGS -->
-  <section id="bookingsPage" class="page">
-    <div class="hero">
-      <h2>📋 Bronlar</h2>
-      <p>Sizga biriktirilgan bronlar va ularning holati.</p>
-    </div>
-    <div id="bookingList"><div class="loading">Yuklanmoqda...</div></div>
-  </section>
-
-  <!-- PROFILE -->
-  <section id="profilePage" class="page">
-    <div class="hero"><h2>👤 Profilim</h2><p>Instructor akkauntingiz ma’lumotlari.</p></div>
-    <div class="card">
-      <p><b id="profileName">—</b></p>
-      <p id="profilePhone" class="small">📞 —</p>
-      <p id="profileStatus" class="small">—</p>
-    </div>
-  </section>
+    <div class="note" style="margin:14px 0 0" id="pBio"></div>
+  </div>
+  <div class="alert a-info">Ism, telefon va tajribani o‘zgartirish uchun Admin bilan bog‘laning. Reytingni faqat mijoz sharhlari belgilaydi.</div>
+</section>
 </main>
 
-<nav id="nav" class="nav hidden">
-  <button data-page="homePage" class="active">🏠<br>Bosh sahifa</button>
-  <button data-page="bookingsPage">📋<br>Bronlar</button>
-  <button data-page="profilePage">👤<br>Profil</button>
-</nav>
+<nav class="nav hide" id="nav"><div class="navin" style="grid-template-columns:repeat(5,1fr)">
+  <button class="nb on" data-p="today"><span>📅</span>Bugun</button>
+  <button class="nb" data-p="bookings"><span>📋</span>Bronlar<i class="hide" id="navPill">0</i></button>
+  <button class="nb" data-p="report"><span>📊</span>Hisobot</button>
+  <button class="nb" data-p="reviews"><span>⭐</span>Sharhlar</button>
+  <button class="nb" data-p="profile"><span>👤</span>Profil</button>
+</div></nav>
 </div>
-<div id="toast" class="toast hidden"></div>
 
+<div class="sheet" id="sheet"><div class="sheetbox"><div class="grab"></div><div id="sheetBody"></div></div></div>
+<div class="toast" id="toast"></div>
 <script>
 'use strict';
+/* =========================================================================
+   AVTODROM — INSTRUKTOR PANELI (telefon uchun)
+   Auth: Telegram initData, imzo backendda tekshiriladi.
+   Mock ma'lumot yo'q — hammasi DATABASE -> API -> UI.
+   ========================================================================= */
 
-const tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
+const tg = window.Telegram?.WebApp || null;
+const INIT = tg?.initData || '';
+if (tg) { try { tg.ready(); tg.expand(); tg.setHeaderColor?.('#2E3192'); } catch (e) {} }
 
-/*
-  Bitta index.html uchun yagona API manzil.
-  Frontend Supabase'ga to'g'ridan-to'g'ri ulanmaydi.
-  Barcha tekshiruv serverdagi /api/instructor/* endpointlarida bajariladi.
-*/
-const API = (window.AVTODROM_API_URL || 'https://avtodrom.vercel.app').replace(/\/$/,'');
 const $ = id => document.getElementById(id);
+const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const TZ = 'Asia/Tashkent';
+/* Sana/vaqt/pulni O'ZIMIZ yozamiz. 'uz-UZ' bilan brauzer "M09 11, Fri" kabi
+   tushunarsiz matn berardi (til bazasi qurilmaga qarab har xil). */
+const MONTHS_UZ = ['yanvar','fevral','mart','aprel','may','iyun','iyul','avgust','sentabr','oktabr','noyabr','dekabr'];
+const MONTHS_SHORT_UZ = ['yan','fev','mar','apr','may','iyun','iyul','avg','sen','okt','noy','dek'];
+const WEEKDAYS_UZ = ['yakshanba','dushanba','seshanba','chorshanba','payshanba','juma','shanba'];
+/** Toshkent vaqtidagi {y, m, d, wd} */
+const tkParts = v => {
+  const dt = new Date(v);
+  const p = new Intl.DateTimeFormat('en-CA', { timeZone: TZ, year: 'numeric', month: '2-digit', day: '2-digit' }).format(dt).split('-');
+  const wd = new Intl.DateTimeFormat('en-US', { timeZone: TZ, weekday: 'short' }).format(dt);
+  const idx = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].indexOf(wd);
+  return { y: +p[0], m: +p[1], d: +p[2], wd: idx };
+};
+const money = v => Number(v) > 0 ? String(Math.round(Number(v))).replace(/\B(?=(\d{3})+(?!\d))/g, ' ') + ' so‘m' : '';
+const dayOf = v => v ? new Intl.DateTimeFormat('en-CA', { timeZone: TZ }).format(new Date(v)) : '';
+const hhmm  = v => v ? new Date(v).toLocaleTimeString('en-GB', { timeZone: TZ, hour: '2-digit', minute: '2-digit' }) : '—';
+const dshort= v => { if(!v) return '—'; const p=tkParts(v); return `${p.d}-${MONTHS_SHORT_UZ[p.m-1]}`; };
+/** "11-sentabr, juma" */
+const dlong = v => { const p=tkParts(v); return `${p.d}-${MONTHS_UZ[p.m-1]}, ${WEEKDAYS_UZ[p.wd]}`; };
+const initials = n => { const p = String(n || '').trim().split(/\s+/); return ((p[0]?.[0] || '') + (p[1]?.[0] || '')).toUpperCase() || '👤'; };
+const fmtDur = m => { const n = Number(m) || 0, h = Math.floor(n / 60), r = n % 60; return h ? (r ? `${h} soat ${r} daq` : `${h} soat`) : `${r} daq`; };
+const ST = { pending:'Kutilmoqda', confirmed:'Tasdiqlangan', in_progress:'Dars ketmoqda', completed:'Tugagan',
+             cancelled:'Bekor qilingan', rejected:'Rad etilgan', no_show:'Kelmagan' };
 
-let currentProfile = null;
-let pollTimer = null;
-let pollBusy = false;
+const S = { profile:null, instructor:null, bookings:[], reviews:[], stats:{}, filter:'' };
 
-if(tg){
-  try{
-    tg.ready();
-    tg.expand();
-    tg.setHeaderColor('#ffffff');
-    tg.setBackgroundColor('#f5f8f6');
-  }catch(_){}
+/* ------------------------------ API ------------------------------ */
+function errText(d, status, path){
+  const pick = v => !v ? '' : (typeof v === 'string' ? v : (v.message || v.error || v.code || ''));
+  const m = pick(d?.error) || pick(d?.message);
+  if (m) return m;
+  if (status === 404) return `Manzil topilmadi (404): ${path}`;
+  return `Server xatosi: ${status}`;
 }
-
-function initData(){
-  return tg && tg.initData ? tg.initData : '';
-}
-
-function showPage(id){
-  document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));
-  const page=$(id);
-  if(page) page.classList.add('active');
-
-  document.querySelectorAll('.nav button').forEach(b=>{
-    b.classList.toggle('active',b.dataset.page===id);
-  });
-  window.scrollTo({top:0,behavior:'smooth'});
-}
-
-function clearMessages(){
-  $('errorBox').classList.add('hidden');
-  $('successBox').classList.add('hidden');
-  $('errorBox').textContent='';
-  $('successBox').textContent='';
-}
-
-function showError(message){
-  $('successBox').classList.add('hidden');
-  $('errorBox').textContent=String(message||'Noma’lum xato');
-  $('errorBox').classList.remove('hidden');
-}
-
-function showSuccess(message){
-  $('errorBox').classList.add('hidden');
-  $('successBox').textContent=String(message||'Bajarildi');
-  $('successBox').classList.remove('hidden');
-}
-
-function toast(message){
-  const x=$('toast');
-  x.textContent=message;
-  x.classList.remove('hidden');
-  clearTimeout(window.__toast);
-  window.__toast=setTimeout(()=>x.classList.add('hidden'),2800);
-}
-
-function esc(v){
-  return String(v ?? '').replace(/[&<>"']/g,m=>({
-    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
-  }[m]));
-}
-
-function normalizePhone(v){
-  let s=String(v||'').replace(/[^\d+]/g,'');
-  if(s.startsWith('998')) s='+'+s;
-  if(!s.startsWith('+998') && s.replace(/\D/g,'').length===9) s='+998'+s.replace(/\D/g,'');
-  return s;
-}
-
-function formatDateTime(v){
-  if(!v) return 'Vaqt ko‘rsatilmagan';
-  const d=new Date(v);
-  if(Number.isNaN(d.getTime())) return String(v);
-  return d.toLocaleString('uz-UZ',{
-    timeZone:'Asia/Tashkent',
-    day:'2-digit',month:'2-digit',year:'numeric',
-    hour:'2-digit',minute:'2-digit'
-  });
-}
-
-function todayTashkent(){
-  return new Intl.DateTimeFormat('en-CA',{
-    timeZone:'Asia/Tashkent',year:'numeric',month:'2-digit',day:'2-digit'
-  }).format(new Date());
-}
-
-function statusLabel(s){
-  s=String(s||'').toLowerCase();
-  return ({
-    pending:'Kutilmoqda',
-    confirmed:'Tasdiqlangan',
-    approved:'Tasdiqlangan',
-    in_progress:'Jarayonda',
-    arrived:'Keldi',
-    completed:'Tugallangan',
-    no_show:'Kelmagan',
-    cancelled:'Bekor qilingan',
-    rejected:'Rad etilgan'
-  })[s] || (s||'Noma’lum');
-}
-
-function statusClass(s){
-  s=String(s||'').toLowerCase();
-  if(s==='pending') return 'pending';
-  if(['confirmed','approved','in_progress','arrived','completed'].includes(s)) return 'approved';
-  return 'rejected';
-}
-
-/* Server API helper: Telegram initData har bir so‘rovda yuboriladi. */
-async function api(path, options={}){
-  const controller=new AbortController();
-  const timer=setTimeout(()=>controller.abort(),15000);
-
-  try{
-    const data=initData();
-    if(!data){
-      throw new Error('Mini App Telegram ichidan ochilmagan. @index_instruktor_bot ichidagi tugma orqali oching.');
-    }
-
-    const headers={
-      'Content-Type':'application/json',
-      'Accept':'application/json',
-      'X-Telegram-Init-Data':data,
-      ...(options.headers||{})
-    };
-
-    const response=await fetch(API+path,{
-      credentials:'include',
-      cache:'no-store',
-      ...options,
-      headers,
-      signal:controller.signal
-    });
-
-    const text=await response.text();
-    let body={};
-    try{body=text?JSON.parse(text):{}}catch(_){body={error:text||'Server noto‘g‘ri javob qaytardi'}}
-
-    if(!response.ok){
-      throw new Error(body.error||body.message||`Server xatosi: HTTP ${response.status}`);
-    }
-    return body;
-  }catch(e){
-    if(e.name==='AbortError') throw new Error('Server javobi juda uzoq cho‘zildi. Internetni tekshiring.');
+async function api(path, opt = {}) {
+  if (!INIT) throw new Error('Telegram initData topilmadi.\nMini Appni bot ichidan oching.');
+  const c = new AbortController(); const timer = setTimeout(() => c.abort(), 15000);
+  try {
+    const r = await fetch(path, { cache:'no-store', ...opt, signal:c.signal,
+      headers:{ Accept:'application/json', 'Content-Type':'application/json', 'X-Telegram-Init-Data': INIT, ...(opt.headers||{}) } });
+    const txt = await r.text(); let d = {};
+    try { d = txt ? JSON.parse(txt) : {}; } catch { throw new Error(`Server JSON emas (HTTP ${r.status})`); }
+    if (!r.ok) { const e = new Error(errText(d, r.status, path)); e.status = r.status; throw e; }
+    return d;
+  } catch (e) {
+    if (e.name === 'AbortError') throw new Error('Server javob bermadi (15 soniya).');
+    if (e instanceof TypeError) throw new Error('Tarmoq xatosi. Aloqani tekshiring.');
     throw e;
-  }finally{
-    clearTimeout(timer);
+  } finally { clearTimeout(timer); }
+}
+
+function toast(t){ const x = $('toast'); x.textContent = t; x.classList.add('on');
+  clearTimeout(window.__t); window.__t = setTimeout(() => x.classList.remove('on'), 2800);
+  try { tg?.HapticFeedback?.notificationOccurred?.('success'); } catch (e) {} }
+function alertBox(msg, kind='err'){ $('alert').innerHTML = msg ? `<div class="alert a-${kind}">${esc(msg)}</div>` : ''; }
+function sheet(html){ $('sheetBody').innerHTML = html; $('sheet').classList.add('on'); }
+function closeSheet(){ $('sheet').classList.remove('on'); }
+$('sheet').onclick = e => { if (e.target.id === 'sheet') closeSheet(); };
+
+function show(id){ document.querySelectorAll('.page').forEach(p => p.classList.toggle('on', p.id === id)); window.scrollTo(0,0); }
+function showPanel(id){
+  show(id);
+  document.querySelectorAll('.nb').forEach(b => b.classList.toggle('on', b.dataset.p === id));
+  if (id === 'reviews') loadReviews();
+  if (id === 'report') { if (!$('repDate').value) $('repDate').value = dayOf(new Date()); loadReport(); }
+}
+document.querySelectorAll('.nb').forEach(b => b.onclick = () => showPanel(b.dataset.p));
+$('repDate').addEventListener('change', loadReport);
+
+/* --------------------- Ro'yxatdan o'tish --------------------- */
+function prefill(){
+  const u = tg?.initDataUnsafe?.user; if (!u) return;
+  if (!$('rFirst').value) $('rFirst').value = u.first_name || '';
+  if (!$('rLast').value)  $('rLast').value  = u.last_name || '';
+  $('topIni').textContent = initials(`${u.first_name||''} ${u.last_name||''}`);
+}
+$('rSubmit').onclick = async () => {
+  alertBox('');
+  const first=$('rFirst').value.trim(), last=$('rLast').value.trim(), phone=$('rPhone').value.trim();
+  if (!first || !last || !phone) return alertBox('Ism, familiya va telefon majburiy.');
+  if (!$('rAgree').checked) return alertBox('Rozilik katagiga belgi qo‘ying.');
+  const b = $('rSubmit'); b.disabled = true; b.textContent = 'Yuborilmoqda…';
+  try {
+    await api('/api/instructor/registration', { method:'POST', body: JSON.stringify({
+      firstName:first, lastName:last, phone, experienceYears:Number($('rExp').value||0), message:$('rMsg').value.trim() }) });
+    show('pending'); toast('Ariza yuborildi ✓');
+  } catch (e) { alertBox(e.message); }
+  finally { b.disabled = false; b.textContent = 'Ariza yuborish'; }
+};
+$('recheck').onclick = () => checkRegistration();
+$('reapply').onclick = () => { alertBox(''); show('register'); };
+
+async function checkRegistration(silent){
+  try {
+    const d = await api('/api/instructor/registration');
+    const r = d.registration || {}, st = String(r.status || 'NOT_REGISTERED').toUpperCase();
+    alertBox('');
+    if (st === 'APPROVED') return openPanel();
+    if (st === 'PENDING')  return show('pending');
+    if (st === 'REJECTED') { $('reason').textContent = r.rejection_reason || 'Sabab ko‘rsatilmagan.'; return show('rejected'); }
+    show('register');
+  } catch (e) { show('register'); if (!silent) alertBox(e.message); }
+}
+
+/* ------------------------- Panel ------------------------- */
+async function openPanel(){
+  try {
+    const d = await api('/api/instructor/me');
+    S.profile = d.profile || {}; S.instructor = d.instructor || {};
+    const full = [S.profile.first_name, S.profile.last_name].filter(Boolean).join(' ') || S.profile.full_name || 'Instruktor';
+    $('topRole').textContent = 'INSTRUKTOR';
+    paintProfile();
+    $('greet').textContent = `Salom, ${S.profile.first_name || 'Instruktor'}!`;
+    $('todayDate').textContent = dlong(new Date());
+    setAvail(S.instructor.is_available !== false);
+    $('nav').classList.remove('hide');
+    showPanel('today');
+    await Promise.allSettled([loadBookings(), loadStats()]);
+  } catch (e) {
+    $('nav').classList.add('hide');
+    if (e.status === 403) { show('pending'); alertBox('Hisobingiz hali tasdiqlanmagan.', 'info'); }
+    else { show('register'); alertBox(e.message); }
   }
 }
 
-function fillTelegramUser(){
-  const u=tg?.initDataUnsafe?.user;
-  if(!u) return;
-
-  if(!$('firstName').value) $('firstName').value=u.first_name||'';
-  if(!$('lastName').value) $('lastName').value=u.last_name||'';
-
-  const n=[u.first_name,u.last_name].filter(Boolean).join(' ');
-  if(n) $('userName').textContent=n;
+function setAvail(on){
+  $('availSw').classList.toggle('on', on);
+  $('topRole').textContent = on ? 'FAOL — bron qabul qilyapsiz' : 'BAND — yangi bron kelmaydi';
 }
+$('availSw').onclick = async () => {
+  const next = !$('availSw').classList.contains('on');
+  setAvail(next); $('availSw').disabled = true;
+  try {
+    const d = await api('/api/instructor/availability', { method:'PATCH', body: JSON.stringify({ is_available: next }) });
+    S.instructor = d.instructor || S.instructor;
+    toast(next ? 'Faol holatdasiz' : 'Band holatdasiz');
+  } catch (e) { setAvail(!next); toast(e.message); }
+  finally { $('availSw').disabled = false; }
+};
 
-/*
-  REGISTRATION:
-  GET /api/instructor/registration
-  POST /api/instructor/registration
-*/
-async function checkRegistration(showErrorOnFail=true){
-  try{
-    const d=await api('/api/instructor/registration');
-    const r=d.registration||{};
-    const status=String(r.status||'NOT_REGISTERED').toUpperCase();
 
-    clearMessages();
+/* =========================================================================
+   PROFILNI TAHRIRLASH
+   Instruktor o'z ismi, telefoni, tajribasi, bio va rasmini o'zgartiradi.
+   Reyting va tasdiqlangan holati o'zgarmaydi — birinchisi sharhlardan,
+   ikkinchisi admindan.
+   ========================================================================= */
+$('pEdit').onclick = () => {
+  const p = S.profile || {}, i = S.instructor || {};
+  const full = [p.first_name, p.last_name].filter(Boolean).join(' ') || p.full_name || '';
+  const [first, ...rest] = String(full).split(' ');
+  let avatarUrl = i.avatar_url || '';
 
-    if(status==='APPROVED'){
-      await openApprovedPanel();
-      return;
-    }
+  sheet(`<h2 style="margin:0 0 4px">Profilni tahrirlash</h2>
+    <p class="sub">Bu ma’lumotlarni mijozlar ko‘radi.</p>
+    <div style="display:flex;gap:14px;align-items:center;margin:14px 0">
+      <div id="peAv" style="width:70px;height:70px;border-radius:22px;background:var(--soft);color:var(--brand);
+        display:grid;place-items:center;font-weight:900;font-size:20px;overflow:hidden;flex:none">
+        ${avatarUrl ? `<img src="${esc(avatarUrl)}" style="width:100%;height:100%;object-fit:cover">` : esc(initials(full))}</div>
+      <div style="flex:1">
+        <input id="peFile" type="file" accept="image/jpeg,image/png,image/webp" style="display:none">
+        <button class="btn sm" id="peUpload" style="width:100%">Rasm tanlash</button>
+        <div class="sub" id="peHint" style="margin:6px 0 0;font-size:11.5px">JPG, PNG · 5 MB gacha</div>
+      </div>
+    </div>
+    <div class="field"><label>ISM</label><input id="peFirst" value="${esc(first || '')}"></div>
+    <div class="field"><label>FAMILIYA</label><input id="peLast" value="${esc(rest.join(' '))}"></div>
+    <div class="field"><label>TELEFON</label><input id="pePhone" type="tel" inputmode="tel" value="${esc(p.phone || '')}"></div>
+    <div class="field"><label>TAJRIBA (YIL)</label><input id="peExp" type="number" inputmode="numeric" min="0" max="60" value="${esc(i.experience_years ?? 0)}"></div>
+    <div class="field"><label>O‘ZINGIZ HAQINGIZDA <span id="peBioCount" class="sub" style="float:right;margin:0"></span></label>
+      <textarea id="peBio" placeholder="Mijozlar shu matnni o‘qiydi...">${esc(i.bio || '')}</textarea></div>
+    <div id="peAlert"></div>
+    <div class="acts two" style="padding:0">
+      <button class="btn" id="peCancel">Bekor</button>
+      <button class="btn ok" id="peSave">Saqlash</button>
+    </div>`);
 
-    if(status==='PENDING'){
-      $('userName').textContent=
-        [r.first_name,r.last_name].filter(Boolean).join(' ') ||
-        $('userName').textContent;
-      showPage('pending');
-      startPolling();
-      return;
-    }
+  const BIO_MAX = 2000;
+  const bioCount = () => {
+    const n = $('peBio').value.length;
+    $('peBioCount').textContent = `${n} / ${BIO_MAX}`;
+    $('peBioCount').style.color = n > BIO_MAX ? 'var(--red)' : 'var(--muted)';
+  };
+  $('peBio').addEventListener('input', bioCount);
+  bioCount();
 
-    if(status==='REJECTED'){
-      $('rejectReason').textContent=r.rejection_reason||r.reason||'Sabab ko‘rsatilmagan.';
-      showPage('rejected');
-      stopPolling();
-      return;
-    }
-
-    showPage('register');
-    stopPolling();
-  }catch(e){
-    showPage('register');
-    if(showErrorOnFail) showError('Ro‘yxatdan o‘tish serveri bilan aloqa bo‘lmadi: '+e.message);
-  }
-}
-
-async function submitApplication(){
-  clearMessages();
-
-  const first=$('firstName').value.trim();
-  const last=$('lastName').value.trim();
-  const phone=normalizePhone($('phone').value);
-  const experience=Number($('experienceYears').value||0);
-  const message=$('message').value.trim();
-
-  if(!first||!last||!phone){
-    showError('Ism, familiya va telefon raqami majburiy.');
-    return;
-  }
-
-  const digits=phone.replace(/\D/g,'');
-  if(digits.length!==12 || !digits.startsWith('998')){
-    showError('Telefon raqamini +998 90 123 45 67 ko‘rinishida kiriting.');
-    return;
-  }
-
-  if(!$('agree').checked){
-    showError('Ariza yuborishdan oldin rozilik katagiga belgi qo‘ying.');
-    return;
-  }
-
-  const btn=$('submitBtn');
-  btn.disabled=true;
-  btn.textContent='⏳ Yuborilmoqda...';
-
-  try{
-    const d=await api('/api/instructor/registration',{
-      method:'POST',
-      body:JSON.stringify({
-        firstName:first,
-        lastName:last,
-        phone,
-        experienceYears:Math.max(0,Math.min(60,experience||0)),
-        message
-      })
-    });
-
-    currentProfile=d.registration||d.profile||null;
-    $('userName').textContent=[first,last].join(' ');
-    showSuccess('Arizangiz muvaffaqiyatli yuborildi.');
-    showPage('pending');
-    toast('✅ Ariza Admin paneliga yuborildi');
-    startPolling();
-  }catch(e){
-    showError(e.message);
-  }finally{
-    btn.disabled=false;
-    btn.textContent='📝 ARIZA YUBORISH';
-  }
-}
-
-/*
-  APPROVED:
-  /api/instructor/me
-  /api/instructor/bookings
-*/
-async function openApprovedPanel(){
-  try{
-    const d=await api('/api/instructor/me');
-    const p=d.profile||d.instructor||{};
-    currentProfile=p;
-
-    const full=[p.first_name,p.last_name].filter(Boolean).join(' ') || 'Instructor';
-    $('userName').textContent=full;
-    $('welcomeName').textContent=p.first_name||full;
-    $('profileName').textContent=full;
-    $('profilePhone').textContent='📞 '+(p.phone||'Telefon ko‘rsatilmagan');
-    $('profileStatus').textContent='✅ Admin tomonidan tasdiqlangan';
-
-    $('nav').classList.remove('hidden');
-    stopPolling();
-    showPage('homePage');
-    await loadBookings();
-  }catch(e){
-    $('nav').classList.add('hidden');
-    showPage('pending');
-    showError('Admin tasdiqladi, lekin Instructor profili hali serverda tayyor emas: '+e.message);
-    startPolling();
-  }
-}
-
-function startPolling(){
-  stopPolling();
-  pollTimer=setInterval(async()=>{
-    if(pollBusy) return;
-    pollBusy=true;
+  $('peUpload').onclick = () => $('peFile').click();
+  $('peFile').onchange = async () => {
+    const f = $('peFile').files[0]; if (!f) return;
+    if (f.size > 5 * 1024 * 1024) { $('peHint').textContent = 'Rasm 5 MB dan oshmasin'; return; }
+    $('peHint').textContent = 'Yuklanmoqda…';
     try{
-      await checkRegistration(false);
-    }finally{
-      pollBusy=false;
+      const sign = await api('/api/instructor/avatar/sign', { method:'POST',
+        body: JSON.stringify({ content_type: f.type, size: f.size }) });
+      // Fayl to'g'ridan-to'g'ri Storage'ga — server orqali o'tmaydi
+      const res = await fetch(sign.upload_url, { method:'PUT', headers:{ 'Content-Type': f.type }, body: f });
+      if (!res.ok) throw new Error(`Yuklanmadi (${res.status})`);
+      avatarUrl = sign.public_url;
+      $('peAv').innerHTML = `<img src="${esc(avatarUrl)}" style="width:100%;height:100%;object-fit:cover">`;
+      $('peHint').textContent = 'Rasm tayyor — «Saqlash» ni bosing';
+    }catch(e){ $('peHint').textContent = 'Xato: ' + e.message; }
+  };
+
+  $('peCancel').onclick = closeSheet;
+  $('peSave').onclick = async () => {
+    $('peAlert').innerHTML = '';
+    const btn = $('peSave'); btn.disabled = true; btn.textContent = 'Saqlanmoqda…';
+    try{
+      const d = await api('/api/instructor/profile', { method:'PATCH', body: JSON.stringify({
+        first_name: $('peFirst').value.trim(), last_name: $('peLast').value.trim(),
+        phone: $('pePhone').value.trim(), experience_years: Number($('peExp').value || 0),
+        bio: $('peBio').value.trim(), avatar_url: avatarUrl })});
+      S.profile = d.profile || S.profile; S.instructor = d.instructor || S.instructor;
+      closeSheet(); toast('Profil saqlandi'); paintProfile();
+    }catch(e){
+      $('peAlert').innerHTML = `<div class="alert a-err">${esc(e.message)}</div>`;
+      btn.disabled = false; btn.textContent = 'Saqlash';
     }
-  },10000);
+  };
+};
+
+/** Profil ma'lumotini ekranga chiqaradi — saqlagandan keyin ham. */
+function paintProfile(){
+  const p = S.profile || {}, i = S.instructor || {};
+  const full = [p.first_name, p.last_name].filter(Boolean).join(' ') || p.full_name || 'Instruktor';
+  const av = i.avatar_url
+    ? `<img src="${esc(i.avatar_url)}" style="width:100%;height:100%;object-fit:cover">`
+    : esc(initials(full));
+  $('pIni').innerHTML = av;
+  $('topIni').innerHTML = av;
+  $('pName').textContent = full;
+  $('pPhone').textContent = p.phone || 'Telefon ko‘rsatilmagan';
+  $('pExp').textContent = `${i.experience_years ?? 0} yil`;
+  $('pRating').textContent = Number(i.rating || 0).toFixed(1);
+  $('pBio').textContent = i.bio || 'Bio kiritilmagan.';
+  $('topName').textContent = full;
 }
 
-function stopPolling(){
-  if(pollTimer){
-    clearInterval(pollTimer);
-    pollTimer=null;
-  }
+/* ------------------------- Statistika ------------------------- */
+async function loadStats(){
+  try {
+    const d = await api('/api/instructor/stats'); S.stats = d.stats || {};
+    $('sToday').textContent   = S.stats.today ?? 0;
+    $('sPending').textContent = S.stats.pending ?? 0;
+    $('sRating').textContent  = Number(S.stats.rating || 0).toFixed(1);
+    $('pDone').textContent    = S.stats.completed ?? 0;
+    $('cPending').textContent   = S.stats.pending ?? 0;
+    $('cConfirmed').textContent = S.stats.confirmed ?? 0;
+    $('cProgress').textContent  = S.stats.inProgress ?? 0;
+    const p = Number(S.stats.pending || 0);
+    $('navPill').textContent = p; $('navPill').classList.toggle('hide', !p);
+    setAvail(S.stats.isAvailable !== false);
+  } catch (e) { /* statistika ikkilamchi */ }
 }
 
-/* BOOKING */
+/* ------------------------- Bronlar ------------------------- */
 async function loadBookings(){
-  try{
-    const d=await api('/api/instructor/bookings');
-    const bookings=Array.isArray(d.bookings)?d.bookings:[];
+  try {
+    const d = await api('/api/instructor/bookings');
+    S.bookings = d.bookings || [];
+    renderBookings(); renderToday(); if($('repDate').value && S.rep) renderRepList();
+  } catch (e) {
+    const html = `<div class="alert a-err">${esc(e.message)}</div>`;
+    $('bkList').innerHTML = html; $('todayList').innerHTML = html;
+  }
+}
+document.querySelectorAll('.tab').forEach(t => t.onclick = () => {
+  document.querySelectorAll('.tab').forEach(x => x.classList.remove('on'));
+  t.classList.add('on'); S.filter = t.dataset.f; renderBookings();
+});
 
-    const today=todayTashkent();
-    const todayBookings=bookings.filter(b=>{
-      const raw=b.start_at||b.start_time||b.booking_date||b.date||b.created_at;
-      if(!raw) return false;
-      const x=new Date(raw);
-      if(Number.isNaN(x.getTime())) return String(raw).slice(0,10)===today;
-      return new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Tashkent'}).format(x)===today;
+function card(b, opts = {}){
+  const when = b.start_at || b.booking_date;
+  const st = b.status || 'pending';
+  const name = b.customer?.full_name || [b.customer?.first_name, b.customer?.last_name].filter(Boolean).join(' ') || 'Mijoz';
+  const phone = String(b.customer?.phone || '').replace(/[^+\d]/g, '');
+  const tgId = b.customer?.telegram_id;
+  const now = Date.now(), s0 = new Date(when).getTime(), e0 = new Date(b.end_at || when).getTime();
+  const isNow = st === 'in_progress' || (now >= s0 - 15 * 60000 && now <= e0);
+
+  /* Bronni QABUL QILISH yoki RAD ETISH instruktorda yo'q — buni Admin qiladi.
+     Kutilayotgan bron faqat ko'rinadi, tugmasiz. */
+  let acts = '';
+  if (st === 'pending')     acts = `<div class="note" style="margin:12px 15px 15px">⏳ Admin tasdiqlashini kutmoqda</div>`;
+  if (st === 'confirmed')   acts = `<div class="acts"><button class="btn go" data-a="arrived" data-id="${esc(b.id)}">🚗 Mijoz keldi — darsni boshlash</button><button class="btn bad sm" data-a="no-show" data-id="${esc(b.id)}">🚫 Mijoz kelmadi</button></div>`;
+  if (st === 'in_progress') acts = `<div class="acts"><button class="btn ok" data-a="departed" data-id="${esc(b.id)}">🏁 Darsni yakunlash</button></div>`;
+
+  return `<article class="bk ${isNow ? 'now' : ''}">
+    <div class="bk-h">
+      <div class="clock"><b>${esc(hhmm(when))}</b><span>${opts.today ? esc(fmtDur(b.course?.duration_minutes)) : esc(dshort(when))}</span></div>
+      <div class="t"><b>${esc(name)}</b><span>${esc(b.course?.name || 'Mashg‘ulot')}${b.course?.price ? ' · ' + esc(money(b.course.price)) : ''}</span></div>
+    </div>
+    <span class="st-pill p-${esc(st)}">${esc(ST[st] || st)}</span>
+    ${(phone || tgId) ? `<div class="callrow">
+      ${phone ? `<a class="call" href="tel:${esc(phone)}">📞 Qo‘ng‘iroq</a>` : ''}
+      ${tgId ? `<a class="call tg" href="tg://user?id=${esc(tgId)}">💬 Telegram</a>` : ''}
+    </div>` : ''}
+    ${b.customer_note ? `<div class="note">💬 ${esc(b.customer_note)}</div>` : ''}
+    ${b.cancellation_reason ? `<div class="note">ℹ️ ${esc(b.cancellation_reason)}</div>` : ''}
+    ${acts}
+  </article>`;
+}
+function bind(root){ root.querySelectorAll('[data-a]').forEach(b => b.onclick = () => act(b.dataset.a, b.dataset.id)); }
+
+function renderBookings(){
+  const today = dayOf(new Date());
+  let rows = S.bookings;
+  if (S.filter) rows = rows.filter(b => b.status === S.filter);
+  rows = [...rows].sort((a, b) => new Date(b.start_at || b.booking_date) - new Date(a.start_at || a.booking_date));
+  const box = $('bkList');
+  box.innerHTML = rows.length ? rows.map(b => card(b)).join('')
+    : '<div class="empty"><span class="big">📭</span>Bu bo‘limda bron yo‘q.</div>';
+  bind(box);
+}
+function renderToday(){
+  const today = dayOf(new Date());
+  const rows = S.bookings
+    .filter(b => dayOf(b.start_at || b.booking_date) === today && !['cancelled','rejected'].includes(b.status))
+    .sort((a, b) => new Date(a.start_at || a.booking_date) - new Date(b.start_at || b.booking_date));
+  const box = $('todayList');
+  box.innerHTML = rows.length ? rows.map(b => card(b, { today:true })).join('')
+    : '<div class="empty"><span class="big">☀️</span>Bugun uchun bron yo‘q.<br>Dam oling!</div>';
+  bind(box);
+}
+
+/* Amal tasdig'i — pastdan chiqadigan panel (mobil uchun qulay) */
+const CONFIRM = {
+  arrived:  { t:'Mijoz keldimi?',          x:'Dars boshlangan deb belgilanadi.', b:'🚗 Ha, boshlash', c:'go' },
+  departed: { t:'Darsni yakunlaysizmi?',   x:'Mijozga baholash so‘rovi boradi.', b:'🏁 Yakunlash', c:'ok' },
+  'no-show':{ t:'Mijoz kelmadimi?',        x:'Bu holat hisobotda qayd etiladi.', b:'🚫 Kelmadi', c:'bad' },
+};
+function act(a, id){
+  const c = CONFIRM[a] || { t:'Davom etasizmi?', x:'', b:'Ha', c:'go' };
+  sheet(`<h2 style="margin:0 0 4px">${esc(c.t)}</h2><p class="sub">${esc(c.x)}</p>
+    <div class="acts two" style="padding:0">
+      <button class="btn" id="cNo">Bekor</button>
+      <button class="btn ${c.c}" id="cYes">${esc(c.b)}</button></div>`);
+  $('cNo').onclick = closeSheet;
+  $('cYes').onclick = () => run(a, id, {});
+}
+async function run(a, id, body){
+  const btn = $('cYes'); if (btn) { btn.disabled = true; btn.textContent = '…'; }
+  try {
+    await api(`/api/instructor/bookings/${encodeURIComponent(id)}/${a}`, { method:'POST', body: JSON.stringify(body) });
+    closeSheet();
+    toast({ arrived:'Dars boshlandi', departed:'Dars yakunlandi',
+            'no-show':'Kelmagan deb belgilandi' }[a] || 'Saqlandi');
+    await Promise.allSettled([loadBookings(), loadStats()]);
+  } catch (e) { closeSheet(); alertBox(e.message); toast(e.message); }
+}
+
+
+/* =========================================================================
+   CHEK SKANERI
+   Telegram'ning o'z QR skaneridan foydalanamiz (showScanQrPopup) — kamera
+   ruxsatini so'rash, oqimni boshqarish shart emas, va u iOS'da ham ishlaydi.
+   Eski Telegram versiyalarida yo'q — u holda kodni qo'lda kiritish oynasi.
+   ========================================================================= */
+function canScan(){
+  try { return typeof tg?.showScanQrPopup === 'function' && Number(String(tg.version||'0').split('.')[0]) >= 6; }
+  catch (e) { return false; }
+}
+
+$('scanBtn').onclick = () => {
+  if (!canScan()) return manualCode();
+  try {
+    tg.showScanQrPopup({ text: 'Chekdagi QR kodni kameraga tuting' }, (raw) => {
+      const code = extractCode(raw);
+      if (!code) return true;          // noto'g'ri kod — skaner ochiq qolsin
+      try { tg.closeScanQrPopup(); } catch (e) {}
+      verifyCode(code);
+      return true;
     });
+  } catch (e) { manualCode(); }
+};
 
-    $('todayCount').textContent=todayBookings.length;
-    $('activeCount').textContent=bookings.filter(b=>['in_progress','arrived'].includes(String(b.status||'').toLowerCase())).length;
-    $('doneCount').textContent=bookings.filter(b=>String(b.status||'').toLowerCase()==='completed').length;
-    $('noShowCount').textContent=bookings.filter(b=>String(b.status||'').toLowerCase()==='no_show').length;
+/** QR ichida to'liq URL bo'lishi ham mumkin — faqat kodni ajratamiz. */
+function extractCode(raw){
+  const m = String(raw || '').toUpperCase().match(/AVD-\d{6}-[0-9A-Z]{5}/);
+  return m ? m[0] : '';
+}
 
-    renderBookings(todayBookings,'homeBookings',true);
-    renderBookings(bookings,'bookingList',false);
-  }catch(e){
-    $('homeBookings').innerHTML='';
-    $('bookingList').innerHTML='';
-    showError('Bronlarni yuklab bo‘lmadi: '+e.message);
+function manualCode(){
+  sheet(`<h2 style="margin:0 0 4px">Chek kodini kiriting</h2>
+    <p class="sub">Chekning pastida yozilgan kod. Masalan: AVD-260901-6KBCQ</p>
+    <div class="field"><input id="mcInput" placeholder="AVD-______-_____" autocapitalize="characters" autocomplete="off" inputmode="text"></div>
+    <div id="mcAlert"></div>
+    <div class="acts two" style="padding:0">
+      <button class="btn" id="mcNo">Bekor</button>
+      <button class="btn go" id="mcYes">Tekshirish</button></div>`);
+  const inp = $('mcInput');
+  inp.addEventListener('input', () => { inp.value = inp.value.toUpperCase(); });
+  setTimeout(() => inp.focus(), 120);
+  $('mcNo').onclick = closeSheet;
+  $('mcYes').onclick = () => {
+    const code = extractCode(inp.value) || inp.value.trim().toUpperCase();
+    if (!code) { $('mcAlert').innerHTML = '<div class="alert a-err">Kodni kiriting</div>'; return; }
+    verifyCode(code);
+  };
+}
+
+/** Kodni serverga yuboramiz — bron topilsa tugma chiqadi. */
+async function verifyCode(code){
+  sheet(`<div class="empty"><span class="big">▣</span>Tekshirilmoqda…</div>`);
+  try {
+    const d = await api('/api/instructor/scan', { method:'POST', body: JSON.stringify({ code }) });
+    showScanResult(d, code);
+  } catch (e) {
+    sheet(`<h2 style="margin:0 0 4px">Chek qabul qilinmadi</h2>
+      <div class="alert a-err" style="margin:12px 0">${esc(e.message)}</div>
+      <div class="acts two" style="padding:0">
+        <button class="btn" id="sfNo">Yopish</button>
+        <button class="btn go" id="sfRetry">Qayta urinish</button></div>`);
+    $('sfNo').onclick = closeSheet;
+    $('sfRetry').onclick = () => { closeSheet(); setTimeout(() => $('scanBtn').click(), 150); };
   }
 }
 
-function renderBookings(bookings,targetId,todayOnly){
-  const box=$(targetId);
-  if(!box) return;
+function showScanResult(d, code){
+  const b = d.booking || {};
+  const name = b.customer?.full_name || 'Mijoz';
+  const phone = String(b.customer?.phone || '').replace(/[^+\d]/g, '');
+  const when = hhmm(b.start_at || b.booking_date);
+  const price = b.price ? money(b.price) : '';
 
-  if(!bookings.length){
-    box.innerHTML='<div class="card"><p class="small">📭 '+(todayOnly?'Bugun bron yo‘q.':'Hozircha sizga biriktirilgan bron yo‘q.')+'</p></div>';
-    return;
-  }
+  let action = '', hint = '';
+  if (d.can_start)       action = `<button class="btn ok" id="scStart">🚗 Bronni boshlash</button>`;
+  else if (d.can_finish) action = `<button class="btn ok" id="scFinish">🏁 Darsni yakunlash</button>`;
+  else if (d.already)    hint = `<div class="alert a-info" style="margin:12px 0">Bu bron holati: <b>${esc(ST[d.already] || d.already)}</b></div>`;
 
-  box.innerHTML=bookings.map(b=>{
-    const c=b.customer||b.user||{};
-    const name=c.full_name ||
-      [c.first_name,c.last_name].filter(Boolean).join(' ') ||
-      b.customer_name || 'Mijoz';
+  sheet(`
+    <div class="scanres">
+      <span class="st-pill p-${esc(b.status || 'confirmed')}" style="margin:0">${esc(ST[b.status] || b.status || '')}</span>
+      <div class="big">${esc(name)}</div>
+      <div class="sub" style="margin:0">${esc(when)} · ${esc(b.course?.name || 'Mashg‘ulot')}${price ? ' · ' + esc(price) : ''}</div>
+      ${phone ? `<div class="callrow" style="padding:12px 0 0"><a class="call" href="tel:${esc(phone)}">📞 Qo‘ng‘iroq</a></div>` : ''}
+    </div>
+    <div class="codebox">${esc(code)}</div>
+    ${hint}
+    <div class="acts ${action ? '' : 'two'}" style="padding:0">
+      ${action || ''}
+      <button class="btn" id="scClose">Yopish</button>
+    </div>`);
 
-    const phone=c.phone||b.customer_phone||'Telefon yo‘q';
-    const when=b.start_at||b.start_time||b.booking_date||b.date||b.created_at;
-    const s=String(b.status||'').toLowerCase();
+  $('scClose').onclick = closeSheet;
+  if (d.can_start) $('scStart').onclick = () => startFromScan(code);
+  if (d.can_finish) $('scFinish').onclick = async () => {
+    try {
+      await api(`/api/instructor/bookings/${encodeURIComponent(b.id)}/departed`, { method:'POST', body:'{}' });
+      closeSheet(); toast('Dars yakunlandi');
+      await Promise.allSettled([loadBookings(), loadStats()]);
+    } catch (e) { toast(e.message); }
+  };
+}
 
-    let action='';
-    if(['confirmed','approved'].includes(s)){
-      action='<button class="btn primary" data-action="arrive" data-id="'+esc(b.id)+'">✅ KELDI</button>';
-    }else if(['in_progress','arrived'].includes(s)){
-      action='<button class="btn primary" data-action="depart" data-id="'+esc(b.id)+'">🚪 KETDI</button>';
+async function startFromScan(code){
+  const btn = $('scStart'); if (btn) { btn.disabled = true; btn.textContent = '…'; }
+  try {
+    await api('/api/instructor/scan/start', { method:'POST', body: JSON.stringify({ code }) });
+    closeSheet(); toast('Dars boshlandi');
+    await Promise.allSettled([loadBookings(), loadStats()]);
+  } catch (e) {
+    if (btn) { btn.disabled = false; btn.textContent = '🚗 Bronni boshlash'; }
+    /* Oldingi dars yakunlanmagan bo'lsa — shunchaki toast emas,
+       ekranda tushuntirish va yakunlash tugmasi bo'lishi kerak. */
+    if (/yakunlanmagan/i.test(String(e.message))) {
+      const active = (S.bookings || []).find(b => b.status === 'in_progress');
+      sheet(`<h2 style="margin:0 0 4px">Avvalgi dars yakunlanmagan</h2>
+        <p class="sub">${esc(e.message)}</p>
+        ${active ? `<div class="scanres" style="margin-top:12px">
+          <span class="st-pill p-in_progress" style="margin:0">Dars ketmoqda</span>
+          <div class="big">${esc(active.customer?.full_name || 'Mijoz')}</div>
+          <div class="sub" style="margin:0">${esc(hhmm(active.start_at || active.booking_date))} · ${esc(active.course?.name || '')}</div>
+        </div>` : ''}
+        <div class="acts ${active ? '' : 'two'}" style="padding:0">
+          ${active ? `<button class="btn ok" id="fbFinish">Avvalgisini yakunlash</button>` : ''}
+          <button class="btn" id="fbClose">Yopish</button>
+        </div>`);
+      $('fbClose').onclick = closeSheet;
+      if (active) $('fbFinish').onclick = async () => {
+        const b2 = $('fbFinish'); b2.disabled = true; b2.textContent = '…';
+        try {
+          await api(`/api/instructor/bookings/${encodeURIComponent(active.id)}/departed`, { method:'POST', body:'{}' });
+          closeSheet(); toast('Avvalgi dars yakunlandi');
+          await Promise.allSettled([loadBookings(), loadStats()]);
+          setTimeout(() => verifyCode(code), 400);   // yangisini qayta urinamiz
+        } catch (err) { b2.disabled = false; b2.textContent = 'Avvalgisini yakunlash'; toast(err.message); }
+      };
+      return;
     }
-
-    return '<div class="booking">'+
-      '<div class="bookingTop">'+
-        '<div class="bookingName">👤 '+esc(name)+'</div>'+
-        '<span class="status '+statusClass(s)+'">'+esc(statusLabel(s))+'</span>'+
-      '</div>'+
-      '<div class="bookingMeta">'+
-        '📅 '+esc(formatDateTime(when))+'<br>'+
-        '📞 '+esc(phone)+
-        (b.course?.name?' <br>📚 '+esc(b.course.name):'')+
-      '</div>'+
-      (action?'<div class="actions">'+action+'</div>':'')+
-    '</div>';
-  }).join('');
-}
-
-async function arrive(id){
-  try{
-    await api('/api/instructor/bookings/'+encodeURIComponent(id)+'/arrived',{method:'POST'});
-    toast('✅ KELDI qayd qilindi');
-    await loadBookings();
-  }catch(e){showError(e.message)}
-}
-
-async function depart(id){
-  try{
-    await api('/api/instructor/bookings/'+encodeURIComponent(id)+'/departed',{method:'POST'});
-    toast('✅ KETDI qayd qilindi');
-    await loadBookings();
-  }catch(e){showError(e.message)}
-}
-
-/* Navigation */
-document.querySelectorAll('.nav button').forEach(btn=>{
-  btn.addEventListener('click',()=>{
-    clearMessages();
-    showPage(btn.dataset.page);
-    if(btn.dataset.page==='bookingsPage') loadBookings();
-    if(btn.dataset.page==='homePage') loadBookings();
-  });
-});
-
-document.addEventListener('click',e=>{
-  const btn=e.target.closest('[data-action]');
-  if(!btn) return;
-  const id=btn.dataset.id;
-  if(btn.dataset.action==='arrive') arrive(id);
-  if(btn.dataset.action==='depart') depart(id);
-});
-
-$('submitBtn').addEventListener('click',submitApplication);
-$('checkBtn').addEventListener('click',async()=>{
-  const b=$('checkBtn');
-  b.disabled=true;b.textContent='⏳ Tekshirilmoqda...';
-  try{await checkRegistration(true)}finally{
-    b.disabled=false;b.textContent='🔄 Holatni tekshirish';
+    toast(e.message);
   }
+}
+
+/* =========================================================================
+   KUNLIK HISOBOT
+   Bronlar allaqachon yuklangan — qayta so'rov yubormaymiz, shu ma'lumotdan
+   tanlangan kunni ajratamiz.
+   ========================================================================= */
+S.repPeriod = 'day'; S.rep = null;
+
+/* Davr tanlash */
+document.querySelectorAll('#repSegs .seg').forEach(b => b.onclick = () => {
+  document.querySelectorAll('#repSegs .seg').forEach(x => x.classList.remove('on'));
+  b.classList.add('on'); S.repPeriod = b.dataset.per; loadReport();
 });
-$('refreshBtn').addEventListener('click',loadBookings);
-$('editAgainBtn').addEventListener('click',()=>{
-  clearMessages();
-  $('message').value='';
-  $('agree').checked=false;
-  showPage('register');
-});
-$('phone').addEventListener('input',e=>{
-  const raw=e.target.value.replace(/[^\d+]/g,'');
-  if(raw.startsWith('+998')){
-    const d=raw.slice(4,13);
-    e.target.value='+998 '+d.slice(0,2)+(d.length>2?' '+d.slice(2,5):'')+(d.length>5?' '+d.slice(5,7):'')+(d.length>7?' '+d.slice(7,9):'');
+
+/**
+ * Hisobot serverdan keladi — yig'indi bazada hisoblanadi.
+ * Yillik davrda minglab bron bo'lishi mumkin, ularni telefonga
+ * tortish sekin va qator chegarasi tufayli natija ham noto'g'ri chiqardi.
+ */
+async function loadReport(){
+  const date = $('repDate').value || dayOf(new Date());
+  $('repChart').innerHTML = '<div class="empty">Yuklanmoqda…</div>';
+  try{
+    const d = await api(`/api/instructor/report?period=${encodeURIComponent(S.repPeriod)}&date=${encodeURIComponent(date)}`);
+    S.rep = d; renderReport();
+  }catch(e){
+    $('repChart').innerHTML = `<div class="alert a-err">${esc(e.message)}</div>`;
+    $('repList').innerHTML = '';
   }
-});
+}
 
-async function boot(){
-  fillTelegramUser();
+function chg(el, v){
+  const n = Number(v || 0);
+  el.textContent = n > 0 ? `▲ ${n}%` : n < 0 ? `▼ ${Math.abs(n)}%` : '— 0%';
+  el.className = 'chg ' + (n > 0 ? 'up' : n < 0 ? 'dn' : 'fl');
+}
 
-  if(!initData()){
-    showPage('register');
-    showError('Bu sahifani oddiy Chrome orqali emas, @index_instruktor_bot ichidagi Mini App tugmasidan oching.');
+function renderReport(){
+  const d = S.rep; if (!d) return;
+  const t = d.totals || {}, c = d.change || {};
+  $('repTitle').textContent = `${d.label} hisobot`;
+  $('repSub').textContent = periodText(d);
+
+  $('rDone').textContent  = t.completed ?? 0;
+  $('rHours').textContent = ((Number(t.minutes || 0)) / 60).toFixed(1);
+  $('rNoShow').textContent = t.no_show ?? 0;
+  $('rCust').textContent  = t.customers ?? 0;
+  $('rScan').textContent  = t.scanned ?? 0;
+  $('rAll').textContent   = t.bookings ?? 0;
+  chg($('rDoneD'), c.completed);
+  chg($('rHoursD'), c.minutes);
+
+  renderRepChart(d.series || [], d.bucket);
+  renderRepHours(d.hours || []);
+  renderRepList();
+}
+
+function periodText(d){
+  const f = new Date(d.from), t = new Date(d.to.slice ? d.to : d.to);
+  const fmt = x => dshort(x);
+  if (d.period === 'day') return fmt(f);
+  const last = new Date(new Date(d.to).getTime() - 864e5);
+  return `${fmt(f)} — ${fmt(last)}`;
+}
+
+/** Ustunlar: tugagan darslar soni. */
+function renderRepChart(series, bucket){
+  const box = $('repChart');
+  if (!series.length) { box.innerHTML = '<div class="empty">Bu davrda dars bo‘lmagan.</div>'; return; }
+  const max = Math.max(...series.map(s => Number(s.completed || 0)), 1);
+  const short = l => bucket === 'month' ? String(l).slice(5)
+                   : bucket === 'hour'  ? String(l).slice(11, 13)
+                   : String(l).slice(8);
+  box.innerHTML = `<div class="mbars">${series.map(s => `
+    <div class="mbar" title="${esc(s.label)}: ${esc(s.completed)} dars">
+      <div class="v" style="height:${Math.round(Number(s.completed||0)/max*100)}%"></div>
+      <small>${esc(short(s.label))}</small></div>`).join('')}</div>`;
+}
+
+function renderRepHours(hours){
+  const card = $('repHoursCard'), box = $('repHours');
+  if (!hours.length) { card.classList.add('hide'); return; }
+  card.classList.remove('hide');
+  const map = new Map(hours.map(h => [Number(h.hour), Number(h.bookings)]));
+  const max = Math.max(...hours.map(h => Number(h.bookings)), 1);
+  const cells = []; for (let h = 7; h <= 19; h++) cells.push({ h, n: map.get(h) || 0 });
+  box.innerHTML = `<div class="mbars" style="height:90px">${cells.map(c => `
+    <div class="mbar" title="${c.h}:00 — ${c.n}">
+      <div class="v" style="height:${Math.round(c.n/max*100)}%;${c.n?'':'opacity:.2'}"></div>
+      <small>${String(c.h).padStart(2,'0')}</small></div>`).join('')}</div>`;
+}
+
+/** Kunlik davrda har bir dars alohida ko'rinadi. Uzoq davrda ro'yxat berkitiladi. */
+function renderRepList(){
+  const box = $('repList');
+  if (S.repPeriod !== 'day') {
+    const cs = (S.rep?.courses || []);
+    box.innerHTML = cs.length
+      ? `<div class="card"><b style="font-size:14px">Mashg‘ulotlar bo‘yicha</b>
+         ${cs.map(c => `<div class="rep" style="margin-top:9px"><div class="nm"><b>${esc(c.name)}</b></div>
+           <span class="st-pill p-completed" style="margin:0">${esc(c.bookings)} ta</span></div>`).join('')}</div>`
+      : '';
     return;
   }
+  const day = $('repDate').value || dayOf(new Date());
+  const rows = S.bookings
+    .filter(b => dayOf(b.start_at || b.booking_date) === day)
+    .sort((a, b) => new Date(a.start_at || a.booking_date) - new Date(b.start_at || b.booking_date));
+  box.innerHTML = rows.length ? `<div style="margin-top:12px">${rows.map(b => {
+    const st = b.status || 'pending';
+    return `<div class="rep">
+      <div class="tm">${esc(hhmm(b.start_at || b.booking_date))}</div>
+      <div class="nm"><b>${esc(b.customer?.full_name || 'Mijoz')}</b>
+        <span>${esc(b.course?.name || 'Mashg‘ulot')}${b.course?.duration_minutes ? ' · ' + esc(fmtDur(b.course.duration_minutes)) : ''}</span></div>
+      <span class="st-pill p-${esc(st)}" style="margin:0">${esc(ST[st] || st)}</span>
+    </div>`; }).join('')}</div>` : '';
+}
 
+/* ------------------------- Sharhlar ------------------------- */
+async function loadReviews(){
+  try {
+    const d = await api('/api/instructor/reviews'); S.reviews = d.reviews || [];
+    const avg = S.reviews.length ? S.reviews.reduce((a, r) => a + Number(r.rating || 0), 0) / S.reviews.length : 0;
+    $('rvAvg').textContent = avg.toFixed(1);
+    $('rvCount').textContent = S.reviews.length;
+    $('rvList').innerHTML = S.reviews.length ? S.reviews.map(r => {
+      const n = Math.max(0, Math.min(5, Number(r.rating || 0)));
+      return `<div class="rev">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:10px">
+          <div class="stars">${'★'.repeat(n)}<span style="color:#dfe2f0">${'★'.repeat(5 - n)}</span></div>
+          <span class="sub" style="margin:0">${esc(dshort(r.created_at))}</span></div>
+        <b style="display:block;margin-top:8px;font-size:14px">${esc(r.customer?.full_name || 'Mijoz')}</b>
+        ${r.comment ? `<p style="margin:6px 0 0;color:#4a4f7a;font-size:13.5px">${esc(r.comment)}</p>` : ''}
+      </div>`; }).join('')
+      : '<div class="empty"><span class="big">⭐</span>Hozircha tasdiqlangan sharh yo‘q.</div>';
+  } catch (e) { $('rvList').innerHTML = `<div class="alert a-err">${esc(e.message)}</div>`; }
+}
+
+/* ------------------------- Boot ------------------------- */
+async function boot(){
+  prefill();
+  if (!INIT) {
+    alertBox('Bu sahifani brauzerda emas, @index_instruktor_bot ichidagi Mini App orqali oching.', 'info');
+    show('register'); return;
+  }
   await checkRegistration(true);
 }
-
-window.addEventListener('beforeunload',stopPolling);
+setInterval(() => {
+  if (S.profile && !$('sheet').classList.contains('on') && !$('nav').classList.contains('hide')) {
+    loadBookings(); loadStats();
+  }
+}, 25000);
 boot();
 </script>
 </body>
