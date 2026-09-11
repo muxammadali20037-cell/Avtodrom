@@ -450,8 +450,17 @@ button,input,select,textarea{font:inherit}.hidden{display:none!important}
 .modalback.open{display:flex}.modal{background:#fff;border-radius:18px;padding:20px;width:min(480px,100%);max-height:88vh;overflow:auto}
 .modal h3{margin:0 0 14px}
 pre.json{background:#F7FAFF;border:1px solid var(--line);border-radius:8px;padding:8px;font-size:11px;max-width:320px;overflow:auto;margin:0}
-@media(max-width:1100px){.layout{grid-template-columns:1fr}.side{position:static;display:flex;overflow:auto;gap:3px}.nav{white-space:nowrap;width:auto}.stats{grid-template-columns:repeat(3,1fr)}.report{grid-template-columns:repeat(3,1fr)}}
-@media(max-width:720px){.layout{padding:10px}.topin{padding:0 10px}.grid2,.mediaGrid{grid-template-columns:1fr}.stats{grid-template-columns:1fr 1fr}.report{grid-template-columns:1fr 1fr}.head h1{font-size:22px}}
+@media(max-width:1100px){.layout{grid-template-columns:1fr}.side{position:static;display:flex;overflow:auto;gap:3px;padding-bottom:10px}.nav{white-space:nowrap;width:auto}.stats{grid-template-columns:repeat(3,1fr)}.report{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:720px){
+  .layout{padding:10px}.topin{padding:0 10px}.grid2,.mediaGrid{grid-template-columns:1fr}.stats{grid-template-columns:1fr 1fr}.report{grid-template-columns:1fr 1fr}.head h1{font-size:22px}
+  .table th, .table td { padding: 6px; font-size: 12px; }
+  .head { flex-direction: column; align-items: stretch; }
+  .head > div { flex: 1; }
+  .toolbar { flex-direction: column; align-items: stretch; }
+  .search, .select, .input { width: 100%; min-width: 0; }
+  .btn { width: 100%; text-align: center; justify-content: center; }
+  .kpigrid { grid-template-columns: 1fr 1fr !important; }
+}
 
 @media print{
   body *{visibility:hidden!important}
@@ -816,15 +825,23 @@ pre.json{background:#F7FAFF;border:1px solid var(--line);border-radius:8px;paddi
 
 <section id="control" class="page">
   <div class="head"><div><h1>Instruktor nazorati</h1><p>Instruktorni tanlang — nechta chek urilgan, soat nechada, qancha pul.</p></div>
-    <div style="display:flex;gap:8px;flex-wrap:wrap">
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
       <input id="cDate" type="date" class="input">
       <div class="segs" id="cSegs">
         <button class="seg on" data-per="day">Kun</button>
         <button class="seg" data-per="week">Hafta</button>
         <button class="seg" data-per="month">Oy</button>
         <button class="seg" data-per="year">Yil</button>
+        <button class="seg" data-per="range">Oraliq</button>
       </div>
     </div></div>
+  <div id="cRange" class="hidden" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px">
+    <label style="font-size:12px;font-weight:800;color:var(--muted)">Dan:</label>
+    <input id="cFrom" type="date" class="input" style="max-width:170px">
+    <label style="font-size:12px;font-weight:800;color:var(--muted)">Gacha:</label>
+    <input id="cTo" type="date" class="input" style="max-width:170px">
+    <button class="btn primary small" id="cRangeBtn">Ko'rsatish</button>
+  </div>
   <div class="card"><div id="ctlPicker" class="inspick"></div></div>
   <div id="ctlBody"></div>
 </section>
@@ -2158,25 +2175,55 @@ function renderCashier(){
   let rows = S.kday.bookings;
   if (q) rows = rows.filter(b => JSON.stringify({n:b.customer?.full_name,p:b.customer?.phone}).toLowerCase().includes(q));
 
-  if (!rows.length){
-    $('kGrid').innerHTML = '<div class="empty">Bu kunda bron yo‘q. Bronsiz mijoz kelsa «+ Bronsiz mijoz» tugmasini bosing.</div>';
-    return;
+  const selIns = $('kInstructor').value;
+  
+  if (!selIns) {
+    // Umumiy ro'yxat (instruktor tanlanmaganda)
+    if (!rows.length){
+      $('kGrid').innerHTML = '<div class="empty">Bu kunda bron yo‘q. Bronsiz mijoz kelsa «+ Bronsiz mijoz» tugmasini bosing.</div>';
+      return;
+    }
+    const byHour = new Map();
+    for (const b of rows){
+      const h = kHour(b.start_at).slice(0,2) + ':00';
+      if (!byHour.has(h)) byHour.set(h, []);
+      byHour.get(h).push(b);
+    }
+    const hours = [...byHour.keys()].sort();
+    $('kGrid').innerHTML = hours.map(h => {
+      const list = byHour.get(h);
+      return `<div class="hourrow">
+        <div class="hourlab">${esc(h)}<small>${list.length} ta</small></div>
+        <div>${list.map(slotHtml).join('')}</div>
+      </div>`;
+    }).join('');
+  } else {
+    // Maxsus instruktor tanlanganda: 07:00 dan 20:00 gacha soatma-soat jadval ko'rsatish
+    let html = '<div style="display:grid;gap:6px">';
+    for (let h = 7; h <= 20; h++) {
+      const timeStr = (h < 10 ? '0' + h : h) + ':00';
+      const slotBookings = rows.filter(b => {
+         const bh = new Date(b.start_at).getUTCHours() + 5; // Toshkent vaqti
+         return bh === h;
+      });
+      
+      if (slotBookings.length > 0) {
+        // Band vaqt (Qizil)
+        html += `<div style="display:flex;gap:12px;background:#FFE5E5;border:1px solid #F5C2C7;border-radius:12px;padding:12px">
+           <div style="font-weight:900;color:#C93232;width:50px">${timeStr}</div>
+           <div style="flex:1">${slotBookings.map(slotHtml).join('')}</div>
+        </div>`;
+      } else {
+        // Bo'sh vaqt (Yashil)
+        html += `<div style="display:flex;gap:12px;background:#E8F8EF;border:1px solid #C3E6CB;border-radius:12px;padding:12px;align-items:center">
+           <div style="font-weight:900;color:#155724;width:50px">${timeStr}</div>
+           <div style="flex:1;color:#155724;font-size:13px;font-weight:500">Bo'sh</div>
+        </div>`;
+      }
+    }
+    html += '</div>';
+    $('kGrid').innerHTML = html;
   }
-  // soatlar bo'yicha guruhlash
-  const byHour = new Map();
-  for (const b of rows){
-    const h = kHour(b.start_at).slice(0,2) + ':00';
-    if (!byHour.has(h)) byHour.set(h, []);
-    byHour.get(h).push(b);
-  }
-  const hours = [...byHour.keys()].sort();
-  $('kGrid').innerHTML = hours.map(h => {
-    const list = byHour.get(h);
-    return `<div class="hourrow">
-      <div class="hourlab">${esc(h)}<small>${list.length} ta</small></div>
-      <div>${list.map(slotHtml).join('')}</div>
-    </div>`;
-  }).join('');
   $('kGrid').querySelectorAll('[data-pay]').forEach(b => b.onclick = () => payModal(b.dataset.pay));
   $('kGrid').querySelectorAll('[data-rcp]').forEach(b => b.onclick = () => showReceipt(b.dataset.rcp));
 }
@@ -2678,7 +2725,15 @@ async function loadControl(){
   $('ctlBody').innerHTML = '<div class="card empty">Yuklanmoqda…</div>';
   try{
     const tok = REG_TOKEN ? `&token=${encodeURIComponent(REG_TOKEN)}` : '';
-    const d = await api(`/api/admin/instructor-control/${encodeURIComponent(S.ctlIns)}?period=${encodeURIComponent(S.ctlPeriod)}&date=${encodeURIComponent(date)}${tok}`);
+    let url;
+    if (S.ctlPeriod === 'range') {
+      const f = $('cFrom').value, t = $('cTo').value;
+      if (!f || !t) { $('ctlBody').innerHTML = '<div class="card empty">"Dan" va "Gacha" sanalarini tanlang.</div>'; return; }
+      url = `/api/admin/instructor-control/${encodeURIComponent(S.ctlIns)}?from=${encodeURIComponent(f)}&to=${encodeURIComponent(t)}${tok}`;
+    } else {
+      url = `/api/admin/instructor-control/${encodeURIComponent(S.ctlIns)}?period=${encodeURIComponent(S.ctlPeriod)}&date=${encodeURIComponent(date)}${tok}`;
+    }
+    const d = await api(url);
     renderControl(d);
   }catch(e){ $('ctlBody').innerHTML = `<div class="card"><div class="error">${esc(e.message)}</div></div>`; }
 }
@@ -2687,6 +2742,43 @@ function renderControl(d){
   const s0 = d.summary || {};
   const kpi = (l, v) => `<div class="kpi"><span>${esc(l)}</span><b>${v}</b></div>`;
   const rows = d.rows || [];
+  
+  let scheduleHtml = '';
+  // Agar KUNLIK rejim tanlangan bo'lsa, 07:00 dan 20:00 gacha soatma-soat ko'rinish
+  if (S.ctlPeriod === 'day') {
+    scheduleHtml += '<div class="card"><h3 style="margin-top:0">Kunlik jadval (07:00 - 20:00)</h3><div style="display:grid;gap:6px">';
+    for (let h = 7; h <= 20; h++) {
+      const timeStr = (h < 10 ? '0' + h : h) + ':00';
+      const slotBookings = rows.filter(b => {
+         if (!b.start_at) return false;
+         const bh = new Date(b.start_at).getUTCHours() + 5; // Toshkent vaqti
+         return bh === h;
+      });
+      
+      if (slotBookings.length > 0) {
+        // Band vaqt (Qizil)
+        scheduleHtml += `<div style="display:flex;gap:12px;background:#FFE5E5;border:1px solid #F5C2C7;border-radius:12px;padding:12px">
+           <div style="font-weight:900;color:#C93232;width:50px">${timeStr}</div>
+           <div style="flex:1;font-size:13px">
+             ${slotBookings.map(r => `
+                <div style="margin-bottom:4px">
+                  <b>${esc(uname(r.customer))}</b> (${esc(r.customer?.phone||'')})
+                  · ${esc(r.course?.name||'—')} · <span class="badge ${r.status==='completed'?'ok':'yellow'}">${esc(r.status)}</span>
+                </div>
+             `).join('')}
+           </div>
+        </div>`;
+      } else {
+        // Bo'sh vaqt (Yashil)
+        scheduleHtml += `<div style="display:flex;gap:12px;background:#E8F8EF;border:1px solid #C3E6CB;border-radius:12px;padding:12px;align-items:center">
+           <div style="font-weight:900;color:#155724;width:50px">${timeStr}</div>
+           <div style="flex:1;color:#155724;font-size:13px;font-weight:500">Bo'sh</div>
+        </div>`;
+      }
+    }
+    scheduleHtml += '</div></div>';
+  }
+
   $('ctlBody').innerHTML = `
     <div class="kpis">
       ${kpi('Chek urilgan', nf(s0.receipts))}
@@ -2696,6 +2788,7 @@ function renderControl(d){
       ${kpi('Soatlar', ((Number(s0.minutes||0))/60).toFixed(1))}
       ${kpi('Tushum', nf(s0.revenue))}
     </div>
+    ${scheduleHtml}
     <div class="card">
       <div class="muted" style="font-size:13px;margin-bottom:10px">
         Naqd: <b>${nf(s0.cash)}</b> · Karta: <b>${nf(s0.card)}</b> · ${esc(d.label)} hisobot
@@ -3694,6 +3787,11 @@ $('mbSave').onclick = async () => {
       <b>${esc(d.customer?.full_name || '')}</b> — ${esc(kHour(d.booking?.start_at))}, ${esc(MB.ins.name)}<br>
       Mijoz kelib kassada to‘laydi.</div>`;
     mbClearForm(false);
+    
+    // Yaratilgan bron kassir va nazorat jadvallarida darhol "band" bo'lib qizarib ko'rinishi uchun yangilaymiz
+    if (typeof loadCashier === 'function') loadCashier();
+    if (typeof loadControl === 'function' && window.S && S.ctlIns) loadControl();
+
   }catch(e){ err(e.message); }
   finally{ btn.disabled = false; btn.textContent = 'Bron qilish'; }
 };
@@ -4127,7 +4225,8 @@ async function cxDecide(id,act){
 $('cxRefresh').onclick=loadCancels;
 $('kRefresh').onclick=loadCashier;
 segBind('dSegs', p => { S.anPeriod = p; loadAnalytics(); });
-segBind('cSegs', p => { S.ctlPeriod = p; loadControl(); });
+segBind('cSegs', p => { S.ctlPeriod = p; $('cRange').classList.toggle('hidden', p !== 'range'); if (p !== 'range') loadControl(); });
+$('cRangeBtn').onclick = loadControl;
 $('dDate').addEventListener('change', loadAnalytics);
 $('cDate').addEventListener('change', loadControl);
 $('kDate').addEventListener('change',loadCashier);
@@ -4147,51 +4246,68 @@ function fillCashierInstructors(){
 
     Bu qulaylik uchun — haqiqiy himoya serverda (403). Lekin
     ko'rinmaydigan tugmani bosib 403 olishdan ko'ra, uni umuman
-    ko'rsatmaslik to'g'riroq. */
+/** Rolga qarab interfeysni chegaralaydi.
+    Kassir uchun BOSHQARUV tugmasi va uning bo'limlari yashiriladi,
+    va u faqat o'z kassasiga o'ta oladi.
+    Xodim (oddiy admin) uchun faqat ruxsat etilgan bo'limlar ko'rsatiladi. */
 function applyRole(){
   const me = S.me || {};
-  const isAdmin = me.role !== 'cashier';
+  const isCashier = me.role === 'cashier';
+  const isAdmin = me.role === 'admin';
+  const isSuperAdmin = me.login === 'admin'; // Asosiy admin (to'liq huquq)
 
   /* TO'LIQ AJRATISH:
-     · Admin — uchala tugma (P1, P2, BOSHQARUV), hammasini boshqaradi
-     · Kassir — FAQAT o'z kassasi tugmasi ko'rinadi, boshqasi umuman yo'q.
-       Rejim almashtira olmaydi, boshqaruvni ko'rmaydi. */
+     · Admin — uchala tugma (P1, P2, BOSHQARUV) ko'rinishi mumkin
+     · Kassir — FAQAT o'z kassasi tugmasi ko'rinadi */
   document.querySelectorAll('[data-mode]').forEach(b => {
     const mode = b.dataset.mode;
     if (isAdmin) { b.classList.remove('hidden'); return; }
     // kassir: faqat o'z kassasi
     const reg = (S.registers || []).find(r => r.code === mode);
     const mine = reg && String(reg.id) === String(me.register_id);
-    b.classList.toggle('hidden', !mine);   // admin tugmasi va boshqa kassa yashiriladi
+    b.classList.toggle('hidden', !mine);
   });
 
-  // Kassirга rejim almashtirgich butunlay kerak emas (bitta tugma qoladi)
   const sw = $('modeSwitch');
-  if (sw) sw.classList.toggle('single', !isAdmin);
+  if (sw) sw.classList.toggle('single', isCashier);
 
-  // Boshqaruv bo'limlari — kassir umuman ko'rmaydi
+  // Boshqaruv bo'limlari
   document.querySelectorAll('.nav[data-grp="admin"]').forEach(b => {
-    b.classList.toggle('hidden', !isAdmin);
+    if (isCashier) {
+       b.classList.add('hidden'); // Kassir hech narsa ko'rmaydi
+    } else if (isAdmin && !isSuperAdmin) {
+       // Oddiy xodim uchun faqat ruxsat etilgan bo'limlar
+       const allowed = ['bookings', 'manual', 'reports', 'cancels', 'live'];
+       b.classList.toggle('hidden', !allowed.includes(b.dataset.p));
+    } else {
+       b.classList.remove('hidden'); // SuperAdmin hamma narsani ko'radi
+    }
   });
 
-  // Kim kirgani
   const badge = $('whoami');
   if (badge) {
-    badge.textContent = `${me.full_name || me.login || ''} \u00b7 ${isAdmin ? 'Administrator' : 'Kassir'}`;
-    badge.classList.toggle('cashier', !isAdmin);
+    let rName = isCashier ? 'Kassir' : (isSuperAdmin ? 'Asosiy Admin' : 'Xodim');
+    badge.textContent = `${me.full_name || me.login || ''} \u00b7 ${rName}`;
+    badge.classList.toggle('cashier', isCashier);
   }
 }
 
-/* Kirganдан keyin rolга qarab TO'G'RI joyga yo'naltirish.
-   Admin -> BOSHQARUV (PIN so'raladi). Kassir -> o'z kassasi.
-   Foydalanuvchi qo'lda rejim tanlashi shart emas. */
+/* Kirganдан keyin rolга qarab TO'G'RI joyga yo'naltirish. */
 function routeByRole(){
   const me = S.me || {};
   if (me.role === 'cashier') {
     const own = (S.registers || []).find(r => String(r.id) === String(me.register_id));
-    applyMode(own?.code || 'P1');   // o'z kassasi, PIN so'raladi
+    applyMode(own?.code || 'P1');
   } else {
-    applyMode('admin');             // boshqaruv, PIN so'raladi
+    // Admin yoki Xodim
+    applyMode('admin');
+    const isSuperAdmin = me.login === 'admin';
+    if (!isSuperAdmin) {
+       // Xodim uchun default sahifa 'bookings' ga o'zgaradi (dashboard yashiringan bo'lsa)
+       if (adminMode === 'admin') {
+           setTimeout(() => showPage('bookings'), 100);
+       }
+    }
   }
 }
 
