@@ -19,23 +19,23 @@
     },
     {
       "source": "/",
-      "destination": "/customer/index"
+      "destination": "/index.html"
     },
     {
       "source": "/index",
-      "destination": "/customer/index"
+      "destination": "/index.html"
     },
     {
       "source": "/admin",
-      "destination": "/frontend/admin/index.html"
+      "destination": "/admin/index.html"
     },
     {
       "source": "/admin/",
-      "destination": "/frontend/admin/index.html"
+      "destination": "/admin/index.html"
     },
     {
       "source": "/admin/index.html",
-      "destination": "/frontend/admin/index.html"
+      "destination": "/admin/index.html"
     },
     {
       "source": "/admin/chat",
@@ -47,43 +47,43 @@
     },
     {
       "source": "/admin/login",
-      "destination": "/frontend/admin/index.html"
+      "destination": "/admin/index.html"
     },
     {
       "source": "/admin/login.html",
-      "destination": "/frontend/admin/index.html"
+      "destination": "/admin/index.html"
     },
     {
       "source": "/admin/dashboard",
-      "destination": "/frontend/admin/index.html"
+      "destination": "/admin/index.html"
     },
     {
       "source": "/admin/dashboard/",
-      "destination": "/frontend/admin/index.html"
+      "destination": "/admin/index.html"
     },
     {
       "source": "/admin/dashboard-v2",
-      "destination": "/frontend/admin/index.html"
+      "destination": "/admin/index.html"
     },
     {
       "source": "/admin/dashboard-v2/",
-      "destination": "/frontend/admin/index.html"
+      "destination": "/admin/index.html"
     },
     {
       "source": "/admin/dashboard-v3",
-      "destination": "/frontend/admin/index.html"
+      "destination": "/admin/index.html"
     },
     {
       "source": "/admin/dashboard-v3/",
-      "destination": "/frontend/admin/index.html"
+      "destination": "/admin/index.html"
     },
     {
       "source": "/admin/media",
-      "destination": "/frontend/admin/index.html"
+      "destination": "/admin/index.html"
     },
     {
       "source": "/admin/media/",
-      "destination": "/frontend/admin/index.html"
+      "destination": "/admin/index.html"
     },
     {
       "source": "/instructor",
@@ -95,11 +95,11 @@
     },
     {
       "source": "/customer",
-      "destination": "/customer/index"
+      "destination": "/index.html"
     },
     {
       "source": "/customer/",
-      "destination": "/customer/index"
+      "destination": "/index.html"
     }
   ],
   "crons": [
