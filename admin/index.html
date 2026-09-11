@@ -1700,6 +1700,7 @@ function courseModal(c){
   openModal(`<h3>${isEdit?'Mashg‘ulotni tahrirlash':'Yangi mashg‘ulot'}</h3>
     <div class="field"><label>NOMI *</label><input id="cName" class="input" value="${esc(c?.name||'')}"></div>
     <div class="field"><label>TAVSIF</label><textarea id="cDesc" class="input" rows="2">${esc(c?.description||'')}</textarea></div>
+    <div class="field"><label>KATEGORIYA *</label><div class="pick3" id="cCatBox"></div></div>
     <div class="field"><label>DAVOMIYLIK *</label>
       <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">
         <button type="button" class="btn small" data-dur="30">30 daq</button>
@@ -1713,6 +1714,16 @@ function courseModal(c){
     <div class="field"><label>NARX (UZS) *</label><input id="cPrice" class="input" type="number" min="0" value="${esc(c?.price||0)}"></div>
     <div id="cErr"></div>
     <div style="display:flex;gap:8px"><button class="btn" style="flex:1" id="cCancel">Bekor</button><button class="btn primary" style="flex:1" id="cSave">Saqlash</button></div>`);
+  // Kategoriya tanlagich (A/B/C). Ilgari cCat aniqlanmagani uchun
+  // "Saqlash" bosilganda ReferenceError bo'lib, kurs saqlanmasdi.
+  let cCat = c?.category ? String(c.category).toUpperCase() : '';
+  const CATN = { A:'Mototsikl', B:'Yengil', C:'Yuk' };
+  const paintCCat = () => {
+    $('cCatBox').innerHTML = ['A','B','C'].map(x =>
+      `<button type="button" class="pk ${cCat===x?'on':''}" data-ccat="${x}"><b>${x}</b> <small>${CATN[x]}</small></button>`).join('');
+    $('cCatBox').querySelectorAll('[data-ccat]').forEach(b => b.onclick = () => { cCat = b.dataset.ccat; paintCCat(); });
+  };
+  paintCCat();
   const durHint=()=>{ $('cDurHint').textContent='= '+fmtDur($('cDur').value); };
   durHint();
   $('cDur').addEventListener('input',durHint);
@@ -3783,9 +3794,16 @@ $('mbSave').onclick = async () => {
       instructor_id: MB.ins.id, category: MB.cat, duration_minutes: MB.minutes,
       start_at: at.toISOString(), note: $('mbNote').value.trim() })});
     toast('Bron yaratildi');
-    $('mbAlert').innerHTML = `<div class="ok-box" style="background:#E9F7EF;border:1px solid #BFE6D0;border-radius:11px;padding:11px;font-size:13px">
-      <b>${esc(d.customer?.full_name || '')}</b> — ${esc(kHour(d.booking?.start_at))}, ${esc(MB.ins.name)}<br>
-      Mijoz kelib kassada to‘laydi.</div>`;
+    // Kod MUHIM: mijoz kassaga kelib shu kodni aytadi. Kod ko'rsatilmasa,
+    // mijoz "nima deyishini" bilmaydi va kassir topolmaydi.
+    const code = d.booking?.pickup_code || '';
+    $('mbAlert').innerHTML = `<div class="ok-box" style="background:#E9F7EF;border:1px solid #BFE6D0;border-radius:12px;padding:13px;font-size:13px">
+      <b>${esc(d.customer?.full_name || '')}</b> — ${esc(kHour(d.booking?.start_at))}, ${esc(MB.ins.name)}
+      ${code ? `<div style="margin-top:10px;font-size:12px;color:#0d7a4a">KASSA UCHUN KOD — mijozga ayting:</div>
+        <div style="font-size:24px;font-weight:900;letter-spacing:3px;font-family:ui-monospace,Menlo,monospace;color:var(--g)">${esc(code)}</div>
+        <div style="margin-top:6px">Mijoz kassaga kelib shu kodni aytadi. Kassir «Chek chiqarish» da kodni kiritib to‘lovni oladi. Kodsiz ham «Chek chiqarish» da ism bo‘yicha yoki «Kunlik jadval»dan topsa bo‘ladi.</div>`
+        : `<div style="margin-top:8px">Mijoz kelib kassada to‘laydi (ism bo‘yicha yoki «Kunlik jadval»dan topiladi).</div>`}
+      </div>`;
     mbClearForm(false);
     
     // Yaratilgan bron kassir va nazorat jadvallarida darhol "band" bo'lib qizarib ko'rinishi uchun yangilaymiz
