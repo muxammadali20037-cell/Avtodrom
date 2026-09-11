@@ -85,8 +85,15 @@ button,input,textarea,select{font:inherit}button{cursor:pointer}button:disabled{
 .course .price{font-weight:950;color:var(--brand);white-space:nowrap;font-size:15px}
 .time-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
 .time{border:1px solid var(--line);background:#fff;border-radius:11px;padding:10px 5px;text-align:center;font-size:12px;font-weight:900}
+/* Bo'sh vaqt — yashil, ajralib turadi va bosiladi */
+.time.free{border-color:#39b46e;color:#178a4c;background:#eefaf2}
+.time.free:hover{background:#dff5e8;border-color:#2e9e5f}
+/* Tanlangan vaqt — brend rangi */
 .time.selected{background:var(--brand);color:#fff;border-color:var(--brand)}
-.time.busy{text-decoration:line-through;color:#a5aea9;background:#f4f5f5}
+/* Band vaqt — qizil, bosilmaydi (boshqa mijoz bron qilgan) */
+.time.busy{background:#fdecec;color:#c62828;border-color:#f2b8b8;text-decoration:line-through;cursor:not-allowed}
+/* O'tib ketgan yoki ish vaqtidan tashqari — kulrang */
+.time.gone{color:#a5aea9;background:#f4f5f5;border-color:var(--line);cursor:not-allowed}
 .booking-summary{background:#f5f6fd;border:1px solid #dfe2f5;border-radius:14px;padding:14px;margin-top:14px;font-size:13px;line-height:1.7}
 .tabs{display:flex;gap:7px;overflow:auto;padding-bottom:4px}
 .tab{white-space:nowrap;border:1px solid var(--line);background:#fff;border-radius:999px;padding:9px 13px;font-size:11px;font-weight:900}
@@ -370,8 +377,10 @@ details.faq[open] summary{border-bottom:1px solid var(--line)}
   transition: background-color var(--fast) var(--ease), color var(--fast) var(--ease);
 }
 
-/* Toast — pastdan chiqadi */
-.toast{ animation: toastIn .3s var(--ease) both }
+/* Toast — pastdan chiqadi. FAQAT .show bo'lganda animatsiya ishlaydi.
+   Ilgari .toast ga 'both' bilan berilib, bo'sh toast doim ko'rinib
+   qolardi (ekran o'rtasidagi qora dog'). Endi u yashiringan turadi. */
+.toast.show{ animation: toastIn .3s var(--ease) both }
 @keyframes toastIn{
   from{ opacity:0; transform: translateY(16px) }
   to{ opacity:1; transform: none }
@@ -1258,11 +1267,19 @@ function renderTimes(){
   const {end:closeMin}=workRange();
   box.innerHTML=slots().map(t=>{
     const st=tkDT(date,t), en=new Date(st.getTime()+dur*60000);
+    // clash = shu instruktor bu vaqtda allaqachon band (boshqa mijoz bron qilgan)
     const clash=S.busy.some(b=>new Date(b.start_at)<en && new Date(b.end_at)>st);
-    // Dars ish vaqti tugagandan keyin tugamasin
+    // Dars ish vaqti tugagandan keyin tugamasin; o'tib ketgan vaqt ham yopiq
     const startMin=hhmmToMin(t,0), pastClose=startMin+dur>closeMin;
-    const off=clash||pastClose||st.getTime()<now;
-    return `<button type="button" class="time ${S.time===t?'selected':''} ${off?'busy':''}" ${off?'disabled':''} data-time="${t}">${t}</button>`;
+    const gone=pastClose||st.getTime()<now;
+    const off=clash||gone;
+    /* Rang mantiqi:
+         band (boshqa bron)  -> qizil, bosilmaydi
+         o'tgan / yopiq       -> kulrang, bosilmaydi
+         bo'sh                -> yashil, tanlanadi
+       Tanlangan vaqt -> brend rangi. */
+    const cls = S.time===t ? 'selected' : clash ? 'busy' : gone ? 'gone' : 'free';
+    return `<button type="button" class="time ${cls}" ${off?'disabled':''} data-time="${t}">${t}</button>`;
   }).join('');
   box.querySelectorAll('.time:not([disabled])').forEach(b=>b.onclick=()=>{ S.time=b.dataset.time; renderTimes(); updateSummary(); updateSteps(); });
   const free=box.querySelectorAll('.time:not([disabled])').length;
@@ -1846,4 +1863,4 @@ setInterval(()=>{
 boot();
 </script>
 </body>
-</html> MANA INDEX HTML CUSTOMER TOGIRLAB TOLIQ YOZIB BER BOSHQA JOYLARINI BUZIB QOYMA 
+</html> MANA INDEX HTML CUSTOMER TOGIRLAB TOLIQ YOZIB BER BOSHQA JOYLARINI BUZIB QOYMA
