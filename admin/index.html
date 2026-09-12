@@ -217,6 +217,11 @@ button,input,select,textarea{font:inherit}.hidden{display:none!important}
 .btn.primary,.btn.green{background:var(--g);border-color:var(--g);color:#fff}.btn.red{color:var(--red);border-color:#efcaca}
 .btn.small{padding:6px 9px;font-size:12px}.btn:disabled{opacity:.55;cursor:not-allowed}
 .layout{max-width:1500px;margin:auto;display:grid;grid-template-columns:235px 1fr;gap:18px;padding:18px 20px 50px}
+/* Grid/flex bolasi sukut bo'yicha ichidagi eng keng narsadan torayolmaydi.
+   Shu sabab keng jadval butun sahifani o'ngga cho'zib yuborardi. min-width:0
+   berilgach jadval o'z oynasi ichida aylanadi, sahifa qimirlamaydi. */
+.layout>main,.layout>.side,.grid2>*,.card{min-width:0}
+.tableWrap{max-width:100%}
 .side{background:#fff;border:1px solid var(--line);border-radius:16px;padding:9px;height:max-content;position:sticky;top:88px}
 .nav{width:100%;border:0;background:#fff;text-align:left;padding:12px;border-radius:10px;cursor:pointer;font-weight:800;color:#45574e;margin-bottom:3px}
 .nav:hover,.nav.on{background:#EDF2FF;color:var(--g)}
@@ -236,6 +241,32 @@ button,input,select,textarea{font:inherit}.hidden{display:none!important}
 .table{width:100%;border-collapse:collapse;min-width:800px}
 .table th,.table td{padding:10px;border-bottom:1px solid #E8EEFC;text-align:left;font-size:13px;vertical-align:top}
 .table th{font-size:10px;color:#66766e;text-transform:uppercase;background:#fafbfe;position:sticky;top:0}
+/* USTUNI KO'P JADVALLAR (Bronlar).
+   Ilgari .table min-width:800px edi — 10 ta ustun shu 800px ichiga
+   siqilar, matn sinib ketar, "Amal" tugmalari esa o'ngda kesilib qolardi.
+   Endi jadval o'z eniga yoyiladi, oyna gorizontal aylanadi va
+   "Amal" ustuni har doim o'ng chetda yopishib turadi. */
+.table.wide{min-width:1150px}
+.table.wide th,.table.wide td{padding:9px 8px;font-size:12.5px}
+.table.wide th.nw,.table.wide td.nw{white-space:nowrap}
+.table.wide td.note{max-width:190px}
+.table.wide th:last-child,.table.wide td:last-child{position:sticky;right:0;background:#fff;box-shadow:-7px 0 9px -7px rgba(16,32,61,.20)}
+.table.wide th:last-child{background:#fafbfe;z-index:3}
+.table.wide td.actions{display:table-cell;min-width:118px}
+.table.wide td.actions .btn{display:block;width:100%;margin:0 0 4px;text-align:center}
+.table.wide td.actions .btn:last-child{margin-bottom:0}
+/* TOR JOYDAGI JADVALLAR (Hisobot — ikkita jadval yonma-yon turadi).
+   Umumiy min-width:800px yarim ustunga sig'masdi. Bu jadvallarda
+   raqam ko'p, shuning uchun ularni ixchamlashtiramiz. */
+.table.narrow{min-width:0}
+.table.narrow th,.table.narrow td{padding:8px 6px;font-size:12px;white-space:nowrap}
+.table.narrow th:first-child,.table.narrow td:first-child{white-space:normal}
+.table.narrow th:not(:first-child),.table.narrow td:not(:first-child){text-align:right}
+.scrollHint{font-size:11px;color:var(--muted);margin:7px 2px 0}
+@media(max-width:760px){
+  .table.wide{min-width:960px}
+  .table.wide td.actions{min-width:104px}
+}
 .status{display:inline-block;padding:5px 8px;border-radius:99px;font-size:11px;font-weight:900}
 .wait{background:#fff4d7;color:#9a6800}.ok{background:#e7f6ee;color:#0d7a4a}.bad{background:#ffe8e8;color:#bd2525}.run{background:#e4f0ff;color:#1769aa}
 .muted{color:var(--muted)}
@@ -473,6 +504,16 @@ pre.json{background:#F7FAFF;border:1px solid var(--line);border-radius:8px;paddi
   .search, .select, .input { width: 100%; min-width: 0; }
   .btn { width: 100%; text-align: center; justify-content: center; }
   .kpigrid { grid-template-columns: 1fr 1fr !important; }
+  /* Yuqoridagi .btn{width:100%} tepa paneldagi tugmalarni ham cho'zib,
+     sahifani o'ngga surib yuborardi — u yerda tugma o'z eniday qolsin. */
+  .topin .btn{width:auto}
+  .topin{gap:8px}
+  .brand{min-width:0;overflow:hidden}
+  .brand small{display:none}
+  .tools{min-width:0;gap:6px}
+  .tools .btn{flex:0 0 auto;padding:8px 10px;font-size:12px}
+  #lastSync{display:none}
+  .who{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 }
 
 @media print{
@@ -1023,7 +1064,8 @@ pre.json{background:#F7FAFF;border:1px solid var(--line);border-radius:8px;paddi
       <select id="bookingFilter" class="select"><option value="" selected>Barchasi</option><option value="pending">Kutilmoqda</option><option value="confirmed">Tasdiqlangan</option><option value="in_progress">Jarayonda</option><option value="completed">Tugagan</option><option value="no_show">Kelmagan</option><option value="cancelled">Bekor</option><option value="rejected">Rad etilgan</option></select>
       <input id="bookingSearch" class="search" placeholder="Mijoz, telefon, instruktor...">
     </div>
-    <div class="tableWrap"><table class="table"><thead><tr><th>Sana</th><th>Kod</th><th>Mijoz</th><th>Telefon</th><th>Instruktor</th><th>Mashg‘ulot</th><th>Narx</th><th>Eslatma</th><th>Status</th><th>Amal</th></tr></thead><tbody id="bookingRows"></tbody></table></div>
+    <div class="tableWrap"><table class="table wide"><thead><tr><th class="nw">Sana</th><th class="nw">Kod</th><th>Mijoz</th><th class="nw">Telefon</th><th>Instruktor</th><th>Mashg‘ulot</th><th class="nw">Narx</th><th>Eslatma</th><th class="nw">Status</th><th>Amal</th></tr></thead><tbody id="bookingRows"></tbody></table></div>
+    <div class="scrollHint">Jadval keng — qolgan ustunlarni ko‘rish uchun o‘ngga suring. «Amal» ustuni doim o‘ng chetda turadi.</div>
   </div>
     <div class="pager" id="bkPager"></div>
 </section>
@@ -1102,8 +1144,8 @@ pre.json{background:#F7FAFF;border:1px solid var(--line);border-radius:8px;paddi
     <div id="reportCards" class="report"></div>
   </div>
   <div class="grid2">
-    <div class="card"><h3>Kunlar bo‘yicha</h3><div class="tableWrap"><table class="table"><thead><tr><th>Sana</th><th>Bron</th><th>Keldi</th><th>Kelmagan</th><th>Bekor</th><th>Tugadi</th><th>Tushum</th></tr></thead><tbody id="dailyRows"></tbody></table></div></div>
-    <div class="card"><h3>Instruktorlar bo‘yicha</h3><div class="tableWrap"><table class="table"><thead><tr><th>Instruktor</th><th>Bron</th><th>Keldi</th><th>Kelmagan</th><th>Bekor</th><th>Tugadi</th><th>Tushum</th></tr></thead><tbody id="reportInstRows"></tbody></table></div></div>
+    <div class="card"><h3>Kunlar bo‘yicha</h3><div class="tableWrap"><table class="table narrow"><thead><tr><th>Sana</th><th>Bron</th><th>Keldi</th><th>Kelmagan</th><th>Bekor</th><th>Tugadi</th><th>Tushum</th></tr></thead><tbody id="dailyRows"></tbody></table></div></div>
+    <div class="card"><h3>Instruktorlar bo‘yicha</h3><div class="tableWrap"><table class="table narrow"><thead><tr><th>Instruktor</th><th>Bron</th><th>Keldi</th><th>Kelmagan</th><th>Bekor</th><th>Tugadi</th><th>Tushum</th></tr></thead><tbody id="reportInstRows"></tbody></table></div></div>
   </div>
 </section>
 
@@ -1522,9 +1564,9 @@ function renderBookings(){
     if(b.status==='pending')act=`<button class="btn small green" data-bk="${esc(b.id)}" data-st="confirmed">Tasdiqlash</button> <button class="btn small red" data-bk="${esc(b.id)}" data-st="rejected">Rad etish</button>`;
     if(b.status==='confirmed')act=`<button class="btn small" data-bk="${esc(b.id)}" data-st="in_progress">Boshlash</button> <button class="btn small red" data-bk="${esc(b.id)}" data-st="no_show">Kelmadi</button> <button class="btn small red" data-bk="${esc(b.id)}" data-st="cancelled">Bekor</button>`;
     if(b.status==='in_progress')act=`<button class="btn small green" data-bk="${esc(b.id)}" data-st="completed">Tugatish</button>`;
-    return `<tr><td>${dt(b.start_at)}<br><span class="muted">${dt(b.end_at)}</span></td>
-      <td><code style="font-size:12px;font-weight:800;color:var(--g)">${esc(b.pickup_code||'—')}</code></td>
-      <td><b>${esc(uname(b.customer))}</b></td><td>${esc(b.customer?.phone||'—')}</td><td>${esc(iname(b.instructor))}</td><td>${esc(b.course?.name||'—')}${b.course?.duration_minutes?`<br><span class="muted" style="font-size:11px">${esc(fmtDur(b.course.duration_minutes))}</span>`:''}</td><td>${money(b.price)}</td><td>${reminderCell(b)}</td><td>${badge(b.status)}</td><td class="actions">${act}</td></tr>`;
+    return `<tr><td class="nw">${dt(b.start_at)}<br><span class="muted">${dt(b.end_at)}</span></td>
+      <td class="nw"><code style="font-size:12px;font-weight:800;color:var(--g)">${esc(b.pickup_code||'—')}</code></td>
+      <td><b>${esc(uname(b.customer))}</b></td><td class="nw">${esc(b.customer?.phone||'—')}</td><td>${esc(iname(b.instructor))}</td><td>${esc(b.course?.name||'—')}${b.course?.duration_minutes?`<br><span class="muted" style="font-size:11px">${esc(fmtDur(b.course.duration_minutes))}</span>`:''}</td><td class="nw">${money(b.price)}</td><td class="note">${reminderCell(b)}</td><td class="nw">${badge(b.status)}</td><td class="actions">${act}</td></tr>`;
   }).join(''):'<tr><td colspan="10" class="empty">Bronlar yo‘q.</td></tr>';
   document.querySelectorAll('[data-bk]').forEach(btn=>btn.onclick=()=>bookingAction(btn.dataset.bk,btn.dataset.st));
 }
@@ -4501,7 +4543,9 @@ function applyRole(){
   const me = S.me || {};
   const isCashier = me.role === 'cashier';
   const isAdmin = me.role === 'admin';
-  const isSuperAdmin = me.login === 'admin'; // Asosiy admin (to'liq huquq)
+  /* Administrator — hamma boshqaruv bo'limini ko'radi. Ilgari faqat
+     login'i aynan "admin" bo'lgan hisob to'liq huquqli sanalardi va
+     boshqa nomdagi administratorlarga menyuning yarmi ko'rinmasdi. */
 
   /* TO'LIQ AJRATISH: panel kirishda tanlanadi va o'zgarmaydi.
      Yuqoridagi P1 / P2 / BOSHQARUV tugmalari umuman ko'rsatilmaydi —
@@ -4515,7 +4559,7 @@ function applyRole(){
 
   const badge = $('whoami');
   if (badge) {
-    let rName = isCashier ? 'Kassir' : (isSuperAdmin ? 'Asosiy Admin' : 'Xodim');
+    let rName = isCashier ? 'Kassir' : 'Administrator';
     badge.textContent = `${me.full_name || me.login || ''} \u00b7 ${rName}`;
     badge.classList.toggle('cashier', isCashier);
   }
@@ -4526,18 +4570,13 @@ function applyRole(){
 function applyRoleLimits(){
   const me = S.me || {};
   const isCashier = me.role === 'cashier';
-  const isSuperAdmin = me.login === 'admin';
   /* Kassa rejimida BOSHQARUV bandlari umuman ko'rinmaydi — rejim
-     tanlovidan qat'i nazar. */
+     tanlovidan qat'i nazar. Administrator esa hammasini ko'radi:
+     serverda ham ruxsat rol bo'yicha beriladi, login nomi bo'yicha
+     emas. */
   const kassaMode = (typeof adminMode !== 'undefined') && adminMode !== 'admin';
   document.querySelectorAll('.nav[data-grp="admin"]').forEach(b => {
-    if (isCashier || kassaMode) { b.classList.add('hidden'); return; }
-    if (!isSuperAdmin) {
-      const allowed = ['bookings', 'manual', 'reports', 'cancels', 'live'];
-      b.classList.toggle('hidden', !allowed.includes(b.dataset.p));
-      return;
-    }
-    b.classList.remove('hidden');
+    b.classList.toggle('hidden', isCashier || kassaMode);
   });
 }
 
@@ -4549,22 +4588,13 @@ function routeByRole(){
   const me = S.me || {};
   if (PICKED_ROLE && roleAllowed(me, PICKED_ROLE)) {
     applyMode(PICKED_ROLE);
-    if (PICKED_ROLE === 'admin' && me.login !== 'admin') setTimeout(() => showPage('bookings'), 100);
     return;
   }
   if (me.role === 'cashier') {
     const own = (S.registers || []).find(r => String(r.id) === String(me.register_id));
     applyMode(own?.code || 'P1');
   } else {
-    // Admin yoki Xodim
     applyMode('admin');
-    const isSuperAdmin = me.login === 'admin';
-    if (!isSuperAdmin) {
-       // Xodim uchun default sahifa 'bookings' ga o'zgaradi (dashboard yashiringan bo'lsa)
-       if (adminMode === 'admin') {
-           setTimeout(() => showPage('bookings'), 100);
-       }
-    }
   }
 }
 
