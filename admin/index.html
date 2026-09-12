@@ -1121,7 +1121,7 @@ pre.json{background:#F7FAFF;border:1px solid var(--line);border-radius:8px;paddi
   <div class="head"><div><h1>Instruktorlar</h1><p>Faqat faol va tasdiqlangan instruktorlar mijozga chiqadi.</p></div><button class="btn primary" id="addInstBtn">+ Instruktor qo‘shish</button></div>
   <div class="card">
     <div class="toolbar"><input id="instSearch" class="search" placeholder="Instruktor qidirish..."></div>
-    <div class="tableWrap"><table class="table"><thead><tr><th>Instruktor</th><th>Telefon</th><th>Kategoriya</th><th>Tajriba</th><th>Reyting</th><th>Status</th><th>Amal</th></tr></thead><tbody id="instRows"></tbody></table></div>
+    <div class="tableWrap"><table class="table"><thead><tr><th>Instruktor</th><th>Telefon</th><th>Avtomobil</th><th>Kategoriya</th><th>Tajriba</th><th>Reyting</th><th>Status</th><th>Amal</th></tr></thead><tbody id="instRows"></tbody></table></div>
   </div>
 </section>
 
@@ -1669,6 +1669,9 @@ function renderInstructors(){
         :`<span style="width:34px;height:34px;border-radius:10px;background:var(--soft);color:var(--g);display:grid;place-items:center;font-weight:700;font-size:12px;flex:none">${esc(String(iname(x)).slice(0,2).toUpperCase())}</span>`}
       <b>${esc(iname(x))}</b></div></td>
     <td>${esc(x.profile?.phone||'—')}</td>
+    <td>${x.vehicle_plate
+      ? `<code style="font-weight:800">${esc(x.vehicle_plate)}</code>${x.vehicle_model?`<br><span class="muted" style="font-size:11px">${esc(x.vehicle_model)}</span>`:''}`
+      : '<span class="status bad" title="Avtoshkola darsi avtodrom12 da ko‘rinmaydi">yo‘q</span>'}</td>
     <td>${(Array.isArray(x.categories)?x.categories:['B']).map(c=>`<span class="status" style="margin-right:3px">${esc(c)}</span>`).join('')}</td>
     <td>${esc(x.experience_years??0)} yil</td>
     <td>★ ${esc(Number(x.rating||0).toFixed(1))}</td>
@@ -1677,7 +1680,7 @@ function renderInstructors(){
       <button class="btn small" data-insedit="${esc(x.id)}">Tahrirlash</button>
       <button class="btn small ${x.active?'red':''}" data-inst="${esc(x.id)}" data-act="${x.active?'0':'1'}">${x.active?'Bloklash':'Tiklash'}</button>
       <button class="btn small red" data-insdel="${esc(x.id)}">O‘chirish</button>
-    </div></td></tr>`).join(''):'<tr><td colspan="7" class="empty">Instruktor yo‘q.</td></tr>';
+    </div></td></tr>`).join(''):'<tr><td colspan="8" class="empty">Instruktor yo‘q.</td></tr>';
   document.querySelectorAll('[data-insedit]').forEach(b=>b.onclick=()=>editInstructor(b.dataset.insedit));
   document.querySelectorAll('[data-insdel]').forEach(b=>b.onclick=()=>deleteInstructor(b.dataset.insdel));
   document.querySelectorAll('[data-inst]').forEach(b=>b.onclick=()=>toggleInstructor(b.dataset.inst,b.dataset.act==='1'));
@@ -1787,6 +1790,19 @@ function editInstructor(id){
       <div class="field"><label>TELEFON</label><input id="iePhone" class="input" value="${esc(x.profile?.phone || '')}" placeholder="+998901234567"></div>
       <div class="field"><label>TAJRIBA (YIL)</label><input id="ieExp" class="input" type="number" min="0" max="60" value="${esc(x.experience_years ?? 0)}"></div>
     </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div class="field"><label>AVTOMOBIL RAQAMI
+          <span class="muted">(avtoshkola darsi uchun shart)</span></label>
+        <input id="iePlate" class="input" value="${esc(x.vehicle_plate || '')}"
+               placeholder="01 111 QQQ" style="text-transform:uppercase"></div>
+      <div class="field"><label>RUSUMI</label>
+        <input id="ieModel" class="input" value="${esc(x.vehicle_model || '')}" placeholder="Chevrolet Cobalt"></div>
+    </div>
+    <div class="muted" style="font-size:11.5px;margin:-6px 0 12px">
+      Avtoshkola QR cheki skanerlanganda dars avtodrom12 da aynan shu raqam
+      bo‘yicha ochiladi. Bo‘sh bo‘lsa dars u yerda ko‘rinmaydi.
+      Masalan: <b>01 111 QQQ</b> yoki <b>01 A 555 AA</b>.
+    </div>
     <div class="field"><label>KATEGORIYALAR * <span class="muted">(bir nechtasini tanlash mumkin)</span></label>
       <div class="pick3" id="ieCats"></div>
       <div style="display:flex;gap:8px;align-items:center;margin-top:8px;flex-wrap:wrap">
@@ -1881,6 +1897,7 @@ function editInstructor(id){
       const res = await api(`/api/admin/instructors/${encodeURIComponent(id)}`, { method:'PATCH', body: JSON.stringify({
         full_name: full, phone: $('iePhone').value.trim(),
         experience_years: Number($('ieExp').value || 0), bio: $('ieBio').value.trim(),
+        vehicle_plate: $('iePlate').value.trim(), vehicle_model: $('ieModel').value.trim(),
         is_verified: $('ieVerified').checked, avatar_url: avatarUrl, categories: cats })});
 
       /* Server nimani haqiqatan saqlaganini tekshiramiz. Agar ustun
