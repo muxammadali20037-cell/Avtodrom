@@ -5,6 +5,16 @@ import { periodRange } from './analytics-routes.js';
 import { sendBookingNotification } from './telegram.js';
 import type { TelegramWebAppUser } from './telegram.js';
 import { q, toProfile, findUserByTelegram, instructorProfileForUser, notifyUser } from './identity.js';
+import { completeSchoolReceipt, isSchoolReceiptCode } from './school-receipt.js';
+
+/** Avtoshkola cheki bo'yicha ochilgan bron bo'lsa, kodini qaytaradi.
+ *  Kod ustunda yoki (migratsiya hali yurmagan bo'lsa) izohda turadi. */
+function schoolReceiptCodeOf(booking: any): string | null {
+  const direct = String(booking?.school_receipt_code || '').trim().toUpperCase();
+  if (isSchoolReceiptCode(direct)) return direct;
+  const m = String(booking?.customer_note || '').toUpperCase().match(/AVD-\d{4,5}(?!\d|-)/);
+  return m ? m[0] : null;
+}
 
 /** `profiles` view o'rniga kanonik `users` jadvali. */
 async function profileForTelegram(user: TelegramWebAppUser) {
@@ -170,6 +180,17 @@ export async function registerInstructorRoutes(
       const rows = await supabaseRest<any[]>('rpc/instructor_mark_departed', { method: 'POST', body: JSON.stringify({ p_booking_id: id, p_instructor_id: instructor.id }) });
       const updated = Array.isArray(rows) ? rows[0] : rows;
       await notifyBookingStatus(updated || booking, 'completed');
+
+      /* Avtoshkola darsi bo'lsa avtodrom12 dagi sessiyani ham yopamiz.
+         Xato bo'lsa dars baribir yakunlangan — faqat log yoziladi. */
+      const schoolCode = schoolReceiptCodeOf(updated || booking);
+      if (schoolCode) {
+        const b = updated || booking;
+        const startedAt = b?.arrived_at || b?.start_at;
+        const seconds = startedAt ? Math.max(0, Math.round((Date.now() - new Date(startedAt).getTime()) / 1000)) : undefined;
+        await completeSchoolReceipt(schoolCode, seconds);
+      }
+
       return { ok: true, booking: updated || booking };
     } catch (e) {
       const message = e instanceof Error ? e.message : 'KETDI amalini bajarib bo‘lmadi';
