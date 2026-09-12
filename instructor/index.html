@@ -175,8 +175,10 @@ h2{font-size:20px;margin:0 0 3px}
 
 .toast{position:fixed;left:50%;bottom:96px;transform:translateX(-50%) translateY(14px);
  background:var(--dark);color:#fff;padding:13px 17px;border-radius:13px;font-size:13.5px;font-weight:700;
- z-index:90;opacity:0;pointer-events:none;transition:.22s;max-width:88%;text-align:center}
-.toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+ z-index:90;opacity:0;visibility:hidden;pointer-events:none;
+ transition:opacity .22s,transform .22s,visibility .22s;max-width:88%;text-align:center}
+.toast.on{opacity:1;visibility:visible;pointer-events:auto;cursor:pointer;
+ transform:translateX(-50%) translateY(0)}
 
 .sheet{display:none;position:fixed;inset:0;background:rgba(8,10,35,.55);z-index:100;align-items:flex-end}
 .sheet.on{display:flex}
@@ -248,8 +250,16 @@ h2{font-size:20px;margin:0 0 3px}
   transition: background-color var(--fast) var(--ease), color var(--fast) var(--ease);
 }
 
-/* Toast — pastdan chiqadi */
-.toast{ animation: toastIn .3s var(--ease) both }
+/* Toast — pastdan chiqadi.
+   DIQQAT: ilgari shu yerda `.toast{ animation: toastIn .3s both }`
+   turardi. `both` to'ldirish rejimi animatsiyaning OXIRGI holatini
+   (opacity:1) doimiy qoldiradi va u oddiy `opacity:0` qoidasidan
+   kuchliroq. Natijada:
+     · sahifa ochilishi bilan bo'sh toast ko'rinib turardi —
+       ekran pastida o'rtada qora nuqta;
+     · xabar chiqqach `on` olib tashlansa ham matn yo'qolmasdi.
+   Endi animatsiya yo'q — ko'rsatish/yashirish .toast.on dagi
+   transition bilan bajariladi. */
 @keyframes toastIn{
   from{ opacity:0; transform: translateY(16px) }
   to{ opacity:1; transform: none }
@@ -503,8 +513,19 @@ async function api(path, opt = {}) {
   } finally { clearTimeout(timer); }
 }
 
-function toast(t){ const x = $('toast'); x.textContent = t; x.classList.add('on');
-  clearTimeout(window.__t); window.__t = setTimeout(() => x.classList.remove('on'), 2800);
+function toastHide(){
+  const x = $('toast'); if (!x) return;
+  clearTimeout(window.__t); window.__t = null;
+  x.classList.remove('on'); x.textContent = '';
+}
+function toast(t){
+  const x = $('toast'); if (!x) return;
+  const msg = String(t ?? '').trim();
+  if (!msg) { toastHide(); return; }      // bo'sh matn — qora quticha chiqmasin
+  clearTimeout(window.__t);
+  x.textContent = msg; x.classList.add('on');
+  x.onclick = toastHide;                  // bosib yopish
+  window.__t = setTimeout(toastHide, 2800);
   try { tg?.HapticFeedback?.notificationOccurred?.('success'); } catch (e) {} }
 function alertBox(msg, kind='err'){ $('alert').innerHTML = msg ? `<div class="alert a-${kind}">${esc(msg)}</div>` : ''; }
 function sheet(html){ $('sheetBody').innerHTML = html; $('sheet').classList.add('on'); }
