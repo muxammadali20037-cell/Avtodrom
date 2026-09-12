@@ -7,6 +7,7 @@ import { readRegisterToken } from './shift-routes.js';
 import type { TelegramWebAppUser } from './telegram.js';
 import {
   isSchoolReceiptCode, normalizeSchoolCode, schoolBridgeReady,
+  schoolBridgeMissing, schoolBridgeDiagnose,
   verifySchoolReceipt, redeemSchoolReceipt, releaseSchoolReceipt,
 } from './school-receipt.js';
 
@@ -248,6 +249,21 @@ export async function registerCashierRoutes(
   /* =====================================================================
      1. KASSA — kunlik bronlar (instruktor bo'yicha guruhlangan)
      ===================================================================== */
+  /* =====================================================================
+     AVTOSHKOLA KO'PRIGI — TASHXIS
+     Instruktorga "sozlanmagan" chiqsa, administrator shu yerdan
+     nima yetishmayotganini o'zi ko'radi.
+     ===================================================================== */
+  app.get('/api/admin/school-bridge/status', async (req: any, reply: any) => {
+    try {
+      await requireAdmin(req);
+      const d = await schoolBridgeDiagnose();
+      return { ok: true, bridge: d };
+    } catch (e: any) {
+      return reply.code(e?.statusCode ?? 500).send({ ok: false, error: e?.message || 'Tekshirib bo‘lmadi' });
+    }
+  });
+
   app.get('/api/admin/cashier/day', async (req: any, reply: any) => {
     try {
       await requireAdmin(req);
@@ -875,7 +891,9 @@ export async function registerCashierRoutes(
          Uni shu yerdagi payments emas, o'sha server tekshiradi. */
       if (isSchoolReceiptCode(code)) {
         if (!schoolBridgeReady()) {
-          return reply.code(503).send({ ok: false, error: 'Avtoshkola cheklari hali sozlanmagan. Administratorga ayting.' });
+          return reply.code(503).send({ ok: false,
+            error: `Avtoshkola cheklari hali sozlanmagan (${schoolBridgeMissing()}). `
+                 + 'Administrator: Boshqaruv → Sozlamalar → «Avtoshkola cheklari» bo‘limiga qarang.' });
         }
         const rec = await verifySchoolReceipt(code);
         if (rec.status === 'cancelled') return reply.code(409).send({ ok: false, error: 'Bu chek bekor qilingan' });
@@ -948,7 +966,9 @@ export async function registerCashierRoutes(
          tranzaksiya ichida, ikkinchi urinishda 409 qaytadi. */
       if (isSchoolReceiptCode(code)) {
         if (!schoolBridgeReady()) {
-          return reply.code(503).send({ ok: false, error: 'Avtoshkola cheklari hali sozlanmagan. Administratorga ayting.' });
+          return reply.code(503).send({ ok: false,
+            error: `Avtoshkola cheklari hali sozlanmagan (${schoolBridgeMissing()}). `
+                 + 'Administrator: Boshqaruv → Sozlamalar → «Avtoshkola cheklari» bo‘limiga qarang.' });
         }
         const active = (await supabaseRest<any[]>('bookings', {
           query: `?instructor_id=eq.${q(String(ip.id))}&status=eq.in_progress&select=id&limit=1`,
