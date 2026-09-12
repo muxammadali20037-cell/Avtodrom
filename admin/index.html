@@ -2337,19 +2337,31 @@ async function loadAll(show){
      faqat o'z kassasi kerak (u boshqa funksiyalar bilan yuklanadi). */
   if (S.me && S.me.role === 'cashier') {
     /* Kassirга boshqaruv ma'lumoti kerak emas, LEKIN ishlashi uchun
-       kerakli uchtasi yuklanadi:
-         · courses  — chek chiqarish mashg'ulotга bog'lanadi
-         · settings — narx tariflari (30daq / 1soat)
-         · payments — o'z kassasi tushumi
+       kerakli to'rttasi yuklanadi:
+         · courses     — chek chiqarish mashg'ulotга bog'lanadi
+         · settings    — narx tariflari (30daq / 1soat)
+         · payments    — o'z kassasi tushumi
+         · instructors — "Kunlik jadval" va "Instruktor nazorati"
        Ilgari faqat payments yuklanardi va "mashg'ulot topilmadi"
-       xatosi chiqardi. */
-    const [pay, crs, st] = await Promise.allSettled([
+       xatosi chiqardi.
+
+       Instruktorlar KASSIR endpointidan olinadi: `/api/admin/instructors`
+       faqat administrator uchun (403), shu sabab kassirda instruktor
+       ro'yxati doim BO'SH chiqardi. */
+    const [pay, crs, st, ins] = await Promise.allSettled([
       api(payUrl()), api('/api/admin/courses'), api('/api/admin/settings'),
+      api('/api/admin/cashier/instructors'),
     ]);
     if (pay.status === 'fulfilled') S.payments = pay.value.payments || [];
     if (crs.status === 'fulfilled') S.courses  = crs.value.courses  || [];
     if (st.status  === 'fulfilled') S.settings = st.value.settings  || [];
-    try { renderCats(); renderDurs(); coRender(); } catch (e) {}
+    if (ins.status === 'fulfilled') S.instructors = ins.value.instructors || [];
+    try {
+      renderCats(); renderDurs(); coRender();
+      /* Ro'yxat kelgach tanlovlarni qayta chizamiz — kassir sahifani
+         ma'lumot kelgunicha ochib qo'ygan bo'lishi mumkin. */
+      fillCashierInstructors(); renderCtlPicker();
+    } catch (e) {}
     return;
   }
   try{
