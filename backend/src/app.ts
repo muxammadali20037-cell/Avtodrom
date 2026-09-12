@@ -88,8 +88,11 @@ await registerReviewRoutes(app, authenticateCustomer);
 await registerSupportRoutes(app, authenticateCustomer, requireAdmin, adminUser);
 await registerCashierRoutes(app, requireAdmin, adminUser, audit, authenticateInstructor);
 /* Analitika — faqat boshqaruv. Ilgari har qanday kirgan xodim
-   (kassir ham) butun biznes statistikasini ko'ra olardi. */
-await registerAnalyticsRoutes(app, guardAdmin);
+   (kassir ham) butun biznes statistikasini ko'ra olardi.
+   ISTISNO: «Instruktor nazorati» (instructor-control) kassir
+   menyusida ham bor va uning kundalik ishi — unga requireAdmin
+   (har qanday kirgan xodim) beriladi. */
+await registerAnalyticsRoutes(app, guardAdmin, requireAdmin);
 await registerShiftRoutes(app, requireAdmin, adminUser, audit);
 
 // IMPORTANT: admin-password-routes.ts is the single owner of the canonical
