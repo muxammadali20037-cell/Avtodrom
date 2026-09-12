@@ -1361,15 +1361,10 @@ async function notifyInstructorDecision(
       const price = Number(b.price); const duration = Number(b.duration_minutes);
       if (!Number.isFinite(price) || price < 0) return reply.code(400).send({ ok: false, error: 'Narx noto‘g‘ri' });
       if (!Number.isInteger(duration) || duration <= 0) return reply.code(400).send({ ok: false, error: 'Davomiylik noto‘g‘ri' });
-      // Kategoriya YARATISHDA ham saqlanishi shart. Aks holda yangi kurs
-      // kategoriyasiz qoladi va mijoz panelida instruktor filtri hamda
-      // narx (tarif) noto'g'ri ishlaydi.
-      const cat = String(b.category || '').trim().toUpperCase();
-      if (!['A', 'B', 'C'].includes(cat)) return reply.code(400).send({ ok: false, error: 'Kategoriya A, B yoki C bo‘lsin' });
 
       const rows = await supabaseRest<any[]>('courses', {
         method: 'POST', headers: { Prefer: 'return=representation' },
-        body: JSON.stringify({ name, description: String(b.description || '').trim() || null, duration_minutes: duration, price, category: cat, is_active: b.is_active !== false }),
+        body: JSON.stringify({ name, description: String(b.description || '').trim() || null, duration_minutes: duration, price, is_active: b.is_active !== false }),
       });
       await audit(admin.id, 'COURSE_CREATED', 'courses', rows[0]?.id ?? null, null, rows[0]);
       return reply.code(201).send({ ok: true, course: rows[0] });
@@ -1403,10 +1398,16 @@ async function notifyInstructorDecision(
 
   app.get('/api/admin/payments', async (req: any, reply: any) => {
     try {
-      await guard(req);
+      const who = await currentStaff(req);
       /* Kassa bo'yicha filtr: P1 va P2 ning hisobi aralashmasligi kerak.
-         register_id berilmasa — hammasi (boshqaruv uchun). */
-      const regFilter = String(req.query?.register_id || '').trim();
+         register_id berilmasa — hammasi (boshqaruv uchun).
+         KASSIR uchun filtr MAJBURIY va o'z kassasiga qotiriladi —
+         so'rovdagi register_id ga ishonmaymiz. */
+      let regFilter = String(req.query?.register_id || '').trim();
+      if (who?.role === 'cashier') {
+        if (!who.register_id) return reply.code(403).send({ ok: false, error: 'Kassa biriktirilmagan' });
+        regFilter = String(who.register_id);
+      }
       const [payments, users, bookings] = await Promise.all([
         safe<any>('payments', `?select=*${regFilter ? `&register_id=eq.${q(regFilter)}` : ''}&order=created_at.desc`),
         safe<any>('users', '?select=id,full_name,phone'),
@@ -1419,7 +1420,7 @@ async function notifyInstructorDecision(
   });
   app.patch('/api/admin/payments/:id', async (req: any, reply: any) => {
     try {
-      await guard(req);
+      const who = await currentStaff(req);
       const admin = await adminUser();
       const status = String(req.body?.status || '');
       if (!['pending', 'paid', 'failed', 'refunded', 'cancelled'].includes(status)) {
@@ -1428,6 +1429,10 @@ async function notifyInstructorDecision(
       const id = String(req.params.id);
       const old = (await safe<any>('payments', `?id=eq.${q(id)}&select=*&limit=1`))[0];
       if (!old) return reply.code(404).send({ ok: false, error: 'To‘lov topilmadi' });
+      /* Kassir boshqa kassaning to'lovini o'zgartira olmaydi */
+      if (who?.role === 'cashier' && String(old.register_id || '') !== String(who.register_id || '')) {
+        return reply.code(403).send({ ok: false, error: 'Bu to‘lov boshqa kassaga tegishli' });
+      }
 
       const patch: any = { status };
       if (status === 'paid') patch.paid_at = new Date().toISOString();
