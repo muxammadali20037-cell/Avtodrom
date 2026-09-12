@@ -7,7 +7,7 @@ import { readRegisterToken } from './shift-routes.js';
 import type { TelegramWebAppUser } from './telegram.js';
 import {
   isSchoolReceiptCode, normalizeSchoolCode, schoolBridgeReady,
-  verifySchoolReceipt, redeemSchoolReceipt,
+  verifySchoolReceipt, redeemSchoolReceipt, releaseSchoolReceipt,
 } from './school-receipt.js';
 
 /**
@@ -91,6 +91,29 @@ function shape(b: any, m: any) {
    bo'yicha to'lov yozuvi (payments) yaratilmaydi.
    ======================================================================= */
 
+/** Instruktorning shu oraliqda boshqa broni bormi.
+    Bazadagi no_instructor_overlap cheklovi baribir to'sadi, lekin
+    OLDINDAN bilsak chekni ishlatmaymiz va u yonib ketmaydi. */
+async function instructorBusyAt(instructorId: string, start: Date, minutes: number): Promise<string | null> {
+  const end = new Date(start.getTime() + minutes * 60000);
+  /* Kun chegarasi bilan cheklaymiz — ro'yxat kichik bo'lsin */
+  const from = new Date(start.getTime() - 12 * 3600e3).toISOString();
+  const to = new Date(end.getTime() + 12 * 3600e3).toISOString();
+  const rows = await supabaseRest<any[]>('bookings', {
+    query: `?instructor_id=eq.${q(instructorId)}&status=in.(pending,confirmed,in_progress)` +
+           `&start_at=gte.${q(from)}&start_at=lt.${q(to)}&select=id,start_at,end_at,status&limit=50`,
+  }).catch(() => []);
+  const hit = rows.find(b => {
+    const s0 = new Date(b.start_at).getTime();
+    const e0 = new Date(b.end_at || b.start_at).getTime();
+    return s0 < end.getTime() && e0 > start.getTime();
+  });
+  if (!hit) return null;
+  const t = new Intl.DateTimeFormat('uz-UZ', { timeZone: TZ, hour: '2-digit', minute: '2-digit' })
+    .format(new Date(hit.start_at));
+  return `Bu vaqtda sizda boshqa bron bor (${t}). Avval uni yakunlang yoki boshqa vaqtda skanerlang.`;
+}
+
 /** Avtoshkola o'quvchisi uchun mijoz yozuvi. Har o'quvchi bitta yozuv
  *  bo'lishi uchun external_ref ishlatiladi; bazada u ustun bo'lmasa
  *  telefon yoki ism bo'yicha topiladi (migratsiyasiz ham ishlaydi). */
@@ -105,7 +128,11 @@ async function schoolCustomer(rec: { student_name: string | null; student_phone:
   if (byRef && byRef[0]) return byRef[0];
 
   if (phone) {
-    const byPhone = await supabaseRest<any[]>('users', { query: `?phone=eq.${q(phone)}&select=*&limit=1` }).catch(() => []);
+    /* Faqat mijozlar orasidan — bir xil telefonli instruktor yoki
+       admin yozuviga bron biriktirib qo'ymaslik uchun. */
+    const byPhone = await supabaseRest<any[]>('users', {
+      query: `?phone=eq.${q(phone)}&role=eq.customer&select=*&limit=1`,
+    }).catch(() => []);
     if (byPhone[0]) return byPhone[0];
   }
 
@@ -808,7 +835,7 @@ export async function registerCashierRoutes(
       const code = match ? match[0] : normalizeSchoolCode(raw);
       if (!code) return reply.code(400).send({ ok: false, error: 'Kod bo‘sh' });
 
-      /* AVTOSHKOLA CHEKI (AVD-1234) — avtodrom12 da chiqarilgan.
+      /* AVTOSHKOLA CHEKI (AVS-12345) — avtodrom12 da chiqarilgan.
          Uni shu yerdagi payments emas, o'sha server tekshiradi. */
       if (isSchoolReceiptCode(code)) {
         if (!schoolBridgeReady()) {
@@ -898,6 +925,16 @@ export async function registerCashierRoutes(
           });
         }
 
+        /* Chekni ISHLATISHDAN OLDIN vaqt bo'shligini tekshiramiz.
+           Avval tekshirmasdan ishlatardik: instruktorning yaqin soatda
+           boshqa broni bo'lsa bron yozilmay, chek esa yonib ketardi. */
+        const peek = await verifySchoolReceipt(code);
+        const mins = Math.max(15, Math.min(600, Math.round(Number(peek.planned_minutes || 60))));
+        const clash = await instructorBusyAt(String(ip.id), new Date(), mins);
+        if (clash) {
+          return reply.code(409).send({ ok: false, error: clash });
+        }
+
         const insName = String(user?.full_name || '').trim() || null;
         const { receipt: rec, note } = await redeemSchoolReceipt({
           code,
@@ -910,19 +947,30 @@ export async function registerCashierRoutes(
         try {
           booking = await createSchoolBooking(ip, rec, code);
         } catch (e: any) {
-          /* Chek allaqachon ishlatilgan bo'lib qoldi — instruktor
-             qayta skanerlab ovora bo'lmasin, buni aniq aytamiz. */
-          console.error('[school-receipt] booking create failed:', e?.message || e);
-          return reply.code(500).send({
+          /* Bron yozilmadi — chekni QAYTARAMIZ, aks holda o'quvchining
+             tekin darsi yo'qolib ketadi va uni tiklab bo'lmaydi. */
+          const msg = String(e?.message || '');
+          console.error('[school-receipt] booking create failed:', msg);
+          const back = await releaseSchoolReceipt({ code, receiptId: rec.id, reason: 'Bron yozilmadi: ' + msg.slice(0, 120) });
+          const why = /no_instructor_overlap|instructor_overlap/i.test(msg)
+            ? 'Bu vaqtda sizda boshqa bron bor.'
+            : /no_customer_overlap|customer_overlap/i.test(msg)
+            ? 'Bu o‘quvchining shu vaqtda boshqa darsi bor.'
+            : /bookings_one_active_lesson/i.test(msg)
+            ? 'Avvalgi dars yakunlanmagan.'
+            : 'Dars yozilmadi.';
+          return reply.code(409).send({
             ok: false,
-            error: 'Chek qabul qilindi, lekin dars yozilmadi. Administratorga ayting: ' + code,
+            error: why + (back
+              ? ' Chek saqlanib qoldi — muammo hal bo‘lgach qayta skanerlang.'
+              : ' Chekni qaytarib bo‘lmadi, administratorga ayting: ' + code),
           });
         }
 
-        await supabaseRest('attendance_verifications', {
-          method: 'POST',
-          body: JSON.stringify({ booking_id: booking.id, method: 'qr', scanned_by: user?.id ?? null, receipt_code: code }),
-        }).catch((e) => console.error('attendance write failed:', e));
+        /* attendance_verifications ga yozmaymiz: bu jadval customer_id,
+           telegram_user_id va token_epoch ni majburiy talab qiladi,
+           bizda ular yo'q. Skaner izi bookings.school_receipt_code va
+           avtodrom12 dagi scanned_by_name da qoladi. */
 
         return { ok: true, school_lesson: true, booking: shapeSchool(rec, code, booking), note: note || null };
       }
