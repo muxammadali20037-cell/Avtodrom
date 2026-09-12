@@ -485,7 +485,15 @@ async function api(path, opt = {}) {
       headers:{ Accept:'application/json', 'Content-Type':'application/json', 'X-Telegram-Init-Data': INIT, ...(opt.headers||{}) } });
     const txt = await r.text(); let d = {};
     try { d = txt ? JSON.parse(txt) : {}; } catch { throw new Error(`Server JSON emas (HTTP ${r.status})`); }
-    if (!r.ok) { const e = new Error(errText(d, r.status, path)); e.status = r.status; throw e; }
+    if (!r.ok) {
+      const e = new Error(errText(d, r.status, path));
+      e.status = r.status;
+      /* Server texnik sababni ham yuborishi mumkin (masalan avtoshkola
+         cheki yozilmaganda). Uni yo'qotmaymiz — administratorga shu
+         matn kerak bo'ladi. */
+      if (d && d.detail) e.detail = String(d.detail);
+      throw e;
+    }
     return d;
   } catch (e) {
     if (e.name === 'AbortError') throw new Error('Server javob bermadi (15 soniya).');
@@ -870,8 +878,19 @@ async function verifyCode(code){
     const d = await api('/api/instructor/scan', { method:'POST', body: JSON.stringify({ code }) });
     showScanResult(d, code);
   } catch (e) {
+    /* Texnik sababni yashirmaymiz: administrator shu matnga qarab
+       tuzatadi. Yig'ilib turmasin deb yopiq <details> ichida. */
+    const tech = e.detail
+      ? `<details style="margin:0 0 12px">
+           <summary class="muted" style="font-size:12px;cursor:pointer">
+             Texnik sabab (administratorga ko‘rsating)</summary>
+           <div style="font-size:11px;line-height:1.5;margin-top:6px;padding:8px;
+                       background:#f6f7fb;border-radius:8px;word-break:break-word">
+             ${esc(e.detail)}</div></details>`
+      : '';
     sheet(`<h2 style="margin:0 0 4px">Chek qabul qilinmadi</h2>
       <div class="alert a-err" style="margin:12px 0">${esc(e.message)}</div>
+      ${tech}
       <div class="acts two" style="padding:0">
         <button class="btn" id="sfNo">Yopish</button>
         <button class="btn go" id="sfRetry">Qayta urinish</button></div>`);
