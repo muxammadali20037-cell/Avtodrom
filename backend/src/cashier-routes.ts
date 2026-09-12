@@ -5,6 +5,10 @@ import { q, findUserByTelegram, toProfile } from './identity.js';
 import { fmtWhen, fmtMoney } from './notify.js';
 import { readRegisterToken } from './shift-routes.js';
 import type { TelegramWebAppUser } from './telegram.js';
+import {
+  isSchoolReceiptCode, normalizeSchoolCode, schoolBridgeReady,
+  verifySchoolReceipt, redeemSchoolReceipt,
+} from './school-receipt.js';
 
 /**
  * KASSA — barcha to'lovlar shu yerdan o'tadi.
@@ -75,6 +79,120 @@ function shape(b: any, m: any) {
     total_minutes: mins,
     price: p?.amount ?? expected,
     is_paid: String(p?.status) === 'paid',
+  };
+}
+
+/* =======================================================================
+   AVTOSHKOLA CHEKI (avtodrom12 da chiqariladi, shu yerda skanerlanadi)
+
+   Chek tekin va unda instruktor yozilmagan — kim skanerlasa o'sha
+   biriktiriladi. Skanerlanganda shu yerda bron ochiladi, shuning uchun
+   dars instruktor jadvalida va hisobotda ko'rinadi. Pul yo'q: bron
+   bo'yicha to'lov yozuvi (payments) yaratilmaydi.
+   ======================================================================= */
+
+/** Avtoshkola o'quvchisi uchun mijoz yozuvi. Har o'quvchi bitta yozuv
+ *  bo'lishi uchun external_ref ishlatiladi; bazada u ustun bo'lmasa
+ *  telefon yoki ism bo'yicha topiladi (migratsiyasiz ham ishlaydi). */
+async function schoolCustomer(rec: { student_name: string | null; student_phone: string | null; code: string }) {
+  const name = String(rec.student_name || 'Avtoshkola o‘quvchisi').trim();
+  const phone = String(rec.student_phone || '').trim();
+  const ref = `avtodrom12:${phone || name.toLowerCase().replace(/\s+/g, ' ')}`;
+
+  const byRef = await supabaseRest<any[]>('users', {
+    query: `?external_ref=eq.${q(ref)}&select=*&limit=1`,
+  }).catch(() => null);          // ustun hali yo'q bo'lsa null
+  if (byRef && byRef[0]) return byRef[0];
+
+  if (phone) {
+    const byPhone = await supabaseRest<any[]>('users', { query: `?phone=eq.${q(phone)}&select=*&limit=1` }).catch(() => []);
+    if (byPhone[0]) return byPhone[0];
+  }
+
+  const base: any = { full_name: name, phone: phone || null, role: 'customer', is_active: true, is_blocked: false };
+  try {
+    return (await supabaseRest<any[]>('users', {
+      method: 'POST', headers: { Prefer: 'return=representation' },
+      body: JSON.stringify({ ...base, external_ref: ref }),
+    }))[0];
+  } catch {
+    /* external_ref ustuni yo'q — ustunsiz yaratamiz */
+    return (await supabaseRest<any[]>('users', {
+      method: 'POST', headers: { Prefer: 'return=representation' },
+      body: JSON.stringify(base),
+    }))[0];
+  }
+}
+
+/** Kod bo'yicha avtoshkola broni. Ustun bo'lmasa izohdan qidiriladi. */
+async function findSchoolBooking(code: string) {
+  const byCol = await supabaseRest<any[]>('bookings', {
+    query: `?school_receipt_code=eq.${q(code)}&select=*&order=created_at.desc&limit=1`,
+  }).catch(() => null);
+  if (byCol && byCol[0]) return byCol[0];
+  const byNote = await supabaseRest<any[]>('bookings', {
+    query: `?customer_note=like.*${q(code)}*&select=*&order=created_at.desc&limit=1`,
+  }).catch(() => []);
+  return byNote[0] || null;
+}
+
+/** Instruktorning avtoshkola darsi uchun bron yaratadi. */
+async function createSchoolBooking(ip: any, rec: any, code: string) {
+  const start = new Date();
+  const minutes = Math.max(15, Math.min(600, Math.round(Number(rec.planned_minutes || 60))));
+  const end = new Date(start.getTime() + minutes * 60000);
+  const customer = await schoolCustomer({ ...rec, code });
+
+  const note = `Avtoshkola${rec.school_name ? ' · ' + rec.school_name : ''}`
+    + `${rec.group_name ? ' · ' + rec.group_name : ''} · chek ${code} · to‘lovsiz`;
+
+  const payload: any = {
+    customer_id: customer.id,
+    instructor_id: ip.id,
+    booking_date: start.toISOString(),
+    start_at: start.toISOString(),
+    end_at: end.toISOString(),
+    duration_minutes: minutes,
+    status: 'in_progress',
+    source: 'avtodrom12',
+    arrived_at: start.toISOString(),
+    customer_note: note,
+  };
+
+  try {
+    return (await supabaseRest<any[]>('bookings', {
+      method: 'POST', headers: { Prefer: 'return=representation' },
+      body: JSON.stringify({ ...payload, school_receipt_code: code }),
+    }))[0];
+  } catch (e: any) {
+    if (/school_receipt_code/i.test(String(e?.message || ''))) {
+      /* Ustun hali qo'shilmagan — kod izohda qoladi, qidirish baribir ishlaydi */
+      return (await supabaseRest<any[]>('bookings', {
+        method: 'POST', headers: { Prefer: 'return=representation' },
+        body: JSON.stringify(payload),
+      }))[0];
+    }
+    throw e;
+  }
+}
+
+/** Skaner javobining avtoshkola ko'rinishi — frontend bir xil o'qiydi. */
+function shapeSchool(rec: any, code: string, booking: any | null) {
+  return {
+    id: booking?.id || null,
+    school_lesson: true,
+    receipt_code: code,
+    status: booking?.status || 'confirmed',
+    start_at: booking?.start_at || null,
+    duration_minutes: Number(rec.planned_minutes || 60),
+    total_minutes: Number(rec.planned_minutes || 60),
+    price: 0,
+    is_paid: true,          // tekin — kassada to'lov kutilmaydi
+    is_free: true,
+    customer: { full_name: rec.student_name || 'Avtoshkola o‘quvchisi', phone: rec.student_phone || '' },
+    school_name: rec.school_name || null,
+    group_name: rec.group_name || null,
+    course: { name: 'Avtoshkola amaliyoti' },
   };
 }
 
@@ -687,8 +805,37 @@ export async function registerCashierRoutes(
       const raw = String((request.body as any)?.code || '').trim().toUpperCase();
       // QR dan to'liq URL kelishi ham mumkin — faqat kodni ajratamiz
       const match = raw.match(/AVD-\d{6}-[0-9A-Z]{5}/);
-      const code = match ? match[0] : raw;
+      const code = match ? match[0] : normalizeSchoolCode(raw);
       if (!code) return reply.code(400).send({ ok: false, error: 'Kod bo‘sh' });
+
+      /* AVTOSHKOLA CHEKI (AVD-1234) — avtodrom12 da chiqarilgan.
+         Uni shu yerdagi payments emas, o'sha server tekshiradi. */
+      if (isSchoolReceiptCode(code)) {
+        if (!schoolBridgeReady()) {
+          return reply.code(503).send({ ok: false, error: 'Avtoshkola cheklari hali sozlanmagan. Administratorga ayting.' });
+        }
+        const rec = await verifySchoolReceipt(code);
+        if (rec.status === 'cancelled') return reply.code(409).send({ ok: false, error: 'Bu chek bekor qilingan' });
+        if (rec.status === 'scanned') {
+          const existing = await findSchoolBooking(code);
+          const mine = existing && String(existing.instructor_id) === String(ip.id);
+          return reply.code(409).send({
+            ok: false,
+            error: mine
+              ? 'Bu chek bo‘yicha darsingiz allaqachon boshlangan'
+              : `Bu chek allaqachon ishlatilgan${rec.scanned_by_name ? ` (${rec.scanned_by_name})` : ''}`,
+          });
+        }
+        return {
+          ok: true,
+          booking: shapeSchool(rec, code, null),
+          can_start: true,
+          can_finish: false,
+          already: null,
+          receipt_code: code,
+          school_lesson: true,
+        };
+      }
 
       const payment = (await supabaseRest<any[]>('payments', { query: `?receipt_code=eq.${q(code)}&select=*&limit=1` }))[0];
       if (!payment) return reply.code(404).send({ ok: false, error: 'Bunday chek topilmadi. Kodni tekshiring.' });
@@ -728,7 +875,58 @@ export async function registerCashierRoutes(
         : null;
       if (!ip) return reply.code(403).send({ ok: false, error: 'Instruktor topilmadi' });
 
-      const code = String((request.body as any)?.code || '').trim().toUpperCase();
+      const rawStart = String((request.body as any)?.code || '').trim().toUpperCase();
+      const code = /AVD-\d{6}-[0-9A-Z]{5}/.test(rawStart)
+        ? (rawStart.match(/AVD-\d{6}-[0-9A-Z]{5}/) as RegExpMatchArray)[0]
+        : normalizeSchoolCode(rawStart);
+
+      /* AVTOSHKOLA CHEKI — avtodrom12 da "ishlatilgan" deb belgilanadi,
+         shu yerda esa bron ochiladi. Chek bir marta ishlaydi: redeem
+         tranzaksiya ichida, ikkinchi urinishda 409 qaytadi. */
+      if (isSchoolReceiptCode(code)) {
+        if (!schoolBridgeReady()) {
+          return reply.code(503).send({ ok: false, error: 'Avtoshkola cheklari hali sozlanmagan. Administratorga ayting.' });
+        }
+        const active = (await supabaseRest<any[]>('bookings', {
+          query: `?instructor_id=eq.${q(String(ip.id))}&status=eq.in_progress&select=id&limit=1`,
+        }))[0];
+        if (active) {
+          return reply.code(409).send({
+            ok: false,
+            error: 'Avvalgi dars yakunlanmagan. Avval uni yakunlang, keyin yangisini boshlang.',
+            active_booking_id: active.id,
+          });
+        }
+
+        const insName = String(user?.full_name || '').trim() || null;
+        const { receipt: rec, note } = await redeemSchoolReceipt({
+          code,
+          instructorName: insName,
+          instructorRef: String(ip.id),
+          vehiclePlate: ip.vehicle_plate || null,
+        });
+
+        let booking: any = null;
+        try {
+          booking = await createSchoolBooking(ip, rec, code);
+        } catch (e: any) {
+          /* Chek allaqachon ishlatilgan bo'lib qoldi — instruktor
+             qayta skanerlab ovora bo'lmasin, buni aniq aytamiz. */
+          console.error('[school-receipt] booking create failed:', e?.message || e);
+          return reply.code(500).send({
+            ok: false,
+            error: 'Chek qabul qilindi, lekin dars yozilmadi. Administratorga ayting: ' + code,
+          });
+        }
+
+        await supabaseRest('attendance_verifications', {
+          method: 'POST',
+          body: JSON.stringify({ booking_id: booking.id, method: 'qr', scanned_by: user?.id ?? null, receipt_code: code }),
+        }).catch((e) => console.error('attendance write failed:', e));
+
+        return { ok: true, school_lesson: true, booking: shapeSchool(rec, code, booking), note: note || null };
+      }
+
       const payment = (await supabaseRest<any[]>('payments', { query: `?receipt_code=eq.${q(code)}&status=eq.paid&select=*&limit=1` }))[0];
       if (!payment) return reply.code(404).send({ ok: false, error: 'To‘langan chek topilmadi' });
 
