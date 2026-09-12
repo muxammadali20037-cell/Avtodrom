@@ -62,6 +62,12 @@ export function readRegisterToken(token: string): string | null {
   return id;
 }
 
+/** Faqat administrator. Kassir 403 oladi. */
+async function requireStaffAdmin(req: any) {
+  const { guardAdmin } = await import('./admin-password-routes.js');
+  await guardAdmin(req);
+}
+
 export async function registerShiftRoutes(
   app: FastifyInstance,
   requireAdmin: (request: any) => Promise<void>,
@@ -672,7 +678,9 @@ export async function registerShiftRoutes(
   /** PIN o'rnatish / o'zgartirish. */
   app.put('/api/admin/mgmt-pin', async (req: any, reply: any) => {
     try {
-      await requireAdmin(req);
+      /* BOSHQARUV PIN ini faqat administrator o'zgartira oladi — ilgari
+         har qanday kirgan xodim (kassir ham) uni qayta yozib qo'yardi. */
+      await requireStaffAdmin(req);
       const pin = String(req.body?.pin ?? '').trim();
       if (!/^\d{4,8}$/.test(pin)) {
         return reply.code(400).send({ ok: false, error: 'PIN 4 dan 8 tagacha raqam bo‘lsin' });
