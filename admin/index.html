@@ -762,6 +762,7 @@ pre.json{background:#F7FAFF;border:1px solid var(--line);border-radius:8px;paddi
   
   
   <button class="nav" data-grp="admin" data-p="reports">Hisobot</button>
+  <button class="nav" data-grp="admin" data-p="insacc">Instruktor hisob-kitobi</button>
   <button class="nav" data-grp="admin" data-p="applications">Arizalar <span id="appCount" class="count">0</span></button>
   <button class="nav" data-grp="admin" data-p="manual">Qo‘lda bron</button>
   <button class="nav" data-grp="admin" data-p="bookings">Bronlar <span id="bookCount" class="count">0</span></button>
@@ -921,6 +922,30 @@ pre.json{background:#F7FAFF;border:1px solid var(--line);border-radius:8px;paddi
   </div>
   <div class="card"><div id="ctlPicker" class="inspick"></div></div>
   <div id="ctlBody"></div>
+</section>
+
+<section id="insacc" class="page">
+  <div class="head"><div><h1>Instruktor hisob-kitobi</h1>
+    <p>Oy oxirida har bir instruktor bo‘yicha hisob: nechta o‘quvchi, nechtasi avtoshkola, nechtasi pullik.</p></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn" id="iaPrint">Chop etish</button>
+      <button class="btn primary" id="iaCsv">Excel/CSV</button>
+    </div></div>
+
+  <div class="card">
+    <div class="toolbar">
+      <label style="font-size:12px;font-weight:800;color:var(--muted)">Dan</label>
+      <input id="iaFrom" type="date" class="input" style="max-width:170px">
+      <label style="font-size:12px;font-weight:800;color:var(--muted)">Gacha</label>
+      <input id="iaTo" type="date" class="input" style="max-width:170px">
+      <button class="btn" id="iaThisMonth">Bu oy</button>
+      <button class="btn" id="iaPrevMonth">O‘tgan oy</button>
+      <button class="btn primary" id="iaShow">Ko‘rsatish</button>
+    </div>
+    <div id="iaPicker" class="inspick"></div>
+  </div>
+
+  <div id="iaBody"></div>
 </section>
 
 <section id="applications" class="page">
@@ -1200,6 +1225,21 @@ pre.json{background:#F7FAFF;border:1px solid var(--line);border-radius:8px;paddi
 
 <section id="settings" class="page">
   <div class="head"><div><h1>Sozlamalar</h1><p>Tizim nomi va bronlarni boshqarish.</p></div></div>
+
+  <!-- Avtoshkola QR cheklari: instruktorga "sozlanmagan" chiqsa,
+       administrator shu yerdan sababini ko'radi -->
+  <div class="card" style="margin-bottom:15px">
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px">
+      <h3 style="margin:0;flex:1">Avtoshkola cheklari (avtodrom12 ko‘prigi)</h3>
+      <span id="sbBadge" class="status wait">tekshirilmagan</span>
+      <button class="btn" id="sbCheck">Tekshirish</button>
+    </div>
+    <div id="sbBody" class="muted" style="font-size:13px">
+      Instruktor avtoshkola chekini (AVS-12345) skanerlaganda «sozlanmagan»
+      deb chiqsa — «Tekshirish» ni bosing, nima yetishmayotgani yoziladi.
+    </div>
+  </div>
+
   <div class="card">
     <div class="field"><label>TIZIM NOMI</label><input id="systemName" class="input" value="AVTODROM INDEX"></div>
     <div class="field"><label>BRONLAR</label><select id="bookingEnabled" class="select"><option value="true">Yoqilgan</option><option value="false">O‘chirilgan</option></select></div>
@@ -1516,8 +1556,9 @@ function showPage(id){
   if(id==='payments'){ loadPayments(); const h=document.querySelector('#payments .head p'); if(h) h.textContent = REGISTER ? `${REGISTER.code} kassasining to‘lovlari` : 'Barcha kassalar bo‘yicha'; }
   if(id==='checkout'){ initCheckout(); }
   if(id==='dashboard'){ if(!$('dDate').value)$('dDate').value=kToday(); loadAnalytics(); }
+  if(id==='insacc'){ initInsAcc(); }
   if(id==='control'){ if(!$('cDate').value)$('cDate').value=kToday(); renderCtlPicker(); loadControl(); }
-  if(id==='settings'){ /* PIN olib tashlandi — login/parol yetarli */ }
+  if(id==='settings'){ checkSchoolBridge(); }
   if(id==='cashier'){ if(!$('kDate').value) $('kDate').value=kToday(); fillCashierInstructors(); loadCashier(); }
 }
 document.querySelectorAll('.nav').forEach(x=>x.addEventListener('click',()=>showPage(x.dataset.p)));
@@ -1951,6 +1992,40 @@ function renderReviews(){
     }catch(e){notice(e.message)}
   });
 }
+
+/* ---------- Avtoshkola ko'prigi (tashxis) ---------- */
+async function checkSchoolBridge(){
+  const badge = $('sbBadge'), body = $('sbBody'), btn = $('sbCheck');
+  badge.className = 'status wait'; badge.textContent = 'tekshirilmoqda…';
+  btn.disabled = true;
+  try{
+    const d = await api('/api/admin/school-bridge/status');
+    const b = d.bridge || {};
+    badge.className = 'status ' + (b.ok ? 'ok' : 'bad');
+    badge.textContent = b.ok ? 'ishlayapti' : 'ishlamayapti';
+    const yn = v => v ? '<b style="color:#0d7a4a">bor</b>' : '<b style="color:#bd2525">yo‘q</b>';
+    body.innerHTML = `
+      <div style="display:grid;gap:6px;font-size:13px">
+        <div>AVTODROM12_URL — ${yn(b.url_set)} ${b.url ? `<code>${esc(b.url)}</code>` : ''}</div>
+        <div>RECEIPT_SHARED_KEY — ${yn(b.key_set)}</div>
+        <div>avtodrom12 serveriga ulanish — ${yn(b.reachable)}${b.status ? ` <span class="muted">(javob ${b.status})</span>` : ''}</div>
+        <div style="margin-top:6px"><b>${esc(b.detail || '')}</b></div>
+      </div>
+      ${b.ok ? '' : `<div class="warn" style="margin-top:12px">
+        <b>Nima qilish kerak</b><br>
+        Vercel → <b>Avtodrom</b> loyihasi → Settings → Environment Variables:<br>
+        • <code>AVTODROM12_URL</code> = avtodrom12 manzili (masalan <code>https://avtodrom12-five.vercel.app</code>)<br>
+        • <code>RECEIPT_SHARED_KEY</code> = uzun maxfiy kalit<br><br>
+        Vercel → <b>avtodrom12</b> loyihasi → Environment Variables:<br>
+        • <code>RECEIPT_SHARED_KEY</code> = <b>aynan o‘sha kalit</b><br><br>
+        Keyin <b>ikkala loyihani ham qayta deploy qiling</b> — Vercel o‘zgargan
+        o‘zgaruvchini eski qurilmaga qo‘llamaydi.</div>`}`;
+  }catch(e){
+    badge.className = 'status bad'; badge.textContent = 'xato';
+    body.innerHTML = `<div class="error">${esc(e.message)}</div>`;
+  }finally{ btn.disabled = false; }
+}
+$('sbCheck').onclick = checkSchoolBridge;
 
 /* ---------- Hisobot ---------- */
 function filteredReport(){
@@ -2895,6 +2970,177 @@ function renderCourseTable(list){
    INSTRUKTOR NAZORATI
    ========================================================================= */
 S.ctlIns = null; S.ctlPeriod = 'day';
+
+/* =========================================================================
+   INSTRUKTOR HISOB-KITOBI  (BOSHQARUV)
+
+   Oy oxirida har bir instruktor bo'yicha yopiladigan hisob:
+     · nechta o'quvchini o'qitgan (takrorlanmas mijozlar)
+     · nechtasi AVTOSHKOLA darsi (avtodrom12 dagi QR chek, tekin)
+     · nechtasi PULLIK
+     · qancha soat, qancha tushum (naqd / terminal)
+   Ma'lumot serverda sanaladi — brauzerdagi ro'yxat faqat bitta
+   sahifa bo'lgani uchun oylik hisobni undan chiqarib bo'lmaydi.
+   ========================================================================= */
+const IA = { ins: null, data: null, loading: false };
+
+function iaMonth(shift){
+  /* Toshkent vaqti bo'yicha oy chegaralari */
+  const [Y, M] = kToday().split('-').map(Number);
+  const y = M + shift < 1 ? Y - 1 : (M + shift > 12 ? Y + 1 : Y);
+  const m = ((M + shift - 1 + 12) % 12) + 1;
+  const last = new Date(Date.UTC(y, m, 0)).getUTCDate();
+  const p = n => String(n).padStart(2, '0');
+  return { from: `${y}-${p(m)}-01`, to: `${y}-${p(m)}-${p(last)}` };
+}
+
+function initInsAcc(){
+  if (!$('iaFrom').value || !$('iaTo').value) {
+    const r = iaMonth(0);
+    $('iaFrom').value = r.from;
+    /* Joriy oy uchun bugungacha — kelajak kunlar hisobga kirmaydi */
+    $('iaTo').value = kToday() < r.to ? kToday() : r.to;
+  }
+  iaPaintPicker();
+  if (IA.ins) loadInsAcc(); else iaEmpty('Yuqoridan instruktorni tanlang.');
+}
+
+function iaEmpty(text){
+  $('iaBody').innerHTML = `<div class="card empty">${esc(text)}</div>`;
+}
+
+function iaPaintPicker(){
+  const list = S.instructors || [];
+  $('iaPicker').innerHTML = list.length
+    ? list.map(i => `<button data-iains="${esc(i.id)}" class="${String(IA.ins)===String(i.id)?'on':''}">${esc(iname(i))}</button>`).join('')
+    : '<div class="empty" style="padding:12px">Instruktorlar yo‘q.</div>';
+  $('iaPicker').querySelectorAll('[data-iains]').forEach(b => b.onclick = () => {
+    IA.ins = b.dataset.iains; iaPaintPicker(); loadInsAcc();
+  });
+}
+
+async function loadInsAcc(){
+  const f = $('iaFrom').value, t = $('iaTo').value;
+  if (!IA.ins) return iaEmpty('Yuqoridan instruktorni tanlang.');
+  if (!f || !t) return iaEmpty('«Dan» va «Gacha» sanalarini tanlang.');
+  if (f > t) return iaEmpty('«Dan» sanasi «Gacha» dan keyin turibdi.');
+  if (IA.loading) return;
+  IA.loading = true;
+  $('iaBody').innerHTML = '<div class="card empty">Hisoblanmoqda…</div>';
+  try{
+    const d = await api(`/api/admin/instructor-control/${encodeURIComponent(IA.ins)}`
+      + `?from=${encodeURIComponent(f)}&to=${encodeURIComponent(t)}`);
+    IA.data = d;
+    renderInsAcc(d);
+  }catch(e){
+    IA.data = null;
+    $('iaBody').innerHTML = `<div class="card"><div class="error">${esc(e.message)}</div></div>`;
+  }finally{ IA.loading = false; }
+}
+
+function iaHours(min){ return (Number(min||0)/60).toFixed(1); }
+
+function renderInsAcc(d){
+  const s0 = d.summary || {};
+  const sch = s0.school || {}, pay = s0.paid || {};
+  const insName = iname((S.instructors||[]).find(x => String(x.id)===String(IA.ins))) || 'Instruktor';
+  const kpi = (l, v, sub) => `<div class="kpi"><span>${esc(l)}</span><b>${v}</b>${sub?`<small class="muted" style="display:block;font-size:11px;margin-top:3px">${esc(sub)}</small>`:''}</div>`;
+
+  const students = d.students || [];
+  const rows = d.rows || [];
+
+  const box = (title, g, color, extra) => `
+    <div class="card" style="border-left:4px solid ${color}">
+      <h3 style="margin:0 0 12px">${esc(title)}</h3>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(96px,1fr));gap:12px">
+        <div><div class="muted" style="font-size:11px;font-weight:800">O‘QUVCHI</div><b style="font-size:21px">${nf(g.students)}</b></div>
+        <div><div class="muted" style="font-size:11px;font-weight:800">DARS</div><b style="font-size:21px">${nf(g.lessons)}</b></div>
+        <div><div class="muted" style="font-size:11px;font-weight:800">TUGAGAN</div><b style="font-size:21px">${nf(g.completed)}</b></div>
+        <div><div class="muted" style="font-size:11px;font-weight:800">SOAT</div><b style="font-size:21px">${iaHours(g.minutes)}</b></div>
+        ${extra||''}
+      </div>
+    </div>`;
+
+  $('iaBody').innerHTML = `
+    <div class="card" style="margin-bottom:15px">
+      <b style="font-size:17px">${esc(insName)}</b>
+      <span class="muted" style="margin-left:10px">${esc($('iaFrom').value)} — ${esc($('iaTo').value)}</span>
+    </div>
+
+    <div class="kpis">
+      ${kpi('O‘quvchilar', nf(s0.students), 'takrorlanmas')}
+      ${kpi('Jami dars', nf(s0.bookings))}
+      ${kpi('Tugagan', nf(s0.completed))}
+      ${kpi('Kelmagan', nf(s0.no_show))}
+      ${kpi('Soatlar', iaHours(s0.minutes))}
+      ${kpi('Tushum', nf(s0.revenue), `naqd ${nf(s0.cash)} · terminal ${nf(s0.card)}`)}
+    </div>
+
+    <div class="grid2" style="margin-bottom:15px">
+      ${box('Avtoshkola (tekin)', sch, '#414195')}
+      ${box('Pullik', pay, '#0d7a4a',
+        `<div><div class="muted" style="font-size:11px;font-weight:800">TUSHUM</div><b style="font-size:21px">${nf(pay.revenue)}</b></div>`)}
+    </div>
+
+    <div class="card" style="margin-bottom:15px">
+      <h3 style="margin-top:0">O‘quvchilar kesimida (${nf(students.length)})</h3>
+      <div class="tableWrap"><table class="table narrow">
+        <thead><tr><th>O‘quvchi</th><th>Telefon</th><th>Dars</th><th>Avtoshkola</th><th>Pullik</th><th>Soat</th><th>Summa</th></tr></thead>
+        <tbody>${students.length ? students.map(x => `<tr>
+          <td>${esc(x.name)}</td>
+          <td>${esc(x.phone||'—')}</td>
+          <td>${nf(x.lessons)}</td>
+          <td>${x.school?nf(x.school):'—'}</td>
+          <td>${x.paid?nf(x.paid):'—'}</td>
+          <td>${iaHours(x.minutes)}</td>
+          <td>${x.amount?nf(x.amount):'—'}</td></tr>`).join('')
+          : '<tr><td colspan="7" class="empty">Bu oraliqda dars yo‘q.</td></tr>'}</tbody>
+      </table></div>
+    </div>
+
+    <div class="card">
+      <h3 style="margin-top:0">Darslar ro‘yxati (${nf(rows.length)})</h3>
+      <div class="tableWrap" style="max-height:460px"><table class="table narrow">
+        <thead><tr><th>Sana</th><th>O‘quvchi</th><th>Turi</th><th>Daq.</th><th>Holat</th><th>Chek</th><th>Summa</th></tr></thead>
+        <tbody>${rows.length ? rows.map(r => `<tr>
+          <td>${esc(dt(r.start_at))}</td>
+          <td>${esc(uname(r.customer))}</td>
+          <td><span class="status ${r.school?'run':'ok'}">${r.school?'Avtoshkola':'Pullik'}</span></td>
+          <td>${nf(r.duration_minutes)}</td>
+          <td>${badge(r.status)}</td>
+          <td>${esc(r.receipt_code||r.school_receipt_code||'—')}</td>
+          <td>${r.amount?nf(r.amount):'—'}</td></tr>`).join('')
+          : '<tr><td colspan="7" class="empty">Dars yo‘q.</td></tr>'}</tbody>
+      </table></div>
+    </div>`;
+}
+
+$('iaShow').onclick = loadInsAcc;
+$('iaThisMonth').onclick = () => {
+  const r = iaMonth(0);
+  $('iaFrom').value = r.from;
+  $('iaTo').value = kToday() < r.to ? kToday() : r.to;
+  loadInsAcc();
+};
+$('iaPrevMonth').onclick = () => {
+  const r = iaMonth(-1);
+  $('iaFrom').value = r.from; $('iaTo').value = r.to;
+  loadInsAcc();
+};
+$('iaCsv').onclick = () => {
+  if (!IA.data) return toast('Avval hisobotni ko‘rsating');
+  const insName = iname((S.instructors||[]).find(x => String(x.id)===String(IA.ins))) || '';
+  csv(`instruktor-hisob-${$('iaFrom').value}_${$('iaTo').value}.csv`,
+    (IA.data.students||[]).map(x => ({
+      Instruktor: insName, Oquvchi: x.name, Telefon: x.phone || '',
+      Darslar: x.lessons, Avtoshkola: x.school, Pullik: x.paid,
+      Soat: iaHours(x.minutes), Summa: x.amount,
+    })));
+};
+$('iaPrint').onclick = () => {
+  if (!IA.data) return toast('Avval hisobotni ko‘rsating');
+  window.print();
+};
 
 function renderCtlPicker(){
   const list = S.instructors || [];
