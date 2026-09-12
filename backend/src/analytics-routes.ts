@@ -58,6 +58,13 @@ async function report(from: Date, to: Date, bucket: string) {
 export async function registerAnalyticsRoutes(
   app: FastifyInstance,
   requireAdmin: (request: any) => Promise<void>,
+  /* «Instruktor nazorati» kassir menyusida ham bor — u kassirning
+     kundalik ishi (kim qachon ishlagan, nechta chek urilgan). Shu sabab
+     unga alohida, yumshoqroq tekshiruv beriladi: har qanday kirgan
+     xodim. Umumiy biznes statistikasi (analytics) esa avvalgidek
+     faqat administrator uchun qoladi.
+     Berilmasa — eski xatti-harakat: hammasi faqat administrator. */
+  requireStaff: (request: any) => Promise<void> = requireAdmin,
 ) {
   /**
    * Umumiy hisobot.
@@ -118,7 +125,7 @@ export async function registerAnalyticsRoutes(
    */
   app.get('/api/admin/instructor-control/:id', async (req: any, reply: any) => {
     try {
-      await requireAdmin(req);
+      await requireStaff(req);          // kassir ham ko'radi (o'z ishi)
       const instructorId = String(req.params.id);
       const period = String(req.query?.period || 'day');
 
