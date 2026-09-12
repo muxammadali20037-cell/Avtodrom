@@ -8,9 +8,13 @@
  *     Skanerlanganda dars shu yerda instruktor jadvaliga va hisobotiga
  *     tushadi, avtodrom12 da esa chek "ishlatilgan" bo'ladi.
  *
- * KOD FORMATLARI farq qiladi, shuning uchun adashmaydi:
- *   Avtodrom o'z cheki : AVD-123456-A1B2C  (payments.receipt_code)
- *   avtodrom12 cheki   : AVD-1234          (4-5 xonali)
+ * KOD FORMATLARI:
+ *   Avtodrom o'z cheki  : AVD-123456-A1B2C  (payments.receipt_code)
+ *   Avtodrom pickup kod : AVD-1234          (mijozga beriladi)
+ *   Avtoshkola cheki    : AVS-12345         (avtodrom12 chiqaradi)
+ * "AVS" ataylab boshqa prefiks: pickup_code ham AVD-1234 ko'rinishida
+ * bo'lgani uchun ikkalasi aralashib, birovning cheki ishlatilib
+ * ketishi mumkin edi.
  *
  * SOZLAMA (Vercel -> Environment Variables):
  *   AVTODROM12_URL        — masalan https://avtodrom12.vercel.app
@@ -23,6 +27,7 @@ const BASE = String(process.env.AVTODROM12_URL || process.env.SCHOOL_RECEIPT_URL
 const KEY = String(process.env.RECEIPT_SHARED_KEY || '');
 
 export type SchoolReceipt = {
+  id?: string;
   code: string;
   status?: string;
   student_name: string | null;
@@ -34,16 +39,18 @@ export type SchoolReceipt = {
   free: true;
 };
 
-/** avtodrom12 cheki shu ko'rinishda: AVD-1234 yoki AVD-12345 */
+/** Avtoshkola cheki: AVS-12345 */
 export function isSchoolReceiptCode(code: string): boolean {
-  return /^AVD-\d{4,5}$/.test(String(code || '').trim().toUpperCase());
+  return /^AVS-\d{5}$/.test(String(code || '').trim().toUpperCase());
 }
 
-/** Foydalanuvchi "1234" deb yozsa ham to'g'ri kodga aylantiramiz. */
+/** QR ichidan yoki qo'lda yozilgan matndan avtoshkola kodini ajratadi.
+    Faqat 5 xonali raqam yozilsa ham qabul qilamiz — AVD bilan
+    chalkashmaydi, chunki prefiks boshqacha. */
 export function normalizeSchoolCode(raw: string): string {
   const s = String(raw || '').trim().toUpperCase().replace(/\s+/g, '');
-  if (/^\d{4,5}$/.test(s)) return `AVD-${s}`;
-  const m = s.match(/AVD-\d{4,5}(?!\d|-)/);
+  if (/^\d{5}$/.test(s)) return `AVS-${s}`;
+  const m = s.match(/AVS-\d{5}/);
   return m ? m[0] : s;
 }
 
@@ -92,7 +99,17 @@ async function call(path: string, init?: RequestInit): Promise<any> {
 /** Chekni ISHLATMASDAN tekshiradi — skaner darhol ko'rsatishi uchun. */
 export async function verifySchoolReceipt(code: string): Promise<SchoolReceipt> {
   const d = await call(`/api/receipts/verify?code=${encodeURIComponent(normalizeSchoolCode(code))}`);
-  return d.receipt as SchoolReceipt;
+  return assertReceipt(d);
+}
+
+/** Javob kutilgan shaklda kelganini tekshiradi — avtodrom12 kutilmagan
+    narsa qaytarsa, undefined bilan ishlab ketib chekni yoqib yubormaymiz. */
+function assertReceipt(d: any): SchoolReceipt {
+  const r = d?.receipt;
+  if (!r || typeof r !== 'object' || !r.code) {
+    throw new BridgeError('Avtoshkola serveri kutilmagan javob qaytardi', 502);
+  }
+  return r as SchoolReceipt;
 }
 
 /** Chekni ISHLATADI. Bir chek faqat bir marta — ikkinchisida 409 keladi. */
@@ -113,21 +130,41 @@ export async function redeemSchoolReceipt(input: {
       external_booking_id: input.bookingId || null,
     }),
   });
-  return { receipt: d.receipt as SchoolReceipt, note: d.note ?? null };
+  return { receipt: assertReceipt(d), note: d.note ?? null };
 }
 
 /** Dars yakunlandi — avtodrom12 dagi sessiya ham yopiladi.
  *  Bu chaqiruv darsni to'xtatmaydi: xato bo'lsa faqat log yoziladi. */
-export async function completeSchoolReceipt(code: string, durationSeconds?: number): Promise<void> {
+export async function completeSchoolReceipt(code: string, durationSeconds?: number, receiptId?: string | null): Promise<void> {
   try {
     await call('/api/receipts/complete', {
       method: 'POST',
       body: JSON.stringify({
         code: normalizeSchoolCode(code),
+        receipt_id: receiptId || undefined,
         duration_seconds: Number.isFinite(Number(durationSeconds)) ? Math.round(Number(durationSeconds)) : undefined,
       }),
     });
   } catch (e: any) {
     console.error('[school-receipt] complete failed:', e?.message || e);
+  }
+}
+
+/** Chekni QAYTARADI: biz o'z tomonimizda darsni ocholmadik.
+ *  Shu bo'lmasa o'quvchining tekin darsi yo'qolib ketardi. */
+export async function releaseSchoolReceipt(input: { code: string; receiptId?: string | null; reason?: string }): Promise<boolean> {
+  try {
+    await call('/api/receipts/release', {
+      method: 'POST',
+      body: JSON.stringify({
+        code: normalizeSchoolCode(input.code),
+        receipt_id: input.receiptId || undefined,
+        reason: input.reason || 'Avtodrom tomonda dars ochilmadi',
+      }),
+    });
+    return true;
+  } catch (e: any) {
+    console.error('[school-receipt] release failed:', e?.message || e);
+    return false;
   }
 }
