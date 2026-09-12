@@ -874,6 +874,23 @@ export async function registerAdminPasswordRoutes(app: FastifyInstance) {
         }
         insPatch.experience_years = y;
       }
+      /* AVTOMOBIL. avtodrom12 tomonda sessiya AYNAN shu raqam bo'yicha
+         ochiladi — bo'sh bo'lsa avtoshkola darsi u yerda ko'rinmaydi. */
+      if (b.vehicle_plate !== undefined) {
+        const plate = String(b.vehicle_plate).toUpperCase().replace(/\s+/g, ' ').trim();
+        if (plate && !/^[0-9A-Z ]{5,15}$/.test(plate)) {
+          return reply.code(400).send({ ok: false, error: 'Avtomobil raqami noto‘g‘ri. Masalan: 01 111 QQQ yoki 01 A 555 AA' });
+        }
+        insPatch.vehicle_plate = plate || null;
+      }
+      if (b.vehicle_model !== undefined) {
+        const model = String(b.vehicle_model).trim();
+        if (model.length > 80) {
+          return reply.code(400).send({ ok: false, error: 'Rusumi juda uzun' });
+        }
+        insPatch.vehicle_model = model || null;
+      }
+
       if (b.bio !== undefined) {
         const bio = String(b.bio).trim();
         // Instruktorlar tavsifni batafsil yozadi (xizmatlar ro'yxati bilan),
