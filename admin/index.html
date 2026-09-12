@@ -48,7 +48,9 @@ button,input,select,textarea{font:inherit}.hidden{display:none!important}
 .bar{flex:1;min-width:8px;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:5px;height:100%}
 .bar .v{width:100%;border-radius:6px 6px 0 0;background:linear-gradient(180deg,var(--g2),var(--g));min-height:3px;transition:.2s}
 .bar .v:hover{filter:brightness(1.15)}
-.bar small{font-size:9px;color:var(--muted);white-space:nowrap;transform:rotate(-45deg);transform-origin:top left;height:26px}
+/* Soat yozuvlari ilgari 9px va -45 gradus burilgan edi — o'qib bo'lmasdi.
+   Ustun 13 ta, joy yetadi: to'g'ri va kattaroq yozamiz. */
+.bar small{font-size:11px;font-weight:700;color:#6B7689;white-space:nowrap;height:auto;letter-spacing:.2px}
 .pie{display:flex;gap:18px;align-items:center;flex-wrap:wrap}
 .legend{display:grid;gap:8px;font-size:13px}
 .legend div{display:flex;align-items:center;gap:8px}
@@ -304,7 +306,9 @@ button,input,select,textarea{font:inherit}.hidden{display:none!important}
 .bar{flex:1;min-width:8px;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:5px;height:100%}
 .bar .v{width:100%;border-radius:6px 6px 0 0;background:linear-gradient(180deg,var(--g2),var(--g));min-height:3px;transition:.2s}
 .bar .v:hover{filter:brightness(1.15)}
-.bar small{font-size:9px;color:var(--muted);white-space:nowrap;transform:rotate(-45deg);transform-origin:top left;height:26px}
+/* Soat yozuvlari ilgari 9px va -45 gradus burilgan edi — o'qib bo'lmasdi.
+   Ustun 13 ta, joy yetadi: to'g'ri va kattaroq yozamiz. */
+.bar small{font-size:11px;font-weight:700;color:#6B7689;white-space:nowrap;height:auto;letter-spacing:.2px}
 .pie{display:flex;gap:18px;align-items:center;flex-wrap:wrap}
 .legend{display:grid;gap:8px;font-size:13px}
 .legend div{display:flex;align-items:center;gap:8px}
@@ -466,6 +470,9 @@ button,input,select,textarea{font:inherit}.hidden{display:none!important}
 .lockbox .input{margin-bottom:14px}
 .warn{padding:11px;border-radius:11px;background:#fff8e6;color:#8a6500;border:1px solid #ffe6a8;margin-bottom:12px;font-size:13px}
 .empty{padding:25px;text-align:center;color:var(--muted)}
+/* «hozirgi vaqt» / «qo'lda» belgisi — kassir soat qotib qolganini bilsin */
+.nowtag{display:inline-block;margin-left:6px;padding:2px 7px;border-radius:99px;font-size:9px;font-weight:900;background:#e7f6ee;color:#0d7a4a;vertical-align:middle}
+.nowtag.manual{background:#fff4d7;color:#9a6800}
 .actions{display:flex;gap:5px;flex-wrap:wrap}
 .mediaGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
 .media{border:1px solid var(--line);border-radius:13px;overflow:hidden;background:#fff}
@@ -997,7 +1004,11 @@ pre.json{background:#F7FAFF;border:1px solid var(--line);border-radius:8px;paddi
           </div></div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
           <div class="field"><label>SANA</label><input id="coDate" class="input" type="date"></div>
-          <div class="field"><label>VAQT</label><input id="coTime" class="input" type="time" step="900"></div>
+          <div class="field"><label>VAQT <span id="coNowTag" class="nowtag">hozirgi vaqt</span></label>
+            <div style="display:flex;gap:6px">
+              <input id="coTime" class="input" type="time" step="60" style="flex:1;min-width:0">
+              <button type="button" class="btn small" id="coNowBtn" title="Hozirgi vaqtga qaytarish">Hozir</button>
+            </div></div>
         </div>
         <div class="field"><label>5. INSTRUKTOR *</label>
           <div id="coInsBox" class="inslist"><div class="muted" style="font-size:13px">Vaqt tanlansa bo'sh instruktorlar chiqadi.</div></div>
@@ -2993,7 +3004,11 @@ const DURS = [30, 60, 90, 120, 150, 180, 210, 240, 270, 300];
 const CO = { mode:'booked', customer:null, booking:null, category:'', minutes:60,
              instructor:null, pay:'', free:[], busy:[],
              /* bronli rejimda qidirish usuli: 'code' yoki 'name' */
-             findBy:'code' };
+             findBy:'code',
+             /* Kassir vaqtni QO'LDA o'zgartirdimi. False bo'lsa soat
+                o'zi yurib turadi: oyna ertalabdan ochiq qolsa ham chek
+                haqiqiy vaqt bilan chiqadi. */
+             timeTouched:false };
 
 function coCourse(){
   // Bron uchun mashg'ulot kerak (bazada bog'lanish). Kategoriyaga mosini olamiz.
@@ -3079,6 +3094,10 @@ function coSetMode(m){
     if ($('coAmount')) $('coAmount').value = '';
     if ($('coCode')) $('coCode').value = '';
   } else {
+    /* Bronsiz rejimga o'tganda soat yana hozirgi vaqtdan boshlanadi */
+    CO.timeTouched = false;
+    if ($('coDate')) $('coDate').value = kToday();
+    if ($('coTime')) $('coTime').value = coNowTime();
     // Bronsizда standart qiymat kerak
     if (!CO.category) {
       const first = (S.courses || []).find(c => c.is_active && c.category);
@@ -3092,6 +3111,7 @@ function coSetMode(m){
   if (m==='booked' && CO.customer) loadCoBookings();
   if (m==='walk_in') loadFreeInstructors();
   coRender();
+  if (typeof coPaintNowTag === 'function') coPaintNowTag();
 }
 
 /* Bronli va bronsiz rejimda forma boshqacha:
@@ -3397,8 +3417,17 @@ async function loadFreeInstructors(){
     });
   }catch(e){ box.innerHTML = `<div class="error">${esc(e.message)}</div>`; }
 }
-$('coDate').addEventListener('change', () => { CO.mode==='booked' ? loadCoBookings() : loadFreeInstructors(); coRender(); });
-$('coTime').addEventListener('change', () => { if (CO.mode==='walk_in') loadFreeInstructors(); coRender(); });
+/* 'change' faqat odam o'zgartirganda chiqadi — skript .value yozganda
+   chiqmaydi. Shuning uchun shu yerda «qo'lda» deb belgilaymiz. */
+$('coDate').addEventListener('change', () => {
+  CO.timeTouched = true; coPaintNowTag();
+  CO.mode==='booked' ? loadCoBookings() : loadFreeInstructors(); coRender();
+});
+$('coTime').addEventListener('change', () => {
+  CO.timeTouched = true; coPaintNowTag();
+  if (CO.mode==='walk_in') loadFreeInstructors(); coRender();
+});
+$('coNowBtn').addEventListener('click', coSnapNow);
 
 /* ---- to'lov turi ---- */
 /* data-paytype — chek chiqarish uchun. To'lovlar bo'limi ham `data-pay`
@@ -3473,10 +3502,13 @@ $('coIssue').onclick = async () => {
     if (!CO.instructor) return err('Instruktorni tanlang');
     const course = coCourse();
     if (!course) return err('Bu kategoriya uchun mashg‘ulot topilmadi. Mashg‘ulotlar bo‘limida qo‘shing.');
+    /* Vaqtga qo'l tegmagan bo'lsa — chekka ANIQ hozirgi payt yoziladi
+       (maydondagi daqiqa emas). Qo'lda qo'yilgan bo'lsa o'sha qoladi. */
+    const startAt = CO.timeTouched ? at : new Date();
     Object.assign(body, {
       full_name: $('coName').value.trim(), phone: $('coPhone').value.trim(),
       customer_id: CO.customer?.id || null, instructor_id: CO.instructor.id,
-      course_id: course.id, start_at: at.toISOString(),
+      course_id: course.id, start_at: startAt.toISOString(),
     });
   }
 
@@ -3488,12 +3520,20 @@ $('coIssue').onclick = async () => {
     // Avtomatik chop etishga o'tamiz
     setTimeout(() => { try { window.print(); } catch(e){} }, 400);
     coResetForm(); loadRegToday();
+    /* Endi bu instruktor band — ro'yxat darhol yangilansin */
+    coInsAt = Date.now();
+    if (CO.mode === 'walk_in') loadFreeInstructors();
   }catch(e){ err(e.message); }
   finally{ btn.disabled = false; btn.textContent = 'Chek chiqarish'; }
 };
 
 function coResetForm(){
   CO.customer = null; CO.booking = null; CO.instructor = null; CO.pay = '';
+  /* Keyingi mijoz uchun soat yana o'zi yuradi */
+  CO.timeTouched = false;
+  if ($('coDate')) $('coDate').value = kToday();
+  if ($('coTime')) $('coTime').value = coNowTime();
+  coPaintNowTag();
   $('coName').value = ''; $('coPhone').value = ''; $('coCash').value = 0; $('coCard').value = 0;
   $('coSuggest').classList.add('hidden'); $('coSplit').classList.add('hidden');
   document.querySelectorAll('[data-paytype]').forEach(x => x.classList.remove('on'));
@@ -3502,9 +3542,61 @@ function coResetForm(){
 }
 $('coReset').onclick = coResetForm;
 
+/* =========================================================================
+   YURIB TURADIGAN SOAT
+   Ilgari vaqt maydoni sahifa ochilganda bir marta to'ldirilardi va
+   o'sha yerda qotib qolardi. Kassir oynani ertalab ochib qo'ysa,
+   kechqurun ham chek o'sha eski soat bilan chiqardi — bo'sh
+   instruktorlar ham o'sha eski vaqtga qarab tekshirilardi.
+   Endi kassir o'zi tegmaguncha soat o'zi yurib turadi.
+   ========================================================================= */
+function coNowTime(){
+  return new Date().toLocaleTimeString('en-GB',
+    { timeZone:'Asia/Tashkent', hour:'2-digit', minute:'2-digit' });
+}
+function coSnapNow(){
+  CO.timeTouched = false;
+  $('coDate').value = kToday();
+  $('coTime').value = coNowTime();
+  coPaintNowTag();
+  coRender();
+  if (CO.mode === 'walk_in') loadFreeInstructors();
+}
+function coPaintNowTag(){
+  const tag = $('coNowTag');
+  if (!tag) return;
+  const walk = CO.mode === 'walk_in';
+  tag.style.display = walk ? '' : 'none';
+  tag.textContent = CO.timeTouched ? 'qo‘lda' : 'hozirgi vaqt';
+  tag.classList.toggle('manual', !!CO.timeTouched);
+}
+
+let coClock = null, coInsAt = 0;
+function coClockStop(){ if (coClock) { clearInterval(coClock); coClock = null; } }
+function coClockStart(){
+  coClockStop();
+  coClock = setInterval(() => {
+    const page = document.getElementById('checkout');
+    /* Sahifa yopiq bo'lsa yoki kassir vaqtni qo'lda qo'ygan bo'lsa
+       tegmaymiz. Bron rejimida vaqt bronnikidan olinadi. */
+    if (!page || page.classList.contains('hidden')) return;
+    if (CO.timeTouched || CO.mode !== 'walk_in') return;
+    const t = coNowTime(), d = kToday();
+    if ($('coTime').value === t && $('coDate').value === d) return;
+    $('coTime').value = t; $('coDate').value = d;
+    coRender();
+    /* Instruktorlar ro'yxatini har daqiqada emas, ko'pi bilan
+       minutiga bir marta so'raymiz — serverni bo'g'masin. */
+    if (Date.now() - coInsAt > 55000) { coInsAt = Date.now(); loadFreeInstructors(); }
+  }, 15000);
+}
+
 function initCheckout(){
+  if (!CO.timeTouched) { $('coDate').value = kToday(); $('coTime').value = coNowTime(); }
   if (!$('coDate').value) $('coDate').value = kToday();
-  if (!$('coTime').value) $('coTime').value = new Date().toLocaleTimeString('en-GB',{timeZone:'Asia/Tashkent',hour:'2-digit',minute:'2-digit'});
+  if (!$('coTime').value) $('coTime').value = coNowTime();
+  coPaintNowTag();
+  coClockStart();
   if (!CO.category) {
     const first = (S.courses||[]).find(c => c.is_active && c.category);
     CO.category = String(first?.category || 'B').toUpperCase();
@@ -3918,7 +4010,7 @@ function renderKdash(d){
       <div class="bar" title="${x.h}:00 — ${nf(x.v)}">
         <div class="v" style="height:${Math.round(x.v/max*100)}%;${x.v?'':'opacity:.2'}"></div>
         <small>${String(x.h).padStart(2,'0')}</small></div>`).join('')}</div>
-      <div class="muted" style="font-size:12px;margin-top:26px">Ustun balandligi — tushum.</div>`;
+      <div class="muted" style="font-size:12px;margin-top:10px">Ustun balandligi — tushum.</div>`;
   }
 
   // kategoriyalar
