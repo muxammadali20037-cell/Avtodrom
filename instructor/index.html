@@ -154,6 +154,7 @@ h2{font-size:20px;margin:0 0 3px}
 .a-err{background:var(--redbg);border:1px solid #f5cfcf;color:#a52020}
 .a-ok{background:var(--okbg);border:1px solid #cbe9d9;color:var(--ok)}
 .a-info{background:#eaf0fb;border:1px solid #d3ddf3;color:var(--blue)}
+.a-warn{background:#fff8e6;border:1px solid #ffe6a8;color:#8a6500}
 .empty{text-align:center;padding:38px 18px;color:var(--muted);font-size:14px}
 .empty .big{font-size:40px;display:block;margin-bottom:10px}
 .sk{height:104px;border-radius:var(--r);margin-bottom:12px;
@@ -944,9 +945,21 @@ function showScanResult(d, code){
 async function startFromScan(code){
   const btn = $('scStart'); if (btn) { btn.disabled = true; btn.textContent = '…'; }
   try {
-    await api('/api/instructor/scan/start', { method:'POST', body: JSON.stringify({ code }) });
-    closeSheet(); toast('Dars boshlandi');
+    const d = await api('/api/instructor/scan/start', { method:'POST', body: JSON.stringify({ code }) });
     await Promise.allSettled([loadBookings(), loadStats()]);
+    /* Server eslatma yuborgan bo'lsa (masalan avtoshkola tomonda
+       sessiya ochilmagan) — uni YO'QOTMAYMIZ. Toast ko'z ilg'amay
+       o'tib ketadi, shuning uchun ekranda ko'rsatamiz. */
+    if (d && d.note) {
+      sheet(`<h2 style="margin:0 0 4px">Dars boshlandi</h2>
+        <p class="sub">Dars sizning jadvalingizga tushdi.</p>
+        <div class="alert a-warn" style="margin:12px 0">${esc(d.note)}</div>
+        <div class="acts" style="padding:0">
+          <button class="btn go" id="snOk">Tushunarli</button></div>`);
+      $('snOk').onclick = closeSheet;
+      return;
+    }
+    closeSheet(); toast('Dars boshlandi');
   } catch (e) {
     if (btn) { btn.disabled = false; btn.textContent = '🚗 Bronni boshlash'; }
     /* Oldingi dars yakunlanmagan bo'lsa — shunchaki toast emas,
