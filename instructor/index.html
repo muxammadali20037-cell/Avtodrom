@@ -444,8 +444,24 @@ const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt
 const TZ = 'Asia/Tashkent';
 const money = v => Number(v) > 0 ? new Intl.NumberFormat('uz-UZ').format(Number(v)) + ' so‘m' : '';
 const dayOf = v => v ? new Intl.DateTimeFormat('en-CA', { timeZone: TZ }).format(new Date(v)) : '';
-const hhmm  = v => v ? new Date(v).toLocaleTimeString('uz-UZ', { timeZone: TZ, hour: '2-digit', minute: '2-digit' }) : '—';
-const dshort= v => v ? new Date(v).toLocaleDateString('uz-UZ', { timeZone: TZ, day: '2-digit', month: 'short' }) : '—';
+/* Sana/vaqt: 'uz-UZ' ba'zi telefonlarda "M09 12" deb chiqadi (ICU da
+   o'zbek ma'lumoti yo'q). Shu sabab oy va hafta nomlarini o'zimiz
+   yozamiz — hamma qurilmada bir xil ko'rinadi. */
+const MONTHS_UZ = ['yanvar','fevral','mart','aprel','may','iyun','iyul','avgust','sentabr','oktabr','noyabr','dekabr'];
+const MONTHS_SHORT_UZ = ['yan','fev','mar','apr','may','iyun','iyul','avg','sen','okt','noy','dek'];
+const WEEKDAYS_UZ = ['yakshanba','dushanba','seshanba','chorshanba','payshanba','juma','shanba'];
+/** Asia/Tashkent bo'yicha kun/oy/yil/hafta kunini ajratadi. */
+function tkParts(v){
+  const d = new Date(v);
+  if (Number.isNaN(d.getTime())) return null;
+  const p = new Intl.DateTimeFormat('en-CA', { timeZone: TZ, year:'numeric', month:'2-digit', day:'2-digit', weekday:'short' })
+    .formatToParts(d).reduce((a, x) => (a[x.type] = x.value, a), {});
+  const wd = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].indexOf(p.weekday);
+  return { y: +p.year, m: +p.month, d: +p.day, wd: wd < 0 ? 0 : wd };
+}
+const hhmm  = v => v ? new Date(v).toLocaleTimeString('en-GB', { timeZone: TZ, hour: '2-digit', minute: '2-digit' }) : '—';
+const dshort= v => { const p = tkParts(v); return p ? `${p.d} ${MONTHS_SHORT_UZ[p.m - 1]}` : '—'; };
+const dlong = v => { const p = tkParts(v); return p ? `${p.d}-${MONTHS_UZ[p.m - 1]}, ${WEEKDAYS_UZ[p.wd]}` : '—'; };
 const initials = n => { const p = String(n || '').trim().split(/\s+/); return ((p[0]?.[0] || '') + (p[1]?.[0] || '')).toUpperCase() || '👤'; };
 const fmtDur = m => { const n = Number(m) || 0, h = Math.floor(n / 60), r = n % 60; return h ? (r ? `${h} soat ${r} daq` : `${h} soat`) : `${r} daq`; };
 const ST = { pending:'Kutilmoqda', confirmed:'Tasdiqlangan', in_progress:'Dars ketmoqda', completed:'Tugagan',
@@ -540,8 +556,7 @@ async function openPanel(){
     $('topRole').textContent = 'INSTRUKTOR';
     paintProfile();
     $('greet').textContent = `Salom, ${S.profile.first_name || 'Instruktor'}!`;
-    $('todayDate').textContent = new Date().toLocaleDateString('uz-UZ',
-      { timeZone: TZ, weekday:'long', day:'numeric', month:'long' });
+    $('todayDate').textContent = dlong(new Date());
     setAvail(S.instructor.is_available !== false);
     $('nav').classList.remove('hide');
     showPanel('today');
@@ -707,6 +722,8 @@ function card(b, opts = {}){
   const tgId = b.customer?.telegram_id;
   const now = Date.now(), s0 = new Date(when).getTime(), e0 = new Date(b.end_at || when).getTime();
   const isNow = st === 'in_progress' || (now >= s0 - 15 * 60000 && now <= e0);
+  /* Avtoshkola darsi: avtodrom12 dagi QR chek bo'yicha ochilgan, tekin */
+  const school = b.source === 'avtodrom12' || /AVD-\d{4,5}(?!\d|-)/.test(String(b.customer_note || ''));
 
   /* Bronni QABUL QILISH yoki RAD ETISH instruktorda yo'q — buni Admin qiladi.
      Kutilayotgan bron faqat ko'rinadi, tugmasiz. */
@@ -718,9 +735,12 @@ function card(b, opts = {}){
   return `<article class="bk ${isNow ? 'now' : ''}">
     <div class="bk-h">
       <div class="clock"><b>${esc(hhmm(when))}</b><span>${opts.today ? esc(fmtDur(b.course?.duration_minutes)) : esc(dshort(when))}</span></div>
-      <div class="t"><b>${esc(name)}</b><span>${esc(b.course?.name || 'Mashg‘ulot')}${b.course?.price ? ' · ' + esc(money(b.course.price)) : ''}</span></div>
+      <div class="t"><b>${esc(name)}</b><span>${school
+        ? 'Avtoshkola amaliyoti · ' + esc(fmtDur(b.duration_minutes || 60)) + ' · tekin'
+        : esc(b.course?.name || 'Mashg‘ulot') + (b.course?.price ? ' · ' + esc(money(b.course.price)) : '')}</span></div>
     </div>
-    <span class="st-pill p-${esc(st)}">${esc(ST[st] || st)}</span>
+    <span class="st-pill p-${esc(st)}">${esc(ST[st] || st)}</span>${school
+      ? ' <span class="st-pill" style="background:#0f7b3f;color:#fff;margin-left:6px">SHKOLA</span>' : ''}
     ${(phone || tgId) ? `<div class="callrow">
       ${phone ? `<a class="call" href="tel:${esc(phone)}">📞 Qo‘ng‘iroq</a>` : ''}
       ${tgId ? `<a class="call tg" href="tg://user?id=${esc(tgId)}">💬 Telegram</a>` : ''}
@@ -804,16 +824,24 @@ $('scanBtn').onclick = () => {
   } catch (e) { manualCode(); }
 };
 
-/** QR ichida to'liq URL bo'lishi ham mumkin — faqat kodni ajratamiz. */
+/** QR ichida to'liq URL bo'lishi ham mumkin — faqat kodni ajratamiz.
+    Ikki xil chek bor:
+      • Avtodrom o'z cheki  : AVD-260901-6KBCQ
+      • Avtoshkola cheki    : AVD-1234 (avtodrom12 da chiqariladi) */
 function extractCode(raw){
-  const m = String(raw || '').toUpperCase().match(/AVD-\d{6}-[0-9A-Z]{5}/);
-  return m ? m[0] : '';
+  const s = String(raw || '').toUpperCase();
+  const full = s.match(/AVD-\d{6}-[0-9A-Z]{5}/);
+  if (full) return full[0];
+  const school = s.match(/AVD-\d{4,5}(?!\d|-)/);
+  if (school) return school[0];
+  const bare = s.trim().match(/^\d{4,5}$/);        // faqat raqam yozilsa
+  return bare ? 'AVD-' + bare[0] : '';
 }
 
 function manualCode(){
   sheet(`<h2 style="margin:0 0 4px">Chek kodini kiriting</h2>
-    <p class="sub">Chekning pastida yozilgan kod. Masalan: AVD-260901-6KBCQ</p>
-    <div class="field"><input id="mcInput" placeholder="AVD-______-_____" autocapitalize="characters" autocomplete="off" inputmode="text"></div>
+    <p class="sub">Chekning pastida yozilgan kod. Avtodrom cheki: AVD-260901-6KBCQ. Avtoshkola cheki: AVD-1234.</p>
+    <div class="field"><input id="mcInput" placeholder="AVD-______-_____ yoki AVD-1234" autocapitalize="characters" autocomplete="off" inputmode="text"></div>
     <div id="mcAlert"></div>
     <div class="acts two" style="padding:0">
       <button class="btn" id="mcNo">Bekor</button>
@@ -848,21 +876,26 @@ async function verifyCode(code){
 
 function showScanResult(d, code){
   const b = d.booking || {};
-  const name = b.customer?.full_name || 'Mijoz';
+  const school = !!(d.school_lesson || b.school_lesson);
+  const name = b.customer?.full_name || (school ? 'Avtoshkola o‘quvchisi' : 'Mijoz');
   const phone = String(b.customer?.phone || '').replace(/[^+\d]/g, '');
-  const when = hhmm(b.start_at || b.booking_date);
-  const price = b.price ? money(b.price) : '';
+  const when = school ? 'Hozir' : hhmm(b.start_at || b.booking_date);
+  /* Avtoshkola darsi tekin — narx ko'rsatilmaydi */
+  const price = (!school && b.price) ? money(b.price) : '';
 
   let action = '', hint = '';
-  if (d.can_start)       action = `<button class="btn ok" id="scStart">🚗 Bronni boshlash</button>`;
+  if (d.can_start)       action = `<button class="btn ok" id="scStart">${school ? '🎓 Darsni boshlash' : '🚗 Bronni boshlash'}</button>`;
   else if (d.can_finish) action = `<button class="btn ok" id="scFinish">🏁 Darsni yakunlash</button>`;
   else if (d.already)    hint = `<div class="alert a-info" style="margin:12px 0">Bu bron holati: <b>${esc(ST[d.already] || d.already)}</b></div>`;
 
   sheet(`
     <div class="scanres">
       <span class="st-pill p-${esc(b.status || 'confirmed')}" style="margin:0">${esc(ST[b.status] || b.status || '')}</span>
+      ${school ? '<span class="st-pill" style="margin:0 0 0 6px;background:#0f7b3f;color:#fff">SHKOLA</span>' : ''}
       <div class="big">${esc(name)}</div>
-      <div class="sub" style="margin:0">${esc(when)} · ${esc(b.course?.name || 'Mashg‘ulot')}${price ? ' · ' + esc(price) : ''}</div>
+      <div class="sub" style="margin:0">${esc(when)} · ${school
+        ? esc([b.school_name, b.group_name].filter(Boolean).join(' · ') || 'Avtoshkola amaliyoti') + ' · ' + esc(b.duration_minutes || 60) + ' daqiqa · tekin'
+        : esc(b.course?.name || 'Mashg‘ulot') + (price ? ' · ' + esc(price) : '')}</div>
       ${phone ? `<div class="callrow" style="padding:12px 0 0"><a class="call" href="tel:${esc(phone)}">📞 Qo‘ng‘iroq</a></div>` : ''}
     </div>
     <div class="codebox">${esc(code)}</div>
@@ -980,7 +1013,7 @@ function renderReport(){
 
 function periodText(d){
   const f = new Date(d.from), t = new Date(d.to.slice ? d.to : d.to);
-  const fmt = x => x.toLocaleDateString('uz-UZ', { timeZone: TZ, day: 'numeric', month: 'short' });
+  const fmt = x => dshort(x);
   if (d.period === 'day') return fmt(f);
   const last = new Date(new Date(d.to).getTime() - 864e5);
   return `${fmt(f)} — ${fmt(last)}`;
