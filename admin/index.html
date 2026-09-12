@@ -212,13 +212,15 @@ button,input,select,textarea{font:inherit}.hidden{display:none!important}
 .lockbox .input{margin-bottom:14px}
 .warn{padding:11px;border-radius:11px;background:#fff8e6;color:#8a6500;border:1px solid #ffe6a8;font-size:13px}
 .top{height:70px;background:#fff;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:20}
-.topin{height:100%;max-width:1500px;margin:auto;padding:0 20px;display:flex;align-items:center;justify-content:space-between}
+/* TO'LIQ EKRAN. Ilgari max-width:1500px edi — katta monitorda
+   o'ng tomonda keng bo'sh joy qolar, jadvallar esa siqilardi. */
+.topin{height:100%;width:100%;padding:0 24px;display:flex;align-items:center;justify-content:space-between;gap:12px}
 .brand{display:flex;gap:11px;align-items:center}.logo{width:40px;height:40px;border-radius:11px;background:var(--g);color:#fff;display:grid;place-items:center;font-weight:900}
 .brand small{display:block;color:var(--muted);font-size:10px;margin-top:3px}.tools{display:flex;gap:8px;align-items:center}
 .btn{border:1px solid var(--line);background:#fff;border-radius:10px;padding:9px 13px;cursor:pointer;font-weight:800}
 .btn.primary,.btn.green{background:var(--g);border-color:var(--g);color:#fff}.btn.red{color:var(--red);border-color:#efcaca}
 .btn.small{padding:6px 9px;font-size:12px}.btn:disabled{opacity:.55;cursor:not-allowed}
-.layout{max-width:1500px;margin:auto;display:grid;grid-template-columns:235px 1fr;gap:18px;padding:18px 20px 50px}
+.layout{width:100%;display:grid;grid-template-columns:250px minmax(0,1fr);gap:18px;padding:18px 24px 50px}
 /* Grid/flex bolasi sukut bo'yicha ichidagi eng keng narsadan torayolmaydi.
    Shu sabab keng jadval butun sahifani o'ngga cho'zib yuborardi. min-width:0
    berilgach jadval o'z oynasi ichida aylanadi, sahifa qimirlamaydi. */
@@ -668,7 +670,11 @@ pre.json{background:#F7FAFF;border:1px solid var(--line);border-radius:8px;paddi
 }
 
 /* Toast — pastdan chiqadi */
-.toast{ animation: toastIn .3s var(--ease) both }
+/* Animatsiya FAQAT ko'rinayotganda. Ilgari .toast ning o'zida
+   turgani uchun sahifa ochilishida ham ishlab, 'both' bilan
+   oxirgi holatni saqlab qolardi. */
+.toast{ cursor:pointer }
+.toast.on{ animation: toastIn .3s var(--ease) both }
 @keyframes toastIn{
   from{ opacity:0; transform: translateY(16px) }
   to{ opacity:1; transform: none }
@@ -1322,7 +1328,30 @@ const iname=x=>uname(x?.profile||x?.instructor?.profile||x);
 const BADGE={pending:['Kutilmoqda','wait'],confirmed:['Tasdiqlangan','ok'],in_progress:['Jarayonda','run'],completed:['Tugagan','ok'],cancelled:['Bekor','bad'],rejected:['Rad etilgan','bad'],no_show:['Kelmagan','bad'],approved:['Tasdiqlangan','ok'],active:['Faol','ok'],inactive:['Bloklangan','bad'],paid:['To‘langan','ok'],failed:['Xato','bad'],refunded:['Qaytarilgan','run'],PENDING:['Kutilmoqda','wait'],APPROVED:['Tasdiqlangan','ok'],REJECTED:['Rad etilgan','bad']};
 const badge=v=>{const a=BADGE[String(v||'')]||[v||'—','wait'];return `<span class="status ${a[1]}">${esc(a[0])}</span>`};
 
-function toast(t){const x=$('toast');x.textContent=t;x.classList.add('on');setTimeout(()=>x.classList.remove('on'),3000)}
+/* Toast — bitta taymer bilan.
+   Ilgari har chaqiruv o'z setTimeout'ini qo'yardi: ikkita xabar
+   ketma-ket chiqsa, birinchisining taymeri ikkinchisini erta o'chirar,
+   chop etish oynasi ochilganda esa taymer umuman ishlamay xabar
+   ekranda qotib qolardi. Endi taymer yagona va har safar yangilanadi. */
+let __toastT = null;
+function toastHide(){
+  const x = $('toast'); if (!x) return;
+  clearTimeout(__toastT); __toastT = null;
+  x.classList.remove('on');
+  x.textContent = '';
+}
+function toast(t){
+  const x = $('toast'); if (!x) return;
+  const msg = String(t ?? '').trim();
+  if (!msg) { toastHide(); return; }   // bo'sh xabar — qora quticha chiqmasin
+  clearTimeout(__toastT);
+  x.textContent = msg;
+  x.classList.add('on');
+  __toastT = setTimeout(toastHide, 3000);
+}
+document.addEventListener('DOMContentLoaded', () => {
+  const x = $('toast'); if (x) x.onclick = toastHide;   // bosib yopish
+});
 function notice(t,bad=true){$('notice').innerHTML=`<div class="${bad?'error':'notice'}">${esc(t)}</div>`;setTimeout(()=>$('notice').innerHTML='',7000)}
 function showWarnings(list){
   const all=[...new Set(list.filter(Boolean))];
@@ -1541,6 +1570,7 @@ function showPage(id){
   const wantGrp = adminMode === 'admin' ? 'admin' : 'kassa';
   if (grp && grp !== wantGrp) return;
   if (grp === 'kassa' && !REG_TOKEN) { openPinFor(adminMode); return; }
+  if (typeof toastHide === 'function') toastHide();   // eski xabar qolib ketmasin
   document.querySelectorAll('.page').forEach(x=>x.classList.toggle('on',x.id===id));
   document.querySelectorAll('.nav').forEach(x=>x.classList.toggle('on',x.dataset.p===id));
   if(id==='reports')renderReport();
@@ -2745,7 +2775,10 @@ async function loadAnalytics(){
 function renderAnalytics(){
   const d = S.an; if (!d) return;
   const t = d.totals || {}, ch = d.change || {};
-  $('dPeriodLabel').textContent = `${d.label} ko\u2018rsatkichlar`;
+  /* Server label yubormasa 'undefined ko\u2018rsatkichlar' chiqardi */
+  const PERIOD_UZ = { day:'Kunlik', week:'Haftalik', month:'Oylik', year:'Yillik' };
+  $('dPeriodLabel').textContent =
+    `${d.label || PERIOD_UZ[d.period] || 'Kunlik'} ko\u2018rsatkichlar`;
 
   /* ---- KPI kartochkalar: ikonка, qiymat, trend, kecha ---- */
   const arrow = v => {
