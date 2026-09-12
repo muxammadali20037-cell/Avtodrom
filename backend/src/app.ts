@@ -87,7 +87,9 @@ await registerCourseRoutes(app, authenticateCustomer);
 await registerReviewRoutes(app, authenticateCustomer);
 await registerSupportRoutes(app, authenticateCustomer, requireAdmin, adminUser);
 await registerCashierRoutes(app, requireAdmin, adminUser, audit, authenticateInstructor);
-await registerAnalyticsRoutes(app, requireAdmin);
+/* Analitika — faqat boshqaruv. Ilgari har qanday kirgan xodim
+   (kassir ham) butun biznes statistikasini ko'ra olardi. */
+await registerAnalyticsRoutes(app, guardAdmin);
 await registerShiftRoutes(app, requireAdmin, adminUser, audit);
 
 // IMPORTANT: admin-password-routes.ts is the single owner of the canonical
