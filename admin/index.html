@@ -1324,7 +1324,12 @@ function roleAllowed(me, role){
   if (role === 'admin') return false;               // kassir boshqaruvga kirmaydi
   const reg = (S.registers || []).find(r => String(r.id) === String(me.register_id));
   if (reg) return reg.code === role;
-  return me.register ? me.register.code === role : false;
+  if (me.register && me.register.code) return me.register.code === role;
+  /* Kassalar ro'yxati o'qilmadi (tarmoq yoki jadval muammosi). Bu yerda
+     "yo'q" desak kassir umrbod kirolmay qoladi — serverda baribir o'z
+     kassasidan boshqasiga tokeni yo'q, shuning uchun kiritamiz. */
+  console.warn('Kassalar ro‘yxati o‘qilmadi — rol tekshiruvi o‘tkazib yuborildi');
+  return true;
 }
 
 /** 1-qadam (rol) yoki 2-qadam (login/parol) ni ko'rsatadi. */
@@ -3413,6 +3418,10 @@ function applyMode(mode){
   document.querySelectorAll('.ms').forEach(b => b.classList.toggle('on', b.dataset.mode === mode));
   const grp = mode === 'admin' ? 'admin' : 'kassa';
   document.querySelectorAll('[data-grp]').forEach(el => el.classList.toggle('hidden', el.dataset.grp !== grp));
+  /* applyMode guruh bo'yicha hammasini ochib yuboradi — rol cheklovini
+     ustidan QAYTA qo'llaymiz, aks holda oddiy xodimga "Xodimlar" va
+     "Sozlamalar" kabi bo'limlar ochilib qolardi. */
+  try { applyRoleLimits(); } catch (e) { /* boot paytida hali yo'q bo'lishi mumkin */ }
 
   if (mode === 'admin') {
     /* Admin: login/parol yetarli — PIN yo'q. To'g'ridan boshqaruvga. */
@@ -3451,7 +3460,12 @@ async function unlockRegisterNoPin(code){
     REG_TOKEN = d.token; REGISTER = d.register || reg;
     const o = readTokens(); o[code] = { t: d.token, r: REGISTER }; writeTokens(o);
     showPage('checkout'); showCheckout(); loadRegToday(); loadPayments();
-  } catch (e) { notice(e.message); }
+  } catch (e) {
+    /* Token olinmadi (kassirga bu yo'l yopiq). Bo'sh ekran qoldirmaymiz —
+       PIN oynasini ochamiz. */
+    notice(e.message);
+    try { openPinFor(code); } catch (e2) { /* PIN ham yo'q bo'lsa xabar qoldi */ }
+  }
 }
 
 document.querySelectorAll('.ms').forEach(b => b.onclick = () => applyMode(b.dataset.mode));
@@ -4229,8 +4243,18 @@ function staffForm(id){
     <div class="field"><label>ROL *</label>
       <div class="pick3" id="stRoles"></div></div>
     <div class="field" id="stRegWrap"><label>KASSA *</label>
-      <select id="stReg" class="input"><option value="">Tanlang…</option>${regOpts}</select>
-      <div class="muted" style="font-size:11.5px;margin-top:4px">Kassir faqat shu kassaning tushumini ko‘radi</div></div>
+      ${S.registers2.length
+        ? `<select id="stReg" class="input"><option value="">Tanlang…</option>${regOpts}</select>
+           <div class="muted" style="font-size:11.5px;margin-top:4px">Kassir faqat shu kassaning tushumini ko‘radi</div>`
+        /* Kassalar ro'yxati bo'sh — kassir yaratib bo'lmaydi. Sababini
+           aytmasak, operator bo'sh ro'yxatga qarab turaveradi. */
+        : `<div class="error" style="text-align:left;margin:0">
+             <b>Kassa ro‘yxati bo‘sh.</b><br>
+             Kassir yaratishdan oldin kamida bitta kassa bo‘lishi kerak.
+             Supabase → SQL Editor da shuni bir marta ishga tushiring:
+             <div style="font-family:ui-monospace,Menlo,monospace;font-size:11.5px;background:#fff;border-radius:8px;padding:8px;margin-top:6px;white-space:pre-wrap">insert into cash_registers (code, name) values ('P1','Kassa P1'), ('P2','Kassa P2') on conflict do nothing;</div>
+             <span class="muted" style="font-size:12px">Keyin shu oynani yopib qayta oching.</span>
+           </div>`}</div>
     ${x ? `<label class="chk" style="display:flex;gap:9px;align-items:center;margin:4px 0 12px;font-size:13px">
       <input id="stActive" type="checkbox" ${x.is_active ? 'checked' : ''} style="width:20px;height:20px">
       <span>Faol — kira oladi</span></label>` : ''}
@@ -4262,6 +4286,11 @@ function staffForm(id){
       return bad('Login 3–32 belgi: harf, raqam, _ . -');
     if (!x && pass.length < 8) return bad('Parol kamida 8 belgi');
     if (pass && pass.length < 8) return bad('Parol kamida 8 belgi');
+    /* Kassa ro'yxati bo'sh bo'lsa #stReg umuman yo'q — null'ga murojaat
+       qilmaymiz, sababini aytamiz. */
+    if (role === 'cashier' && !$('stReg')) {
+      return bad('Kassa ro‘yxati bo‘sh. Avval kassa qo‘shing (yuqoridagi ko‘rsatmaga qarang), keyin kassir yarating.');
+    }
     if (role === 'cashier' && !$('stReg').value) return bad('Kassirga kassa tanlang');
 
     const body = {
@@ -4380,18 +4409,7 @@ function applyRole(){
   if (sw) sw.classList.add('hidden');
   document.querySelectorAll('[data-mode]').forEach(b => b.classList.add('hidden'));
 
-  // Boshqaruv bo'limlari
-  document.querySelectorAll('.nav[data-grp="admin"]').forEach(b => {
-    if (isCashier) {
-       b.classList.add('hidden'); // Kassir hech narsa ko'rmaydi
-    } else if (isAdmin && !isSuperAdmin) {
-       // Oddiy xodim uchun faqat ruxsat etilgan bo'limlar
-       const allowed = ['bookings', 'manual', 'reports', 'cancels', 'live'];
-       b.classList.toggle('hidden', !allowed.includes(b.dataset.p));
-    } else {
-       b.classList.remove('hidden'); // SuperAdmin hamma narsani ko'radi
-    }
-  });
+  applyRoleLimits();
 
   const badge = $('whoami');
   if (badge) {
@@ -4399,6 +4417,26 @@ function applyRole(){
     badge.textContent = `${me.full_name || me.login || ''} \u00b7 ${rName}`;
     badge.classList.toggle('cashier', isCashier);
   }
+}
+
+/** BOSHQARUV bo'limlarini rolga qarab yashiradi. applyMode() dan keyin
+    ham chaqiriladi, chunki u guruh bo'yicha hammasini ochib yuboradi. */
+function applyRoleLimits(){
+  const me = S.me || {};
+  const isCashier = me.role === 'cashier';
+  const isSuperAdmin = me.login === 'admin';
+  /* Kassa rejimida BOSHQARUV bandlari umuman ko'rinmaydi — rejim
+     tanlovidan qat'i nazar. */
+  const kassaMode = (typeof adminMode !== 'undefined') && adminMode !== 'admin';
+  document.querySelectorAll('.nav[data-grp="admin"]').forEach(b => {
+    if (isCashier || kassaMode) { b.classList.add('hidden'); return; }
+    if (!isSuperAdmin) {
+      const allowed = ['bookings', 'manual', 'reports', 'cancels', 'live'];
+      b.classList.toggle('hidden', !allowed.includes(b.dataset.p));
+      return;
+    }
+    b.classList.remove('hidden');
+  });
 }
 
 /* Kirgandan keyin TANLANGAN panelni ochish.
