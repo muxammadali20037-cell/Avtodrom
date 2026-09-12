@@ -91,6 +91,21 @@ function shape(b: any, m: any) {
    bo'yicha to'lov yozuvi (payments) yaratilmaydi.
    ======================================================================= */
 
+/** Bron kodi — mijoz kassada shuni aytadi (AVD-4821).
+    Telefon orqali qo'lda bron qilinganda ham beriladi, aks holda mijoz
+    kassaga kelib "bron qilganman" deydi-yu, kassir uni topolmaydi. */
+async function nextPickupCode(): Promise<string> {
+  for (let i = 0; i < 40; i++) {
+    const code = 'AVD-' + String(1000 + Math.floor(Math.random() * 9000));
+    const busy = await supabaseRest<any[]>('bookings', {
+      query: `?pickup_code=eq.${q(code)}&select=id&limit=1`,
+    }).catch(() => null);
+    if (busy === null) return code;      // ustun yo'q — baribir qaytaramiz
+    if (!busy.length) return code;
+  }
+  return 'AVD-' + String(10000 + Math.floor(Math.random() * 90000));
+}
+
 /** Instruktorning shu oraliqda boshqa broni bormi.
     Bazadagi no_instructor_overlap cheklovi baribir to'sadi, lekin
     OLDINDAN bilsak chekni ishlatmaymiz va u yonib ketmaydi. */
@@ -789,6 +804,7 @@ export async function registerCashierRoutes(
 
       const end = new Date(start.getTime() + minutes * 60000);
       const now = new Date().toISOString();
+      const pickupCode = await nextPickupCode();
       const rows = await supabaseRest<any[]>('bookings', {
         method: 'POST', headers: { Prefer: 'return=representation' },
         body: JSON.stringify({
@@ -797,14 +813,34 @@ export async function registerCashierRoutes(
           duration_minutes: minutes, category,
           status: 'confirmed', source: 'admin',
           confirmed_at: now, confirmed_by: admin.id,
+          pickup_code: pickupCode,
           customer_note: String(b.note || '').trim() || 'Telefon orqali qo‘lda bron',
         }),
+      }).catch(async (e: any) => {
+        /* pickup_code ustuni hali yo'q bo'lsa — kodsiz yozamiz */
+        if (/pickup_code/i.test(String(e?.message || ''))) {
+          return await supabaseRest<any[]>('bookings', {
+            method: 'POST', headers: { Prefer: 'return=representation' },
+            body: JSON.stringify({
+              customer_id: customer.id, instructor_id: instructorId, course_id: course.id,
+              booking_date: start.toISOString(), start_at: start.toISOString(), end_at: end.toISOString(),
+              duration_minutes: minutes, category,
+              status: 'confirmed', source: 'admin',
+              confirmed_at: now, confirmed_by: admin.id,
+              customer_note: String(b.note || '').trim() || 'Telefon orqali qo‘lda bron',
+            }),
+          });
+        }
+        throw e;
       });
       const booking = rows[0];
       await audit(admin.id, 'MANUAL_BOOKING_CREATED', 'bookings', booking?.id ?? null, null,
         { customer: fullName, phone, category, minutes });
 
-      return reply.code(201).send({ ok: true, booking, customer, course });
+      return reply.code(201).send({
+        ok: true, booking, customer, course,
+        pickup_code: booking?.pickup_code || pickupCode,
+      });
     } catch (e: any) {
       const msg = String(e?.message || '');
       if (/no_instructor_overlap/.test(msg)) return reply.code(409).send({ ok: false, error: 'Instruktor bu vaqtda band' });
