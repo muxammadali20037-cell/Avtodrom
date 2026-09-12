@@ -202,21 +202,50 @@ async function createSchoolBooking(ip: any, rec: any, code: string) {
     customer_note: note,
   };
 
-  try {
-    return (await supabaseRest<any[]>('bookings', {
-      method: 'POST', headers: { Prefer: 'return=representation' },
-      body: JSON.stringify({ ...payload, school_receipt_code: code }),
-    }))[0];
-  } catch (e: any) {
-    if (/school_receipt_code/i.test(String(e?.message || ''))) {
-      /* Ustun hali qo'shilmagan — kod izohda qoladi, qidirish baribir ishlaydi */
+  /* Bazaning sxemasi loyihalarda biroz farq qiladi (migratsiyalar
+     to'liq bajarilmagan bo'lishi mumkin). Shu sabab yozishni bosqichma-
+     bosqich qayta urinamiz: baza qaysi ustundan norozi bo'lsa, o'shani
+     tashlab yuboramiz. Darsning o'zi yozilishi muhim — izoh yoki
+     kategoriya tushib qolsa ham mayli. */
+  const body: any = { ...payload, school_receipt_code: code };
+  /* Tashlab yuborilsa dars baribir to'g'ri yoziladigan ustunlar */
+  const OPTIONAL = ['school_receipt_code', 'customer_note', 'arrived_at',
+                    'duration_minutes', 'category', 'instructor_name'];
+  let lastErr: any = null;
+
+  for (let attempt = 0; attempt < 8; attempt++) {
+    try {
       return (await supabaseRest<any[]>('bookings', {
         method: 'POST', headers: { Prefer: 'return=representation' },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(body),
       }))[0];
+    } catch (e: any) {
+      lastErr = e;
+      const msg = String(e?.message || '');
+
+      /* 1) Yo'q ustun — nomini xabardan ajratib, tashlaymiz */
+      const dropped = OPTIONAL.find(c => msg.includes(c) && c in body);
+      if (dropped) { delete body[dropped]; continue; }
+
+      /* 2) source ustuniga CHECK qo'yilgan bo'lsa — ruxsat etilgan
+            qiymatga tushamiz. Dars avtoshkolaniki ekani izohda va
+            chek kodida qoladi. */
+      if (/source/i.test(msg) && body.source === 'avtodrom12') {
+        body.source = 'walk_in';
+        continue;
+      }
+
+      /* 3) status enum'ida in_progress bo'lmasa — confirmed bilan */
+      if (/status|booking_status|invalid input value for enum/i.test(msg)
+          && body.status === 'in_progress') {
+        body.status = 'confirmed';
+        continue;
+      }
+
+      throw e;   // boshqa xato — tepaga chiqaramiz
     }
-    throw e;
   }
+  throw lastErr || new Error('Bron yozilmadi');
 }
 
 /** Skaner javobining avtoshkola ko'rinishi — frontend bir xil o'qiydi. */
@@ -261,6 +290,57 @@ export async function registerCashierRoutes(
       return { ok: true, bridge: d };
     } catch (e: any) {
       return reply.code(e?.statusCode ?? 500).send({ ok: false, error: e?.message || 'Tekshirib bo‘lmadi' });
+    }
+  });
+
+  /* =====================================================================
+     KASSIR UCHUN INSTRUKTORLAR RO'YXATI
+
+     `/api/admin/instructors` FAQAT administrator uchun (kassirga 403).
+     Shu sabab kassirda "Kunlik jadval" dagi instruktor ro'yxati va
+     "Instruktor nazorati" dagi tugmalar BO'SH chiqardi — ro'yxat
+     hech qachon yuklanmasdi.
+
+     Bu yerda kassirga kerakli minimum beriladi: ismi, telefoni,
+     kategoriyasi, faolligi, avtomobili. Reyting, bron tarixi va
+     moliyaviy ma'lumot bu yerda yo'q.
+     ===================================================================== */
+  app.get('/api/admin/cashier/instructors', async (req: any, reply: any) => {
+    try {
+      await requireAdmin(req);          // har qanday kirgan xodim (kassir ham)
+      /* select=* — ustunlar to'plami bazadan bazaga farq qiladi;
+         aniq ro'yxat yozilsa, yo'q ustun butun so'rovni yiqitardi. */
+      const ips = await supabaseRest<any[]>('instructor_profiles', {
+        query: '?select=*&limit=500',
+      });
+      const uids = [...new Set(ips.map((i: any) => i.user_id).filter(Boolean).map(String))];
+      const users = uids.length
+        ? await supabaseRest<any[]>('users', {
+            query: `?id=in.(${uids.map(q).join(',')})&select=id,full_name,phone,is_active,is_blocked`,
+          })
+        : [];
+      const um = new Map(users.map((u: any) => [String(u.id), u]));
+
+      const instructors = ips.map((x: any) => {
+        const u: any = um.get(String(x.user_id)) || null;
+        return {
+          id: x.id,
+          user_id: x.user_id,
+          full_name: u?.full_name || x.full_name || 'Instruktor',
+          categories: Array.isArray(x.categories) ? x.categories : ['B'],
+          vehicle_plate: x.vehicle_plate || null,
+          vehicle_model: x.vehicle_model || null,
+          active: Boolean(x.is_verified && x.is_available && u?.is_active && !u?.is_blocked),
+          profile: u ? { id: u.id, full_name: u.full_name, phone: u.phone } : null,
+        };
+      });
+      /* Ism bo'yicha tartib — ro'yxatdan ko'z bilan topish uchun. */
+      instructors.sort((a: any, b: any) =>
+        String(a.full_name).localeCompare(String(b.full_name), 'uz'));
+      return { ok: true, instructors };
+    } catch (e: any) {
+      return reply.code(e?.statusCode ?? 500)
+        .send({ ok: false, error: e?.message || 'Instruktorlar yuklanmadi' });
     }
   });
 
@@ -1015,11 +1095,15 @@ export async function registerCashierRoutes(
             : /bookings_one_active_lesson/i.test(msg)
             ? 'Avvalgi dars yakunlanmagan.'
             : 'Dars yozilmadi.';
+          /* Texnik sababni ham qaytaramiz: bo'lmasa administrator
+             nimani tuzatishni bilmaydi va xato qayta-qayta takrorlanadi. */
           return reply.code(409).send({
             ok: false,
             error: why + (back
               ? ' Chek saqlanib qoldi — muammo hal bo‘lgach qayta skanerlang.'
               : ' Chekni qaytarib bo‘lmadi, administratorga ayting: ' + code),
+            detail: msg.slice(0, 300),
+            code,
           });
         }
 
