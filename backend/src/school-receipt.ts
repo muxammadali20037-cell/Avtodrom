@@ -58,6 +58,62 @@ export function schoolBridgeReady(): boolean {
   return Boolean(BASE && KEY);
 }
 
+/** Nima yetishmayotganini aniq aytadi (instruktorga ko'rsatiladigan matn). */
+export function schoolBridgeMissing(): string {
+  const miss: string[] = [];
+  if (!BASE) miss.push('AVTODROM12_URL');
+  if (!KEY) miss.push('RECEIPT_SHARED_KEY');
+  return miss.join(' va ');
+}
+
+/**
+ * KO'PRIK TASHXISI — administrator o'zi ko'rib, o'zi tuzatishi uchun.
+ * avtodrom12 ga mavjud bo'lmagan kod bilan murojaat qilamiz va
+ * javobiga qarab holatni aniqlaymiz:
+ *   404 — kalit qabul qilindi, hammasi joyida
+ *   401 — kalitlar bir xil emas
+ *   503 — avtodrom12 tomonida kalit qo'yilmagan
+ */
+export async function schoolBridgeDiagnose(): Promise<{
+  ok: boolean; url_set: boolean; key_set: boolean; url: string;
+  reachable: boolean; status: number | null; detail: string;
+}> {
+  const base = {
+    url_set: Boolean(BASE), key_set: Boolean(KEY), url: BASE || '',
+    reachable: false, status: null as number | null,
+  };
+  if (!BASE || !KEY) {
+    return { ...base, ok: false, detail: `Vercel sozlamasida ${schoolBridgeMissing()} yo‘q` };
+  }
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 10000);
+  try {
+    const r = await fetch(`${BASE}/api/receipts/verify?code=AVS-00000`, {
+      headers: { 'Content-Type': 'application/json', 'X-Receipt-Key': KEY },
+      signal: ctrl.signal,
+    });
+    let d: any = {};
+    try { d = await r.json(); } catch { /* JSON emas */ }
+    const out = { ...base, reachable: true, status: r.status };
+    if (r.status === 404 || r.status === 400) {
+      return { ...out, ok: true, detail: 'Ulanish va kalit joyida' };
+    }
+    if (r.status === 401) {
+      return { ...out, ok: false, detail: 'Kalitlar bir xil emas — ikkala loyihada RECEIPT_SHARED_KEY aynan bir xil bo‘lsin' };
+    }
+    if (r.status === 503) {
+      return { ...out, ok: false, detail: 'avtodrom12 tomonida RECEIPT_SHARED_KEY qo‘yilmagan' };
+    }
+    return { ...out, ok: false, detail: d?.error || `Kutilmagan javob (${r.status})` };
+  } catch (e: any) {
+    const aborted = e?.name === 'AbortError';
+    return {
+      ...base, ok: false,
+      detail: aborted ? 'avtodrom12 javob bermadi (10 soniya)' : `Ulanib bo‘lmadi: ${e?.message || e}`,
+    };
+  } finally { clearTimeout(timer); }
+}
+
 class BridgeError extends Error {
   statusCode: number;
   constructor(message: string, statusCode = 400) {
