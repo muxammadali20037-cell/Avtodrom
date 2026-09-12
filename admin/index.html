@@ -914,6 +914,10 @@ pre.json{background:#F7FAFF;border:1px solid var(--line);border-radius:8px;paddi
           Mijoz bron qilganda kod olgan (AVD-4821). Faqat raqamni yozsangiz ham bo‘ladi.
         </div>
         <div id="coCodeErr"></div>
+        <!-- Kodi yo'q mijoz: ism yoki telefon bilan topish -->
+        <button type="button" class="btn small" id="coByName" style="margin-top:8px">
+          Kodi yo‘qmi? Ism yoki telefon bilan topish
+        </button>
       </div>
 
       <!-- BRONSIZ: ism/telefon -->
@@ -923,7 +927,14 @@ pre.json{background:#F7FAFF;border:1px solid var(--line);border-radius:8px;paddi
       <div class="field hidden" id="coPhoneWrap"><label>TELEFON</label>
         <input id="coPhone" class="input" autocomplete="off" placeholder="+998901234567"></div>
 
-      <!-- BRONLI: mijozning bronlari (ismdan darhol keyin) -->
+      <!-- BRONLI: ism/telefon bilan qidirish (kodi yo'q mijoz uchun) -->
+      <div class="field hidden" id="coFindWrap"><label>2. ISM YOKI TELEFON</label>
+        <input id="coFind" class="input" autocomplete="off" placeholder="Ism yoki telefon yozing...">
+        <div id="coFindSuggest" class="suggest hidden"></div>
+        <button type="button" class="btn small" id="coByCode" style="margin-top:8px">← Kod bilan topish</button>
+      </div>
+
+      <!-- BRONLI: mijozning bronlari -->
       <div class="field hidden" id="coBookWrap"><label>3. MIJOZNING BRONINI TANLANG *</label>
         <div id="coBookings" class="bklist"></div></div>
 
@@ -2938,7 +2949,9 @@ function renderControl(d){
    ========================================================================= */
 const DURS = [30, 60, 90, 120, 150, 180, 210, 240, 270, 300];
 const CO = { mode:'booked', customer:null, booking:null, category:'', minutes:60,
-             instructor:null, pay:'', free:[], busy:[] };
+             instructor:null, pay:'', free:[], busy:[],
+             /* bronli rejimda qidirish usuli: 'code' yoki 'name' */
+             findBy:'code' };
 
 function coCourse(){
   // Bron uchun mashg'ulot kerak (bazada bog'lanish). Kategoriyaga mosini olamiz.
@@ -3008,6 +3021,10 @@ function coStartAt(){
 /* ---- rejim ---- */
 function coSetMode(m){
   CO.mode = m; CO.booking = null; CO.instructor = null;
+  CO.findBy = 'code';                       // har almashganda kod usuliga qaytamiz
+  if ($('coFind')) $('coFind').value = '';
+  if ($('coFindSuggest')) $('coFindSuggest').classList.add('hidden');
+  if ($('coBookings')) $('coBookings').innerHTML = '';
 
   /* BRONLI rejimda kategoriya, davomiylik va narx FAQAT brondan keladi.
      Bronsizда tanlangan qiymatlar tozalanadi — aks holда A tanlab
@@ -3042,15 +3059,21 @@ function coSetMode(m){
 function coUpdateFormView(){
   const booked = CO.mode === 'booked';
   const hasPick = booked && CO.booking;
+  /* Bronli rejimda ikki yo'l bor:
+       · kod bilan (tez, mijozda kod bo'lsa)
+       · ism/telefon bilan (telefon orqali bron qilgan, kodi yo'q mijoz)
+     CO.findBy shu ikkalasini almashtiradi. */
+  const byName = booked && CO.findBy === 'name';
 
   // Kod maydoni — bronli rejimda, bron tanlanmagunicha
-  $('coCodeWrap').classList.toggle('hidden', !booked || !!CO.booking);
-  // Ism/telefon — faqat bronsizda
+  $('coCodeWrap').classList.toggle('hidden', !booked || !!CO.booking || byName);
+  $('coFindWrap').classList.toggle('hidden', !byName || !!CO.booking);
+  // Ism/telefon (bronsiz uchun) — faqat bronsizda
   $('coNameWrap').classList.toggle('hidden', booked);
   $('coPhoneWrap').classList.toggle('hidden', booked);
 
-  // Bronli: eski ro'yxat usuli endi ishlatilmaydi (kod bilan topamiz)
-  $('coBookWrap').classList.add('hidden');
+  // Mijozning bronlari — ism bilan qidirilganda, mijoz tanlangach
+  $('coBookWrap').classList.toggle('hidden', !(byName && CO.customer && !CO.booking));
   // Tanlangan bron xulosasi
   $('coPickedWrap').classList.toggle('hidden', !hasPick);
   /* Qo'lda tanlash maydonlari:
@@ -3061,6 +3084,57 @@ function coUpdateFormView(){
 }
 $('coBooked').onclick = () => coSetMode('booked');
 $('coWalk').onclick   = () => coSetMode('walk_in');
+
+/* ---- Bronli rejimda kod / ism o'rtasida almashish ---- */
+$('coByName').onclick = () => {
+  CO.findBy = 'name';
+  CO.customer = null; CO.booking = null;
+  $('coCodeErr').innerHTML = '';
+  coUpdateFormView(); coRenderPicked(); coRender();
+  setTimeout(() => { try { $('coFind').focus(); } catch (e) {} }, 60);
+};
+$('coByCode').onclick = () => {
+  CO.findBy = 'code';
+  CO.customer = null; CO.booking = null;
+  $('coFind').value = ''; $('coFindSuggest').classList.add('hidden');
+  $('coBookings').innerHTML = '';
+  coUpdateFormView(); coRenderPicked(); coRender();
+  setTimeout(() => { try { $('coCode').focus(); } catch (e) {} }, 60);
+};
+
+/* ---- Bronli rejim: ism/telefon bo'yicha mijozni topish ----
+   Telefon orqali bron qilgan mijozda kod bo'lmasligi mumkin. Shu yo'l
+   bilan kassir uni ismidan topadi va bronini tanlaydi. */
+let coFindTimer = null;
+$('coFind').addEventListener('input', () => {
+  CO.customer = null; CO.booking = null;
+  $('coBookings').innerHTML = '';
+  clearTimeout(coFindTimer);
+  const q0 = $('coFind').value.trim();
+  if (q0.length < 2) { $('coFindSuggest').classList.add('hidden'); return; }
+  coFindTimer = setTimeout(async () => {
+    try {
+      const d = await api(`/api/admin/cashier/search?q=${encodeURIComponent(q0)}`);
+      const list = d.customers || [];
+      if (!list.length) {
+        $('coFindSuggest').classList.remove('hidden');
+        $('coFindSuggest').innerHTML = '<button type="button" disabled><b>Topilmadi</b> <span class="muted">boshqa ism yoki telefon bilan urinib ko‘ring</span></button>';
+        return;
+      }
+      $('coFindSuggest').classList.remove('hidden');
+      $('coFindSuggest').innerHTML = list.map(c =>
+        `<button type="button" data-fid="${esc(c.id)}"><b>${esc(c.full_name)}</b> <span class="muted">${esc(c.phone || '')}</span></button>`).join('');
+      $('coFindSuggest').querySelectorAll('[data-fid]').forEach(b => b.onclick = () => {
+        CO.customer = list.find(x => String(x.id) === b.dataset.fid) || null;
+        $('coFind').value = CO.customer?.full_name || '';
+        $('coFindSuggest').classList.add('hidden');
+        coUpdateFormView();
+        loadCoBookings();
+        coRender();
+      });
+    } catch (e) { $('coFindSuggest').classList.add('hidden'); }
+  }, 280);
+});
 
 /* ---- mijoz qidirish ---- */
 let coTimer = null;
@@ -3095,10 +3169,21 @@ async function loadCoBookings(){
   if (!CO.customer) { box.innerHTML = '<div class="muted" style="font-size:13px">Avval mijozni tanlang.</div>'; return; }
   box.innerHTML = '<div class="muted" style="font-size:13px">Yuklanmoqda…</div>';
   try{
+    /* Bugun va ertaga — mijoz ertangi darsi uchun ham oldindan
+       to'lashi mumkin. */
     const date = $('coDate').value || kToday();
-    const d = await api(`/api/admin/cashier/day?date=${encodeURIComponent(date)}`);
-    const mine = (d.bookings||[]).filter(b => String(b.customer?.id) === String(CO.customer.id) && !b.is_paid);
-    if (!mine.length) { box.innerHTML = '<div class="warn" style="margin:0">Bu kunda to‘lanmagan bron topilmadi. «Bronsiz» rejimiga o‘ting.</div>'; return; }
+    const next = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Tashkent' })
+      .format(new Date(new Date(date + 'T00:00:00+05:00').getTime() + 864e5));
+    const [d1, d2] = await Promise.all([
+      api(`/api/admin/cashier/day?date=${encodeURIComponent(date)}`),
+      api(`/api/admin/cashier/day?date=${encodeURIComponent(next)}`).catch(() => ({ bookings: [] })),
+    ]);
+    const seen = new Set();
+    const all = [...(d1.bookings || []), ...(d2.bookings || [])].filter(b => {
+      if (seen.has(String(b.id))) return false; seen.add(String(b.id)); return true;
+    });
+    const mine = all.filter(b => String(b.customer?.id) === String(CO.customer.id) && !b.is_paid);
+    if (!mine.length) { box.innerHTML = '<div class="warn" style="margin:0">Bu mijozda to‘lanmagan bron topilmadi (bugun va ertaga). «Bronsiz» rejimiga o‘ting.</div>'; return; }
     box.innerHTML = mine.map(b => `<button type="button" data-bk="${esc(b.id)}" class="${CO.booking?.id===b.id?'on':''}">
       <b>${esc(kHour(b.start_at))} · ${esc(b.course?.name||'—')}</b>
       <span>${esc(b.instructor?.profile?.full_name||'—')} · ${esc(money(b.price))}</span></button>`).join('');
@@ -3913,9 +3998,26 @@ $('mbSave').onclick = async () => {
       instructor_id: MB.ins.id, category: MB.cat, duration_minutes: MB.minutes,
       start_at: at.toISOString(), note: $('mbNote').value.trim() })});
     toast('Bron yaratildi');
-    $('mbAlert').innerHTML = `<div class="ok-box" style="background:#E9F7EF;border:1px solid #BFE6D0;border-radius:11px;padding:11px;font-size:13px">
-      <b>${esc(d.customer?.full_name || '')}</b> — ${esc(kHour(d.booking?.start_at))}, ${esc(MB.ins.name)}<br>
-      Mijoz kelib kassada to‘laydi.</div>`;
+    /* KOD — eng muhimi. Mijozga telefonda shuni aytish kerak, aks holda
+       u kassaga kelib "bron qilganman" deydi-yu, kassir topolmaydi. */
+    const pcode = d.pickup_code || d.booking?.pickup_code || '';
+    $('mbAlert').innerHTML = `<div class="ok-box" style="background:#E9F7EF;border:1px solid #BFE6D0;border-radius:11px;padding:13px;font-size:13px">
+      <b>${esc(d.customer?.full_name || '')}</b> — ${esc(kHour(d.booking?.start_at))}, ${esc(MB.ins.name)}
+      ${pcode ? `<div style="margin:10px 0 8px;text-align:center">
+          <div class="muted" style="font-size:11px;font-weight:800;letter-spacing:.04em">MIJOZGA AYTING</div>
+          <div style="font-family:ui-monospace,Menlo,monospace;font-size:26px;font-weight:900;letter-spacing:2px;color:#1F7A45;margin-top:2px">${esc(pcode)}</div>
+          <button type="button" class="btn small" id="mbCopyCode" style="margin-top:6px">Nusxalash</button>
+        </div>
+        <div style="text-align:center">Mijoz kassada shu kodni aytadi.<br>Kodni unutsa — kassir uni ismi yoki telefoni bilan ham topa oladi.</div>`
+        : `<br>Mijoz kelib kassada to‘laydi. Kassir uni ismi yoki telefoni bilan topadi.`}
+      </div>`;
+    const cp = $('mbCopyCode');
+    if (cp) cp.onclick = () => {
+      try {
+        navigator.clipboard?.writeText(pcode);
+        toast('Kod nusxalandi: ' + pcode);
+      } catch (e) { toast(pcode); }
+    };
     mbClearForm(false);
     
     // Yaratilgan bron kassir va nazorat jadvallarida darhol "band" bo'lib qizarib ko'rinishi uchun yangilaymiz
