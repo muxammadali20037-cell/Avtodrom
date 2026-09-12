@@ -140,12 +140,20 @@ export async function registerAnalyticsRoutes(
       }
 
 
-      const bookings = await supabaseRest<any[]>('bookings', {
-        query:
-          `?instructor_id=eq.${q(instructorId)}` +
-          `&start_at=gte.${q(from.toISOString())}&start_at=lt.${q(to.toISOString())}` +
-          '&select=*&order=start_at.asc&limit=1000',
-      });
+      /* PostgREST bir so'rovda 1000 qator qaytaradi. Oylik hisobotda
+         shu chegara jim turib natijani kamaytirib qo'ymasin — to'lgunicha
+         sahifalab olamiz. */
+      const bookings: any[] = [];
+      for (let offset = 0; offset < 10000; offset += 1000) {
+        const chunk = await supabaseRest<any[]>('bookings', {
+          query:
+            `?instructor_id=eq.${q(instructorId)}` +
+            `&start_at=gte.${q(from.toISOString())}&start_at=lt.${q(to.toISOString())}` +
+            `&select=*&order=start_at.asc&limit=1000&offset=${offset}`,
+        });
+        bookings.push(...chunk);
+        if (chunk.length < 1000) break;
+      }
 
       const ids = bookings.map((b) => String(b.id));
       const uids = [...new Set(bookings.map((b) => b.customer_id).filter(Boolean).map(String))];
@@ -169,6 +177,27 @@ export async function registerAnalyticsRoutes(
       const pm = new Map(pays.map((p) => [String(p.booking_id), p]));
       const sm = new Map(scans.map((s) => [String(s.booking_id), s]));
 
+      /* Dars davomiyligi: bronda yozilgani ASOSIY. Ilgari faqat
+         mashg'ulot (course) qiymati olinardi — kassada 90 daqiqaga
+         yozilgan dars ham 60 daqiqa bo'lib hisoblanardi. */
+      const minutesOf = (b: any, c: any) => {
+        const own = Number(b.duration_minutes || 0);
+        if (own > 0) return own;
+        const st = b.start_at || b.booking_date, en = b.end_at;
+        if (st && en) {
+          const d = Math.round((new Date(en).getTime() - new Date(st).getTime()) / 60000);
+          if (d > 0 && d < 24 * 60) return d;
+        }
+        return Number(c?.duration_minutes || 0);
+      };
+
+      /* AVTOSHKOLA darsi: avtodrom12 dan kelgan QR chek bilan ochilgan,
+         pul olinmaydi. Qolganlari — pullik (platniy). */
+      const isSchool = (b: any) =>
+        String(b.source || '') === 'avtodrom12' ||
+        !!b.school_receipt_code ||
+        /avtoshkola/i.test(String(b.customer_note || ''));
+
       const rows = bookings.map((b) => {
         const c = cm.get(String(b.course_id));
         const p = pm.get(String(b.id));
@@ -180,9 +209,13 @@ export async function registerAnalyticsRoutes(
           departed_at: b.departed_at,
           status: b.status,
           source: b.source,
+          school: isSchool(b),
+          school_receipt_code: b.school_receipt_code || null,
+          category: b.category || c?.category || null,
+          customer_id: b.customer_id ? String(b.customer_id) : null,
           customer: um.get(String(b.customer_id)) || null,
           course: c || null,
-          duration_minutes: c?.duration_minutes ?? null,
+          duration_minutes: minutesOf(b, c),
           amount: p?.status === 'paid' ? Number(p.amount || 0) : 0,
           method: p?.method || null,
           receipt_code: p?.receipt_code || null,
@@ -192,9 +225,45 @@ export async function registerAnalyticsRoutes(
       });
 
       const done = rows.filter((r) => r.status === 'completed');
+      /* «Kelgan» dars: boshlangan yoki tugagan. O'quvchi sonini shu
+         bo'yicha sanaymiz — bekor qilingan bron o'quvchi emas. */
+      const attended = rows.filter((r) => ['in_progress', 'completed'].includes(String(r.status)));
+      const uniq = (list: any[]) =>
+        new Set(list.map((r) => r.customer_id || `x${r.id}`)).size;
+
+      const group = (list: any[]) => ({
+        lessons: list.length,
+        completed: list.filter((r) => r.status === 'completed').length,
+        students: uniq(list),
+        minutes: list.filter((r) => r.status === 'completed')
+          .reduce((a, r) => a + Number(r.duration_minutes || 0), 0),
+        revenue: list.reduce((a, r) => a + r.amount, 0),
+      });
+
+      /* Har bir o'quvchi kesimida — oy oxiri hisob-kitobi uchun */
+      const byStudent = new Map<string, any>();
+      for (const r of attended) {
+        const key = r.customer_id || `x${r.id}`;
+        if (!byStudent.has(key)) {
+          byStudent.set(key, {
+            id: r.customer_id, name: r.customer?.full_name || 'Noma’lum',
+            phone: r.customer?.phone || null,
+            lessons: 0, school: 0, paid: 0, minutes: 0, amount: 0, last_at: null as string | null,
+          });
+        }
+        const s = byStudent.get(key);
+        s.lessons++;
+        if (r.school) s.school++; else s.paid++;
+        if (r.status === 'completed') s.minutes += Number(r.duration_minutes || 0);
+        s.amount += r.amount;
+        if (!s.last_at || String(r.start_at) > s.last_at) s.last_at = r.start_at;
+      }
+      const students = [...byStudent.values()].sort((a, b) => b.lessons - a.lessons);
+
       return {
         ok: true,
         period, label, anchor,
+        from: from.toISOString(), to: to.toISOString(),
         scoped_to_register: !!regId,
         summary: {
           bookings: rows.length,
@@ -207,7 +276,12 @@ export async function registerAnalyticsRoutes(
           revenue: rows.reduce((a, r) => a + r.amount, 0),
           cash: rows.filter((r) => r.method === 'cash').reduce((a, r) => a + r.amount, 0),
           card: rows.filter((r) => r.method === 'card').reduce((a, r) => a + r.amount, 0),
+          /* Oy oxiridagi hisob-kitob uchun */
+          students: uniq(attended),
+          school: group(attended.filter((r) => r.school)),
+          paid: group(attended.filter((r) => !r.school)),
         },
+        students,
         rows,
       };
     } catch (e: any) {
