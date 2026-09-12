@@ -722,8 +722,10 @@ function card(b, opts = {}){
   const tgId = b.customer?.telegram_id;
   const now = Date.now(), s0 = new Date(when).getTime(), e0 = new Date(b.end_at || when).getTime();
   const isNow = st === 'in_progress' || (now >= s0 - 15 * 60000 && now <= e0);
-  /* Avtoshkola darsi: avtodrom12 dagi QR chek bo'yicha ochilgan, tekin */
-  const school = b.source === 'avtodrom12' || /AVD-\d{4,5}(?!\d|-)/.test(String(b.customer_note || ''));
+  /* Avtoshkola darsi: avtodrom12 dagi QR chek bo'yicha ochilgan, tekin.
+     Faqat `source` yoki o'z ustuni bo'yicha aniqlanadi — mijoz izohida
+     tasodifan kod uchrasa, pullik dars tekin ko'rinib qolmasligi uchun. */
+  const school = b.source === 'avtodrom12' || !!b.school_receipt_code;
 
   /* Bronni QABUL QILISH yoki RAD ETISH instruktorda yo'q — buni Admin qiladi.
      Kutilayotgan bron faqat ko'rinadi, tugmasiz. */
@@ -825,23 +827,27 @@ $('scanBtn').onclick = () => {
 };
 
 /** QR ichida to'liq URL bo'lishi ham mumkin — faqat kodni ajratamiz.
-    Ikki xil chek bor:
-      • Avtodrom o'z cheki  : AVD-260901-6KBCQ
-      • Avtoshkola cheki    : AVD-1234 (avtodrom12 da chiqariladi) */
+    Uch xil kod bor:
+      • Avtodrom cheki      : AVD-260901-6KBCQ
+      • Mijoz pickup kodi   : AVD-1234
+      • Avtoshkola cheki    : AVS-12345 (avtodrom12 da chiqariladi)
+    Prefikslari boshqa — shuning uchun aralashmaydi. */
 function extractCode(raw){
   const s = String(raw || '').toUpperCase();
   const full = s.match(/AVD-\d{6}-[0-9A-Z]{5}/);
   if (full) return full[0];
-  const school = s.match(/AVD-\d{4,5}(?!\d|-)/);
+  const school = s.match(/AVS-\d{5}/);
   if (school) return school[0];
-  const bare = s.trim().match(/^\d{4,5}$/);        // faqat raqam yozilsa
-  return bare ? 'AVD-' + bare[0] : '';
+  const pickup = s.match(/AVD-\d{4,5}(?!\d|-)/);
+  if (pickup) return pickup[0];
+  const bare = s.trim().match(/^\d{5}$/);          // 5 xonali — avtoshkola
+  return bare ? 'AVS-' + bare[0] : '';
 }
 
 function manualCode(){
   sheet(`<h2 style="margin:0 0 4px">Chek kodini kiriting</h2>
-    <p class="sub">Chekning pastida yozilgan kod. Avtodrom cheki: AVD-260901-6KBCQ. Avtoshkola cheki: AVD-1234.</p>
-    <div class="field"><input id="mcInput" placeholder="AVD-______-_____ yoki AVD-1234" autocapitalize="characters" autocomplete="off" inputmode="text"></div>
+    <p class="sub">Chekning pastida yozilgan kod. Avtodrom cheki: AVD-260901-6KBCQ. Avtoshkola cheki: AVS-12345.</p>
+    <div class="field"><input id="mcInput" placeholder="AVD-______-_____ yoki AVS-12345" autocapitalize="characters" autocomplete="off" inputmode="text"></div>
     <div id="mcAlert"></div>
     <div class="acts two" style="padding:0">
       <button class="btn" id="mcNo">Bekor</button>
