@@ -2355,7 +2355,12 @@ async function loadAll(show){
     if (pay.status === 'fulfilled') S.payments = pay.value.payments || [];
     if (crs.status === 'fulfilled') S.courses  = crs.value.courses  || [];
     if (st.status  === 'fulfilled') S.settings = st.value.settings  || [];
-    if (ins.status === 'fulfilled') S.instructors = ins.value.instructors || [];
+    if (ins.status === 'fulfilled') { S.instructors = ins.value.instructors || []; S.insErr = null; }
+    /* Sababni SAQLAYMIZ. Ilgari ro'yxat bo'sh bo'lsa ekranda quruq
+       «Instruktorlar yo'q» turardi va nima bo'lganini bilib bo'lmasdi:
+       backend yangilanmaganmi (404), ruxsat yo'qmi (403), yoki
+       haqiqatan ham instruktor qo'shilmaganmi. */
+    else S.insErr = (ins.reason && ins.reason.message) || 'Instruktorlar yuklanmadi';
     try {
       renderCats(); renderDurs(); coRender();
       /* Ro'yxat kelgach tanlovlarni qayta chizamiz — kassir sahifani
@@ -3206,9 +3211,14 @@ $('iaPrint').onclick = () => {
 
 function renderCtlPicker(){
   const list = S.instructors || [];
+  /* Bo'sh bo'lsa SABABINI yozamiz — quruq «Instruktorlar yo'q» ni
+     ko'rib nima qilishni bilib bo'lmasdi. */
+  const bosh = S.insErr
+    ? `<div class="empty">Instruktorlar yuklanmadi.<br><span class="muted" style="font-size:12px">${esc(S.insErr)}</span></div>`
+    : '<div class="empty">Instruktorlar yo‘q.</div>';
   $('ctlPicker').innerHTML = list.length
     ? list.map(i => `<button data-ins="${esc(i.id)}" class="${S.ctlIns===String(i.id)?'on':''}">${esc(iname(i))}</button>`).join('')
-    : '<div class="empty">Instruktorlar yo‘q.</div>';
+    : bosh;
   $('ctlPicker').querySelectorAll('[data-ins]').forEach(b => b.onclick = () => { S.ctlIns = b.dataset.ins; renderCtlPicker(); loadControl(); });
 }
 
@@ -4923,8 +4933,13 @@ $('kInstructor').addEventListener('change',loadCashier);
 $('kSearch').addEventListener('input',renderCashier);
 function fillCashierInstructors(){
   const cur=$('kInstructor').value;
-  $('kInstructor').innerHTML='<option value="">Barcha instruktorlar</option>'+
-    S.instructors.filter(i=>i.active).map(i=>`<option value="${esc(i.id)}">${esc(iname(i))}</option>`).join('');
+  const list=(S.instructors||[]).filter(i=>i.active);
+  /* Ro'yxat yuklanmagan bo'lsa sababi shu yerda ko'rinadi — kassir
+     "nega bo'sh" deb o'ylab qolmasin. */
+  const izoh = (!list.length && S.insErr)
+    ? `<option value="" disabled>⚠ ${esc(S.insErr)}</option>` : '';
+  $('kInstructor').innerHTML='<option value="">Barcha instruktorlar</option>'+izoh+
+    list.map(i=>`<option value="${esc(i.id)}">${esc(iname(i))}</option>`).join('');
   if(cur) $('kInstructor').value=cur;
 }
 
