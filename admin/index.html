@@ -1345,15 +1345,14 @@ function roleError(msg){
   $('roleError').classList.remove('hidden');
 }
 
-/* Sessiya allaqachon ochiq bo'lsa parol qayta so'ralmaydi — faqat rol. */
+/* Rol tanlandimi — HAR DOIM parol so'raladi. Rol tanlash ekraniga
+   tushish o'zi "panel ichida emasman" degani, shuning uchun bu yerda
+   ochiq sessiya qoldirilmaydi (boot() uni yopadi). */
 let AUTHED = false;
 
-document.querySelectorAll('.rolebtn').forEach(b => b.onclick = async () => {
-  const role = b.dataset.role;
-  setPickedRole(role);
-  if (!AUTHED) { showPassStep(role); return; }
-  if (!roleAllowed(S.me, role)) { roleError('Bu hisob "' + ROLE_NAMES[role] + '" paneliga kira olmaydi.'); setPickedRole(''); return; }
-  await enterPanel();
+document.querySelectorAll('.rolebtn').forEach(b => b.onclick = () => {
+  setPickedRole(b.dataset.role);
+  showPassStep(b.dataset.role);
 });
 $('roleBack').onclick = () => { setPickedRole(''); showRoleStep(); };
 
@@ -4442,19 +4441,25 @@ async function boot(){
     return;   // qolgan so'rovlar yuborilmaydi — konsol toza qoladi
   }
 
-  /* Sessiya ochiq. Parol qayta so'ralmaydi, lekin panel tanlangan
-     bo'lishi shart — aks holda rol tanlash ekrani ko'rsatiladi. */
-  AUTHED = true;
+  /* Sessiya ochiq. Sahifa yangilanganda o'sha panelda qolish uchun
+     tanlangan rol saqlangan bo'lishi shart. Saqlanmagan bo'lsa (chiqib
+     ketgan yoki birinchi kirish) — sessiyani yopamiz va parol
+     so'raymiz. Shu sabab rol tanlash hech qachon parolsiz o'tmaydi. */
   if (!S.registers.length) {
     try { S.registers = (await api('/api/admin/registers')).registers || []; } catch (e) {}
   }
+  if (S.me && S.me.role === 'cashier' && !PICKED_ROLE) {
+    /* Kassirda tanlov yo'q — o'z kassasi. Lekin u ham parolsiz
+       kirmaydi: rol saqlanmagan bo'lsa quyida sessiya yopiladi. */
+    const own = (S.registers || []).find(r => String(r.id) === String(S.me.register_id)) || S.me.register;
+    if (own && own.code) setPickedRole(own.code);
+  }
   if (!PICKED_ROLE || !roleAllowed(S.me, PICKED_ROLE)) {
-    if (S.me && S.me.role === 'cashier') {
-      /* Kassirda tanlov yo'q — o'z kassasi o'zi ochiladi */
-      const own = (S.registers || []).find(r => String(r.id) === String(S.me.register_id)) || S.me.register;
-      if (own && own.code) setPickedRole(own.code);
-    }
-    if (!PICKED_ROLE) { showLogin(); AUTHED = true; return; }
+    setPickedRole('');
+    try { await api('/api/admin/logout', { method:'POST' }); } catch (e) {}
+    S.me = null;
+    showLogin();
+    return;
   }
 
   try{
