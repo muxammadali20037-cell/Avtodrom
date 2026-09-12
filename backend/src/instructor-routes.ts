@@ -8,11 +8,14 @@ import { q, toProfile, findUserByTelegram, instructorProfileForUser, notifyUser 
 import { completeSchoolReceipt, isSchoolReceiptCode } from './school-receipt.js';
 
 /** Avtoshkola cheki bo'yicha ochilgan bron bo'lsa, kodini qaytaradi.
- *  Kod ustunda yoki (migratsiya hali yurmagan bo'lsa) izohda turadi. */
+ *  FAQAT o'z ustunidan yoki (migratsiya hali yurmagan bo'lsa) izohdan —
+ *  lekin izohdan olishda `source` ham 'avtodrom12' bo'lishi shart. Aks
+ *  holda mijoz izohida tasodifan kod uchrasa, begona chek yopilardi. */
 function schoolReceiptCodeOf(booking: any): string | null {
   const direct = String(booking?.school_receipt_code || '').trim().toUpperCase();
   if (isSchoolReceiptCode(direct)) return direct;
-  const m = String(booking?.customer_note || '').toUpperCase().match(/AVD-\d{4,5}(?!\d|-)/);
+  if (String(booking?.source || '') !== 'avtodrom12') return null;
+  const m = String(booking?.customer_note || '').toUpperCase().match(/AVS-\d{5}/);
   return m ? m[0] : null;
 }
 
@@ -188,7 +191,9 @@ export async function registerInstructorRoutes(
         const b = updated || booking;
         const startedAt = b?.arrived_at || b?.start_at;
         const seconds = startedAt ? Math.max(0, Math.round((Date.now() - new Date(startedAt).getTime()) / 1000)) : undefined;
-        await completeSchoolReceipt(schoolCode, seconds);
+        /* Kutmaymiz: avtodrom12 sekin javob bersa instruktorning
+           "Yakunlash" tugmasi osilib qolmasin. Dars baribir yakunlangan. */
+        void completeSchoolReceipt(schoolCode, seconds);
       }
 
       return { ok: true, booking: updated || booking };
