@@ -1,6 +1,18 @@
 import type { FastifyInstance } from 'fastify';
 import { createHmac, timingSafeEqual, randomUUID } from 'node:crypto';
 import { supabaseRest } from './supabase.js';
+import { completeSchoolReceipt, isSchoolReceiptCode } from './school-receipt.js';
+
+/** Bronga biriktirilgan avtoshkola cheki kodi (AVS-12345) yoki null.
+    Izohdan olishda `source` ham 'avtodrom12' bo'lishi shart — aks holda
+    mijoz izohida tasodifan uchragan kod begona chekni yopib yuborardi. */
+function schoolReceiptCodeOf(booking: any): string | null {
+  const direct = String(booking?.school_receipt_code || '').trim().toUpperCase();
+  if (isSchoolReceiptCode(direct)) return direct;
+  if (String(booking?.source || '') !== 'avtodrom12') return null;
+  const m = String(booking?.customer_note || '').toUpperCase().match(/AVS-\d{5}/);
+  return m ? m[0] : null;
+}
 
 /**
  * SMENA (kassa navbati)
@@ -516,12 +528,20 @@ export async function registerShiftRoutes(
 
 
   /**
-   * Unutilgan darsni majburiy yopish.
+   * Darsni qo'lda yakunlash.
    *
-   * Instruktor "yakunlash" tugmasini bosmay qolganda dars kunlar
-   * davomida "jarayonda" bo'lib turadi va yangi dars boshlashni
-   * to'sib qo'yadi. Admin uni yopa oladi — kim yopgani auditga
-   * yoziladi, chunki bu instruktor o'rniga qilingan amal.
+   * IKKI HOLAT UCHUN:
+   *  · Instruktor "yakunlash" tugmasini bosmay qolgan — dars kunlar
+   *    davomida "jarayonda" turadi va yangi darsni to'sib qo'yadi.
+   *  · Kassir jarayondagi darsni joyida to'xtatmoqchi (o'quvchi erta
+   *    ketdi, instruktor telefonidan yopa olmayapti va h.k.).
+   *
+   * `at` berilsa — tugash vaqti aynan o'sha payt (kassir qo'lda
+   * belgilaydi). Berilmasa — eski xatti-harakat: rejadagi oxiri,
+   * u ham o'tib ketgan bo'lsa hozir.
+   *
+   * Kim yopgani va qaysi vaqt bilan yopgani auditga yoziladi —
+   * bu instruktor o'rniga qilingan amal.
    */
   app.post('/api/admin/bookings/:id/force-finish', async (req: any, reply: any) => {
     try {
@@ -537,18 +557,57 @@ export async function registerShiftRoutes(
         return reply.code(409).send({ ok: false, error: `Bron holati "${b.status}" — yopish shart emas` });
       }
 
-      const now = new Date().toISOString();
-      // Tugash vaqti: rejadagi oxiri, undan ham o'tgan bo'lsa hozir
-      const planned = b.end_at ? new Date(b.end_at) : null;
-      const departed = planned && planned.getTime() < Date.now() ? planned.toISOString() : now;
+      const nowMs = Date.now();
+      const now = new Date(nowMs).toISOString();
+
+      let departed: string;
+      const raw = String((req.body as any)?.at || '').trim();
+      if (raw) {
+        const want = new Date(raw);
+        if (Number.isNaN(want.getTime())) {
+          return reply.code(400).send({ ok: false, error: 'Tugash vaqti noto‘g‘ri' });
+        }
+        /* Dars boshlanmasdan tugay olmaydi. */
+        const startMs = new Date(b.started_at || b.start_at || 0).getTime();
+        if (startMs && want.getTime() < startMs) {
+          return reply.code(400).send({
+            ok: false,
+            error: 'Tugash vaqti dars boshlangan vaqtdan oldin bo‘lolmaydi',
+          });
+        }
+        /* Kelajakka yozilmasin — soatlar biroz farq qilishi mumkin,
+           shuning uchun 2 daqiqa toqat qilamiz va hozirga qisqartiramiz. */
+        departed = new Date(Math.min(want.getTime(), nowMs + 120000, nowMs)).toISOString();
+      } else {
+        const planned = b.end_at ? new Date(b.end_at) : null;
+        departed = planned && planned.getTime() < nowMs ? planned.toISOString() : now;
+      }
 
       const rows = await supabaseRest<any[]>('bookings', {
         method: 'PATCH', headers: { Prefer: 'return=representation' }, query: `?id=eq.${q(id)}`,
         body: JSON.stringify({ status: 'completed', departed_at: b.departed_at || departed, updated_at: now }),
       });
       await audit(admin.id, 'BOOKING_FORCE_FINISHED', 'bookings', id,
-        { status: b.status }, { status: 'completed', by: 'admin' });
-      return { ok: true, booking: rows[0] ?? null };
+        { status: b.status, departed_at: b.departed_at || null },
+        { status: 'completed', departed_at: b.departed_at || departed, manual: !!raw });
+
+      /* Avtoshkola darsi bo'lsa avtodrom12 dagi sessiyani ham yopamiz —
+         aks holda o'sha avtomobil u yerda "Jarayonda" bo'lib qolar va
+         keyingi darsni to'sardi. Instruktor "Yakunlash" bosganda ham
+         xuddi shunday qilinadi.
+         Kutmaymiz: avtodrom12 sekin javob bersa kassir tugmasi osilib
+         qolmasin — dars baribir yakunlangan. */
+      const schoolCode = schoolReceiptCodeOf(rows[0] || b);
+      if (schoolCode) {
+        const startedAt = b.arrived_at || b.started_at || b.start_at;
+        const endMs = new Date(b.departed_at || departed).getTime();
+        const seconds = startedAt
+          ? Math.max(0, Math.round((endMs - new Date(startedAt).getTime()) / 1000))
+          : undefined;
+        void completeSchoolReceipt(schoolCode, seconds);
+      }
+
+      return { ok: true, booking: rows[0] ?? null, departed_at: b.departed_at || departed };
     } catch (e: any) {
       return reply.code(e?.statusCode ?? 400).send({ ok: false, error: e?.message || 'Yopilmadi' });
     }
