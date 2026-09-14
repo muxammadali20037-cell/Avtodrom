@@ -1973,6 +1973,11 @@ function courseModal(c){
   openModal(`<h3>${isEdit?'Mashg‘ulotni tahrirlash':'Yangi mashg‘ulot'}</h3>
     <div class="field"><label>NOMI *</label><input id="cName" class="input" value="${esc(c?.name||'')}"></div>
     <div class="field"><label>TAVSIF</label><textarea id="cDesc" class="input" rows="2">${esc(c?.description||'')}</textarea></div>
+    <div class="field"><label>KATEGORIYA *</label>
+      <div style="display:flex;gap:6px" id="cCatBox">
+        ${['A','B','C'].map(x=>`<button type="button" class="btn small ${String(c?.category||'').toUpperCase()===x?'primary':''}" data-cat="${x}" style="flex:1">${x}</button>`).join('')}
+      </div>
+      <div class="muted" style="font-size:12px;margin-top:5px">Kassada mashg‘ulot shu kategoriya bo‘yicha tanlanadi.</div></div>
     <div class="field"><label>DAVOMIYLIK *</label>
       <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">
         <button type="button" class="btn small" data-dur="30">30 daq</button>
@@ -1986,6 +1991,17 @@ function courseModal(c){
     <div class="field"><label>NARX (UZS) *</label><input id="cPrice" class="input" type="number" min="0" value="${esc(c?.price||0)}"></div>
     <div id="cErr"></div>
     <div style="display:flex;gap:8px"><button class="btn" style="flex:1" id="cCancel">Bekor</button><button class="btn primary" style="flex:1" id="cSave">Saqlash</button></div>`);
+  /* KATEGORIYA. Ilgari bu o'zgaruvchi e'lon qilinmagan edi va
+     "Saqlash" bosilganda ReferenceError bo'lardi — tugma umuman
+     ishlamas, hech qanday xabar ham chiqmasdi. */
+  let cCat = String(c?.category || '').toUpperCase();
+  if (!/^[ABC]$/.test(cCat)) cCat = '';
+  const paintCat = () => document.querySelectorAll('#cCatBox [data-cat]').forEach(b =>
+    b.classList.toggle('primary', b.dataset.cat === cCat));
+  document.querySelectorAll('#cCatBox [data-cat]').forEach(b =>
+    b.onclick = () => { cCat = b.dataset.cat; paintCat(); $('cErr').innerHTML=''; });
+  paintCat();
+
   const durHint=()=>{ $('cDurHint').textContent='= '+fmtDur($('cDur').value); };
   durHint();
   $('cDur').addEventListener('input',durHint);
