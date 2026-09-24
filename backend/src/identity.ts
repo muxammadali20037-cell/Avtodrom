@@ -162,6 +162,9 @@ export function toInstructorCard(row: any) {
     bio: row.bio ?? null,
     avatar_url: row.avatar_url ?? null,
     categories: Array.isArray(row.categories) ? row.categories : ['B'],
+    /* Mijoz qaysi mashinada o'qishini ko'radi */
+    vehicle_model: row.vehicle_model ?? null,
+    vehicle_plate: row.vehicle_plate ?? null,
     experience_years: row.experience_years ?? 0,
     rating: row.rating ?? 0,
     total_reviews: row.total_reviews ?? 0,
