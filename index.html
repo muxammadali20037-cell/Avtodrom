@@ -717,7 +717,7 @@ async function req(path, { method = 'GET', body, timeout = 15000 } = {}) {
     try { d = await r.json(); } catch (e) {}
     if (!r.ok || d.ok === false) {
       const e = new Error(d.error || `Server xatosi (${r.status})`);
-      e.status = r.status; throw e;
+      e.status = r.status; e.code = d.code || ''; throw e;
     }
     return d;
   } catch (e) {
@@ -857,7 +857,7 @@ async function boot() {
   if (wait > 0) await new Promise(r => setTimeout(r, wait));
 
   /* Birinchi kirish: avval telefon, keyin ism */
-  if (!S.me.phone) return startOnb();
+  if (!S.me.phone && store.get('onb_skip') !== '1') return startOnb();
 
   /* Bot havolasidan kelgan bo'lsa: t.me/bot?startapp=book */
   const sp = String((tg.initDataUnsafe && tg.initDataUnsafe.start_param) || '').toLowerCase();
@@ -1043,13 +1043,15 @@ function renderOnb() {
       <label class="phone-box"><span>+998</span>
         <input id="onbPhone" type="tel" inputmode="numeric" autocomplete="tel-national" placeholder="90 123 45 67" value="${esc(phoneMask(o.phone))}" aria-label="Telefon raqami"></label>
       ${canShare ? `<div class="or">yoki</div>
-        <button class="btn btn-tg" data-act="sharecontact">${ico('phone', 20)} Telegramdagi raqamimni yuborish</button>` : ''}`
+        <button class="btn ${o.code === 'PHONE_NEEDS_CONTACT' ? 'btn-primary' : 'btn-tg'}" data-act="sharecontact">${ico('phone', 20)} Telegramdagi raqamimni yuborish</button>` : ''}`
     : `
       <h1>Ismingiz nima?</h1>
       <p class="lead">Instruktor va admin sizga shunday murojaat qiladi.</p>
       <input class="big-in" id="onbFirst" autocomplete="given-name" placeholder="Ism" value="${esc(o.first)}" aria-label="Ism">
       <input class="big-in" id="onbLast" autocomplete="family-name" placeholder="Familiya" value="${esc(o.last)}" aria-label="Familiya">`}
     ${o.err ? `<div class="note err onb-err">${esc(o.err)}</div>` : ''}
+    ${one && /^PHONE_/.test(o.code || '')
+      ? `<button class="link" style="margin:14px auto 0;padding:8px" data-act="onbskip">Hozircha raqamsiz davom etish</button>` : ''}
   </div>
   <div class="onb-foot"><button class="btn btn-primary" data-act="onbnext" ${o.saving ? 'disabled' : ''}>
     ${o.saving ? '<span class="spin"></span>' : one ? `Davom etish ${ico('arrow', 20)}` : `Tayyor ${ico('check', 20, 2.4)}`}</button></div>`;
@@ -1077,8 +1079,11 @@ async function saveOnb() {
   const o = S.onb;
   o.saving = true; render();
   try {
-    const r = await api.saveMe({ first_name: o.first, last_name: o.last, phone: '+998' + o.phone });
+    const body = { first_name: o.first, last_name: o.last, phone: '+998' + o.phone };
+    if (o.contact && o.contactPhone === o.phone) body.contact = o.contact;   // Telegram tasdiqlagan raqam
+    const r = await api.saveMe(body);
     S.me = r.profile || r.user || Object.assign({}, S.me, { phone: '+998' + o.phone, first_name: o.first, last_name: o.last });
+    if (r.linked) { const b = await api.bookings().catch(() => null); if (b) S.bookings = b.bookings || []; }
     B.phone = S.me.phone || '';
     haptic.ok();
     o.saving = false;
@@ -1086,9 +1091,25 @@ async function saveOnb() {
   } catch (e) {
     o.saving = false;
     o.err = e.message;
-    if (/telefon/i.test(e.message)) S.onbStep = 1;   // raqam band bo'lsa — raqam ekraniga qaytamiz
+    o.code = e.code || '';
+    /* Raqam band bo'lsa — raqam ekraniga qaytamiz. Kassada ro'yxatdan o'tgan
+       mijoz Telegram raqamini yuborib, eski hisobini ulaydi. */
+    if (/^PHONE_/.test(o.code) || /telefon|raqam/i.test(e.message)) S.onbStep = 1;
     haptic.err(); render(); syncBack();
   }
+}
+/* Raqam band va Telegram orqali tasdiqlab bo'lmasa — mijoz to'xtab qolmasin.
+   Ismni saqlaymiz, raqamni admin keyin ulaydi. Shu qurilmada qayta so'ramaymiz. */
+async function onbSkip() {
+  const o = S.onb;
+  o.saving = true; render();
+  try {
+    const first = o.first || (S.me && S.me.first_name) || '';
+    if (first) { const r = await api.saveMe({ first_name: first, last_name: o.last || '' }); S.me = r.profile || S.me; }
+  } catch (e) {}
+  o.saving = false;
+  store.set('onb_skip', '1');
+  sayHello();
 }
 function shareContact() {
   try {
@@ -1096,6 +1117,9 @@ function shareContact() {
       const ph = ok && res && res.responseUnsafe && res.responseUnsafe.contact && res.responseUnsafe.contact.phone_number;
       if (ph) {
         S.onb.phone = phoneDigits(ph);
+        S.onb.contact = typeof res.response === 'string' ? res.response : '';
+        S.onb.contactPhone = S.onb.phone;
+        S.onb.err = ''; S.onb.code = '';
         const c = res.responseUnsafe.contact;
         if (!S.onb.first && c.first_name) S.onb.first = c.first_name;
         if (!S.onb.last && c.last_name) S.onb.last = c.last_name;
@@ -1748,8 +1772,14 @@ async function submitBooking() {
   B.sending = true; renderBar();
   try {
     if (phone) {
-      const r = await api.saveMe({ phone });
-      S.me = r.profile || r.user || Object.assign({}, S.me, { phone });
+      /* Raqam band bo'lsa ham bron to'xtamasin — admin raqamni keyin ulaydi */
+      try {
+        const r = await api.saveMe({ phone });
+        S.me = r.profile || r.user || Object.assign({}, S.me, { phone });
+      } catch (e) {
+        if (!/^PHONE_/.test(e.code || '') && !/telefon|raqam/i.test(e.message)) throw e;
+        B.phone = ''; store.set('onb_skip', '1');
+      }
     }
     const r = await api.book({
       instructor_id: who.id,
@@ -2122,6 +2152,7 @@ document.addEventListener('click', e => {
     case 'closeviewer': closeViewer(); break;
     case 'onbnext': onbNext(); break;
     case 'sharecontact': shareContact(); break;
+    case 'onbskip': onbSkip(); break;
     case 'reload': location.reload(); break;
     case 'quickcat': haptic.tap(); startBook({ key: v }); go('book'); break;
     /* --- bron bosqichlari: tanlangach keyingisi o'zi ochiladi --- */
