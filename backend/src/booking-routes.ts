@@ -3,6 +3,7 @@
  * Kanonik jadvallar: users, instructor_profiles, bookings, notifications.
  * `profiles` / `instructors` view'lariga MUROJAAT QILINMAYDI (ular read-only).
  */
+import crypto from 'node:crypto';
 import type { FastifyInstance } from 'fastify';
 import { supabaseRest } from './supabase.js';
 import { loadTariffs, computePrice } from './pricing.js';
@@ -15,6 +16,57 @@ import {
 } from './identity.js';
 
 const ACTIVE_STATUSES = 'pending,confirmed,in_progress';
+
+/** O'zbekiston raqami: istalgan yozuvni +998XXXXXXXXX ga keltiradi. Noto'g'ri bo'lsa null. */
+export function normalizeUzPhone(v: unknown): string | null {
+  let d = String(v ?? '').replace(/\D/g, '');
+  if (d.length === 9) d = '998' + d;
+  return /^998\d{9}$/.test(d) ? '+' + d : null;
+}
+
+/**
+ * Telegram `requestContact` javobini tekshiradi (initData bilan bir xil imzo).
+ * Mijoz Mini App'da «Telegramdagi raqamimni yuborish» ni bosganda raqamni
+ * TELEGRAM tasdiqlaydi — uni qo'lda yozilgan raqamdan ishonchli qiladi.
+ */
+export function verifyContactShare(raw: string, botToken: string, userId: number, maxAgeSeconds = 900):
+  { phone_number: string; user_id: number } | null {
+  try {
+    if (!raw || !botToken) return null;
+    const params = new URLSearchParams(raw);
+    const hash = params.get('hash');
+    const authDate = Number(params.get('auth_date'));
+    if (!hash || !Number.isFinite(authDate)) return null;
+    const age = Math.floor(Date.now() / 1000) - authDate;
+    if (age < -60 || age > maxAgeSeconds) return null;
+    params.delete('hash');
+    const check = [...params.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([k, v]) => `${k}=${v}`).join('\n');
+    const secret = crypto.createHmac('sha256', 'WebAppData').update(botToken).digest();
+    const expected = crypto.createHmac('sha256', secret).update(check).digest('hex');
+    const A = Buffer.from(hash, 'hex'), B = Buffer.from(expected, 'hex');
+    if (A.length !== B.length || !crypto.timingSafeEqual(A, B)) return null;
+    const c = JSON.parse(params.get('contact') || '{}');
+    if (Number(c.user_id) !== Number(userId) || !c.phone_number) return null;
+    return { phone_number: String(c.phone_number), user_id: Number(c.user_id) };
+  } catch { return null; }
+}
+
+/**
+ * Kassa kodi (AVD-4821). Mijoz kassaga kelib shu kodni aytadi.
+ * Ilgari faqat kassa/qo'lda bron qilinganda berilardi — Mini App orqali
+ * qilingan bronlarda kod umuman bo'lmas, mijoz kassada ayta oladigan
+ * hech narsasi qolmasdi.
+ */
+async function newPickupCode(): Promise<string> {
+  for (let i = 0; i < 30; i++) {
+    const code = 'AVD-' + String(1000 + Math.floor(Math.random() * 9000));
+    const hit = await supabaseRest<any[]>('bookings', {
+      query: `?pickup_code=eq.${q(code)}&select=id&limit=1`,
+    }).catch(() => null);
+    if (!hit || !hit.length) return code;
+  }
+  return 'AVD-' + String(10000 + Math.floor(Math.random() * 90000));
+}
 
 /**
  * Postgres constraint xatolarini foydalanuvchi tushunadigan xabarga aylantiradi.
@@ -143,7 +195,7 @@ export async function registerBookingRoutes(
     try {
       const tg = await authenticate(request);
       const user = await userForTelegram(tg);
-      const body = (request.body ?? {}) as { first_name?: string; last_name?: string; phone?: string };
+      const body = (request.body ?? {}) as { first_name?: string; last_name?: string; phone?: string; contact?: string };
       const current = splitName(user.full_name);
 
       const patch: Record<string, unknown> = { updated_at: new Date().toISOString() };
@@ -155,17 +207,67 @@ export async function registerBookingRoutes(
         if (!full) return reply.code(400).send({ ok: false, error: 'Ism majburiy' });
         patch.full_name = full;
       }
-      if (body.phone !== undefined) patch.phone = String(body.phone).trim() || null;
+      if (body.phone !== undefined) {
+        const raw = String(body.phone).trim();
+        const phone = raw ? normalizeUzPhone(raw) : null;
+        if (raw && !phone) return reply.code(400).send({ ok: false, error: 'Telefon formati: +998 90 123 45 67' });
+        patch.phone = phone;
+      }
 
-      const rows = await supabaseRest<any[]>('users', {
-        method: 'PATCH',
-        headers: { Prefer: 'return=representation' },
-        query: `?id=eq.${q(String(user.id))}`,
-        body: JSON.stringify(patch),
-      });
-      return { ok: true, profile: toProfile(rows[0] ?? user, { username: (tg as any).username ?? null }) };
+      try {
+        const rows = await supabaseRest<any[]>('users', {
+          method: 'PATCH',
+          headers: { Prefer: 'return=representation' },
+          query: `?id=eq.${q(String(user.id))}`,
+          body: JSON.stringify(patch),
+        });
+        return { ok: true, profile: toProfile(rows[0] ?? user, { username: (tg as any).username ?? null }) };
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e ?? '');
+        if (!/users_phone_key/.test(msg) || !patch.phone) throw e;
+
+        /* Raqam band. Ko'pincha bu — avval telefon orqali yoki kassada
+           ro'yxatdan o'tgan O'SHA mijozning o'zi (Telegram'siz yozuv).
+           Faqat Telegram TASDIQLAGAN raqam (requestContact imzosi) bilan
+           o'sha yozuvni shu Telegram hisobiga ulaymiz — aks holda istalgan
+           odam begona raqamni yozib, uning bronlarini ko'rib olardi. */
+        const other = (await supabaseRest<any[]>('users', {
+          query: `?phone=eq.${q(String(patch.phone))}&select=*&limit=1`,
+        }))[0];
+        if (!other || String(other.id) === String(user.id)) throw e;
+        if (other.telegram_id) {
+          return reply.code(409).send({ ok: false, code: 'PHONE_TAKEN',
+            error: 'Bu raqam boshqa Telegram hisobiga bog‘langan. Boshqa raqam kiriting yoki admin bilan bog‘laning.' });
+        }
+        const token = String(process.env.CUSTOMER_BOT_TOKEN || process.env.TELEGRAM_CUSTOMER_BOT_TOKEN || '');
+        const contact = body.contact ? verifyContactShare(body.contact, token, Number(tg.id)) : null;
+        if (!contact || normalizeUzPhone(contact.phone_number) !== patch.phone) {
+          return reply.code(409).send({ ok: false, code: 'PHONE_NEEDS_CONTACT',
+            error: 'Bu raqam avtodromda allaqachon ro‘yxatdan o‘tgan. «Telegramdagi raqamimni yuborish» tugmasini bosing — hisobingiz shu raqamga ulanadi.' });
+        }
+        const mine = await supabaseRest<any[]>('bookings', { query: `?customer_id=eq.${q(String(user.id))}&select=id&limit=1` });
+        if (mine.length) {
+          return reply.code(409).send({ ok: false, code: 'PHONE_MERGE_MANUAL',
+            error: 'Ikki hisobingizda ham bron bor — birlashtirish uchun admin bilan bog‘laning.' });
+        }
+        /* 1) Hozirgi bo'sh (faqat Mini App ochilganda yaratilgan) yozuvni bo'shatamiz,
+           2) eski yozuvga Telegram'ni bog'laymiz. Tartib muhim: telegram_id noyob. */
+        try {
+          await supabaseRest('users', { method: 'DELETE', query: `?id=eq.${q(String(user.id))}` });
+        } catch {
+          await supabaseRest('users', { method: 'PATCH', query: `?id=eq.${q(String(user.id))}`,
+            body: JSON.stringify({ telegram_id: null, is_active: false, updated_at: new Date().toISOString() }) });
+        }
+        const linked = await supabaseRest<any[]>('users', {
+          method: 'PATCH',
+          headers: { Prefer: 'return=representation' },
+          query: `?id=eq.${q(String(other.id))}`,
+          body: JSON.stringify({ telegram_id: tg.id, ...(patch.full_name ? { full_name: patch.full_name } : {}), updated_at: new Date().toISOString() }),
+        });
+        return { ok: true, linked: true, profile: toProfile(linked[0] ?? other, { username: (tg as any).username ?? null }) };
+      }
     } catch (e) {
-      return reply.code(400).send({ ok: false, error: e instanceof Error ? e.message : 'Profil saqlanmadi' });
+      return reply.code(400).send({ ok: false, error: humanizeDbError(e, 'Profil saqlanmadi') });
     }
   });
 
@@ -180,7 +282,7 @@ export async function registerBookingRoutes(
       const rows = await supabaseRest<any[]>('instructor_profiles', {
         query:
           '?is_verified=eq.true&is_available=eq.true' + catFilter +
-          '&select=id,user_id,bio,experience_years,rating,total_reviews,is_verified,is_available,avatar_url,categories,' +
+          '&select=id,user_id,bio,experience_years,rating,total_reviews,is_verified,is_available,avatar_url,categories,vehicle_model,vehicle_plate,' +
           'user:user_id(id,full_name,phone,telegram_id,is_active,is_blocked)' +
           '&order=created_at.desc',
       });
@@ -320,10 +422,7 @@ export async function registerBookingRoutes(
         return reply.code(409).send({ ok: false, error: 'Instruktor bu vaqtda band' });
       }
 
-      const rows = await supabaseRest<any[]>('bookings', {
-        method: 'POST',
-        headers: { Prefer: 'return=representation' },
-        body: JSON.stringify({
+      const payload = {
           customer_id: user.id,
           instructor_id: body.instructor_id,
           course_id: course.id,
@@ -342,8 +441,27 @@ export async function registerBookingRoutes(
           price: bookingPrice,
           customer_note: body.customer_note?.trim() || null,
           status: 'pending',
-        }),
+      };
+
+      /* Kod bilan yozamiz. Kod to'qnashsa (unikal indeks) — boshqasini olamiz;
+         eski bazada ustun bo'lmasa — kodsiz yozamiz, bron baribir yaratiladi. */
+      const insert = (extra: Record<string, unknown>) => supabaseRest<any[]>('bookings', {
+        method: 'POST',
+        headers: { Prefer: 'return=representation' },
+        body: JSON.stringify({ ...payload, ...extra }),
       });
+      let rows: any[] = [];
+      for (let attempt = 0; attempt < 3 && !rows.length; attempt++) {
+        try {
+          rows = await insert({ pickup_code: await newPickupCode() });
+        } catch (e) {
+          const m = e instanceof Error ? e.message : String(e ?? '');
+          if (/bookings_pickup_code_key/.test(m)) continue;
+          if (/pickup_code/.test(m)) { rows = await insert({}); break; }
+          throw e;
+        }
+      }
+      if (!rows.length) rows = await insert({});
 
       const booking = rows[0];
       if (booking) {
