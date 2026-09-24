@@ -6,6 +6,7 @@ import { sendBookingNotification } from './telegram.js';
 import type { TelegramWebAppUser } from './telegram.js';
 import { q, toProfile, findUserByTelegram, instructorProfileForUser, notifyUser } from './identity.js';
 import { completeSchoolReceipt, isSchoolReceiptCode } from './school-receipt.js';
+import { isStoragePublicUrl } from './storage-url.js';
 
 /** Avtoshkola cheki bo'yicha ochilgan bron bo'lsa, kodini qaytaradi.
  *  FAQAT o'z ustunidan yoki (migratsiya hali yurmagan bo'lsa) izohdan —
@@ -531,7 +532,7 @@ export async function registerInstructorRoutes(
       if (b.avatar_url !== undefined) {
         const u = String(b.avatar_url).trim();
         // Faqat o'z storage'imizdagi manzil — tashqi havola qo'yib bo'lmaydi
-        if (u && !/^https:\/\/[a-z0-9-]+\.supabase\.co\/storage\/v1\/object\/public\//i.test(u)) {
+        if (u && !isStoragePublicUrl(u)) {
           return reply.code(400).send({ ok: false, error: 'Rasm manzili noto‘g‘ri' });
         }
         insPatch.avatar_url = u || null;
