@@ -8,6 +8,7 @@ import {
   type StaffIdentity, type StaffRole,
 } from './staff-auth.js';
 import { bookingSearchFilter, tashkentDayStart } from './booking-search.js';
+import { isStoragePublicUrl } from './storage-url.js';
 
 const COOKIE = 'avtodrom_admin_session', TTL = 60 * 60 * 12;
 const q = (v: string) => encodeURIComponent(v);
@@ -912,7 +913,7 @@ export async function registerAdminPasswordRoutes(app: FastifyInstance) {
       }
       if (b.avatar_url !== undefined) {
         const u = String(b.avatar_url).trim();
-        if (u && !/^https:\/\/[a-z0-9-]+\.supabase\.co\/storage\/v1\/object\/public\//i.test(u)) {
+        if (u && !isStoragePublicUrl(u)) {
           return reply.code(400).send({ ok: false, error: 'Rasm manzili noto‘g‘ri' });
         }
         insPatch.avatar_url = u || null;
