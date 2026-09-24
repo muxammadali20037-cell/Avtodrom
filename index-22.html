@@ -1,0 +1,1566 @@
+<!doctype html>
+<html lang="uz">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#232883">
+<meta name="format-detection" content="telephone=no">
+<title>TASH INDEX AVTODROM</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+/* =========================================================================
+   TASH INDEX AVTODROM — mijoz Mini App
+   Rang: logotipdagi to'q ko'k (indigo).
+   Telegram temasiga moslashadi (yorug' / qorong'i). Tashqi rasm yoki
+   shrift yuklanmaydi — ilova tez ochiladi.
+   ========================================================================= */
+:root{
+  --accent:#2b2f8f;--accent-press:#22257a;--accent-soft:#eceefb;--on-accent:#fff;
+  --bg:#f1f3f8;--card:#fff;--card-2:#f4f5fa;--text:#141833;--hint:#6b7188;--line:rgba(20,24,51,.10);
+  --danger:#d14343;--danger-soft:#fdeeee;--warn:#8a5d00;--warn-soft:#fff4d6;--info:#1f6fbf;--info-soft:#e8f2fc;
+  --ok:#1b8356;--ok-soft:#e6f5ee;
+  --star:#f5b400;
+  --hero:linear-gradient(140deg,#0f1340 0%,#232883 55%,#3a40ae 100%);
+  --shadow:0 1px 2px rgba(16,20,48,.04),0 6px 20px rgba(16,20,48,.06);
+  --sb:env(safe-area-inset-bottom,0px);
+  --nav-h:64px;
+  color-scheme:light;
+}
+:root[data-theme=dark]{
+  --accent:#8a90fa;--accent-press:#767df2;--accent-soft:rgba(138,144,250,.16);--on-accent:#0a0c24;
+  --bg:#0d0f18;--card:#161927;--card-2:#1e2233;--text:#e8eaf4;--hint:#8e94ab;--line:rgba(255,255,255,.09);
+  --danger:#ff7070;--danger-soft:rgba(255,112,112,.13);--warn:#f2c14e;--warn-soft:rgba(242,193,78,.13);--info:#7cc0ff;--info-soft:rgba(124,192,255,.13);
+  --ok:#4cd39a;--ok-soft:rgba(76,211,154,.14);
+  --hero:linear-gradient(140deg,#0b0e30 0%,#1d2170 55%,#343aa0 100%);
+  --shadow:none;color-scheme:dark;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--text)}
+body{overflow-x:hidden;font:15px/1.45 -apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  -webkit-font-smoothing:antialiased;overscroll-behavior-y:none}
+button,input,textarea{font:inherit;color:inherit}
+button{cursor:pointer;border:0;background:none;padding:0;text-align:inherit}
+button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+svg{display:block;flex:none}
+.hidden{display:none!important}
+.wrap{max-width:560px;margin:0 auto;padding:10px 16px calc(var(--nav-h) + var(--sb) + 28px)}
+.view{animation:fade .18s ease}
+@keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+.muted{color:var(--hint)}
+.tnum{font-variant-numeric:tabular-nums}
+
+/* ---------- sarlavha ---------- */
+.top{display:flex;align-items:center;gap:12px;padding:6px 0 14px}
+.mark{width:42px;height:42px;border-radius:13px;background:var(--accent);color:var(--on-accent);display:grid;place-items:center;flex:none}
+.logo{display:block;flex:none;width:46px;height:46px;border-radius:50%;background:#fff;object-fit:contain;box-shadow:0 0 0 1px var(--line),0 2px 8px rgba(16,20,48,.08)}
+.top .who{flex:1;min-width:0}
+.top h1{font-size:18px;margin:0;font-weight:700;letter-spacing:-.3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.top .sub{font-size:13px;color:var(--hint)}
+.icon-btn{width:44px;height:44px;border-radius:13px;background:var(--card);display:grid;place-items:center;position:relative;box-shadow:var(--shadow)}
+.dot{position:absolute;top:9px;right:10px;min-width:9px;height:9px;border-radius:9px;background:var(--danger);box-shadow:0 0 0 2px var(--card)}
+.page-h{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 2px 14px}
+.page-h h1{font-size:24px;margin:0;letter-spacing:-.5px}
+
+/* ---------- umumiy ---------- */
+.card{background:var(--card);border-radius:18px;padding:16px;box-shadow:var(--shadow)}
+.sec{margin-top:22px}
+.sec-h{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin:0 2px 10px}
+.sec-h h2{font-size:17px;margin:0;font-weight:700;letter-spacing:-.2px}
+.step{display:flex;align-items:center;gap:8px;margin:20px 2px 10px;font-size:15px;font-weight:700}
+.step i{font-style:normal;width:22px;height:22px;border-radius:50%;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;font-size:12px;font-weight:800}
+.step .opt{margin-left:auto;font-size:13px;font-weight:600;color:var(--accent)}
+.link{color:var(--accent);font-weight:600;font-size:14px}
+.note{padding:12px 14px;border-radius:14px;font-size:14px;line-height:1.45}
+.note.warn{background:var(--warn-soft);color:var(--warn)}
+.note.err{background:var(--danger-soft);color:var(--danger)}
+.note.info{background:var(--info-soft);color:var(--info)}
+.note.ok{background:var(--accent-soft);color:var(--accent)}
+
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;min-height:52px;border-radius:15px;padding:0 18px;font-weight:700;font-size:16px;width:100%;transition:transform .08s,background .15s,opacity .15s}
+.btn:active{transform:scale(.98)}
+.btn-primary{background:var(--accent);color:var(--on-accent)}
+.btn-primary:active{background:var(--accent-press)}
+.btn:disabled{opacity:.45;pointer-events:none}
+.btn-soft{background:var(--card-2);color:var(--text)}
+.btn-danger{background:var(--danger-soft);color:var(--danger)}
+.btn-sm{min-height:40px;font-size:14px;border-radius:12px;padding:0 14px;width:auto}
+.btn-row{display:flex;gap:8px;margin-top:12px}
+.btn-row .btn{flex:1}
+.spin{width:18px;height:18px;border-radius:50%;border:2.5px solid currentColor;border-right-color:transparent;animation:rot .7s linear infinite}
+@keyframes rot{to{transform:rotate(360deg)}}
+
+/* ---------- bosh sahifa ---------- */
+.hero{position:relative;overflow:hidden;border-radius:22px;padding:22px 20px 20px;color:#fff;
+  background:var(--hero)}
+.hero::before{content:"";position:absolute;right:-50px;top:-70px;width:230px;height:230px;border-radius:50%;
+  background:radial-gradient(circle,rgba(255,255,255,.20),transparent 68%)}
+.hero>*{position:relative}
+.hero .road{position:absolute;right:-8px;bottom:-4px;opacity:.14}
+.hero .logo{position:absolute;right:16px;top:16px;width:76px;height:76px;padding:2px;box-shadow:0 8px 22px rgba(0,0,0,.28)}
+.hero small,.hero h2{max-width:calc(100% - 88px)}
+.hero small{display:block;font-size:12px;font-weight:700;letter-spacing:.6px;opacity:.8;text-transform:uppercase}
+.hero h2{position:relative;margin:6px 0 6px;font-size:24px;line-height:1.15;letter-spacing:-.5px;max-width:85%}
+.hero p{position:relative;margin:0 0 16px;color:rgba(255,255,255,.85);font-size:14px;max-width:88%}
+.btn-light{position:relative;background:#fff;color:#232883;font-weight:700;border-radius:14px;padding:13px 18px;display:inline-flex;align-items:center;gap:8px;font-size:15.5px}
+.btn-light:active{transform:scale(.98)}
+
+.next{display:block;width:100%;margin-top:14px;cursor:pointer}
+.next .lbl{display:flex;justify-content:space-between;align-items:center;font-size:12px;font-weight:700;letter-spacing:.5px;color:var(--hint);text-transform:uppercase}
+.next .when{font-size:21px;font-weight:800;letter-spacing:-.4px;margin-top:6px}
+.next .meta{color:var(--hint);font-size:14px;margin-top:2px}
+
+.tariffs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.tariff{background:var(--card);border-radius:16px;padding:14px 10px;text-align:center;box-shadow:var(--shadow)}
+.tariff b{display:block;font-size:26px;font-weight:800;line-height:1;color:var(--accent)}
+.tariff .k{display:block;font-size:11.5px;color:var(--hint);margin-top:6px;font-weight:600}
+.tariff .p{display:block;font-size:14px;font-weight:700;margin-top:6px}
+.tariff .h{display:block;font-size:11.5px;color:var(--hint)}
+
+.inst-row{display:flex;gap:10px;overflow-x:auto;scrollbar-width:none;margin:0 -16px;padding:2px 16px 6px;scroll-snap-type:x proximity;scroll-padding:0 16px}
+.inst-row::-webkit-scrollbar{display:none}
+.icard{flex:none;width:148px;scroll-snap-align:start;background:var(--card);border-radius:18px;padding:14px 12px;text-align:center;box-shadow:var(--shadow)}
+.icard .ava{margin:0 auto 10px;width:64px;height:64px;font-size:20px}
+.icard b{display:block;font-size:14.5px;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.icard .r{font-size:13px;color:var(--hint);margin-top:3px}
+.icard .cats{margin-top:8px;justify-content:center}
+
+.list{background:var(--card);border-radius:18px;box-shadow:var(--shadow);overflow:hidden}
+.row{display:flex;align-items:center;gap:12px;padding:13px 16px;width:100%;text-align:left;min-height:58px}
+.row + .row{border-top:1px solid var(--line)}
+.row .ic{width:36px;height:36px;border-radius:11px;display:grid;place-items:center;background:var(--accent-soft);color:var(--accent);flex:none}
+.row .tx{flex:1;min-width:0}
+.row .tx b{display:block;font-weight:600;font-size:15px}
+.row .tx small{display:block;color:var(--hint);font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row .chev{color:var(--hint)}
+.row.danger .ic{background:var(--danger-soft);color:var(--danger)}
+
+/* ---------- avatar, teglar ---------- */
+.ava{width:40px;height:40px;border-radius:50%;background:var(--accent-soft) center/cover no-repeat;color:var(--accent);
+  display:grid;place-items:center;font-weight:800;font-size:14px;flex:none;overflow:hidden}
+.cats{display:flex;gap:4px;flex-wrap:wrap}
+.tag{font-size:11.5px;font-weight:700;padding:3px 8px;border-radius:8px;background:var(--card-2);color:var(--hint)}
+.tag.a{background:var(--accent-soft);color:var(--accent)}
+
+/* ---------- bron ---------- */
+.scroller{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;margin:0 -16px;padding:3px 16px 5px;scroll-snap-type:x proximity;scroll-padding:0 16px}
+.scroller::-webkit-scrollbar{display:none}
+.day{flex:none;scroll-snap-align:start;width:60px;padding:9px 0 10px;border-radius:15px;background:var(--card);box-shadow:inset 0 0 0 1.5px var(--line);text-align:center}
+.day .w{display:block;font-size:12px;color:var(--hint);font-weight:700}
+.day .d{display:block;font-size:20px;font-weight:800;margin-top:1px}
+.day .m{display:block;font-size:11.5px;color:var(--hint)}
+.day.on{background:var(--accent);box-shadow:none;color:var(--on-accent)}
+.day.on .w,.day.on .m{color:inherit;opacity:.85}
+
+.times{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.time{min-height:48px;border-radius:13px;background:var(--card);box-shadow:inset 0 0 0 1.5px var(--line);font-weight:700;font-size:15.5px;font-variant-numeric:tabular-nums;text-align:center;transition:background .15s}
+.time.on{background:var(--accent);color:var(--on-accent);box-shadow:none}
+.time:disabled{color:var(--hint);opacity:.55;text-decoration:line-through;box-shadow:none;background:var(--card-2)}
+.sk{border-radius:13px;min-height:48px;background:linear-gradient(90deg,var(--card-2) 25%,var(--card) 50%,var(--card-2) 75%);background-size:200% 100%;animation:sk 1.1s infinite linear}
+@keyframes sk{from{background-position:200% 0}to{background-position:-200% 0}}
+
+.field{display:block;margin-top:12px}
+.field>span{display:block;font-size:13px;font-weight:600;color:var(--hint);margin:0 2px 6px}
+.input{width:100%;min-height:50px;border-radius:14px;border:0;background:var(--card-2);padding:13px 14px;font-size:16px;outline:none;box-shadow:inset 0 0 0 1.5px var(--line);transition:box-shadow .15s}
+.view-book .input{background:var(--card)}
+.input:focus{box-shadow:inset 0 0 0 2px var(--accent)}
+textarea.input{min-height:88px;resize:none;line-height:1.4}
+.input::placeholder{color:var(--hint);opacity:.8}
+
+.bar{position:fixed;left:0;right:0;bottom:calc(var(--nav-h) + var(--sb));z-index:30;padding:10px 12px 8px;
+  background:linear-gradient(to top,var(--bg) 62%,transparent)}
+.bar-in{max-width:536px;margin:0 auto;display:flex;align-items:center;gap:12px;background:var(--card);border-radius:20px;
+  padding:9px 9px 9px 16px;box-shadow:0 10px 32px rgba(0,0,0,.14)}
+.bar .sum{flex:1;min-width:0}
+.bar .sum b{display:block;font-size:18px;letter-spacing:-.3px;white-space:nowrap}
+.bar .sum span{display:block;font-size:12.5px;color:var(--hint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bar .btn{width:auto;min-width:138px;min-height:50px}
+@media (max-width:360px){
+  .wrap{padding-left:12px;padding-right:12px}
+  .scroller,.inst-row{margin:0 -12px;padding-left:12px;padding-right:12px;scroll-padding:0 12px}
+  .bar .sum b{font-size:16px}.bar .btn{min-width:0;padding:0 14px;font-size:15px}
+  .tariff b{font-size:24px}.tariff .p{font-size:12px}
+  .opt{padding:13px}.opt .lt{width:46px;height:46px;font-size:23px}.opt .rt{font-size:14px}
+  .wz-h{font-size:23px}
+  .times{gap:6px}.time{font-size:14.5px}
+}
+.wrap.view-book{padding-bottom:calc(var(--nav-h) + var(--sb) + 112px)}
+
+
+/* ---------- bron bosqichlari ---------- */
+.wz-top{display:flex;align-items:center;gap:12px;padding:2px 0 14px}
+.wz-back{width:42px;height:42px;border-radius:13px;background:var(--card);box-shadow:var(--shadow);display:grid;place-items:center;flex:none}
+.wz-back:active{transform:scale(.95)}
+.wz-prog{flex:1;display:flex;gap:5px}
+.wz-prog i{flex:1;height:6px;border-radius:3px;background:var(--line);transition:background .25s}
+.wz-prog i.done{background:var(--accent)}
+.wz-prog i.cur{background:linear-gradient(90deg,var(--accent) 50%,var(--line) 50%)}
+.wz-count{font-size:13px;font-weight:700;color:var(--hint);min-width:28px;text-align:right;font-variant-numeric:tabular-nums}
+.wz-h{font-size:26px;line-height:1.15;letter-spacing:-.6px;margin:4px 2px 6px}
+.wz-sub{color:var(--hint);margin:0 2px 18px;font-size:14.5px}
+.crumbs{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 14px}
+.crumbs button{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:10px;background:var(--accent-soft);color:var(--accent);font-size:13px;font-weight:700}
+.opt-list{display:grid;gap:10px}
+.opt{display:flex;align-items:center;gap:14px;width:100%;padding:15px 16px;border-radius:20px;background:var(--card);
+  box-shadow:var(--shadow);text-align:left;transition:transform .1s,background .15s,box-shadow .15s}
+.opt:active{transform:scale(.985)}
+.opt.on{background:var(--accent-soft);box-shadow:inset 0 0 0 2px var(--accent)}
+.opt:disabled{opacity:.45}
+.opt .lt{width:54px;height:54px;border-radius:16px;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;font-size:27px;font-weight:800;flex:none}
+.opt .lt.solid,.opt.on .lt{background:var(--accent);color:var(--on-accent)}
+.opt .tx{flex:1;min-width:0}
+.opt .tx b{display:block;font-size:17px;letter-spacing:-.2px}
+.opt .tx small{display:block;color:var(--hint);font-size:13.5px;margin-top:2px}
+.opt .tx small.car{display:flex;align-items:center;gap:5px}
+.opt .rt{text-align:right;font-weight:800;font-size:15px;flex:none}
+.opt .rt small{display:block;font-weight:600;color:var(--hint);font-size:12px}
+.opt>svg{color:var(--hint)}
+.opt.ins{padding:0;gap:0}
+.opt-main{flex:1;min-width:0;display:flex;align-items:center;gap:14px;padding:13px 4px 13px 14px;text-align:left}
+.info-btn{width:52px;align-self:stretch;display:grid;place-items:center;color:var(--hint);flex:none}
+.ava.lg{width:54px;height:54px;font-size:18px}
+.dur-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.dur{padding:18px 16px;border-radius:20px;background:var(--card);box-shadow:var(--shadow);text-align:left;transition:transform .1s,background .15s,box-shadow .15s}
+.dur:active{transform:scale(.97)}
+.dur b{display:block;font-size:21px;letter-spacing:-.4px}
+.dur small{display:block;color:var(--hint);font-weight:600;font-size:13.5px;margin-top:3px}
+.dur.on{background:var(--accent-soft);box-shadow:inset 0 0 0 2px var(--accent)}
+.dur.on b,.dur.on small{color:var(--accent)}
+.day-title{margin:16px 2px 10px;font-weight:700;font-size:15px}
+.time small{display:block;font-size:11px;font-weight:600;color:var(--accent);margin-top:1px;text-decoration:none}
+.time:disabled small{color:var(--hint)}
+.time.on small{color:inherit;opacity:.85}
+.switch-link{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;margin-top:18px;padding:15px;border-radius:18px;
+  border:1.5px dashed var(--line);color:var(--accent);font-weight:700;font-size:15px}
+.sum-card{padding:4px 16px}
+.sum-row{display:flex;align-items:center;gap:10px;width:100%;padding:14px 0;text-align:left;font-size:15px}
+.sum-row + .sum-row{border-top:1px solid var(--line)}
+.sum-row span{color:var(--hint);flex:none}
+.sum-row b{flex:1;text-align:right;min-width:0}
+.sum-row i{color:var(--hint);flex:none}
+.sum-total{display:flex;justify-content:space-between;align-items:baseline;padding:14px 0 12px;border-top:1.5px dashed var(--line)}
+.sum-total span{font-weight:700}
+.sum-total b{font-size:22px;color:var(--accent);letter-spacing:-.4px}
+.done{padding-top:14px}
+.slide-f{animation:slideF .24s cubic-bezier(.2,.8,.2,1)}
+.slide-b{animation:slideB .24s cubic-bezier(.2,.8,.2,1)}
+@keyframes slideF{from{opacity:0;transform:translateX(28px)}to{opacity:1;transform:none}}
+@keyframes slideB{from{opacity:0;transform:translateX(-28px)}to{opacity:1;transform:none}}
+
+/* ---------- bronlarim ---------- */
+.seg{display:grid;grid-template-columns:1fr 1fr;background:var(--line);border-radius:13px;padding:3px;margin-bottom:14px}
+.seg button{min-height:38px;border-radius:10px;font-weight:700;font-size:14px;color:var(--hint)}
+.seg button.on{background:var(--card);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.bk{background:var(--card);border-radius:18px;padding:15px 16px;box-shadow:var(--shadow);margin-bottom:10px}
+.bk-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.bk-when{font-size:17px;font-weight:800;letter-spacing:-.3px}
+.bk-meta{color:var(--hint);font-size:13.5px;margin-top:2px}
+.bk-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+.bk-grid div{background:var(--card-2);border-radius:12px;padding:8px 10px}
+.bk-grid span{display:block;font-size:11.5px;color:var(--hint);font-weight:600}
+.bk-grid b{display:block;font-size:14px;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pill{display:inline-flex;align-items:center;gap:5px;flex:none;padding:5px 9px;border-radius:999px;font-size:12px;font-weight:700;background:var(--card-2);color:var(--hint)}
+.pill::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+.pill.pending{background:var(--warn-soft);color:var(--warn)}
+.pill.confirmed{background:var(--info-soft);color:var(--info)}
+.pill.in_progress{background:var(--ok-soft);color:var(--ok)}
+.pill.completed{background:var(--card-2);color:var(--hint)}
+.pill.cancelled,.pill.rejected,.pill.no_show{background:var(--danger-soft);color:var(--danger)}
+.code{display:flex;align-items:center;gap:12px;width:100%;margin-top:12px;padding:10px 12px;border-radius:14px;background:var(--accent-soft);color:var(--accent);text-align:left}
+.code .tx{flex:1;min-width:0}
+.code small{display:block;font-size:11.5px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;opacity:.85}
+.code b{display:block;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:21px;letter-spacing:1.5px;line-height:1.2}
+.bk .foot{display:flex;align-items:center;gap:6px;margin-top:10px;font-size:13px;color:var(--hint)}
+.empty{text-align:center;padding:34px 20px}
+.empty .ill{width:64px;height:64px;border-radius:20px;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;margin:0 auto 14px}
+.empty b{display:block;font-size:17px}
+.empty p{color:var(--hint);margin:6px 0 16px}
+
+/* ---------- yordam (chat) ---------- */
+.chat-h{display:flex;align-items:center;gap:12px;padding:8px 2px 14px}
+.chat-h .logo{width:46px;height:46px}
+.chat-h b{display:block;font-size:17px}
+.chat-h small{color:var(--hint);font-size:13px}
+.msgs{display:flex;flex-direction:column;gap:6px;padding-bottom:84px}
+.msg{max-width:82%;padding:9px 12px 7px;border-radius:18px;background:var(--card);box-shadow:var(--shadow);font-size:15px;white-space:pre-wrap;overflow-wrap:anywhere}
+.msg.me{align-self:flex-end;background:var(--accent);color:var(--on-accent);border-bottom-right-radius:6px}
+.msg.them{align-self:flex-start;border-bottom-left-radius:6px}
+.msg time{display:block;font-size:11px;opacity:.65;margin-top:2px;text-align:right}
+.msg.sending{opacity:.6}
+.day-sep{align-self:center;font-size:12px;color:var(--hint);background:var(--card);padding:3px 10px;border-radius:999px;margin:8px 0 2px}
+.quick{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0 12px}
+.quick button{padding:9px 13px;border-radius:14px;background:var(--card);box-shadow:inset 0 0 0 1.5px var(--line);font-size:14px;font-weight:600}
+.composer{position:fixed;left:0;right:0;bottom:calc(var(--nav-h) + var(--sb));z-index:30;padding:8px 12px;background:var(--bg)}
+.composer-in{max-width:536px;margin:0 auto;display:flex;gap:8px;align-items:flex-end}
+.composer .input{flex:1;min-height:46px;max-height:120px;border-radius:23px;padding:12px 16px;background:var(--card);box-shadow:inset 0 0 0 1.5px var(--line)}
+.send{width:46px;height:46px;border-radius:50%;background:var(--accent);color:var(--on-accent);display:grid;place-items:center;flex:none}
+.send:disabled{opacity:.4}
+
+/* ---------- profil ---------- */
+.pcard{display:flex;align-items:center;gap:14px}
+.pcard .ava{width:64px;height:64px;font-size:22px}
+.pcard b{display:block;font-size:19px;letter-spacing:-.3px}
+.pcard small{display:block;color:var(--hint);font-size:14px}
+
+/* ---------- pastki menyu ---------- */
+.nav{position:fixed;left:0;right:0;bottom:0;z-index:40;background:var(--card);border-top:1px solid var(--line);padding-bottom:var(--sb)}
+.nav-in{max-width:560px;margin:0 auto;display:grid;grid-template-columns:repeat(5,1fr);height:var(--nav-h)}
+.nav button{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-size:11px;font-weight:600;color:var(--hint)}
+.nav button.on{color:var(--accent)}
+.nav .badge{position:absolute;top:8px;left:calc(50% + 6px);min-width:17px;height:17px;padding:0 5px;border-radius:9px;background:var(--danger);color:#fff;font-size:10.5px;font-weight:800;display:grid;place-items:center;box-shadow:0 0 0 2px var(--card)}
+
+/* ---------- pastdan chiquvchi oyna ---------- */
+.sheet-bg{position:fixed;inset:0;z-index:80;background:rgba(0,0,0,.45);opacity:0;transition:opacity .2s;pointer-events:none}
+.sheet-bg.show{opacity:1;pointer-events:auto}
+.sheet{position:fixed;left:0;right:0;bottom:0;z-index:90;max-width:560px;margin:0 auto;max-height:90vh;overflow:auto;
+  background:var(--card);border-radius:24px 24px 0 0;padding:8px 18px calc(20px + var(--sb));
+  transform:translateY(105%);visibility:hidden;transition:transform .26s cubic-bezier(.2,.8,.2,1),visibility 0s linear .26s;overscroll-behavior:contain}
+.sheet.show{transform:none;visibility:visible;transition:transform .26s cubic-bezier(.2,.8,.2,1)}
+.grab{width:40px;height:5px;border-radius:3px;background:var(--hint);opacity:.3;margin:4px auto 14px}
+.sheet h3{margin:0 0 4px;font-size:20px;letter-spacing:-.3px}
+.sheet .lead{color:var(--hint);margin:0 0 12px;font-size:14.5px}
+.sheet .x{position:absolute;right:12px;top:12px;width:34px;height:34px;border-radius:50%;background:var(--card-2);display:grid;place-items:center;color:var(--hint)}
+.kv{display:flex;justify-content:space-between;gap:12px;padding:10px 0;font-size:15px}
+.kv + .kv{border-top:1px solid var(--line)}
+.kv span{color:var(--hint)}
+.kv b{text-align:right}
+.big-ok{width:68px;height:68px;border-radius:50%;background:var(--accent);color:var(--on-accent);display:grid;place-items:center;margin:6px auto 12px;animation:pop .35s cubic-bezier(.2,1.4,.4,1)}
+@keyframes pop{from{transform:scale(.4);opacity:0}to{transform:none;opacity:1}}
+.code-big{margin:14px 0;padding:14px;border-radius:18px;border:2px dashed var(--accent);background:var(--accent-soft);text-align:center;color:var(--accent);width:100%}
+.code-big small{display:block;font-size:12px;font-weight:800;letter-spacing:.6px;text-transform:uppercase}
+.code-big b{display:block;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:34px;letter-spacing:3px;margin:2px 0}
+.code-big span{font-size:13px;font-weight:600}
+.stars{display:flex;gap:8px;justify-content:center;margin:10px 0 4px}
+.stars button{color:var(--line)}
+.stars button.on{color:var(--star)}
+.reasons{display:flex;gap:8px;flex-wrap:wrap;margin-top:4px}
+.reasons button{padding:8px 12px;border-radius:12px;background:var(--card-2);font-size:14px;font-weight:600}
+.reasons button.on{background:var(--accent-soft);color:var(--accent)}
+.notes .n{padding:12px 0}
+.notes .n + .n{border-top:1px solid var(--line)}
+.notes .n b{display:block;font-size:15px}
+.notes .n p{margin:3px 0 4px;color:var(--hint);font-size:14px;white-space:pre-line}
+.notes .n time{font-size:12px;color:var(--hint)}
+.notes .n.new b::after{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--danger);margin-left:6px;vertical-align:middle}
+.ins-hero{text-align:center;padding-top:6px}
+.ins-hero .ava{width:86px;height:86px;font-size:28px;margin:0 auto 10px}
+.ins-hero h3{margin:0}
+.ins-hero .cats{justify-content:center;margin-top:8px}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:14px 0}
+.stats div{background:var(--card);box-shadow:var(--shadow);border-radius:14px;padding:10px 6px;text-align:center}
+.sheet .stats div{background:var(--card-2);box-shadow:none}
+.stats b{display:block;font-size:17px}
+.stats span{display:block;font-size:12px;color:var(--hint)}
+.bio{white-space:pre-line;color:var(--text);font-size:14.5px;line-height:1.5;margin:0 0 14px}
+
+.toast{position:fixed;left:50%;top:calc(12px + env(safe-area-inset-top,0px) + var(--tg-content-safe-area-inset-top,0px));z-index:120;transform:translate(-50%,-16px);opacity:0;
+  max-width:calc(100% - 32px);background:#161a3a;color:#fff;padding:12px 16px;border-radius:14px;font-size:14.5px;font-weight:600;
+  box-shadow:0 10px 30px rgba(0,0,0,.25);transition:opacity .2s,transform .2s;pointer-events:none;text-align:center}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+.toast.err{background:#b93434}
+
+.fatal{min-height:88vh;display:grid;place-items:center;text-align:center;padding:24px}
+.fatal .ill{width:76px;height:76px;border-radius:24px;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;margin:0 auto 16px}
+.fatal .logo.big{width:108px;height:108px;margin:0 auto 18px;padding:3px}
+.fatal h2{margin:0 0 6px;font-size:21px}
+.fatal p{color:var(--hint);margin:0 auto 18px;max-width:300px}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div class="sheet-bg" id="sheetBg"></div>
+<div class="sheet" id="sheet" role="dialog" aria-modal="true"></div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+'use strict';
+(() => {
+/* =========================================================================
+   YORDAMCHILAR
+   ========================================================================= */
+const tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
+const TZ = 'Asia/Tashkent';
+const $ = (s, r = document) => r.querySelector(s);
+const esc = v => String(v ?? '').replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
+const clamp = (n, a, b) => Math.min(b, Math.max(a, n));
+
+/* --- vaqt: hammasi Toshkent vaqti bilan --- */
+const ymd = (d = new Date()) => new Intl.DateTimeFormat('en-CA', { timeZone: TZ }).format(d);
+const hhmm = d => new Intl.DateTimeFormat('en-GB', { timeZone: TZ, hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(d);
+const at = (date, time) => new Date(`${date}T${time}:00+05:00`);
+const addDays = (date, n) => ymd(new Date(at(date, '12:00').getTime() + n * 864e5));
+const toMin = t => { const [h, m] = String(t || '').split(':').map(Number); return (h || 0) * 60 + (m || 0); };
+const fromMin = m => `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
+const WD = ['yakshanba', 'dushanba', 'seshanba', 'chorshanba', 'payshanba', 'juma', 'shanba'];
+const WD_S = ['Ya', 'Du', 'Se', 'Cho', 'Pa', 'Ju', 'Sha'];
+const MON = ['yanvar', 'fevral', 'mart', 'aprel', 'may', 'iyun', 'iyul', 'avgust', 'sentabr', 'oktabr', 'noyabr', 'dekabr'];
+const MON_S = ['yan', 'fev', 'mar', 'apr', 'may', 'iyn', 'iyl', 'avg', 'sen', 'okt', 'noy', 'dek'];
+const dp = date => ({ wd: at(date, '12:00').getUTCDay(), day: Number(date.slice(8, 10)), mon: Number(date.slice(5, 7)) - 1 });
+function dayName(date, withWd = true) {
+  const t = ymd();
+  if (date === t) return 'Bugun';
+  if (date === addDays(t, 1)) return 'Ertaga';
+  if (date === addDays(t, -1)) return 'Kecha';
+  const p = dp(date);
+  return `${p.day}-${MON[p.mon]}${withWd ? ', ' + WD[p.wd] : ''}`;
+}
+const whenText = iso => { if (!iso) return '—'; const d = new Date(iso); return `${dayName(ymd(d))} · ${hhmm(d)}`; };
+/* Raqam ichida bo'linmas bo'shliq, «so‘m» oldida oddiy — tor ekranda so‘m keyingi qatorga tushadi */
+const money = v => new Intl.NumberFormat('ru-RU').format(Math.round(Number(v) || 0)).replace(/[\s\u202f]/g, '\u00a0') + ' so‘m';
+const fmtDur = m => { const n = Math.round(Number(m) || 0), h = Math.floor(n / 60), r = n % 60; return h ? (r ? `${h} soat ${r} daq` : `${h} soat`) : `${r} daq`; };
+const fmtPhone = v => { const d = String(v || '').replace(/\D/g, ''); return d.length === 12 && d.startsWith('998') ? `+998 ${d.slice(3, 5)} ${d.slice(5, 8)} ${d.slice(8, 10)} ${d.slice(10)}` : String(v || ''); };
+const initials = n => String(n || '?').trim().split(/\s+/).slice(0, 2).map(x => x[0] || '').join('').toUpperCase() || '?';
+
+/* --- ikonkalar (chiziqli SVG) --- */
+const P = {
+  home: '<path d="M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-4.5v-6h-5v6H5a1 1 0 0 1-1-1z"/>',
+  book: '<rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4M12 12.8v5M9.5 15.3h5"/>',
+  list: '<rect x="4" y="3.5" width="16" height="17" rx="2.5"/><path d="M8 8.5h8M8 12.5h8M8 16.5h5"/>',
+  chat: '<path d="M20.5 11.5a8 8 0 0 1-11.7 7.1L4 19.8l1.2-4.4A8 8 0 1 1 20.5 11.5z"/>',
+  user: '<circle cx="12" cy="8" r="4"/><path d="M4.5 20.5a7.5 7.5 0 0 1 15 0"/>',
+  bell: '<path d="M6 9a6 6 0 1 1 12 0c0 6.5 2.5 8 2.5 8h-17S6 15.5 6 9z"/><path d="M10.2 20.5a2 2 0 0 0 3.6 0"/>',
+  pin: '<path d="M12 21s-7-6.1-7-11.4a7 7 0 1 1 14 0C19 14.9 12 21 12 21z"/><circle cx="12" cy="9.6" r="2.6"/>',
+  phone: '<path d="M21 16.6v2.9a1.8 1.8 0 0 1-2 1.8A17.6 17.6 0 0 1 2.7 5 1.8 1.8 0 0 1 4.5 3h2.9a1.8 1.8 0 0 1 1.8 1.5l.5 2.6a1.8 1.8 0 0 1-.5 1.6l-1.3 1.3a14 14 0 0 0 6.1 6.1l1.3-1.3a1.8 1.8 0 0 1 1.6-.5l2.6.5a1.8 1.8 0 0 1 1.5 1.8z"/>',
+  clock: '<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>',
+  car: '<path d="M3.5 13.5 5.4 8.2A2 2 0 0 1 7.3 7h9.4a2 2 0 0 1 1.9 1.2l1.9 5.3V18a1 1 0 0 1-1 1h-1.3a1 1 0 0 1-1-1v-1H6.8v1a1 1 0 0 1-1 1H4.5a1 1 0 0 1-1-1z"/><path d="M3.5 13.5h17M7 16h.01M17 16h.01"/>',
+  copy: '<rect x="8.5" y="8.5" width="12" height="12" rx="2.5"/><path d="M15.5 8.5V6a2.5 2.5 0 0 0-2.5-2.5H6A2.5 2.5 0 0 0 3.5 6v7A2.5 2.5 0 0 0 6 15.5h2.5"/>',
+  chev: '<path d="m9.5 6 6 6-6 6"/>',
+  chevl: '<path d="m14.5 6-6 6 6 6"/>',
+  arrow: '<path d="M5 12h14M13 6l6 6-6 6"/>',
+  check: '<path d="m5 12.5 4.5 4.5L19 7.5"/>',
+  x: '<path d="M6.5 6.5l11 11M17.5 6.5l-11 11"/>',
+  edit: '<path d="M4 20h4.2L19.5 8.7a2.1 2.1 0 0 0-3-3L5.2 17H4z"/>',
+  send: '<path d="M5 12 19.5 4.5 16 19.5l-4.5-6.2z"/><path d="m11.5 13.3 8-8.8"/>',
+  star: '<path d="m12 3.6 2.6 5.3 5.8.8-4.2 4.1 1 5.8L12 16.9l-5.2 2.7 1-5.8-4.2-4.1 5.8-.8z" fill="currentColor"/>',
+  refresh: '<path d="M20 12a8 8 0 1 1-2.4-5.7"/><path d="M20 4.5v5h-5"/>',
+  info: '<circle cx="12" cy="12" r="8.5"/><path d="M12 11v5.5M12 7.8h.01"/>',
+  lock: '<rect x="5" y="10.5" width="14" height="10" rx="2.5"/><path d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5"/>',
+  wheel: '<circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="2.2"/><path d="M12 14.2v6.3M9.9 11.3 4 9.5M14.1 11.3 20 9.5"/>',
+};
+/* Logotip — admin panel bilan bir xil, ichiga joylangan (tashqi so'rov yo'q) */
+const LOGO = 'data:image/webp;base64,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';
+const logoImg = (cls = 'logo') => `<img class="${cls}" src="${LOGO}" alt="TASH INDEX AVTODROM" width="46" height="46">`;
+const ico = (n, s = 22, w = 2) => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${P[n] || ''}</svg>`;
+
+/* --- Telegram bilan bog'liq kichik yordamchilar --- */
+const haptic = {
+  tap() { try { tg && tg.HapticFeedback && tg.HapticFeedback.selectionChanged(); } catch (e) {} },
+  ok()  { try { tg && tg.HapticFeedback && tg.HapticFeedback.notificationOccurred('success'); } catch (e) {} },
+  err() { try { tg && tg.HapticFeedback && tg.HapticFeedback.notificationOccurred('error'); } catch (e) {} },
+};
+const ver = v => { try { return !!(tg && tg.isVersionAtLeast && tg.isVersionAtLeast(v)); } catch (e) { return false; } };
+function openLink(url) {
+  try { if (tg && tg.openLink) return tg.openLink(url); } catch (e) {}
+  window.open(url, '_blank', 'noopener');
+}
+const store = {
+  get(k) { try { return localStorage.getItem('avd_' + k); } catch (e) { return null; } },
+  set(k, v) { try { localStorage.setItem('avd_' + k, v); } catch (e) {} },
+};
+
+let toastT = 0;
+function toast(msg, isErr = false) {
+  const t = $('#toast');
+  t.textContent = msg;
+  t.classList.toggle('err', !!isErr);
+  t.classList.add('show');
+  clearTimeout(toastT);
+  toastT = setTimeout(() => t.classList.remove('show'), 2800);
+}
+function hideToast() { clearTimeout(toastT); $('#toast').classList.remove('show'); }
+async function copyText(text) {
+  try { await navigator.clipboard.writeText(text); }
+  catch (e) {
+    const ta = document.createElement('textarea');
+    ta.value = text; ta.setAttribute('readonly', ''); ta.style.cssText = 'position:fixed;opacity:0';
+    document.body.appendChild(ta); ta.select();
+    try { document.execCommand('copy'); } catch (x) {}
+    ta.remove();
+  }
+  haptic.ok();
+  toast(`${text} — nusxalandi`);
+}
+
+/* =========================================================================
+   SERVER BILAN ALOQA
+   ========================================================================= */
+async function req(path, { method = 'GET', body, timeout = 15000 } = {}) {
+  const init = String((tg && tg.initData) || '').trim();
+  if (!init) { const e = new Error('NO_TG'); e.code = 'NO_TG'; throw e; }
+  const ctl = new AbortController();
+  const timer = setTimeout(() => ctl.abort(), timeout);
+  try {
+    const r = await fetch(path, {
+      method, cache: 'no-store', signal: ctl.signal,
+      headers: { 'Content-Type': 'application/json', 'X-Telegram-Init-Data': init },
+      body: body === undefined ? undefined : JSON.stringify(body),
+    });
+    let d = {};
+    try { d = await r.json(); } catch (e) {}
+    if (!r.ok || d.ok === false) {
+      const e = new Error(d.error || `Server xatosi (${r.status})`);
+      e.status = r.status; throw e;
+    }
+    return d;
+  } catch (e) {
+    if (e.name === 'AbortError') throw new Error('Server javob bermadi. Internetni tekshiring.');
+    if (e instanceof TypeError) throw new Error('Internet aloqasi yo‘q. Qayta urinib ko‘ring.');
+    throw e;
+  } finally { clearTimeout(timer); }
+}
+const api = {
+  me: () => req('/api/me'),
+  saveMe: b => req('/api/me', { method: 'PATCH', body: b }),
+  settings: () => req('/api/settings'),
+  courses: () => req('/api/courses'),
+  instructors: () => req('/api/instructors'),
+  busy: (id, date) => req(`/api/instructors/${encodeURIComponent(id)}/availability?date=${encodeURIComponent(date)}`),
+  bookings: () => req('/api/bookings'),
+  book: b => req('/api/bookings', { method: 'POST', body: b }),
+  cancel: (id, reason) => req(`/api/bookings/${encodeURIComponent(id)}/cancel`, { method: 'PATCH', body: { reason } }),
+  review: b => req('/api/reviews', { method: 'POST', body: b }),
+  notes: () => req('/api/notifications'),
+  support: () => req('/api/support/messages'),
+  send: text => req('/api/support/messages', { method: 'POST', body: { body: text } }),
+};
+
+/* =========================================================================
+   HOLAT
+   ========================================================================= */
+const S = {
+  ready: false, me: null, settings: {}, courses: [], instructors: [], bookings: [],
+  notes: [], msgs: [], msgsLoaded: false, view: 'home', bkTab: 'active', loadErr: '',
+};
+/* Bron qilish oqimi */
+const B = {
+  started: false, step: 'cat', mode: 'time', key: '', hours: 0, date: '', time: '', ins: '', auto: false, insLocked: false,
+  note: '', showNote: false, phone: '', busy: {}, loading: false, err: '', token: 0, sending: false, done: null, dir: 'f', advancing: false,
+};
+const CACHE = new Map();   // "insId|date" -> {t, v}
+
+/* --- sozlamalar --- */
+function normSettings(s) {
+  const o = Object.assign({}, s || {});
+  const hm = v => /^\d{1,2}:\d{2}/.test(String(v || '')) ? String(v).slice(0, 5).padStart(5, '0') : null;
+  o.work_start = hm(o.work_start) || '07:00';
+  o.work_end = hm(o.work_end) || '19:00';
+  if (toMin(o.work_end) <= toMin(o.work_start)) { o.work_start = '07:00'; o.work_end = '19:00'; }
+  o.step = clamp(Math.round(Number(o.slot_step_min) || 60), 15, 240);
+  if (typeof o.location === 'string') { try { o.location = JSON.parse(o.location); } catch (e) { o.location = { address: o.location }; } }
+  if (!o.location || typeof o.location !== 'object') o.location = {};
+  const off = [false, 'false', 0, '0', 'off', 'no'];
+  o.bookingOn = !off.includes(o.booking_enabled);
+  return o;
+}
+
+/* --- narx: server bilan BIR XIL formula (backend/src/pricing.ts) --- */
+const DEF_T = { A: { half: 200000, hour: 350000 }, B: { half: 150000, hour: 250000 }, C: { half: 250000, hour: 400000 } };
+function tariff(cat) {
+  const k = String(cat || 'B').toLowerCase(), d = DEF_T[cat] || DEF_T.B;
+  const h = Number(S.settings['half_' + k]), r = Number(S.settings['rate_' + k]);
+  return { half: h > 0 ? h : d.half, hour: r > 0 ? r : d.hour };
+}
+function priceOf(opt, hours) {
+  if (!opt) return 0;
+  const minutes = unitOf(opt) * hours;
+  if (opt.cat) {
+    const t = tariff(opt.cat), m = Math.max(1, Math.round(minutes));
+    return m === 30 ? Math.round(t.half) : Math.round(t.hour * m / 60);
+  }
+  return Math.round(Number(opt.course.price || 0) * hours);
+}
+const unitOf = opt => Math.max(15, Number(opt && opt.course && opt.course.duration_minutes) || 60);
+
+/* --- kategoriyalar: faol mashg'ulotlardan --- */
+const CAT_INFO = { A: 'Mototsikl', B: 'Yengil avto', C: 'Yuk avto' };
+function options() {
+  const byCat = {}, other = [];
+  for (const c of S.courses) {
+    const k = String(c.category || '').toUpperCase();
+    if (/^[ABC]$/.test(k)) (byCat[k] = byCat[k] || []).push(c); else other.push(c);
+  }
+  const pick = list => [...list].sort((a, b) =>
+    ((Number(a.duration_minutes) === 60 ? 0 : 1) - (Number(b.duration_minutes) === 60 ? 0 : 1)) ||
+    (Number(a.duration_minutes) - Number(b.duration_minutes)))[0];
+  const out = ['A', 'B', 'C'].filter(k => byCat[k]).map(k => ({ key: k, cat: k, course: pick(byCat[k]), title: k, sub: CAT_INFO[k] }));
+  other.forEach(c => out.push({ key: 'c:' + c.id, cat: '', course: c, title: c.name || 'Mashg‘ulot', sub: fmtDur(c.duration_minutes) }));
+  return out;
+}
+const curOpt = () => options().find(o => o.key === B.key) || null;
+const insName = i => (i && (i.full_name || [i.first_name, i.last_name].filter(Boolean).join(' '))) || 'Instruktor';
+const insCats = i => (Array.isArray(i.categories) && i.categories.length ? i.categories : ['B']).map(x => String(x).toUpperCase());
+function catInstructors(opt = curOpt()) {
+  if (!opt) return [];
+  return S.instructors.filter(i => !opt.cat || insCats(i).includes(opt.cat));
+}
+const safeUrl = u => /^https?:\/\//i.test(String(u || '')) ? String(u).replace(/["'()\\\s]/g, c => '%' + c.charCodeAt(0).toString(16).toUpperCase().padStart(2, '0')) : '';
+const avatar = (i, cls = '') => {
+  const url = safeUrl(i && (i.avatar_url || i.photo_url));
+  return url
+    ? `<span class="ava ${cls}" style="background-image:url('${esc(url)}')" role="img" aria-label="${esc(insName(i))}"></span>`
+    : `<span class="ava ${cls}">${esc(initials(insName(i)))}</span>`;
+};
+const catTags = i => `<span class="cats">${insCats(i).map(c => `<span class="tag a">${esc(c)}</span>`).join('')}</span>`;
+
+/* =========================================================================
+   YUKLASH
+   ========================================================================= */
+async function boot() {
+  applyTheme();
+  if (tg) {
+    try { tg.ready(); tg.expand(); } catch (e) {}
+    try { if (ver('7.7')) tg.disableVerticalSwipes(); } catch (e) {}
+    try { tg.onEvent('themeChanged', applyTheme); } catch (e) {}
+    try { tg.BackButton.onClick(onBack); } catch (e) {}
+  }
+  if (!tg || !String(tg.initData || '').trim()) return renderFatal('tg');
+
+  renderShell();
+  renderSkeleton();
+  const [me, st, cs, ins, bks] = await Promise.allSettled([api.me(), api.settings(), api.courses(), api.instructors(), api.bookings()]);
+  if (me.status === 'rejected') return renderFatal('auth', me.reason && me.reason.message);
+  S.me = me.value.profile || me.value.user || {};
+  S.settings = normSettings(st.status === 'fulfilled' ? st.value.settings : {});
+  S.courses = cs.status === 'fulfilled' ? (cs.value.courses || []) : [];
+  S.instructors = ins.status === 'fulfilled' ? (ins.value.instructors || []) : [];
+  S.bookings = bks.status === 'fulfilled' ? (bks.value.bookings || []) : [];
+  S.loadErr = [cs, ins].some(x => x.status === 'rejected') ? 'Ba’zi ma’lumotlar yuklanmadi. Tepadan pastga torting yoki qayta oching.' : '';
+  S.ready = true;
+  B.phone = S.me.phone || '';
+
+  /* Bot havolasidan kelgan bo'lsa: t.me/bot?startapp=book */
+  const sp = String((tg.initDataUnsafe && tg.initDataUnsafe.start_param) || '').toLowerCase();
+  const first = ['book', 'bookings', 'support', 'profile'].find(v => sp.startsWith(v)) || (location.hash.slice(1) || 'home');
+  go(first, false);
+  loadNotes();
+}
+
+function applyTheme() {
+  const root = document.documentElement;
+  const scheme = (tg && tg.colorScheme) || (window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+  root.dataset.theme = scheme === 'dark' ? 'dark' : 'light';
+  const p = (tg && tg.themeParams) || {};
+  const set = (k, v) => v ? root.style.setProperty(k, v) : root.style.removeProperty(k);
+  set('--bg', p.secondary_bg_color);
+  set('--card', p.section_bg_color || p.bg_color);
+  set('--card-2', p.secondary_bg_color);
+  set('--text', p.text_color);
+  set('--hint', p.hint_color || p.subtitle_text_color);
+  try {
+    if (tg && ver('6.1')) {
+      tg.setHeaderColor('secondary_bg_color');
+      tg.setBackgroundColor('secondary_bg_color');
+    }
+    if (tg && ver('7.10')) tg.setBottomBarColor('bg_color');
+  } catch (e) {}
+}
+
+/* =========================================================================
+   QOBIQ: sahifa + pastki menyu
+   ========================================================================= */
+const NAV = [
+  ['home', 'home', 'Asosiy'], ['book', 'book', 'Bron'], ['bookings', 'list', 'Bronlarim'],
+  ['support', 'chat', 'Yordam'], ['profile', 'user', 'Profil'],
+];
+function renderShell() {
+  $('#app').innerHTML = `
+    <main class="wrap" id="main"></main>
+    <div id="dock"></div>
+    <nav class="nav" aria-label="Menyu"><div class="nav-in">
+      ${NAV.map(([v, i, t]) => `<button data-act="go" data-v="${v}" aria-label="${t}">${ico(i, 23)}<span>${t}</span>${v === 'bookings' ? '<i class="badge hidden" id="bkBadge"></i>' : ''}</button>`).join('')}
+    </div></nav>`;
+}
+function renderSkeleton() {
+  $('#main').innerHTML = `
+    <div class="top">${logoImg()}<div class="who"><div class="sk" style="min-height:18px;width:60%"></div></div></div>
+    <div class="sk" style="min-height:190px;border-radius:22px"></div>
+    <div class="sk" style="min-height:110px;margin-top:14px;border-radius:18px"></div>
+    <div class="tariffs" style="margin-top:22px"><div class="sk" style="min-height:96px"></div><div class="sk" style="min-height:96px"></div><div class="sk" style="min-height:96px"></div></div>`;
+}
+function renderFatal(kind, msg) {
+  const txt = kind === 'tg'
+    ? { i: 'lock', h: 'Telegram orqali oching', p: 'Bu ilova TASH INDEX AVTODROM botidagi «Mini App» tugmasi orqali ishlaydi.' }
+    : { i: 'info', h: 'Kirish amalga oshmadi', p: msg || 'Iltimos, ilovani yopib, bot orqali qayta oching.' };
+  $('#app').innerHTML = `<div class="fatal"><div>${logoImg('logo big')}<h2>${esc(txt.h)}</h2><p>${esc(txt.p)}</p>
+    ${kind === 'auth' ? `<button class="btn btn-primary btn-sm" data-act="reload" style="margin:0 auto">${ico('refresh', 18)} Qayta urinish</button>` : ''}</div></div>`;
+}
+
+function go(v, push = true) {
+  if (!NAV.some(n => n[0] === v)) v = 'home';
+  if (S.view === 'support' && v !== 'support') stopChatPoll();
+  if (v === 'book' && (!B.started || B.done)) startBook();   // tugagan bron o'rniga yangisi
+  S.view = v;
+  if (push) { try { history.replaceState(null, '', '#' + v); } catch (e) {} }
+  document.querySelectorAll('.nav button').forEach(b => b.classList.toggle('on', b.dataset.v === v));
+  render();
+  window.scrollTo(0, 0);
+  syncBack();
+  if (v === 'book' && B.step === 'time') ensureBusy();
+  if (v === 'bookings') refreshBookings();
+  if (v === 'support') openChat();
+}
+function render() {
+  if (!S.ready) return;
+  const m = $('#main');
+  m.className = 'wrap view' + (S.view === 'book' ? ' view-book' : '');
+  ({ home: renderHome, book: renderBook, bookings: renderBookings, support: renderSupport, profile: renderProfile }[S.view])();
+  renderDock();
+  updateBadge();
+}
+function renderDock() {
+  const d = $('#dock');
+  if (S.view === 'book') return renderBar();
+  if (S.view === 'support') {
+    if (!$('#chatIn')) {
+      d.innerHTML = `<div class="composer"><div class="composer-in">
+        <textarea class="input" id="chatIn" rows="1" maxlength="2000" placeholder="Xabar yozing…" aria-label="Xabar"></textarea>
+        <button class="send" data-act="send" id="sendBtn" aria-label="Yuborish" disabled>${ico('send', 21)}</button></div></div>`;
+    }
+    return;
+  }
+  d.innerHTML = '';
+}
+function syncBack() {
+  if (!tg || !tg.BackButton) return;
+  try { (sheetOpen() || S.view !== 'home') ? tg.BackButton.show() : tg.BackButton.hide(); } catch (e) {}
+}
+function onBack() {
+  if (sheetOpen()) return closeSheet();
+  if (S.view === 'book' && B.started && !B.done) return prevStep();   // bron bosqichlari bo'yicha orqaga
+  if (S.view !== 'home') go('home');
+}
+
+/* =========================================================================
+   ASOSIY
+   ========================================================================= */
+const activeBookings = () => S.bookings
+  .filter(b => ['pending', 'confirmed', 'in_progress'].includes(b.status))
+  .sort((a, b) => Date.parse(a.start_at || 0) - Date.parse(b.start_at || 0));
+
+function renderHome() {
+  const me = S.me || {}, first = me.first_name || (tg && tg.initDataUnsafe && tg.initDataUnsafe.user && tg.initDataUnsafe.user.first_name) || '';
+  const next = activeBookings()[0];
+  const opts = options().filter(o => o.cat);
+  const loc = S.settings.location || {};
+  const addr = loc.address || S.settings.address || '';
+  const phone = S.settings.contact_phone || '';
+  const hours = S.settings.working_hours || `${S.settings.work_start} – ${S.settings.work_end}`;
+  const p = dp(ymd());
+
+  $('#main').innerHTML = `
+    <header class="top">
+      ${logoImg()}
+      <div class="who"><h1>${first ? `Salom, ${esc(first)}` : 'TASH INDEX AVTODROM'}</h1>
+        <div class="sub">Bugun, ${p.day}-${MON[p.mon]} · ${WD[p.wd]}</div></div>
+      <button class="icon-btn" data-act="notes" aria-label="Bildirishnomalar">${ico('bell', 21)}<i class="dot hidden" id="noteDot"></i></button>
+    </header>
+
+    ${S.me && S.me.is_blocked ? `<div class="note err" style="margin-bottom:12px">Hisobingiz bloklangan. Savollar bo‘lsa «Yordam» bo‘limiga yozing.</div>` : ''}
+    ${S.loadErr ? `<div class="note warn" style="margin-bottom:12px">${esc(S.loadErr)}</div>` : ''}
+
+    <section class="hero">
+      <svg class="road" width="190" height="120" viewBox="0 0 190 120" fill="none" aria-hidden="true"><path d="M20 120 80 0M170 120 110 0" stroke="#fff" stroke-width="6"/><path d="M95 110v-18M95 74V56M95 38V20" stroke="#fff" stroke-width="5" stroke-linecap="round"/></svg>
+      ${logoImg()}
+      <small>TASH INDEX AVTODROM</small>
+      <h2>Haydashni ishonch bilan o‘rganing</h2>
+      <p>Toifa, vaqt va instruktorni tanlang — bron bir daqiqada tayyor.</p>
+      <button class="btn-light" data-act="go" data-v="book">${ico('book', 19)} Bron qilish</button>
+    </section>
+
+    ${next ? `<div class="card next" data-act="go" data-v="bookings" role="button" tabindex="0">
+      <div class="lbl"><span>Keyingi darsingiz</span>${pill(next.status)}</div>
+      <div class="when">${esc(whenText(next.start_at))}</div>
+      <div class="meta">${esc(bkLine(next))}</div>
+      ${next.pickup_code ? codeBox(next.pickup_code) : ''}
+    </div>` : ''}
+
+    ${opts.length ? `<section class="sec">
+      <div class="sec-h"><h2>Narxlar</h2><span class="muted" style="font-size:13px">1 soat uchun</span></div>
+      <div class="tariffs">${opts.map(o => { const t = tariff(o.cat); return `<button class="tariff" data-act="quickcat" data-v="${o.key}">
+        <b>${o.cat}</b><span class="k">${esc(o.sub)}</span><span class="p">${money(t.hour)}</span><span class="h">30 daq · ${new Intl.NumberFormat('ru-RU').format(t.half).replace(/[\s\u202f]/g, '\u00a0')}</span></button>`; }).join('')}</div>
+    </section>` : ''}
+
+    ${S.instructors.length ? `<section class="sec">
+      <div class="sec-h"><h2>Instruktorlar</h2><span class="muted" style="font-size:13px">${S.instructors.length} ta</span></div>
+      <div class="inst-row">${S.instructors.map(i => `<button class="icard" data-act="ins" data-v="${esc(i.id)}">
+        ${avatar(i)}<b>${esc(insName(i))}</b>
+        <div class="r">${Number(i.total_reviews) ? `★ ${Number(i.rating || 0).toFixed(1)} · ${Number(i.total_reviews)} baho` : 'Yangi instruktor'}</div>
+        ${catTags(i)}</button>`).join('')}</div>
+    </section>` : ''}
+
+    <section class="sec">
+      <div class="sec-h"><h2>Ma’lumot</h2></div>
+      <div class="list">
+        <button class="row" data-act="location"><span class="ic">${ico('pin', 20)}</span>
+          <span class="tx"><b>Manzil</b><small>${esc(addr || loc.name || 'Xaritada ko‘rish')}</small></span><span class="chev">${ico('chev', 18)}</span></button>
+        <div class="row"><span class="ic">${ico('clock', 20)}</span>
+          <span class="tx"><b>Ish vaqti</b><small>${esc(hours)}</small></span></div>
+        ${phone ? `<a class="row" href="tel:${esc(String(phone).replace(/[^\d+]/g, ''))}" style="color:inherit;text-decoration:none"><span class="ic">${ico('phone', 20)}</span>
+          <span class="tx"><b>Qo‘ng‘iroq qilish</b><small>${esc(phone)}</small></span><span class="chev">${ico('chev', 18)}</span></a>` : ''}
+        <button class="row" data-act="go" data-v="support"><span class="ic">${ico('chat', 20)}</span>
+          <span class="tx"><b>Savol berish</b><small>Admin bilan yozishma</small></span><span class="chev">${ico('chev', 18)}</span></button>
+      </div>
+    </section>`;
+  updateNoteDot();
+}
+
+/* =========================================================================
+   BRON QILISH — bosqichma-bosqich. Ilova o'zi yetaklaydi:
+   har tanlovdan keyin keyingi bosqich O'ZI ochiladi.
+
+   Vaqt bo'yicha (standart):
+     toifa → necha soat → kun va vaqt → SHU VAQTDA BO'SH instruktorlar → tasdiq
+   Instruktor bo'yicha:
+     toifa → necha soat → instruktor → UNING bo'sh vaqtlari → tasdiq
+   ========================================================================= */
+const CAT_LONG = { A: 'Mototsikl', B: 'Yengil avtomobil', C: 'Yuk avtomobili' };
+const stepsOf = () => B.mode === 'ins' ? ['cat', 'dur', 'ins', 'time', 'confirm'] : ['cat', 'dur', 'time', 'ins', 'confirm'];
+const selIns = () => S.instructors.find(i => String(i.id) === String(B.ins)) || null;
+const byRating = (a, b) => ((Number(b.rating) || 0) - (Number(a.rating) || 0)) || ((Number(b.total_reviews) || 0) - (Number(a.total_reviews) || 0));
+
+/** Yangi bronni boshlash. key — toifa oldindan tanlangan bo'lsa, ins — instruktor. */
+function startBook({ key = '', ins = '' } = {}) {
+  Object.assign(B, {
+    started: true, step: 'cat', mode: 'time', key: '', hours: 0, date: '', time: '', ins: '', auto: false,
+    insLocked: false, note: '', showNote: false, busy: {}, loading: false, err: '', done: null, dir: 'f', advancing: false,
+  });
+  B.token++;
+  const opts = options();
+  if (ins && S.instructors.some(i => String(i.id) === String(ins))) {
+    B.mode = 'ins'; B.ins = String(ins); B.insLocked = true;
+    const can = opts.filter(o => catInstructors(o).some(i => String(i.id) === B.ins));
+    if (!key && can.length === 1) key = can[0].key;
+  }
+  if (!key && opts.length === 1) key = opts[0].key;
+  if (key && opts.some(o => o.key === key)) { B.key = key; B.step = 'dur'; }
+}
+
+function maxHours(opt) {
+  if (!opt) return 1;
+  const span = toMin(S.settings.work_end) - toMin(S.settings.work_start);
+  return clamp(Math.floor(span / unitOf(opt)), 1, 8);
+}
+const dur = () => unitOf(curOpt()) * (B.hours || 1);
+function slotsFor(date) {
+  const st = toMin(S.settings.work_start), en = toMin(S.settings.work_end), step = S.settings.step, d = dur();
+  const cut = Date.now() + 10 * 60000;   // 10 daqiqadan keyingi vaqtlar
+  const out = [];
+  for (let m = st; m + d <= en; m += step) {
+    const t = fromMin(m);
+    out.push({ t, past: at(date, t).getTime() < cut });
+  }
+  return out;
+}
+function firstOpenDay() {
+  const t = ymd();
+  return slotsFor(t).some(s => !s.past) ? t : addDays(t, 1);
+}
+/* Qaysi instruktorlarning bandligi kerak: vaqt bo'yicha — hammasi, instruktor bo'yicha — faqat tanlangani */
+const candidates = () => (B.mode === 'ins' && B.ins) ? catInstructors().filter(i => String(i.id) === B.ins) : catInstructors();
+function freeFor(time) {
+  const s = at(B.date, time).getTime(), e = s + dur() * 60000;
+  return candidates().filter(i => {
+    const v = B.busy[i.id];
+    return Array.isArray(v) && !v.some(([a, b]) => s < b && e > a);
+  });
+}
+async function ensureBusy(force = false) {
+  const list = candidates(), date = B.date, tok = ++B.token;
+  if (!list.length) { B.loading = false; B.busy = {}; return renderTimes(); }
+  const fresh = list.every(i => { const c = CACHE.get(i.id + '|' + date); return c && Date.now() - c.t < 45000; });
+  if (!fresh || force) { B.loading = true; renderTimes(); }
+  const res = await Promise.all(list.map(async i => {
+    const k = i.id + '|' + date, c = CACHE.get(k);
+    if (!force && c && Date.now() - c.t < 45000) return [i.id, c.v];
+    try {
+      const r = await api.busy(i.id, date);
+      const v = (r.busy || []).map(x => [Date.parse(x.start_at), Date.parse(x.end_at)]).filter(x => x[0] && x[1]);
+      CACHE.set(k, { t: Date.now(), v });
+      return [i.id, v];
+    } catch (e) { return [i.id, null]; }
+  }));
+  if (tok !== B.token) return;       // foydalanuvchi boshqa kunni tanlab bo'ldi
+  B.busy = Object.fromEntries(res);
+  B.loading = false;
+  B.err = res.length && res.every(x => x[1] === null) ? 'Band vaqtlarni yuklab bo‘lmadi.' : '';
+  if (B.step === 'time' && B.time && !(slotsFor(B.date).some(s => s.t === B.time && !s.past) && freeFor(B.time).length)) B.time = '';
+  renderTimes();
+}
+
+/* --- bosqichlar orasida yurish --- */
+function bookGo(step, dir = 'f') {
+  hideToast();   // oldingi bosqichning xabari endi kerak emas
+  B.step = step; B.dir = dir; B.advancing = false;
+  if (step === 'time' && (!B.date || B.date < ymd() || !slotsFor(B.date).some(s => !s.past))) B.date = firstOpenDay();
+  render();
+  window.scrollTo(0, 0);
+  syncBack();
+  if (step === 'time') ensureBusy();
+}
+function nextStep() {
+  const s = stepsOf();
+  let i = s.indexOf(B.step) + 1;
+  if (s[i] === 'ins' && B.mode === 'ins' && B.insLocked && B.ins) i++;   // instruktor oldindan tanlangan
+  bookGo(s[i] || 'confirm');
+}
+function prevStep() {
+  const s = stepsOf();
+  const i = s.indexOf(B.step) - 1;
+  if (i < 0) return go('home');
+  bookGo(s[i], 'b');
+}
+/* Tanlov bir lahza ko'rinib tursin, keyin keyingi bosqich o'zi ochiladi */
+function advance() {
+  if (B.advancing) return;
+  B.advancing = true;
+  setTimeout(() => { if (B.advancing && S.view === 'book') nextStep(); }, 190);
+}
+
+/* --- chizish --- */
+function renderBook() {
+  const opts = options(), blocked = S.me && S.me.is_blocked;
+  if (!S.settings.bookingOn || blocked || !opts.length) {
+    $('#main').innerHTML = `<div class="page-h"><h1>Bron qilish</h1></div>
+      <div class="card empty"><div class="ill">${ico(blocked ? 'lock' : 'info', 30)}</div>
+      <b>${blocked ? 'Hisobingiz bloklangan' : !opts.length ? 'Mashg‘ulotlar hali qo‘shilmagan' : 'Onlayn bron vaqtincha yopiq'}</b>
+      <p>${blocked ? 'Savollar bo‘lsa, admin bilan bog‘laning.' : 'Iltimos, keyinroq urinib ko‘ring yoki admin bilan bog‘laning.'}</p>
+      <button class="btn btn-soft btn-sm" style="margin:0 auto" data-act="go" data-v="support">${ico('chat', 18)} Adminga yozish</button></div>`;
+    return;
+  }
+  if (!B.started) startBook();
+  if (B.done) return renderDone();
+  if (!curOpt() && B.step !== 'cat') B.step = 'cat';
+
+  const s = stepsOf(), idx = s.indexOf(B.step);
+  const body = { cat: stepCat, dur: stepDur, time: stepTime, ins: stepIns, confirm: stepConfirm }[B.step]();
+  $('#main').innerHTML = `<div class="${B.dir === 'b' ? 'slide-b' : 'slide-f'}">
+    <div class="wz-top">
+      <button class="wz-back" data-act="wzback" aria-label="Orqaga">${ico('chevl', 21, 2.4)}</button>
+      <div class="wz-prog" aria-hidden="true">${s.map((x, n) => `<i class="${n < idx ? 'done' : n === idx ? 'cur' : ''}"></i>`).join('')}</div>
+      <span class="wz-count">${idx + 1}/${s.length}</span>
+    </div>
+    ${B.step === 'confirm' ? '' : crumbs()}
+    ${body}</div>`;
+  if (B.step === 'time') {
+    renderTimes();
+    const box = $('#days'), sel = $('#days .day.on');
+    if (box && sel) {
+      const x = sel.offsetLeft - box.offsetLeft;            // scroller ichidagi o'rni
+      if (x + sel.offsetWidth + 16 > box.clientWidth) box.scrollLeft = x - (box.clientWidth - sel.offsetWidth) / 2;
+    }
+  }
+}
+/* Oldingi tanlovlar — bosilsa o'sha bosqichga qaytadi */
+function crumbs() {
+  const opt = curOpt(), s = stepsOf(), idx = s.indexOf(B.step), out = [];
+  for (const st of s.slice(0, idx)) {
+    let t = '';
+    if (st === 'cat' && opt) t = opt.cat ? `${opt.cat} toifa` : opt.title;
+    if (st === 'dur' && B.hours) t = fmtDur(dur());
+    if (st === 'time' && B.time) t = `${dayName(B.date, false)}, ${B.time}`;
+    if (st === 'ins' && selIns()) t = insName(selIns());
+    if (t) out.push(`<button data-act="wzjump" data-v="${st}">${esc(t)}${ico('edit', 13)}</button>`);
+  }
+  return out.length ? `<div class="crumbs">${out.join('')}</div>` : '';
+}
+
+function stepCat() {
+  const opts = options(), locked = B.insLocked ? selIns() : null;
+  return `<h1 class="wz-h">Qaysi toifada o‘qiysiz?</h1>
+    <p class="wz-sub">${locked ? `${esc(insName(locked))} o‘rgatadigan toifalar` : 'Narx 1 soat uchun'}</p>
+    <div class="opt-list">${opts.map(o => {
+      const list = catInstructors(o);
+      const ok = list.length && (!locked || list.some(i => String(i.id) === B.ins));
+      return `<button class="opt ${o.key === B.key ? 'on' : ''}" data-act="wzcat" data-v="${esc(o.key)}" ${ok ? '' : 'disabled'}>
+        <span class="lt">${o.cat ? esc(o.cat) : ico('car', 26)}</span>
+        <span class="tx"><b>${esc(o.cat ? o.cat + ' toifa' : o.title)}</b>
+          <small>${esc(o.cat ? CAT_LONG[o.cat] : o.sub)}${list.length ? ` · ${list.length} instruktor` : ' · hozircha instruktor yo‘q'}</small></span>
+        <span class="rt">${money(o.cat ? tariff(o.cat).hour : o.course.price)}<small>${o.cat ? '1 soat' : fmtDur(unitOf(o))}</small></span>
+      </button>`;
+    }).join('')}</div>`;
+}
+
+function stepDur() {
+  const opt = curOpt(), maxH = maxHours(opt);
+  return `<h1 class="wz-h">Necha soat haydaysiz?</h1>
+    <p class="wz-sub">Narx avtomatik hisoblanadi</p>
+    <div class="dur-grid">${Array.from({ length: maxH }, (_, n) => n + 1).map(h => `
+      <button class="dur ${h === B.hours ? 'on' : ''}" data-act="wzdur" data-v="${h}">
+        <b>${fmtDur(unitOf(opt) * h)}</b><small>${money(priceOf(opt, h))}</small></button>`).join('')}</div>`;
+}
+
+function stepTime() {
+  const days = Array.from({ length: 14 }, (_, n) => addDays(ymd(), n));
+  const who = B.mode === 'ins' ? selIns() : null;
+  return `<h1 class="wz-h">Qachon kelasiz?</h1>
+    <p class="wz-sub">${who ? `${esc(insName(who))} bo‘sh bo‘lgan vaqtlar` : 'Vaqtni tanlang — keyin shu vaqtda bo‘sh instruktorlar chiqadi'}</p>
+    <div class="scroller" id="days">${days.map(d => { const p = dp(d); return `
+      <button class="day ${d === B.date ? 'on' : ''}" data-act="wzday" data-v="${d}" aria-pressed="${d === B.date}">
+        <span class="w">${d === ymd() ? 'Bugun' : WD_S[p.wd]}</span><span class="d">${p.day}</span><span class="m">${MON_S[p.mon]}</span></button>`; }).join('')}
+    </div>
+    <div class="day-title">${esc(dayName(B.date))}</div>
+    <div id="times"></div>
+    ${B.mode === 'time'
+      ? `<button class="switch-link" data-act="wzmode" data-v="ins">${ico('user', 19)} Avval instruktorni tanlamoqchiman</button>`
+      : `<button class="switch-link" data-act="wzmode" data-v="time">${ico('clock', 19)} Farqi yo‘q — hamma bo‘sh vaqtlarni ko‘rish</button>`}`;
+}
+function renderTimes() {
+  const box = $('#times');
+  if (!box || B.step !== 'time') return;
+  if (!candidates().length) {
+    box.innerHTML = `<div class="note warn">Bu toifa bo‘yicha hozircha instruktor yo‘q. Boshqa toifani tanlang yoki adminga yozing.</div>`;
+    return;
+  }
+  if (B.loading) { box.innerHTML = `<div class="times">${'<div class="sk"></div>'.repeat(12)}</div>`; return; }
+  if (B.err) { box.innerHTML = `<div class="note err">${esc(B.err)} <button class="link" data-act="retry">Qayta urinish</button></div>`; return; }
+  const list = slotsFor(B.date).map(s => ({ ...s, n: s.past ? 0 : freeFor(s.t).length }));
+  if (!list.some(s => s.n)) {
+    const next = addDays(B.date, 1);
+    box.innerHTML = `<div class="card empty" style="padding:22px 16px"><div class="ill" style="width:52px;height:52px">${ico('clock', 26)}</div>
+      <b>${esc(dayName(B.date, false))} bo‘sh vaqt qolmadi</b>
+      <p>Boshqa kunni tanlang${B.mode === 'ins' ? ' yoki boshqa instruktorni ko‘ring' : ''}.</p>
+      <button class="btn btn-soft btn-sm" style="margin:0 auto" data-act="wzday" data-v="${next}">${esc(dayName(next, false))}ni ko‘rish ${ico('arrow', 17)}</button></div>`;
+    return;
+  }
+  const many = B.mode === 'time' && candidates().length > 1;
+  box.innerHTML = `<div class="times">${list.map(s => `<button class="time ${s.t === B.time ? 'on' : ''}" data-act="wztime" data-v="${s.t}"
+      ${s.n ? '' : 'disabled'} aria-pressed="${s.t === B.time}">${s.t}${many ? `<small>${s.n ? s.n + ' bo‘sh' : 'band'}</small>` : ''}</button>`).join('')}</div>`;
+}
+
+function insOpt(i) {
+  const car = [i.vehicle_model, i.vehicle_plate].filter(Boolean).join(' · ');
+  const meta = [Number(i.total_reviews) ? `★ ${Number(i.rating || 0).toFixed(1)} (${Number(i.total_reviews)} baho)` : 'Yangi instruktor',
+                Number(i.experience_years) ? `${Number(i.experience_years)} yil tajriba` : ''].filter(Boolean).join(' · ');
+  return `<div class="opt ins ${String(i.id) === B.ins ? 'on' : ''}">
+    <button class="opt-main" data-act="wzins" data-v="${esc(i.id)}">
+      ${avatar(i, 'lg')}<span class="tx"><b>${esc(insName(i))}</b><small>${esc(meta)}</small>
+      ${car ? `<small class="car">${ico('car', 15)} ${esc(car)}</small>` : ''}</span></button>
+    <button class="info-btn" data-act="ins" data-v="${esc(i.id)}" aria-label="Batafsil">${ico('info', 21)}</button>
+  </div>`;
+}
+function stepIns() {
+  if (B.mode === 'time') {
+    const free = freeFor(B.time).sort(byRating);
+    if (!free.length) return `<h1 class="wz-h">Kim bilan haydaysiz?</h1>
+      <div class="note warn">Bu vaqtda bo‘sh instruktor qolmadi. <button class="link" data-act="wzjump" data-v="time">Boshqa vaqtni tanlash</button></div>`;
+    return `<h1 class="wz-h">Kim bilan haydaysiz?</h1>
+      <p class="wz-sub">${esc(dayName(B.date, false))}, ${esc(B.time)} da bo‘sh — ${free.length} ta instruktor</p>
+      <div class="opt-list">
+        ${free.length > 1 ? `<button class="opt" data-act="wzins" data-v="auto">
+          <span class="lt solid">${ico('check', 26, 2.6)}</span>
+          <span class="tx"><b>Farqi yo‘q</b><small>Eng yuqori baholangan bo‘sh instruktor</small></span>${ico('chev', 18)}</button>` : ''}
+        ${free.map(insOpt).join('')}
+      </div>`;
+  }
+  const opt = curOpt(), list = catInstructors().sort(byRating);
+  return `<h1 class="wz-h">Instruktorni tanlang</h1>
+    <p class="wz-sub">${esc(opt.cat ? opt.cat + ' toifa' : opt.title)} · ${list.length} ta instruktor. Keyin uning bo‘sh vaqtlari chiqadi.</p>
+    <div class="opt-list">${list.map(insOpt).join('')}</div>
+    <button class="switch-link" data-act="wzmode" data-v="time">${ico('clock', 19)} Farqi yo‘q — vaqt bo‘yicha tanlash</button>`;
+}
+
+function stepConfirm() {
+  const opt = curOpt(), who = selIns();
+  const row = (st, k, v) => `<button class="sum-row" data-act="wzjump" data-v="${st}"><span>${k}</span><b>${esc(v)}</b><i>${ico('edit', 15)}</i></button>`;
+  return `<h1 class="wz-h">Hammasi to‘g‘rimi?</h1>
+    <p class="wz-sub">Qatorni bossangiz — o‘zgartirasiz</p>
+    <div class="card sum-card">
+      ${row('cat', 'Toifa', opt.cat ? `${opt.cat} — ${CAT_LONG[opt.cat]}` : opt.title)}
+      ${row('dur', 'Davomiylik', fmtDur(dur()))}
+      ${row('time', 'Kun va vaqt', `${dayName(B.date)} · ${B.time}`)}
+      ${row('ins', 'Instruktor', insName(who) + (B.auto ? ' · avtomatik' : ''))}
+      <div class="sum-total"><span>Jami</span><b class="tnum">${money(priceOf(opt, B.hours))}</b></div>
+    </div>
+    <div class="note info" style="margin-top:12px;display:flex;gap:10px;align-items:flex-start">${ico('info', 19)}<span>To‘lov avtodrom kassasida. Bron qilgach sizga kassa kodi beriladi.</span></div>
+    ${!S.me.phone ? `<label class="field"><span>Telefon raqamingiz — admin siz bilan bog‘lanadi</span>
+      <input class="input" id="phoneIn" type="tel" inputmode="tel" autocomplete="tel" placeholder="+998 90 123 45 67" value="${esc(B.phone)}"></label>` : ''}
+    ${B.showNote
+      ? `<label class="field"><span>Izoh (ixtiyoriy)</span><textarea class="input" id="noteIn" maxlength="500" placeholder="Masalan: birinchi marta haydayman">${esc(B.note)}</textarea></label>`
+      : `<button class="link" style="margin-top:16px;padding:6px 2px" data-act="shownote">+ Izoh qo‘shish</button>`}`;
+}
+function renderBar() {
+  if (S.view !== 'book') return;
+  const d = $('#dock'), opt = curOpt();
+  if (B.step !== 'confirm' || B.done || !opt || !S.settings.bookingOn || (S.me && S.me.is_blocked)) { d.innerHTML = ''; return; }
+  d.innerHTML = `<div class="bar"><div class="bar-in">
+    <div class="sum"><b class="tnum">${money(priceOf(opt, B.hours))}</b><span>${esc(dayName(B.date, false))}, ${esc(B.time)} · ${esc(fmtDur(dur()))}</span></div>
+    <button class="btn btn-primary" data-act="submit" ${B.sending ? 'disabled' : ''}>${B.sending ? '<span class="spin"></span>' : 'Tasdiqlash'}</button>
+  </div></div>`;
+}
+
+function normPhone(v) {
+  const d = String(v || '').replace(/\D/g, '');
+  if (d.length === 9) return '+998' + d;
+  if (d.length === 12 && d.startsWith('998')) return '+' + d;
+  return null;
+}
+async function submitBooking() {
+  if (B.sending) return;
+  const opt = curOpt(), who = selIns();
+  if (!opt) return bookGo('cat', 'b');
+  if (!B.time) return bookGo('time', 'b');
+  if (!who) return bookGo('ins', 'b');
+
+  let phone = null;
+  if (!S.me.phone) {
+    phone = normPhone(($('#phoneIn') || {}).value || B.phone);
+    if (!phone) {
+      haptic.err(); toast('Telefon raqamini kiriting: +998 90 123 45 67', true);
+      const el = $('#phoneIn'); if (el) { el.focus(); el.scrollIntoView({ block: 'center', behavior: 'smooth' }); }
+      return;
+    }
+  }
+  B.sending = true; renderBar();
+  try {
+    if (phone) {
+      const r = await api.saveMe({ phone });
+      S.me = r.profile || r.user || Object.assign({}, S.me, { phone });
+    }
+    const r = await api.book({
+      instructor_id: who.id,
+      course_id: opt.course.id,
+      hours: B.hours,
+      start_at: `${B.date}T${B.time}:00+05:00`,
+      customer_note: B.note.trim() || undefined,
+    });
+    haptic.ok();
+    CACHE.clear();
+    const bk = r.booking || {};
+    S.bookings = [bk, ...S.bookings.filter(x => x.id !== bk.id)];
+    B.done = {
+      code: bk.pickup_code || '',
+      when: whenText(bk.start_at || `${B.date}T${B.time}:00+05:00`),
+      cat: opt.cat ? `${opt.cat} — ${CAT_LONG[opt.cat]}` : opt.title,
+      dur: fmtDur(bk.duration_minutes || dur()),
+      ins: insName(who),
+      price: bk.price || bk.total_price || priceOf(opt, B.hours),
+    };
+    B.sending = false;
+    hideToast(); render(); window.scrollTo(0, 0); syncBack();
+    refreshBookings();
+  } catch (e) {
+    haptic.err();
+    if (e.status === 409) {           // shu orada kimdir band qilib qo'ydi
+      CACHE.clear(); B.time = '';
+      if (B.mode === 'time') { B.ins = ''; B.auto = false; }
+      B.sending = false; bookGo('time', 'b');
+    }
+    toast(e.message, true);
+  } finally {
+    B.sending = false; renderBar();
+  }
+}
+function renderDone() {
+  const d = B.done;
+  $('#main').innerHTML = `<div class="slide-f done">
+    <div class="big-ok">${ico('check', 38, 2.6)}</div>
+    <h1 class="wz-h" style="text-align:center">Bron yuborildi!</h1>
+    <p class="wz-sub" style="text-align:center">Admin tasdiqlagach Telegram’ga xabar keladi.</p>
+    ${d.code
+      ? `<button class="code-big" data-act="copy" data-v="${esc(d.code)}"><small>Kassa uchun kod</small><b>${esc(d.code)}</b><span>Kassaga shu kodni ayting · bosib nusxalang</span></button>`
+      : `<div class="note info" style="margin:14px 0">Kassaga kelganda ismingizni ayting — kassir bronni topadi.</div>`}
+    <div class="card" style="padding:4px 16px">
+      <div class="kv"><span>Qachon</span><b>${esc(d.when)}</b></div>
+      <div class="kv"><span>Toifa</span><b>${esc(d.cat)}</b></div>
+      <div class="kv"><span>Davomiylik</span><b>${esc(d.dur)}</b></div>
+      <div class="kv"><span>Instruktor</span><b>${esc(d.ins)}</b></div>
+      <div class="kv"><span>Narx</span><b class="tnum">${money(d.price)}</b></div>
+    </div>
+    <div class="btn-row" style="margin-top:16px"><button class="btn btn-soft" data-act="wznew">Yana bron</button>
+      <button class="btn btn-primary" data-act="gobookings">Bronlarim</button></div>
+  </div>`;
+}
+
+/* =========================================================================
+   BRONLARIM
+   ========================================================================= */
+const ST = { pending: 'Kutilmoqda', confirmed: 'Tasdiqlangan', in_progress: 'Jarayonda', completed: 'Tugagan', cancelled: 'Bekor qilingan', rejected: 'Rad etilgan', no_show: 'Kelmagan' };
+const pill = s => `<span class="pill ${esc(s || 'pending')}">${esc(ST[s] || s || '—')}</span>`;
+const codeBox = code => `<span class="code" data-act="copy" data-v="${esc(code)}" role="button" tabindex="0">
+  <span class="tx"><small>Kassa uchun kod</small><b>${esc(code)}</b></span>${ico('copy', 20)}</span>`;
+const bkIns = b => {
+  const p = b.instructor && b.instructor.profile;
+  return (p && [p.first_name, p.last_name].filter(Boolean).join(' ')) || (b.instructor && b.instructor.user && b.instructor.user.full_name) || '—';
+};
+const bkCat = b => String(b.category || (b.course && b.course.category) || '').toUpperCase();
+const bkMin = b => Number(b.duration_minutes || b.total_minutes) || 0;
+function bkLine(b) {
+  const c = bkCat(b);
+  return [c ? `${c} toifa` : (b.course && b.course.name) || '', bkMin(b) ? fmtDur(bkMin(b)) : '', bkIns(b)].filter(x => x && x !== '—').join(' · ');
+}
+async function refreshBookings() {
+  try {
+    const r = await api.bookings();
+    S.bookings = r.bookings || [];
+    if (S.view === 'bookings' || S.view === 'home') render();
+    else updateBadge();
+  } catch (e) { if (S.view === 'bookings') toast(e.message, true); }
+}
+function updateBadge() {
+  const n = activeBookings().length, b = $('#bkBadge');
+  if (!b) return;
+  b.textContent = n; b.classList.toggle('hidden', !n);
+}
+function renderBookings() {
+  const act = activeBookings();
+  const past = S.bookings.filter(b => !act.includes(b)).sort((a, b) => Date.parse(b.start_at || 0) - Date.parse(a.start_at || 0));
+  const list = S.bkTab === 'active' ? act : past;
+  $('#main').innerHTML = `
+    <div class="page-h"><h1>Bronlarim</h1><button class="icon-btn" data-act="refresh" aria-label="Yangilash">${ico('refresh', 20)}</button></div>
+    <div class="seg" role="tablist">
+      <button class="${S.bkTab === 'active' ? 'on' : ''}" data-act="tab" data-v="active" role="tab">Kelgusi${act.length ? ` · ${act.length}` : ''}</button>
+      <button class="${S.bkTab === 'past' ? 'on' : ''}" data-act="tab" data-v="past" role="tab">Tarix</button>
+    </div>
+    ${list.length ? list.map(bkCard).join('') : `<div class="card empty"><div class="ill">${ico(S.bkTab === 'active' ? 'book' : 'list', 30)}</div>
+      <b>${S.bkTab === 'active' ? 'Kelgusi bron yo‘q' : 'Tarix bo‘sh'}</b>
+      <p>${S.bkTab === 'active' ? 'Birinchi darsingizni bir daqiqada bron qiling.' : 'Tugagan va bekor qilingan bronlar shu yerda ko‘rinadi.'}</p>
+      ${S.bkTab === 'active' ? `<button class="btn btn-primary btn-sm" style="margin:0 auto" data-act="go" data-v="book">${ico('book', 18)} Bron qilish</button>` : ''}</div>`}`;
+}
+function bkCard(b) {
+  const active = ['pending', 'confirmed', 'in_progress'].includes(b.status);
+  const reqOpen = b.cancel_requested_at && !b.cancel_reviewed_at;
+  const price = Number(b.price) || Number(b.total_price) || 0;
+  let foot = '';
+  if (b.status === 'pending') foot = `<div class="foot">Admin tasdiqlashini kutmoqda.</div>
+      <div class="btn-row"><button class="btn btn-danger btn-sm" data-act="cancel" data-v="${esc(b.id)}">Bekor qilish</button></div>`;
+  else if (b.status === 'confirmed') foot = reqOpen
+      ? `<div class="note warn" style="margin-top:10px">Bekor qilish so‘rovi yuborilgan — admin javobini kuting.</div>`
+      : `<div class="btn-row"><button class="btn btn-soft btn-sm" data-act="cancel" data-v="${esc(b.id)}">Bekor qilishni so‘rash</button></div>`;
+  else if (b.status === 'completed') foot = b.reviewed
+      ? `<div class="foot">${ico('check', 15)} Baho qo‘yilgan. Rahmat!</div>`
+      : `<div class="btn-row"><button class="btn btn-primary btn-sm" data-act="review" data-v="${esc(b.id)}">${ico('star', 17)} Instruktorni baholash</button></div>`;
+  else if (b.cancellation_reason) foot = `<div class="foot">Sabab: ${esc(b.cancellation_reason)}</div>`;
+
+  return `<article class="bk">
+    <div class="bk-top"><div><div class="bk-when">${esc(whenText(b.start_at))}</div>
+      <div class="bk-meta">${esc(bkCat(b) ? bkCat(b) + ' toifa' : (b.course && b.course.name) || 'Mashg‘ulot')}${bkMin(b) ? ' · ' + esc(fmtDur(bkMin(b))) : ''}</div></div>${pill(b.status)}</div>
+    <div class="bk-grid"><div><span>Instruktor</span><b>${esc(bkIns(b))}</b></div><div><span>Narx</span><b class="tnum">${price ? money(price) : '—'}</b></div></div>
+    ${active && b.pickup_code ? codeBox(b.pickup_code) : ''}
+    ${b.customer_note ? `<div class="foot">Izoh: ${esc(b.customer_note)}</div>` : ''}
+    ${foot}
+  </article>`;
+}
+
+/* --- bekor qilish --- */
+const REASONS = ['Vaqtim to‘g‘ri kelmadi', 'Boshqa kunga o‘tkazmoqchiman', 'Kasal bo‘lib qoldim', 'Rejalarim o‘zgardi'];
+function openCancel(id) {
+  const b = S.bookings.find(x => String(x.id) === String(id));
+  if (!b) return;
+  const req = b.status === 'confirmed';
+  openSheet(`
+    <h3>${req ? 'Bekor qilishni so‘rash' : 'Bronni bekor qilish'}</h3>
+    <p class="lead">${esc(whenText(b.start_at))} · ${esc(bkLine(b))}</p>
+    ${req ? `<div class="note info" style="margin-bottom:12px">Bron tasdiqlangan, shuning uchun so‘rov adminga yuboriladi. Admin javobini Telegram’da olasiz.</div>` : ''}
+    <div class="reasons">${REASONS.map(r => `<button data-act="reason" data-v="${esc(r)}">${esc(r)}</button>`).join('')}</div>
+    <label class="field"><span>Sabab</span><textarea class="input" id="reasonIn" maxlength="300" placeholder="Qisqacha yozing…"></textarea></label>
+    <div class="btn-row"><button class="btn btn-soft" data-act="closesheet">Ortga</button>
+      <button class="btn btn-danger" data-act="docancel" data-v="${esc(b.id)}">${req ? 'So‘rov yuborish' : 'Bekor qilish'}</button></div>`);
+}
+async function doCancel(id, btn) {
+  const reason = ($('#reasonIn') || {}).value ? $('#reasonIn').value.trim() : '';
+  if (reason.length < 3) { haptic.err(); toast('Sababni yozing yoki tanlang', true); const el = $('#reasonIn'); if (el) el.focus(); return; }
+  btn.disabled = true; btn.innerHTML = '<span class="spin"></span>';
+  try {
+    const r = await api.cancel(id, reason);
+    haptic.ok(); closeSheet();
+    toast(r.mode === 'requested' ? (r.message || 'So‘rov adminga yuborildi') : 'Bron bekor qilindi');
+    if (r.booking) S.bookings = S.bookings.map(x => String(x.id) === String(id) ? Object.assign({}, x, r.booking) : x);
+    CACHE.clear();
+    render(); refreshBookings();
+  } catch (e) { haptic.err(); toast(e.message, true); btn.disabled = false; btn.textContent = 'Qayta urinish'; }
+}
+
+/* --- baholash --- */
+let stars = 5;
+function openReview(id) {
+  const b = S.bookings.find(x => String(x.id) === String(id));
+  if (!b) return;
+  stars = 5;
+  openSheet(`
+    <h3 style="text-align:center">Dars qanday o‘tdi?</h3>
+    <p class="lead" style="text-align:center">${esc(bkIns(b))} · ${esc(whenText(b.start_at))}</p>
+    <div class="stars" id="stars">${[1, 2, 3, 4, 5].map(n => `<button data-act="star" data-v="${n}" aria-label="${n} yulduz" class="on">${ico('star', 40, 1.2)}</button>`).join('')}</div>
+    <label class="field"><span>Fikringiz (ixtiyoriy)</span><textarea class="input" id="reviewIn" maxlength="1000" placeholder="Instruktor haqida bir-ikki so‘z…"></textarea></label>
+    <div class="btn-row"><button class="btn btn-primary" data-act="doreview" data-v="${esc(b.id)}">Yuborish</button></div>`);
+}
+async function doReview(id, btn) {
+  btn.disabled = true; btn.innerHTML = '<span class="spin"></span>';
+  try {
+    await api.review({ booking_id: id, rating: stars, comment: (($('#reviewIn') || {}).value || '').trim() || undefined });
+    haptic.ok(); closeSheet(); toast('Rahmat! Bahoyingiz yuborildi');
+    S.bookings = S.bookings.map(x => String(x.id) === String(id) ? Object.assign({}, x, { reviewed: true }) : x);
+    render();
+  } catch (e) { haptic.err(); toast(e.message, true); btn.disabled = false; btn.textContent = 'Qayta urinish'; }
+}
+
+/* =========================================================================
+   YORDAM — admin bilan yozishma
+   ========================================================================= */
+let chatTimer = 0;
+const QUICK = ['Narxlar haqida savolim bor', 'Bronimni boshqa vaqtga o‘tkazmoqchiman', 'Manzilni qanday topaman?', 'Guvohnoma olish uchun nima kerak?'];
+function renderSupport() {
+  $('#main').innerHTML = `
+    <div class="chat-h">${logoImg()}<div><b>TASH INDEX AVTODROM</b><small>Yordam markazi · admin tez javob beradi</small></div></div>
+    <div class="msgs" id="msgs">${chatHtml()}</div>`;
+  scrollChat();
+}
+function chatHtml() {
+  if (!S.msgsLoaded) return `<div class="sk" style="min-height:44px;width:60%"></div><div class="sk" style="min-height:44px;width:45%;align-self:flex-end"></div>`;
+  if (!S.msgs.length) return `<div class="card" style="text-align:center;padding:20px 16px">
+      <b>Savolingiz bormi?</b><p class="muted" style="margin:6px 0 12px;font-size:14px">Yozing — admin shu yerda javob beradi va Telegram’ga xabar keladi.</p>
+      <div class="quick" style="justify-content:center">${QUICK.map(q => `<button data-act="quick" data-v="${esc(q)}">${esc(q)}</button>`).join('')}</div></div>`;
+  let last = '', out = '';
+  for (const m of S.msgs) {
+    const d = m.created_at ? ymd(new Date(m.created_at)) : '';
+    if (d && d !== last) { out += `<div class="day-sep">${esc(dayName(d, false))}</div>`; last = d; }
+    const mine = m.sender === 'customer';
+    out += `<div class="msg ${mine ? 'me' : 'them'} ${m._sending ? 'sending' : ''}">${esc(m.body)}<time>${m.created_at ? esc(hhmm(new Date(m.created_at))) : '…'}</time></div>`;
+  }
+  return out;
+}
+function scrollChat() { requestAnimationFrame(() => window.scrollTo(0, document.body.scrollHeight)); }
+async function openChat() {
+  await loadChat();
+  stopChatPoll();
+  chatTimer = setInterval(() => { if (!document.hidden && S.view === 'support') loadChat(true); }, 12000);
+}
+function stopChatPoll() { clearInterval(chatTimer); chatTimer = 0; }
+async function loadChat(silent) {
+  try {
+    const r = await api.support();
+    const msgs = r.messages || [];
+    const changed = !S.msgsLoaded || msgs.length !== S.msgs.filter(m => !m._sending).length;
+    S.msgs = msgs; S.msgsLoaded = true;
+    if (S.view === 'support' && changed) { $('#msgs').innerHTML = chatHtml(); scrollChat(); }
+  } catch (e) {
+    S.msgsLoaded = true;
+    if (!silent && S.view === 'support') $('#msgs').innerHTML = `<div class="note err">${esc(e.message)}</div>`;
+  }
+}
+async function sendChat(text) {
+  text = String(text || '').trim();
+  if (!text) return;
+  const tmp = { body: text, sender: 'customer', created_at: new Date().toISOString(), _sending: true };
+  S.msgs.push(tmp); S.msgsLoaded = true;
+  $('#msgs').innerHTML = chatHtml(); scrollChat();
+  const inp = $('#chatIn'); if (inp) { inp.value = ''; autoGrow(inp); $('#sendBtn').disabled = true; }
+  try {
+    const r = await api.send(text);
+    Object.assign(tmp, r.message || {}, { _sending: false });
+    haptic.tap();
+  } catch (e) {
+    S.msgs = S.msgs.filter(m => m !== tmp);
+    toast(e.message, true);
+    if (inp && !inp.value) inp.value = text;
+  }
+  if (S.view === 'support') { $('#msgs').innerHTML = chatHtml(); scrollChat(); }
+}
+function autoGrow(el) { el.style.height = 'auto'; el.style.height = Math.min(120, el.scrollHeight) + 'px'; }
+
+/* =========================================================================
+   PROFIL
+   ========================================================================= */
+function renderProfile() {
+  const u = S.me || {}, tu = (tg && tg.initDataUnsafe && tg.initDataUnsafe.user) || {};
+  const photo = safeUrl(tu.photo_url);
+  const done = S.bookings.filter(b => b.status === 'completed');
+  const hours = Math.round(done.reduce((s, b) => s + bkMin(b), 0) / 6) / 10;
+  $('#main').innerHTML = `
+    <div class="page-h"><h1>Profil</h1></div>
+    <div class="card pcard">
+      ${photo ? `<span class="ava" style="background-image:url('${esc(photo)}')"></span>` : `<span class="ava">${esc(initials(u.full_name || tu.first_name))}</span>`}
+      <div style="flex:1;min-width:0"><b>${esc(u.full_name || tu.first_name || 'Foydalanuvchi')}</b>
+        <small>${esc(u.phone ? fmtPhone(u.phone) : 'Telefon kiritilmagan')}</small>${u.username || tu.username ? `<small>@${esc(u.username || tu.username)}</small>` : ''}</div>
+      <button class="icon-btn" data-act="editme" aria-label="Tahrirlash" style="box-shadow:none;background:var(--card-2)">${ico('edit', 19)}</button>
+    </div>
+    <div class="stats"><div><b>${S.bookings.length}</b><span>Jami bron</span></div><div><b>${done.length}</b><span>O‘tgan dars</span></div><div><b>${hours}</b><span>Soat haydash</span></div></div>
+    <div class="list">
+      <button class="row" data-act="notes"><span class="ic">${ico('bell', 20)}</span><span class="tx"><b>Bildirishnomalar</b><small>Bron holati haqidagi xabarlar</small></span><span class="chev">${ico('chev', 18)}</span></button>
+      <button class="row" data-act="go" data-v="bookings"><span class="ic">${ico('list', 20)}</span><span class="tx"><b>Bronlarim</b><small>Kelgusi va o‘tgan darslar</small></span><span class="chev">${ico('chev', 18)}</span></button>
+      <button class="row" data-act="location"><span class="ic">${ico('pin', 20)}</span><span class="tx"><b>Avtodrom manzili</b><small>Google, Yandex, 2GIS</small></span><span class="chev">${ico('chev', 18)}</span></button>
+      <button class="row" data-act="go" data-v="support"><span class="ic">${ico('chat', 20)}</span><span class="tx"><b>Yordam</b><small>Admin bilan yozishma</small></span><span class="chev">${ico('chev', 18)}</span></button>
+    </div>
+    <p class="muted" style="text-align:center;font-size:12px;margin-top:20px">TASH INDEX AVTODROM · Mini App</p>`;
+}
+function openEditMe() {
+  const u = S.me || {};
+  openSheet(`
+    <h3>Ma’lumotlarim</h3><p class="lead">Admin siz bilan shu ma’lumotlar orqali bog‘lanadi.</p>
+    <label class="field"><span>Ism</span><input class="input" id="fFirst" autocomplete="given-name" value="${esc(u.first_name || '')}"></label>
+    <label class="field"><span>Familiya</span><input class="input" id="fLast" autocomplete="family-name" value="${esc(u.last_name || '')}"></label>
+    <label class="field"><span>Telefon</span><input class="input" id="fPhone" type="tel" inputmode="tel" autocomplete="tel" placeholder="+998 90 123 45 67" value="${esc(u.phone || '')}"></label>
+    <div class="btn-row"><button class="btn btn-primary" data-act="saveme">Saqlash</button></div>`);
+}
+async function saveMe(btn) {
+  const first = $('#fFirst').value.trim(), last = $('#fLast').value.trim(), raw = $('#fPhone').value.trim();
+  if (!first) { haptic.err(); toast('Ismingizni kiriting', true); return $('#fFirst').focus(); }
+  const phone = raw ? normPhone(raw) : '';
+  if (raw && !phone) { haptic.err(); toast('Telefon formati: +998 90 123 45 67', true); return $('#fPhone').focus(); }
+  btn.disabled = true; btn.innerHTML = '<span class="spin"></span>';
+  try {
+    const r = await api.saveMe({ first_name: first, last_name: last, phone });
+    S.me = r.profile || r.user || S.me;
+    B.phone = S.me.phone || '';
+    haptic.ok(); closeSheet(); toast('Saqlandi'); render();
+  } catch (e) { haptic.err(); toast(e.message, true); btn.disabled = false; btn.textContent = 'Saqlash'; }
+}
+
+/* =========================================================================
+   BILDIRISHNOMALAR, MANZIL, INSTRUKTOR
+   ========================================================================= */
+async function loadNotes() {
+  try { const r = await api.notes(); S.notes = r.notifications || []; updateNoteDot(); } catch (e) {}
+}
+const lastSeen = () => Number(store.get('seen') || 0);
+function updateNoteDot() {
+  const dot = $('#noteDot');
+  if (dot) dot.classList.toggle('hidden', !S.notes.some(n => Date.parse(n.created_at || 0) > lastSeen()));
+}
+async function openNotes() {
+  const seen = lastSeen();
+  const draw = () => openSheet(`<h3>Bildirishnomalar</h3>
+    ${S.notes.length ? `<div class="notes">${S.notes.slice(0, 50).map(n => `<div class="n ${Date.parse(n.created_at || 0) > seen ? 'new' : ''}">
+      <b>${esc(n.title || 'TASH INDEX AVTODROM')}</b>${n.body || n.message ? `<p>${esc(n.body || n.message)}</p>` : ''}<time>${esc(whenText(n.created_at))}</time></div>`).join('')}</div>`
+      : `<div class="empty"><div class="ill">${ico('bell', 28)}</div><b>Hozircha xabar yo‘q</b><p>Bron holati o‘zgarsa shu yerda ko‘rinadi.</p></div>`}`);
+  draw();
+  await loadNotes();
+  if (sheetOpen()) draw();
+  store.set('seen', String(Date.now()));
+  updateNoteDot();
+}
+function openLocation() {
+  const l = S.settings.location || {};
+  const lat = Number(l.lat), lng = Number(l.lng);
+  const q = lat && lng ? `${lat},${lng}` : (l.address || S.settings.address || l.name || 'TASH INDEX AVTODROM Toshkent');
+  const links = [
+    ['Google Maps', l.google || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}`],
+    ['Yandex Maps', l.yandex || (lat && lng ? `https://yandex.uz/maps/?pt=${lng},${lat}&z=16&l=map` : `https://yandex.uz/maps/?text=${encodeURIComponent(q)}`)],
+    ['2GIS', l['2gis'] || `https://2gis.uz/tashkent/search/${encodeURIComponent(q)}`],
+  ];
+  openSheet(`<h3>${esc(l.name || 'TASH INDEX AVTODROM')}</h3>
+    <p class="lead">${esc(l.address || S.settings.address || 'Manzil admin tomonidan kiritiladi.')}</p>
+    <div class="list" style="box-shadow:none;background:var(--card-2)">${links.map(([t, u]) => `<button class="row" data-act="link" data-v="${esc(u)}"><span class="ic">${ico('pin', 20)}</span><span class="tx"><b>${t}</b><small>Xaritada ochish</small></span><span class="chev">${ico('chev', 18)}</span></button>`).join('')}</div>`);
+}
+function openInstructor(id) {
+  const i = S.instructors.find(x => String(x.id) === String(id));
+  if (!i) return;
+  const car = [i.vehicle_model, i.vehicle_plate].filter(Boolean).join(' · ');
+  openSheet(`<div class="ins-hero">${avatar(i)}<h3>${esc(insName(i))}</h3>${catTags(i)}</div>
+    <div class="stats">
+      <div><b>${Number(i.total_reviews) ? '★ ' + Number(i.rating || 0).toFixed(1) : '—'}</b><span>${Number(i.total_reviews) || 0} baho</span></div>
+      <div><b>${Number(i.experience_years) || 0}</b><span>yil tajriba</span></div>
+      <div><b>${insCats(i).join(', ')}</b><span>toifa</span></div></div>
+    ${car ? `<div class="kv" style="margin-bottom:8px"><span>${ico('car', 18)}</span><b>${esc(car)}</b></div>` : ''}
+    ${i.bio ? `<p class="bio">${esc(i.bio)}</p>` : ''}
+    <button class="btn btn-primary" data-act="bookwith" data-v="${esc(i.id)}">${ico('book', 19)} Shu instruktor bilan bron</button>`);
+}
+
+/* =========================================================================
+   PASTDAN CHIQUVCHI OYNA
+   ========================================================================= */
+const sheetOpen = () => $('#sheet').classList.contains('show');
+function openSheet(html) {
+  hideToast();   // eski xabar oynani to'smasin
+  const s = $('#sheet');
+  s.innerHTML = `<div class="grab"></div><button class="x" data-act="closesheet" aria-label="Yopish">${ico('x', 18)}</button>${html}`;
+  s.scrollTop = 0;
+  s.classList.add('show'); $('#sheetBg').classList.add('show');
+  document.body.style.overflow = 'hidden';
+  syncBack();
+}
+function closeSheet() {
+  $('#sheet').classList.remove('show'); $('#sheetBg').classList.remove('show');
+  document.body.style.overflow = '';
+  syncBack();
+}
+
+/* =========================================================================
+   HODISALAR — bitta tinglovchi
+   ========================================================================= */
+document.addEventListener('click', e => {
+  const el = e.target.closest('[data-act]');
+  if (!el) { if (e.target.id === 'sheetBg') closeSheet(); return; }
+  const v = el.dataset.v, act = el.dataset.act;
+  switch (act) {
+    case 'go': if (sheetOpen()) closeSheet(); haptic.tap(); go(v); break;
+    case 'reload': location.reload(); break;
+    case 'quickcat': haptic.tap(); startBook({ key: v }); go('book'); break;
+    /* --- bron bosqichlari: tanlangach keyingisi o'zi ochiladi --- */
+    case 'wzcat':
+      if (el.disabled) break;
+      if (B.key !== v) { B.key = v; B.hours = 0; B.time = ''; if (!B.insLocked) { B.ins = ''; B.auto = false; } }
+      haptic.tap(); markOn(el); advance(); break;
+    case 'wzdur':
+      if (B.hours !== Number(v)) { B.hours = Number(v); B.time = ''; if (B.mode === 'time') { B.ins = ''; B.auto = false; } }
+      haptic.tap(); markOn(el); advance(); break;
+    case 'wzday': if (B.date !== v) { B.date = v; B.time = ''; haptic.tap(); render(); ensureBusy(); } break;
+    case 'wztime':
+      if (el.disabled) break;
+      B.time = v; if (B.mode === 'time') { B.ins = ''; B.auto = false; }
+      haptic.tap(); markOn(el); advance(); break;
+    case 'wzins':
+      if (v === 'auto') { const best = freeFor(B.time).sort(byRating)[0]; if (!best) break; B.ins = String(best.id); B.auto = true; }
+      else { if (B.mode === 'ins' && B.ins !== v) B.time = ''; B.ins = v; B.auto = false; }
+      haptic.tap(); markOn(el.closest('.opt') || el); advance(); break;
+    case 'wzmode':
+      haptic.tap(); B.mode = v; B.ins = ''; B.auto = false; B.insLocked = false; B.time = '';
+      bookGo(v === 'ins' ? 'ins' : 'time'); break;
+    case 'wzjump': haptic.tap(); bookGo(v, 'b'); break;
+    case 'wzback': haptic.tap(); prevStep(); break;
+    case 'wznew': haptic.tap(); startBook(); render(); window.scrollTo(0, 0); break;
+    case 'retry': ensureBusy(true); break;
+    case 'shownote': B.showNote = true; render(); setTimeout(() => { const n = $('#noteIn'); if (n) n.focus(); }, 30); break;
+    case 'submit': submitBooking(); break;
+    case 'gobookings': closeSheet(); S.bkTab = 'active'; go('bookings'); break;
+    case 'tab': S.bkTab = v; haptic.tap(); render(); break;
+    case 'refresh': haptic.tap(); refreshBookings().then(() => toast('Yangilandi')); break;
+    case 'cancel': openCancel(v); break;
+    case 'reason': { const t = $('#reasonIn'); if (t) t.value = v; document.querySelectorAll('.reasons button').forEach(b => b.classList.toggle('on', b === el)); haptic.tap(); break; }
+    case 'docancel': doCancel(v, el); break;
+    case 'review': openReview(v); break;
+    case 'star': stars = Number(v); document.querySelectorAll('#stars button').forEach((b, n) => b.classList.toggle('on', n < stars)); haptic.tap(); break;
+    case 'doreview': doReview(v, el); break;
+    case 'copy': copyText(v); break;
+    case 'notes': openNotes(); break;
+    case 'location': openLocation(); break;
+    case 'link': openLink(v); break;
+    case 'ins': openInstructor(v); break;
+    case 'bookwith': closeSheet(); startBook({ ins: v }); go('book'); break;
+    case 'editme': openEditMe(); break;
+    case 'saveme': saveMe(el); break;
+    case 'send': { const t = $('#chatIn'); if (t) sendChat(t.value); break; }
+    case 'quick': sendChat(v); break;
+    case 'closesheet': closeSheet(); break;
+  }
+});
+
+/* Tanlangan tugmani darhol belgilaymiz — keyingi bosqich ochilguncha ko'rinib turadi */
+function markOn(el) {
+  const box = el.parentElement;
+  if (box) box.querySelectorAll('.on').forEach(x => x.classList.remove('on'));
+  el.classList.add('on');
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && sheetOpen()) closeSheet();
+  if (e.target && e.target.id === 'chatIn' && e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); sendChat(e.target.value); }
+  if ((e.key === 'Enter' || e.key === ' ') && e.target && e.target.matches('[role="button"][data-act]')) { e.preventDefault(); e.target.click(); }
+});
+document.addEventListener('input', e => {
+  const t = e.target;
+  if (t.id === 'noteIn') B.note = t.value;
+  if (t.id === 'phoneIn') B.phone = t.value;
+  if (t.id === 'chatIn') { autoGrow(t); $('#sendBtn').disabled = !t.value.trim(); }
+});
+/* Ilovaga qaytganda — bronlar holatini yangilaymiz */
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden || !S.ready) return;
+  refreshBookings(); loadNotes();
+  if (S.view === 'book' && B.step === 'time') ensureBusy(true);
+});
+
+boot().catch(e => renderFatal('auth', e && e.message));
+})();
+</script>
+</body>
+</html>
