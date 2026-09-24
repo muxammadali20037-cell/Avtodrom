@@ -7,6 +7,7 @@ import {
   authenticateStaff, assertRole, hashPassword,
   type StaffIdentity, type StaffRole,
 } from './staff-auth.js';
+import { bookingSearchFilter, tashkentDayStart } from './booking-search.js';
 
 const COOKIE = 'avtodrom_admin_session', TTL = 60 * 60 * 12;
 const q = (v: string) => encodeURIComponent(v);
@@ -962,12 +963,31 @@ export async function registerAdminPasswordRoutes(app: FastifyInstance) {
   app.get('/api/admin/bookings', async (req: any, reply: any) => {
     try {
       await guardAdmin(req);
-      const st = String(req.query?.status || ''), filter = st ? `&status=eq.${q(st)}` : '';
+      const st = String(req.query?.status || '');
       const { page, perPage } = pageParams(req);
+
+      /* Filtrlar. Ilgari faqat `status` o'qilardi: sahifadagi qidiruv
+         (q), sana oralig'i (from/to) va instruktor jimgina e'tiborsiz
+         qolardi — qidiruv hech narsa topmasdi.
+         q — ism, familiya, telefon (oxirgi raqamlari ham), bron kodi. */
+      const f: string[] = [];
+      if (st) f.push(`status=eq.${q(st)}`);
+      const search = await bookingSearchFilter(req.query?.q);
+      if (search === null) {
+        return { ok: true, warnings: [], total: 0, page, per_page: perPage, has_more: false, bookings: [] };
+      }
+      if (search) f.push(search);
+      const from = tashkentDayStart(req.query?.from), to = tashkentDayStart(req.query?.to);
+      if (from) f.push(`booking_date=gte.${q(from.toISOString())}`);
+      if (to) f.push(`booking_date=lt.${q(new Date(to.getTime() + 864e5).toISOString())}`);
+      const insId = String(req.query?.instructor_id || '').trim();
+      if (insId) f.push(`instructor_id=eq.${q(insId)}`);
+      const dir = String(req.query?.order || '') === 'asc' ? 'asc' : 'desc';
+      const filter = f.map((x) => '&' + x).join('');
 
       /* Bronlar SAHIFALANADI. Ilgari butun jadval so'ralardi va PostgREST
          1000 qatorda jimgina kesardi — hisobotlar noto'g'ri chiqardi. */
-      const bookingsR = await safePaged<any>('bookings', `?select=*&order=booking_date.desc${filter}`, page, perPage);
+      const bookingsR = await safePaged<any>('bookings', `?select=*&order=booking_date.${dir}${filter}`, page, perPage);
 
       /* Yordamchi jadvallar faqat SHU SAHIFADAGI ID'lar bo'yicha olinadi.
          Ilgari har safar butun users/courses jadvali yuklanardi. */
@@ -1028,7 +1048,9 @@ export async function registerAdminPasswordRoutes(app: FastifyInstance) {
             ...b,
             start_at: b.start_at || b.booking_date,
             end_at: b.end_at || ((b.booking_date && c?.duration_minutes) ? new Date(new Date(b.booking_date).getTime() + Number(c.duration_minutes) * 60000).toISOString() : null),
-            price: pm.get(String(b.id))?.amount ?? c?.price ?? 0,
+            /* Narx: to'lov bo'lsa — to'langan summa, yo'q bo'lsa bron yaratilganda
+               saqlangan summa (2 soatlik bron kurs narxidan qimmat), eng oxiri kurs narxi. */
+            price: pm.get(String(b.id))?.amount ?? (Number(b.price) > 0 ? Number(b.price) : (c?.price ?? 0)),
             payment: pm.get(String(b.id)) || null,
             customer: um.get(String(b.customer_id)) || null,
             instructor: i ? { ...i, profile: u || null } : null,
