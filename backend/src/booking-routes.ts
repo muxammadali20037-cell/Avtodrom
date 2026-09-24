@@ -282,7 +282,9 @@ export async function registerBookingRoutes(
       const rows = await supabaseRest<any[]>('instructor_profiles', {
         query:
           '?is_verified=eq.true&is_available=eq.true' + catFilter +
-          '&select=id,user_id,bio,experience_years,rating,total_reviews,is_verified,is_available,avatar_url,categories,vehicle_model,vehicle_plate,' +
+          /* `*` — eski photo_url ustuni bo'lmagan bazada ham so'rov yiqilmasin.
+             Mijozga baribir faqat toInstructorCard tanlagan maydonlar ketadi. */
+          '&select=*,' +
           'user:user_id(id,full_name,phone,telegram_id,is_active,is_blocked)' +
           '&order=created_at.desc',
       });
