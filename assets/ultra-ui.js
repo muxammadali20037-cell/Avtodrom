@@ -23,6 +23,7 @@
     refresh:'M20 7v5h-5 M4 17v-5h5 M6 7a7 7 0 0 1 12-1l2 3 M4 15l2 3a7 7 0 0 0 12-1',
     exit:'M9 3H4v18h5 M12 12h9 M17 8l4 4-4 4',
     shield:'M12 3l8 3v6c0 5-8 9-8 9s-8-4-8-9V6z M8 12l3 3 5-6',
+    support:'M21 11.5a8 8 0 0 1-11.7 7.1L4 20l1.3-4.5A8 8 0 1 1 21 11.5z',
   };
   const aliases = {kdash:'reports',klive:'live',cashier:'bookings',control:'users',insacc:'reports',applications:'audit',cancels:'audit',instructors:'users',courses:'bookings',reviews:'audit',media:'dashboard',staff:'users'};
   function icon(name) { return `<svg class="ui-icon" aria-hidden="true" viewBox="0 0 24 24"><path d="${paths[aliases[name] || name] || paths.dashboard}"/></svg>`; }
