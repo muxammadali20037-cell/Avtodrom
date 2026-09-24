@@ -4,6 +4,7 @@ import { loadTariffs, computePrice } from './pricing.js';
 import { q, findUserByTelegram, toProfile } from './identity.js';
 import { fmtWhen, fmtMoney } from './notify.js';
 import { readRegisterToken } from './shift-routes.js';
+import { bookingSearchFilter } from './booking-search.js';
 import type { TelegramWebAppUser } from './telegram.js';
 import {
   isSchoolReceiptCode, normalizeSchoolCode, schoolBridgeReady,
@@ -42,7 +43,7 @@ async function loadMaps(bookings: any[]) {
   const [users, ips, courses, pays] = await Promise.all([
     uids.length ? supabaseRest<any[]>('users', { query: `?id=in.(${uids.map(q).join(',')})&select=id,full_name,phone,telegram_id` }) : [],
     iids.length ? supabaseRest<any[]>('instructor_profiles', { query: `?id=in.(${iids.map(q).join(',')})&select=id,user_id` }) : [],
-    cids.length ? supabaseRest<any[]>('courses', { query: `?id=in.(${cids.map(q).join(',')})&select=id,name,duration_minutes,price` }) : [],
+    cids.length ? supabaseRest<any[]>('courses', { query: `?id=in.(${cids.map(q).join(',')})&select=id,name,duration_minutes,price,category` }) : [],
     bids.length ? supabaseRest<any[]>('payments', { query: `?booking_id=in.(${bids.map(q).join(',')})&select=*` }) : [],
   ]);
   const um = new Map(users.map((u) => [String(u.id), u]));
@@ -380,6 +381,44 @@ export async function registerCashierRoutes(
     }
   });
 
+
+  /* =====================================================================
+     KASSA: BITTA QIDIRUV MAYDONI
+     Kassir «bronli / bronsiz» tanlamaydi — bitta maydonga ism, familiya,
+     telefon oxiri yoki bron kodini yozadi va to'lanmagan bronlar
+     chiqadi. Topilmasa — bronsiz mijoz sifatida davom etadi.
+     Bir hafta oldingidan boshlab (kechikib kelganlar ham topilsin).
+     ===================================================================== */
+  app.get('/api/admin/cashier/find', async (req: any, reply: any) => {
+    try {
+      await requireAdmin(req);
+      const filter = await bookingSearchFilter(req.query?.q);
+      if (!filter) return { ok: true, bookings: [] };
+      const since = new Date(new Date(`${today()}T00:00:00+05:00`).getTime() - 7 * 864e5).toISOString();
+      const rows = await supabaseRest<any[]>('bookings', {
+        query: `?${filter}&booking_date=gte.${q(since)}` +
+               '&status=in.(pending,confirmed,in_progress)' +
+               '&select=*&order=booking_date.asc&limit=40',
+      });
+      const m = await loadMaps(rows);
+      /* Narx: bron yaratilganda saqlangan summa (mijozga aytilgani).
+         Yo'q bo'lsa — kurs narxidan hisoblangani. */
+      const bookings = rows.map((raw) => {
+        const b: any = shape(raw, m);
+        const stored = Number(raw.price);
+        return { ...b, price: Number.isFinite(stored) && stored > 0 ? stored : b.price };
+      })
+        .filter((b: any) => !b.is_paid)
+        .slice(0, 15)
+        .map((b: any) => ({
+          ...b,
+          category: String(b.category || b.course?.category || '').toUpperCase() || null,
+        }));
+      return { ok: true, bookings };
+    } catch (e: any) {
+      return reply.code(e?.statusCode ?? 500).send({ ok: false, error: e?.message || 'Qidiruv ishlamadi' });
+    }
+  });
 
   /* =====================================================================
      BRON KODI BO'YICHA TOPISH
