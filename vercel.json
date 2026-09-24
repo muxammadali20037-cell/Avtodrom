@@ -39,11 +39,11 @@
     },
     {
       "source": "/admin/chat",
-      "destination": "/admin/chat.html"
+      "destination": "/admin/index.html"
     },
     {
       "source": "/admin/chat/",
-      "destination": "/admin/chat.html"
+      "destination": "/admin/index.html"
     },
     {
       "source": "/admin/login",
