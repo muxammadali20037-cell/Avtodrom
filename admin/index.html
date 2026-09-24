@@ -1768,13 +1768,42 @@ async function bookingAction(id,s){
 }
 
 /* ---------- Instruktorlar ---------- */
+/* Instruktor rasmi: yangi avatar_url yoki eski tizimdagi photo_url.
+   Rasm ochilmasa (o'chirilgan fayl) — bosh harflar ko'rinadi. */
+function insPhoto(x){ return x?.avatar_url || x?.photo_url || ''; }
+function insInitials(x){ return String(iname(x)).split(/\s+/).map(w=>w[0]||'').join('').slice(0,2).toUpperCase(); }
+function insAvatarHtml(x, size, radius, font){
+  const box=`width:${size}px;height:${size}px;border-radius:${radius}px;flex:none`;
+  const ini=`<span style="${box};background:var(--soft);color:var(--g);display:grid;place-items:center;font-weight:700;font-size:${font}px">${esc(insInitials(x))}</span>`;
+  const url=insPhoto(x);
+  if(!url)return ini;
+  return `<img src="${esc(url)}" alt="" loading="lazy" style="${box};object-fit:cover;background:var(--soft)" onerror="this.outerHTML=this.dataset.fb" data-fb="${esc(ini)}">`;
+}
+
+/* Rasmni brauzerning o'zida kichraytiramiz (eng uzun tomoni 800px, JPEG).
+   Telefon rasmlari 5–10 MB bo'ladi — ilgari 5 MB dan kattasi rad etilardi,
+   kichigi esa asl hajmda yuklanib, ro'yxat sekin ochilardi. */
+async function shrinkImage(file, max = 800, quality = 0.86){
+  let bmp;
+  try { bmp = await createImageBitmap(file, { imageOrientation: 'from-image' }); }
+  catch (e) {
+    try { bmp = await createImageBitmap(file); }
+    catch (e2) { throw Error('Bu rasmni ochib bo‘lmadi. JPG yoki PNG rasm tanlang.'); }
+  }
+  const k = Math.min(1, max / Math.max(bmp.width, bmp.height));
+  const w = Math.max(1, Math.round(bmp.width * k)), h = Math.max(1, Math.round(bmp.height * k));
+  const cv = document.createElement('canvas'); cv.width = w; cv.height = h;
+  const cx = cv.getContext('2d'); cx.fillStyle = '#fff'; cx.fillRect(0, 0, w, h); cx.drawImage(bmp, 0, 0, w, h);
+  if (bmp.close) bmp.close();
+  return cv.toDataURL('image/jpeg', quality);
+}
+
 function renderInstructors(){
   const q=$('instSearch').value.toLowerCase();
   const a=S.instructors.filter(x=>!q||JSON.stringify(x).toLowerCase().includes(q));
   $('instRows').innerHTML=a.length?a.map(x=>`<tr>
     <td><div style="display:flex;align-items:center;gap:9px">
-      ${x.avatar_url?`<img src="${esc(x.avatar_url)}" alt="" style="width:34px;height:34px;border-radius:10px;object-fit:cover;flex:none">`
-        :`<span style="width:34px;height:34px;border-radius:10px;background:var(--soft);color:var(--g);display:grid;place-items:center;font-weight:700;font-size:12px;flex:none">${esc(String(iname(x)).slice(0,2).toUpperCase())}</span>`}
+      ${insAvatarHtml(x, 34, 10, 12)}
       <b>${esc(iname(x))}</b></div></td>
     <td>${esc(x.profile?.phone||'—')}</td>
     <td>${x.vehicle_plate
@@ -1876,18 +1905,18 @@ function editInstructor(id){
   const x = S.instructors.find(v => String(v.id) === String(id));
   if (!x) return;
   const [first, ...rest] = String(iname(x)).split(' ');
-  let avatarUrl = x.avatar_url || '';
+  let avatarUrl = insPhoto(x);
 
   openModal('Instruktorni tahrirlash', `
     <div style="display:flex;gap:14px;align-items:center;margin-bottom:14px">
       <div id="ieAvatar" style="width:64px;height:64px;border-radius:18px;background:var(--soft);color:var(--g);
         display:grid;place-items:center;font-weight:700;font-size:19px;overflow:hidden;flex:none">
-        ${avatarUrl ? `<img src="${esc(avatarUrl)}" style="width:100%;height:100%;object-fit:cover">` : esc(String(iname(x)).slice(0,2).toUpperCase())}</div>
+        ${avatarUrl ? `<img src="${esc(avatarUrl)}" style="width:100%;height:100%;object-fit:cover" onerror="this.replaceWith(document.createTextNode('${esc(insInitials(x))}'))">` : esc(insInitials(x))}</div>
       <div style="flex:1">
-        <input id="ieFile" type="file" accept="image/jpeg,image/png,image/webp" style="display:none">
+        <input id="ieFile" type="file" accept="image/*" style="display:none">
         <button class="btn small" id="ieUpload">Rasm yuklash</button>
         ${avatarUrl ? '<button class="btn small red" id="ieRemove" style="margin-left:6px">O‘chirish</button>' : ''}
-        <div class="muted" id="ieHint" style="font-size:11.5px;margin-top:6px">JPG, PNG yoki WEBP · 5 MB gacha</div>
+        <div class="muted" id="ieHint" style="font-size:11.5px;margin-top:6px">Istalgan rasm — o‘zi kichraytiriladi va darhol saqlanadi</div>
       </div>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
@@ -1972,23 +2001,44 @@ function editInstructor(id){
   bioCount();
 
   $('ieUpload').onclick = () => $('ieFile').click();
-  if ($('ieRemove')) $('ieRemove').onclick = () => {
-    avatarUrl = '';
-    $('ieAvatar').innerHTML = esc(String(iname(x)).slice(0,2).toUpperCase());
-    $('ieRemove').remove();
+  /* Rasm tanlanishi bilan saqlanadi — «Saqlash»ni unutib oynani
+     yopsa ham rasm yo'qolmaydi. Ilgari yuklash umuman ishlamasdi:
+     media/sign so'rovida «title» yo'q edi va server 400 qaytarardi. */
+  const setPhotoLocal = url => {
+    avatarUrl = url;
+    const it = S.instructors.find(v => String(v.id) === String(id));
+    if (it) { it.avatar_url = url || null; if (!url) it.photo_url = null; }
+    renderInstructors();
   };
+  const bindRemove = () => { if ($('ieRemove')) $('ieRemove').onclick = async () => {
+    $('ieHint').textContent = 'O‘chirilmoqda…';
+    try{
+      await api(`/api/admin/instructors/${encodeURIComponent(id)}`, { method:'PATCH', body: JSON.stringify({ avatar_url: '' }) });
+      setPhotoLocal('');
+      $('ieAvatar').innerHTML = esc(insInitials(x));
+      $('ieRemove').remove();
+      $('ieHint').textContent = 'Rasm o‘chirildi';
+    }catch(e){ $('ieHint').textContent = 'Xato: ' + e.message; }
+  }; };
+  bindRemove();
   $('ieFile').onchange = async () => {
     const f = $('ieFile').files[0]; if (!f) return;
-    if (f.size > 5 * 1024 * 1024) { $('ieHint').textContent = 'Rasm 5 MB dan oshmasin'; return; }
-    $('ieHint').textContent = 'Yuklanmoqda…';
+    $('ieFile').value = '';
+    const btn = $('ieUpload'); btn.disabled = true;
+    $('ieHint').textContent = 'Tayyorlanmoqda…';
     try{
-      const sign = await api('/api/admin/media/sign', { method:'POST', body: JSON.stringify({
-        media_type:'image', slot:'gallery', file_name:f.name, content_type:f.type, size:f.size }) });
-      await putWithProgress(sign.upload_url, f, pc => { $('ieHint').textContent = `Yuklanmoqda… ${pc}%`; });
-      avatarUrl = sign.public_url;
-      $('ieAvatar').innerHTML = `<img src="${esc(avatarUrl)}" style="width:100%;height:100%;object-fit:cover">`;
-      $('ieHint').textContent = 'Rasm tayyor — «Saqlash» ni bosing';
-    }catch(e){ $('ieHint').textContent = 'Xato: ' + e.message; }
+      const dataUrl = await shrinkImage(f);
+      $('ieAvatar').innerHTML = `<img src="${dataUrl}" style="width:100%;height:100%;object-fit:cover;opacity:.55">`;
+      $('ieHint').textContent = 'Yuklanmoqda…';
+      const r = await api(`/api/admin/instructors/${encodeURIComponent(id)}/photo`, { method:'POST', body: JSON.stringify({ photo_data_url: dataUrl }) });
+      setPhotoLocal(r.avatar_url);
+      $('ieAvatar').innerHTML = `<img src="${esc(r.avatar_url)}" style="width:100%;height:100%;object-fit:cover">`;
+      if (!$('ieRemove')) { btn.insertAdjacentHTML('afterend', '<button class="btn small red" id="ieRemove" style="margin-left:6px">O‘chirish</button>'); bindRemove(); }
+      $('ieHint').textContent = 'Rasm saqlandi ✓ — mijozlar ham shu rasmni ko‘radi';
+    }catch(e){
+      $('ieAvatar').innerHTML = avatarUrl ? `<img src="${esc(avatarUrl)}" style="width:100%;height:100%;object-fit:cover">` : esc(insInitials(x));
+      $('ieHint').textContent = 'Xato: ' + e.message;
+    }finally{ btn.disabled = false; }
   };
 
   $('ieCancel').onclick = closeModal;
@@ -2006,7 +2056,7 @@ function editInstructor(id){
         full_name: full, phone: $('iePhone').value.trim(),
         experience_years: Number($('ieExp').value || 0), bio: $('ieBio').value.trim(),
         vehicle_plate: $('iePlate').value.trim(), vehicle_model: $('ieModel').value.trim(),
-        is_verified: $('ieVerified').checked, avatar_url: avatarUrl, categories: cats })});
+        is_verified: $('ieVerified').checked, categories: cats })});   // rasm alohida, darhol saqlanadi
 
       /* Server nimani haqiqatan saqlaganini tekshiramiz. Agar ustun
          bazada bo'lmasa, so'rov muvaffaqiyatli tugab, qiymat esa
