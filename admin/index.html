@@ -770,7 +770,6 @@ pre.json{background:#F7FAFF;border:1px solid var(--line);border-radius:8px;paddi
   
 
   <div class="navgroup" data-grp="admin">BOSHQARUV</div>
-  <span id="supCount" class="hidden">0</span>
   <button class="nav" data-grp="admin" data-p="dashboard">Dashboard</button>
   <button class="nav" data-grp="admin" data-p="live">Jarayonda <span id="liveCount" class="count">0</span></button>
   
@@ -781,6 +780,7 @@ pre.json{background:#F7FAFF;border:1px solid var(--line);border-radius:8px;paddi
   <button class="nav" data-grp="admin" data-p="manual">Qo‘lda bron</button>
   <button class="nav" data-grp="admin" data-p="bookings">Bronlar <span id="bookCount" class="count">0</span></button>
   <button class="nav" data-grp="admin" data-p="cancels">Bekor so‘rovlari <span id="cxCount" class="count">0</span></button>
+  <button class="nav" data-grp="admin" data-p="support">Mijozlar chati <span id="supCount" class="count">0</span></button>
   <button class="nav" data-grp="admin" data-p="instructors">Instruktorlar</button>
   <button class="nav" data-grp="admin" data-p="users">Foydalanuvchilar</button>
   <button class="nav" data-grp="admin" data-p="courses">Mashg‘ulotlar</button>
@@ -2479,6 +2479,7 @@ async function loadAll(show){
        bekorlar bu yerga kirmaydi. */
     $('bookCount').textContent=''; // A page-sized count is not a global count.
     $('revCount').textContent=S.reviews.filter(r=>r.status==='pending').length;
+    loadSupport();   // Mini App «Yordam» xabarlari soni menyuda ko‘rinsin
     renderApplications();renderBookings();renderInstructors();
     renderUsers();renderCourses();renderPayments();renderReviews();fillInst();renderReport();loadSettings();
     $('lastSync').textContent='Yangilandi: '+new Date().toLocaleTimeString('uz-UZ',{timeZone:'Asia/Tashkent'});
