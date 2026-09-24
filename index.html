@@ -363,6 +363,222 @@ textarea.input{min-height:88px;resize:none;line-height:1.4}
 .fatal .logo.big{width:108px;height:108px;margin:0 auto 18px;padding:3px}
 .fatal h2{margin:0 0 6px;font-size:21px}
 .fatal p{color:var(--hint);margin:0 auto 18px;max-width:300px}
+
+/* =========================================================================
+   v3: kirish, katalog, «Avtodrom haqida», media ko'ruvchi, animatsiyalar
+   ========================================================================= */
+/* --- ochilish (splash) --- */
+.splash{min-height:86vh;display:grid;place-items:center;text-align:center}
+.splash .logo{width:112px;height:112px;margin:0 auto 16px;padding:3px;animation:breathe 1.6s ease-in-out infinite}
+.splash b{display:block;font-size:18px;letter-spacing:.4px}
+.splash small{color:var(--hint)}
+@keyframes breathe{0%,100%{transform:scale(1);box-shadow:0 0 0 0 rgba(43,47,143,.35)}50%{transform:scale(1.04);box-shadow:0 0 0 16px rgba(43,47,143,0)}}
+
+/* --- kirish: telefon va ism --- */
+body.onb-mode .nav,body.onb-mode #dock{display:none}
+body.onb-mode .wrap{padding-bottom:calc(120px + var(--sb))}
+.onb{min-height:calc(100vh - 40px);display:flex;flex-direction:column;padding-top:10px}
+.onb-logo{position:relative;width:96px;height:96px;margin:14px auto 18px}
+.onb-logo .logo{width:96px;height:96px;padding:3px;position:relative;z-index:1}
+.onb-logo::before,.onb-logo::after{content:"";position:absolute;inset:-10px;border-radius:50%;border:2px solid var(--accent);opacity:.0;animation:ring 2.4s ease-out infinite}
+.onb-logo::after{animation-delay:1.2s}
+@keyframes ring{0%{transform:scale(.85);opacity:.45}100%{transform:scale(1.35);opacity:0}}
+.onb-dots{display:flex;gap:6px;justify-content:center;margin-bottom:18px}
+.onb-dots i{width:8px;height:8px;border-radius:4px;background:var(--line);transition:width .3s,background .3s}
+.onb-dots i.on{width:26px;background:var(--accent)}
+.onb h1{font-size:30px;line-height:1.1;letter-spacing:-.8px;margin:0 0 8px;text-align:center}
+.onb .lead{color:var(--hint);text-align:center;margin:0 auto 26px;max-width:320px;font-size:15.5px}
+.phone-box{display:flex;align-items:center;gap:10px;background:var(--card);border-radius:20px;padding:6px 8px 6px 18px;
+  box-shadow:inset 0 0 0 2px var(--line),var(--shadow);transition:box-shadow .2s}
+.phone-box:focus-within{box-shadow:inset 0 0 0 2.5px var(--accent),0 8px 24px rgba(43,47,143,.14)}
+.phone-box span{font-size:24px;font-weight:800;color:var(--hint);font-variant-numeric:tabular-nums}
+.phone-box input{flex:1;min-width:0;border:0;background:none;outline:none;font-size:26px;font-weight:800;letter-spacing:.5px;
+  padding:14px 0;font-variant-numeric:tabular-nums}
+.phone-box input::placeholder{color:var(--hint);opacity:.45}
+.big-in{width:100%;border:0;outline:none;background:var(--card);border-radius:20px;padding:18px 18px;font-size:22px;font-weight:700;
+  box-shadow:inset 0 0 0 2px var(--line),var(--shadow);transition:box-shadow .2s}
+.big-in:focus{box-shadow:inset 0 0 0 2.5px var(--accent),0 8px 24px rgba(43,47,143,.14)}
+.big-in + .big-in{margin-top:12px}
+.or{display:flex;align-items:center;gap:12px;color:var(--hint);font-size:13px;margin:18px 4px}
+.or::before,.or::after{content:"";flex:1;height:1px;background:var(--line)}
+.btn-tg{background:var(--card);box-shadow:inset 0 0 0 2px var(--line);color:var(--text);min-height:58px;font-size:16px}
+.onb-err{margin-top:12px}
+.onb-foot{position:fixed;left:0;right:0;bottom:0;z-index:40;padding:12px 16px calc(14px + var(--sb));background:linear-gradient(to top,var(--bg) 70%,transparent)}
+.onb-foot .btn{max-width:528px;margin:0 auto;min-height:58px;font-size:17px;border-radius:18px}
+.hello{position:fixed;inset:0;z-index:150;display:grid;place-items:center;text-align:center;padding:24px;background:var(--hero);color:#fff;
+  animation:helloIn .35s ease both}
+.hello .logo{width:120px;height:120px;margin:0 auto 20px;padding:3px;animation:pop .6s cubic-bezier(.2,1.5,.4,1) both}
+.hello h2{font-size:30px;margin:0 0 6px;letter-spacing:-.6px;animation:up .5s .15s both}
+.hello p{margin:0;opacity:.85;animation:up .5s .25s both}
+.hello.out{animation:helloOut .35s ease forwards}
+@keyframes helloIn{from{opacity:0}to{opacity:1}}
+@keyframes helloOut{to{opacity:0;visibility:hidden}}
+@keyframes up{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+
+/* --- bosh sahifa --- */
+.top .who.brand h1{white-space:normal;font-size:16px;line-height:1.12;letter-spacing:.2px;font-weight:800;color:var(--accent)}
+.top .me{width:44px;height:44px;border-radius:50%;overflow:hidden;box-shadow:var(--shadow);background:var(--accent-soft) center/cover;
+  color:var(--accent);display:grid;place-items:center;font-weight:800;font-size:14px}
+.welcome{position:relative;overflow:hidden;border-radius:26px;min-height:216px;color:#fff;background:var(--hero);isolation:isolate}
+.welcome-bg{position:absolute;inset:0;background:center/cover no-repeat;z-index:-2;animation:kb 20s ease-in-out infinite alternate}
+@keyframes kb{from{transform:scale(1.04)}to{transform:scale(1.18) translate(-2%,-3%)}}
+.welcome-shade{position:absolute;inset:0;z-index:-1;background:linear-gradient(180deg,rgba(10,12,40,.15) 0%,rgba(10,12,40,.55) 55%,rgba(10,12,40,.88) 100%)}
+.welcome.noimg .welcome-shade{background:radial-gradient(circle at 85% 10%,rgba(255,255,255,.18),transparent 55%)}
+.road3d{position:absolute;right:-30px;bottom:-40px;width:210px;height:260px;z-index:-1;transform:perspective(260px) rotateX(58deg);transform-origin:bottom;
+  background:linear-gradient(90deg,transparent 0 12%,rgba(255,255,255,.10) 12% 88%,transparent 88%);border-radius:8px;opacity:.9}
+.road3d::before{content:"";position:absolute;left:50%;top:0;bottom:0;width:8px;margin-left:-4px;
+  background:repeating-linear-gradient(to bottom,rgba(255,255,255,.75) 0 26px,transparent 26px 52px);animation:dash .9s linear infinite}
+.road3d::after{content:"";position:absolute;inset:0 12%;border-left:3px solid rgba(255,255,255,.35);border-right:3px solid rgba(255,255,255,.35)}
+@keyframes dash{to{background-position:0 52px}}
+.welcome-in{position:relative;padding:22px 20px 20px;display:flex;flex-direction:column;justify-content:flex-end;min-height:216px}
+.welcome-in small{font-size:12px;font-weight:800;letter-spacing:.8px;text-transform:uppercase;opacity:.85}
+.welcome-in h2{margin:4px 0 4px;font-size:30px;line-height:1.08;letter-spacing:-.8px}
+.welcome-in p{margin:0;font-size:15px;opacity:.9}
+.wave{display:inline-block;transform-origin:70% 70%;animation:wave 2.2s ease-in-out 1s 2}
+@keyframes wave{0%,60%,100%{transform:rotate(0)}10%,30%{transform:rotate(16deg)}20%,40%{transform:rotate(-8deg)}}
+
+.ask{font-size:21px;font-weight:800;letter-spacing:-.4px;margin:22px 2px 12px}
+.choices{display:grid;gap:12px}
+.choice{position:relative;overflow:hidden;display:flex;align-items:center;gap:16px;width:100%;min-height:112px;padding:18px;border-radius:24px;
+  text-align:left;background:var(--card);box-shadow:var(--shadow);isolation:isolate;transition:transform .12s}
+.choice:active{transform:scale(.98)}
+.choice .ci{width:62px;height:62px;border-radius:19px;display:grid;place-items:center;flex:none;background:var(--accent-soft);color:var(--accent)}
+.choice b{display:block;font-size:22px;letter-spacing:-.5px;line-height:1.15}
+.choice small{display:block;font-size:14px;margin-top:4px;color:var(--hint)}
+.choice .go{margin-left:auto;width:40px;height:40px;border-radius:50%;display:grid;place-items:center;flex:none;background:var(--accent-soft);color:var(--accent)}
+.choice.main{background:var(--hero);color:#fff;box-shadow:0 14px 34px rgba(35,40,131,.35)}
+.choice.main .ci{background:rgba(255,255,255,.16);color:#fff}
+.choice.main small{color:rgba(255,255,255,.82)}
+.choice.main .go{background:#fff;color:#232883;animation:nudge 1.8s ease-in-out infinite}
+.choice.main::after{content:"";position:absolute;top:0;left:-60%;width:40%;height:100%;z-index:-1;
+  background:linear-gradient(100deg,transparent,rgba(255,255,255,.18),transparent);animation:shine 3.2s ease-in-out infinite}
+@keyframes shine{0%{left:-60%}55%,100%{left:130%}}
+@keyframes nudge{0%,100%{transform:translateX(0)}50%{transform:translateX(5px)}}
+.choice.info{color:#fff;background:#1b1f55 center/cover no-repeat}
+.choice.info::before{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(90deg,rgba(10,12,40,.92),rgba(10,12,40,.55))}
+.choice.info .ci{background:rgba(255,255,255,.16);color:#fff}
+.choice.info small{color:rgba(255,255,255,.82)}
+.choice.info .go{background:rgba(255,255,255,.18);color:#fff}
+
+.tiles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.tile{display:flex;flex-direction:column;align-items:center;gap:8px;padding:16px 6px 14px;border-radius:20px;background:var(--card);box-shadow:var(--shadow);
+  text-align:center;font-size:13.5px;font-weight:700;line-height:1.2;transition:transform .12s;position:relative}
+.tile:active{transform:scale(.95)}
+.tile .ti{width:50px;height:50px;border-radius:16px;display:grid;place-items:center;color:#fff}
+.tile .n{position:absolute;top:8px;right:10px;min-width:20px;height:20px;padding:0 6px;border-radius:10px;background:var(--danger);color:#fff;font-size:11px;display:grid;place-items:center}
+.t1{background:linear-gradient(135deg,#2b2f8f,#4a50c8)}.t2{background:linear-gradient(135deg,#0f7a8a,#1fb3a6)}
+.t3{background:linear-gradient(135deg,#c2410c,#f59e0b)}.t4{background:linear-gradient(135deg,#7c3aed,#c084fc)}
+.t5{background:linear-gradient(135deg,#0e7a4f,#34c27b)}.t6{background:linear-gradient(135deg,#be123c,#fb7185)}
+.t7{background:linear-gradient(135deg,#1d4ed8,#60a5fa)}.t8{background:linear-gradient(135deg,#334155,#64748b)}
+.t9{background:linear-gradient(135deg,#a16207,#eab308)}
+
+/* --- chiqish animatsiyasi (ko'ringanda) --- */
+.rv{opacity:0;transform:translateY(16px);transition:opacity .5s ease,transform .5s cubic-bezier(.2,.8,.2,1);transition-delay:var(--d,0s)}
+.rv.in{opacity:1;transform:none}
+
+/* --- «Avtodrom haqida» --- */
+.cover{position:relative;margin:0 -16px;height:300px;overflow:hidden;background:var(--hero);color:#fff}
+.cover-track{display:flex;height:100%;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none}
+.cover-track::-webkit-scrollbar{display:none}
+.slide{flex:0 0 100%;height:100%;scroll-snap-align:start;position:relative;background:center/cover no-repeat #141848}
+.slide video{width:100%;height:100%;object-fit:cover;display:block}
+.slide .play{position:absolute;left:50%;top:42%;transform:translate(-50%,-50%);width:66px;height:66px;border-radius:50%;background:rgba(255,255,255,.92);color:#232883;display:grid;place-items:center;box-shadow:0 8px 24px rgba(0,0,0,.3)}
+.cover-shade{position:absolute;inset:0;pointer-events:none;background:linear-gradient(180deg,rgba(10,12,40,.35) 0%,transparent 30%,transparent 50%,rgba(10,12,40,.9) 100%)}
+.cover-back{position:absolute;left:14px;top:12px;width:42px;height:42px;border-radius:13px;background:rgba(10,12,40,.45);backdrop-filter:blur(8px);color:#fff;display:grid;place-items:center}
+.cover-cap{position:absolute;left:16px;right:16px;bottom:18px;display:flex;align-items:center;gap:12px;pointer-events:none}
+.cover-cap .logo{width:56px;height:56px;padding:2px}
+.cover-cap b{display:block;font-size:22px;letter-spacing:-.4px;line-height:1.1}
+.cover-cap small{opacity:.85;font-size:13.5px}
+.dots{position:absolute;right:16px;top:22px;display:flex;gap:5px}
+.dots i{width:7px;height:7px;border-radius:4px;background:rgba(255,255,255,.45);transition:width .3s,background .3s}
+.dots i.on{width:20px;background:#fff}
+.chipsnav{position:sticky;top:0;z-index:20;display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;margin:0 -16px;padding:12px 16px;background:var(--bg)}
+.chipsnav::-webkit-scrollbar{display:none}
+.chipsnav button{flex:none;padding:9px 14px;border-radius:12px;background:var(--card);box-shadow:var(--shadow);font-weight:700;font-size:14px}
+.chipsnav button.on{background:var(--accent);color:var(--on-accent)}
+.about-txt{font-size:16px;line-height:1.6;margin:4px 2px 0}
+.asec{margin-top:26px;scroll-margin-top:66px}
+.asec>h2{font-size:21px;letter-spacing:-.4px;margin:0 2px 12px}
+.stats4{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.stat{padding:16px;border-radius:20px;background:var(--card);box-shadow:var(--shadow)}
+.stat .si{width:38px;height:38px;border-radius:12px;display:grid;place-items:center;background:var(--accent-soft);color:var(--accent);margin-bottom:10px}
+.stat b{display:block;font-size:30px;letter-spacing:-1px;line-height:1;font-variant-numeric:tabular-nums;color:var(--accent)}
+.stat span{display:block;color:var(--hint);font-size:13.5px;margin-top:4px}
+.fac{display:grid;gap:10px}
+.fac div{display:flex;gap:14px;align-items:flex-start;padding:14px 16px;border-radius:18px;background:var(--card);box-shadow:var(--shadow)}
+.fac i{font-style:normal;font-size:24px;width:44px;height:44px;border-radius:14px;background:var(--accent-soft);display:grid;place-items:center;flex:none}
+.fac b{display:block;font-size:15.5px}
+.fac span{display:block;color:var(--hint);font-size:14px;margin-top:2px;line-height:1.45}
+.gal{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.gal button{position:relative;aspect-ratio:1;border-radius:14px;overflow:hidden;background:var(--card-2) center/cover no-repeat}
+.gal button:first-child{grid-column:span 2;grid-row:span 2}
+.gal .vi{position:absolute;inset:0;display:grid;place-items:center;background:rgba(10,12,40,.28);color:#fff}
+.gal .more{position:absolute;inset:0;display:grid;place-items:center;background:rgba(10,12,40,.6);color:#fff;font-size:20px;font-weight:800}
+.vid{border-radius:20px;overflow:hidden;background:#000;box-shadow:var(--shadow)}
+.vid video{display:block;width:100%;aspect-ratio:16/9;max-height:60vh;background:#000;object-fit:contain}
+.course{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.course div{padding:14px 10px;border-radius:18px;background:var(--card);box-shadow:var(--shadow);text-align:center}
+.course b{display:block;font-size:28px;color:var(--accent);line-height:1}
+.course span{display:block;font-weight:800;margin-top:8px;font-size:15px}
+.course small{display:block;color:var(--hint);font-size:12.5px;margin-top:2px}
+.prc{background:var(--card);border-radius:20px;box-shadow:var(--shadow);padding:16px;margin-bottom:10px}
+.prc-h{display:flex;align-items:center;gap:12px;margin-bottom:10px}
+.prc-h .lt{width:48px;height:48px;border-radius:15px;background:var(--accent);color:var(--on-accent);display:grid;place-items:center;font-size:24px;font-weight:800;flex:none}
+.prc-h b{display:block;font-size:17px}
+.prc-h small{color:var(--hint)}
+.prow{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin-bottom:12px}
+.prow div{background:var(--card-2);border-radius:12px;padding:8px 4px;text-align:center}
+.prow span{display:block;font-size:12px;color:var(--hint);font-weight:600}
+.prow b{display:block;font-size:13px;margin-top:2px;font-variant-numeric:tabular-nums}
+.ins-row2{display:flex;gap:10px;overflow-x:auto;scrollbar-width:none;margin:0 -16px;padding:2px 16px 8px;scroll-snap-type:x proximity;scroll-padding:0 16px}
+.ins-row2::-webkit-scrollbar{display:none}
+.icard2{flex:none;width:210px;scroll-snap-align:start;background:var(--card);border-radius:20px;box-shadow:var(--shadow);padding:16px;text-align:left}
+.icard2 .ava{width:58px;height:58px;font-size:19px;margin-bottom:10px}
+.icard2 b{display:block;font-size:16px}
+.icard2 small{display:block;color:var(--hint);font-size:13px;margin-top:2px}
+.icard2 .cats{margin-top:8px}
+.map{position:relative;height:210px;border-radius:20px;overflow:hidden;background:var(--hero);box-shadow:var(--shadow)}
+.map iframe{width:100%;height:100%;border:0;display:block}
+.map .ph{position:absolute;inset:0;background:center/cover no-repeat}
+.map .pin{position:absolute;left:50%;top:50%;transform:translate(-50%,-100%);color:#fff;filter:drop-shadow(0 4px 8px rgba(0,0,0,.4));animation:bounce 1.6s ease-in-out infinite}
+@keyframes bounce{0%,100%{transform:translate(-50%,-100%)}50%{transform:translate(-50%,-118%)}}
+.maprow{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:10px}
+.maprow button{text-align:center;padding:12px 6px;border-radius:14px;background:var(--card);box-shadow:var(--shadow);font-weight:700;font-size:13.5px}
+.callbtn{display:flex;align-items:center;gap:14px;margin-top:10px;padding:14px 16px;border-radius:18px;background:var(--ok-soft);color:var(--ok);text-decoration:none;font-weight:800}
+.callbtn .ic{width:44px;height:44px;border-radius:50%;background:var(--ok);color:#fff;display:grid;place-items:center;flex:none;animation:ringing 2.4s ease-in-out infinite}
+@keyframes ringing{0%,70%,100%{transform:rotate(0)}75%,85%,95%{transform:rotate(-12deg)}80%,90%{transform:rotate(12deg)}}
+.callbtn small{display:block;font-weight:600;opacity:.85}
+.faq{background:var(--card);border-radius:18px;box-shadow:var(--shadow);margin-bottom:8px;overflow:hidden}
+.faq summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:10px;padding:15px 16px;font-weight:700;font-size:15.5px}
+.faq summary::-webkit-details-marker{display:none}
+.faq summary svg{margin-left:auto;color:var(--hint);transition:transform .2s}
+.faq[open] summary svg{transform:rotate(90deg)}
+.faq p{margin:0;padding:0 16px 16px;color:var(--hint);white-space:pre-line;line-height:1.55}
+.cta-big{margin-top:24px;min-height:62px;font-size:18px;border-radius:20px;box-shadow:0 14px 30px rgba(35,40,131,.3)}
+
+/* --- media ko'ruvchi --- */
+.viewer{position:fixed;inset:0;z-index:140;background:#05060f;color:#fff;display:flex;flex-direction:column;animation:helloIn .2s ease}
+.viewer-top{display:flex;align-items:center;gap:10px;padding:calc(10px + env(safe-area-inset-top,0px)) 12px 10px}
+.viewer-top b{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:15px}
+.viewer-top span{opacity:.7;font-size:14px;font-variant-numeric:tabular-nums}
+.viewer-x{width:42px;height:42px;border-radius:50%;background:rgba(255,255,255,.12);color:#fff;display:grid;place-items:center}
+.viewer-stage{flex:1;display:grid;place-items:center;position:relative;overflow:hidden;touch-action:pan-y}
+.viewer-stage img,.viewer-stage video{max-width:100%;max-height:100%;object-fit:contain;animation:fade .2s ease}
+.viewer-nav{position:absolute;top:50%;transform:translateY(-50%);width:46px;height:46px;border-radius:50%;background:rgba(255,255,255,.14);color:#fff;display:grid;place-items:center}
+.viewer-nav.l{left:10px}.viewer-nav.r{right:10px}
+
+/* --- pastki menyu: markazda katta «Bron» --- */
+.nav button.fab{color:var(--accent)}
+.nav .fab .fb{width:56px;height:56px;margin-top:-26px;border-radius:50%;background:var(--hero);color:#fff;display:grid;place-items:center;
+  box-shadow:0 8px 22px rgba(35,40,131,.45),0 0 0 5px var(--card);transition:transform .15s}
+.nav .fab:active .fb{transform:scale(.92)}
+.nav .fab.on .fb{animation:pop .4s ease}
+
+/* --- konfetti --- */
+.confetti{position:fixed;inset:0;pointer-events:none;z-index:160;overflow:hidden}
+.confetti i{position:absolute;top:-14px;width:9px;height:14px;border-radius:2px;opacity:.95;animation:fall var(--t,2.2s) cubic-bezier(.25,.6,.5,1) forwards;animation-delay:var(--dl,0s)}
+@keyframes fall{to{transform:translate(var(--x,0),110vh) rotate(var(--r,540deg));opacity:.9}}
+
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
 </head>
@@ -407,6 +623,7 @@ function dayName(date, withWd = true) {
 const whenText = iso => { if (!iso) return '—'; const d = new Date(iso); return `${dayName(ymd(d))} · ${hhmm(d)}`; };
 /* Raqam ichida bo'linmas bo'shliq, «so‘m» oldida oddiy — tor ekranda so‘m keyingi qatorga tushadi */
 const money = v => new Intl.NumberFormat('ru-RU').format(Math.round(Number(v) || 0)).replace(/[\s\u202f]/g, '\u00a0') + ' so‘m';
+const num = v => new Intl.NumberFormat('ru-RU').format(Math.round(Number(v) || 0)).replace(/[\s\u202f]/g, '\u00a0');
 const fmtDur = m => { const n = Math.round(Number(m) || 0), h = Math.floor(n / 60), r = n % 60; return h ? (r ? `${h} soat ${r} daq` : `${h} soat`) : `${r} daq`; };
 const fmtPhone = v => { const d = String(v || '').replace(/\D/g, ''); return d.length === 12 && d.startsWith('998') ? `+998 ${d.slice(3, 5)} ${d.slice(5, 8)} ${d.slice(8, 10)} ${d.slice(10)}` : String(v || ''); };
 const initials = n => String(n || '?').trim().split(/\s+/).slice(0, 2).map(x => x[0] || '').join('').toUpperCase() || '?';
@@ -426,6 +643,7 @@ const P = {
   copy: '<rect x="8.5" y="8.5" width="12" height="12" rx="2.5"/><path d="M15.5 8.5V6a2.5 2.5 0 0 0-2.5-2.5H6A2.5 2.5 0 0 0 3.5 6v7A2.5 2.5 0 0 0 6 15.5h2.5"/>',
   chev: '<path d="m9.5 6 6 6-6 6"/>',
   chevl: '<path d="m14.5 6-6 6 6 6"/>',
+  play: '<path d="M8.5 5.8v12.4a.8.8 0 0 0 1.2.7l10-6.2a.8.8 0 0 0 0-1.4l-10-6.2a.8.8 0 0 0-1.2.7z" fill="currentColor" stroke="none"/>',
   arrow: '<path d="M5 12h14M13 6l6 6-6 6"/>',
   check: '<path d="m5 12.5 4.5 4.5L19 7.5"/>',
   x: '<path d="M6.5 6.5l11 11M17.5 6.5l-11 11"/>',
@@ -520,6 +738,7 @@ const api = {
   cancel: (id, reason) => req(`/api/bookings/${encodeURIComponent(id)}/cancel`, { method: 'PATCH', body: { reason } }),
   review: b => req('/api/reviews', { method: 'POST', body: b }),
   notes: () => req('/api/notifications'),
+  content: () => req('/api/content'),
   support: () => req('/api/support/messages'),
   send: text => req('/api/support/messages', { method: 'POST', body: { body: text } }),
 };
@@ -529,7 +748,8 @@ const api = {
    ========================================================================= */
 const S = {
   ready: false, me: null, settings: {}, courses: [], instructors: [], bookings: [],
-  notes: [], msgs: [], msgsLoaded: false, view: 'home', bkTab: 'active', loadErr: '',
+  notes: [], msgs: [], msgsLoaded: false, view: '', bkTab: 'active', loadErr: '',
+  media: [], onbStep: 1, onbDir: 'f', onb: { phone: '', first: '', last: '', err: '', saving: false },
 };
 /* Bron qilish oqimi */
 const B = {
@@ -616,21 +836,32 @@ async function boot() {
   if (!tg || !String(tg.initData || '').trim()) return renderFatal('tg');
 
   renderShell();
-  renderSkeleton();
-  const [me, st, cs, ins, bks] = await Promise.allSettled([api.me(), api.settings(), api.courses(), api.instructors(), api.bookings()]);
+  renderSplash();
+  const t0 = Date.now();
+  const [me, st, cs, ins, bks, ct] = await Promise.allSettled([
+    api.me(), api.settings(), api.courses(), api.instructors(), api.bookings(), api.content(),
+  ]);
   if (me.status === 'rejected') return renderFatal('auth', me.reason && me.reason.message);
   S.me = me.value.profile || me.value.user || {};
   S.settings = normSettings(st.status === 'fulfilled' ? st.value.settings : {});
   S.courses = cs.status === 'fulfilled' ? (cs.value.courses || []) : [];
   S.instructors = ins.status === 'fulfilled' ? (ins.value.instructors || []) : [];
   S.bookings = bks.status === 'fulfilled' ? (bks.value.bookings || []) : [];
-  S.loadErr = [cs, ins].some(x => x.status === 'rejected') ? 'Ba’zi ma’lumotlar yuklanmadi. Tepadan pastga torting yoki qayta oching.' : '';
+  S.media = ct.status === 'fulfilled' ? (ct.value.media || []) : [];
+  S.loadErr = [cs, ins].some(x => x.status === 'rejected') ? 'Ba’zi ma’lumotlar yuklanmadi. Ilovani yopib qayta oching.' : '';
   S.ready = true;
   B.phone = S.me.phone || '';
 
+  /* Logotip bir lahza ko'rinib tursin — ilova "sakrab" ochilmasin */
+  const wait = 650 - (Date.now() - t0);
+  if (wait > 0) await new Promise(r => setTimeout(r, wait));
+
+  /* Birinchi kirish: avval telefon, keyin ism */
+  if (!S.me.phone) return startOnb();
+
   /* Bot havolasidan kelgan bo'lsa: t.me/bot?startapp=book */
   const sp = String((tg.initDataUnsafe && tg.initDataUnsafe.start_param) || '').toLowerCase();
-  const first = ['book', 'bookings', 'support', 'profile'].find(v => sp.startsWith(v)) || (location.hash.slice(1) || 'home');
+  const first = VIEWS.find(v => v !== 'onb' && sp.startsWith(v)) || (location.hash.slice(1) || 'home');
   go(first, false);
   loadNotes();
 }
@@ -656,44 +887,48 @@ function applyTheme() {
 }
 
 /* =========================================================================
-   QOBIQ: sahifa + pastki menyu
+   QOBIQ: sahifa + pastki menyu (markazda katta «Bron»)
    ========================================================================= */
 const NAV = [
-  ['home', 'home', 'Asosiy'], ['book', 'book', 'Bron'], ['bookings', 'list', 'Bronlarim'],
-  ['support', 'chat', 'Yordam'], ['profile', 'user', 'Profil'],
+  ['home', 'home', 'Asosiy'], ['about', 'pin', 'Avtodrom'], ['book', 'book', 'Bron'],
+  ['bookings', 'list', 'Bronlarim'], ['support', 'chat', 'Yordam'],
 ];
+const VIEWS = ['home', 'about', 'book', 'bookings', 'support', 'profile', 'onb'];
 function renderShell() {
   $('#app').innerHTML = `
     <main class="wrap" id="main"></main>
     <div id="dock"></div>
     <nav class="nav" aria-label="Menyu"><div class="nav-in">
-      ${NAV.map(([v, i, t]) => `<button data-act="go" data-v="${v}" aria-label="${t}">${ico(i, 23)}<span>${t}</span>${v === 'bookings' ? '<i class="badge hidden" id="bkBadge"></i>' : ''}</button>`).join('')}
+      ${NAV.map(([v, i, t]) => v === 'book'
+        ? `<button class="fab" data-act="go" data-v="book" aria-label="Bron qilish"><span class="fb">${ico('book', 26, 2.2)}</span><span>${t}</span></button>`
+        : `<button data-act="go" data-v="${v}" aria-label="${t}">${ico(i, 23)}<span>${t}</span>${v === 'bookings' ? '<i class="badge hidden" id="bkBadge"></i>' : ''}</button>`).join('')}
     </div></nav>`;
 }
-function renderSkeleton() {
-  $('#main').innerHTML = `
-    <div class="top">${logoImg()}<div class="who"><div class="sk" style="min-height:18px;width:60%"></div></div></div>
-    <div class="sk" style="min-height:190px;border-radius:22px"></div>
-    <div class="sk" style="min-height:110px;margin-top:14px;border-radius:18px"></div>
-    <div class="tariffs" style="margin-top:22px"><div class="sk" style="min-height:96px"></div><div class="sk" style="min-height:96px"></div><div class="sk" style="min-height:96px"></div></div>`;
+function renderSplash() {
+  document.body.classList.add('onb-mode');
+  $('#main').innerHTML = `<div class="splash"><div>${logoImg()}<b>TASH INDEX AVTODROM</b><small>Yuklanmoqda…</small></div></div>`;
 }
 function renderFatal(kind, msg) {
+  document.body.classList.remove('onb-mode');
   const txt = kind === 'tg'
-    ? { i: 'lock', h: 'Telegram orqali oching', p: 'Bu ilova TASH INDEX AVTODROM botidagi «Mini App» tugmasi orqali ishlaydi.' }
-    : { i: 'info', h: 'Kirish amalga oshmadi', p: msg || 'Iltimos, ilovani yopib, bot orqali qayta oching.' };
+    ? { h: 'Telegram orqali oching', p: 'Bu ilova TASH INDEX AVTODROM botidagi «Mini App» tugmasi orqali ishlaydi.' }
+    : { h: 'Kirish amalga oshmadi', p: msg || 'Iltimos, ilovani yopib, bot orqali qayta oching.' };
   $('#app').innerHTML = `<div class="fatal"><div>${logoImg('logo big')}<h2>${esc(txt.h)}</h2><p>${esc(txt.p)}</p>
     ${kind === 'auth' ? `<button class="btn btn-primary btn-sm" data-act="reload" style="margin:0 auto">${ico('refresh', 18)} Qayta urinish</button>` : ''}</div></div>`;
 }
 
-function go(v, push = true) {
-  if (!NAV.some(n => n[0] === v)) v = 'home';
+function go(v, push = true, anchor = '') {
+  if (!VIEWS.includes(v)) v = 'home';
+  if (v === 'onb' && S.me && S.me.phone) v = 'home';
   if (S.view === 'support' && v !== 'support') stopChatPoll();
   if (v === 'book' && (!B.started || B.done)) startBook();   // tugagan bron o'rniga yangisi
   S.view = v;
-  if (push) { try { history.replaceState(null, '', '#' + v); } catch (e) {} }
+  document.body.classList.toggle('onb-mode', v === 'onb');
+  if (push && v !== 'onb') { try { history.replaceState(null, '', '#' + v); } catch (e) {} }
   document.querySelectorAll('.nav button').forEach(b => b.classList.toggle('on', b.dataset.v === v));
   render();
-  window.scrollTo(0, 0);
+  if (anchor && $('#' + anchor)) $('#' + anchor).scrollIntoView({ block: 'start' });
+  else window.scrollTo(0, 0);
   syncBack();
   if (v === 'book' && B.step === 'time') ensureBusy();
   if (v === 'bookings') refreshBookings();
@@ -703,9 +938,11 @@ function render() {
   if (!S.ready) return;
   const m = $('#main');
   m.className = 'wrap view' + (S.view === 'book' ? ' view-book' : '');
-  ({ home: renderHome, book: renderBook, bookings: renderBookings, support: renderSupport, profile: renderProfile }[S.view])();
+  ({ home: renderHome, about: renderAbout, book: renderBook, bookings: renderBookings,
+     support: renderSupport, profile: renderProfile, onb: renderOnb }[S.view])();
   renderDock();
   updateBadge();
+  enhance();
 }
 function renderDock() {
   const d = $('#dock');
@@ -722,87 +959,485 @@ function renderDock() {
 }
 function syncBack() {
   if (!tg || !tg.BackButton) return;
-  try { (sheetOpen() || S.view !== 'home') ? tg.BackButton.show() : tg.BackButton.hide(); } catch (e) {}
+  const show = viewerOpen() || sheetOpen() || (S.view === 'onb' ? S.onbStep > 1 : S.view !== 'home');
+  try { show ? tg.BackButton.show() : tg.BackButton.hide(); } catch (e) {}
 }
 function onBack() {
+  if (viewerOpen()) return closeViewer();
   if (sheetOpen()) return closeSheet();
+  if (S.view === 'onb') { if (S.onbStep > 1) { S.onbStep = 1; render(); syncBack(); } return; }
   if (S.view === 'book' && B.started && !B.done) return prevStep();   // bron bosqichlari bo'yicha orqaga
   if (S.view !== 'home') go('home');
 }
 
 /* =========================================================================
-   ASOSIY
+   ANIMATSIYA: ko'ringanda chiqish va raqamlarni sanash
+   ========================================================================= */
+let revealObs = null;
+const reduceMotion = () => window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+function enhance() {
+  const els = [...document.querySelectorAll('#main .rv:not(.in)')];
+  if (!('IntersectionObserver' in window) || reduceMotion()) {
+    els.forEach(el => { el.classList.add('in'); countUp(el); });
+    return;
+  }
+  if (!revealObs) revealObs = new IntersectionObserver(entries => entries.forEach(en => {
+    if (!en.isIntersecting) return;
+    en.target.classList.add('in');
+    countUp(en.target);
+    revealObs.unobserve(en.target);
+  }), { threshold: 0.08, rootMargin: '0px 0px -4% 0px' });
+  els.forEach(el => revealObs.observe(el));
+}
+function countUp(root) {
+  root.querySelectorAll('[data-count]').forEach(el => {
+    const to = Number(el.dataset.count) || 0, dec = Number(el.dataset.dec) || 0;
+    if (reduceMotion()) { el.textContent = to.toFixed(dec); return; }
+    const t0 = performance.now(), T = 1100;
+    const step = now => {
+      const k = Math.min(1, (now - t0) / T), e = 1 - Math.pow(1 - k, 3);
+      el.textContent = (to * e).toFixed(dec);
+      if (k < 1) requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+  });
+}
+function confetti() {
+  if (reduceMotion()) return;
+  const box = document.createElement('div');
+  box.className = 'confetti';
+  const colors = ['#2b2f8f', '#4a50c8', '#f5b400', '#34c27b', '#60a5fa', '#fb7185', '#ffffff'];
+  box.innerHTML = Array.from({ length: 70 }, () => {
+    const x = (Math.random() * 2 - 1) * 120, r = 360 + Math.random() * 720;
+    return `<i style="left:${Math.random() * 100}%;background:${colors[Math.floor(Math.random() * colors.length)]};--x:${x}px;--r:${r}deg;--t:${1.8 + Math.random() * 1.4}s;--dl:${Math.random() * .35}s;transform:rotate(${Math.random() * 180}deg)"></i>`;
+  }).join('');
+  document.body.appendChild(box);
+  setTimeout(() => box.remove(), 3800);
+}
+
+/* =========================================================================
+   KIRISH: 1) telefon  2) ism-familiya  →  xush kelibsiz
+   ========================================================================= */
+function startOnb() {
+  const tu = (tg && tg.initDataUnsafe && tg.initDataUnsafe.user) || {};
+  S.onbStep = 1;
+  S.onb = {
+    phone: '',
+    first: S.me.first_name || tu.first_name || '',
+    last: S.me.last_name || tu.last_name || '',
+    err: '', saving: false,
+  };
+  go('onb', false);
+}
+const phoneDigits = v => { let d = String(v || '').replace(/\D/g, ''); if (d.length > 9 && d.startsWith('998')) d = d.slice(3); return d.slice(0, 9); };
+const phoneMask = d => [d.slice(0, 2), d.slice(2, 5), d.slice(5, 7), d.slice(7, 9)].filter(Boolean).join(' ');
+function renderOnb() {
+  const o = S.onb, one = S.onbStep === 1;
+  const canShare = !!(tg && tg.requestContact && ver('6.9'));
+  $('#main').innerHTML = `<div class="onb ${S.onbDir === 'b' ? 'slide-b' : 'slide-f'}">
+    <div class="onb-logo">${logoImg()}</div>
+    <div class="onb-dots" aria-hidden="true"><i class="${one ? 'on' : ''}"></i><i class="${one ? '' : 'on'}"></i></div>
+    ${one ? `
+      <h1>Telefon raqamingiz</h1>
+      <p class="lead">Bron holati va eslatmalar shu raqamga bog‘lanadi. Admin kerak bo‘lsa qo‘ng‘iroq qiladi.</p>
+      <label class="phone-box"><span>+998</span>
+        <input id="onbPhone" type="tel" inputmode="numeric" autocomplete="tel-national" placeholder="90 123 45 67" value="${esc(phoneMask(o.phone))}" aria-label="Telefon raqami"></label>
+      ${canShare ? `<div class="or">yoki</div>
+        <button class="btn btn-tg" data-act="sharecontact">${ico('phone', 20)} Telegramdagi raqamimni yuborish</button>` : ''}`
+    : `
+      <h1>Ismingiz nima?</h1>
+      <p class="lead">Instruktor va admin sizga shunday murojaat qiladi.</p>
+      <input class="big-in" id="onbFirst" autocomplete="given-name" placeholder="Ism" value="${esc(o.first)}" aria-label="Ism">
+      <input class="big-in" id="onbLast" autocomplete="family-name" placeholder="Familiya" value="${esc(o.last)}" aria-label="Familiya">`}
+    ${o.err ? `<div class="note err onb-err">${esc(o.err)}</div>` : ''}
+  </div>
+  <div class="onb-foot"><button class="btn btn-primary" data-act="onbnext" ${o.saving ? 'disabled' : ''}>
+    ${o.saving ? '<span class="spin"></span>' : one ? `Davom etish ${ico('arrow', 20)}` : `Tayyor ${ico('check', 20, 2.4)}`}</button></div>`;
+  setTimeout(() => { const el = $(one ? '#onbPhone' : (o.first ? '#onbLast' : '#onbFirst')); if (el && !o.phone && one) el.focus(); }, 250);
+}
+function onbNext() {
+  const o = S.onb;
+  o.err = '';
+  if (S.onbStep === 1) {
+    o.phone = phoneDigits(($('#onbPhone') || {}).value);
+    if (o.phone.length !== 9) {
+      o.err = 'Raqamni to‘liq kiriting: 90 123 45 67';
+      haptic.err(); render(); const el = $('#onbPhone'); if (el) el.focus(); return;
+    }
+    haptic.tap(); S.onbStep = 2; S.onbDir = 'f'; render(); syncBack();
+    setTimeout(() => { const el = $(o.first ? '#onbLast' : '#onbFirst'); if (el) el.focus(); }, 280);
+    return;
+  }
+  o.first = (($('#onbFirst') || {}).value || '').trim();
+  o.last = (($('#onbLast') || {}).value || '').trim();
+  if (o.first.length < 2) { o.err = 'Ismingizni yozing'; haptic.err(); render(); $('#onbFirst').focus(); return; }
+  saveOnb();
+}
+async function saveOnb() {
+  const o = S.onb;
+  o.saving = true; render();
+  try {
+    const r = await api.saveMe({ first_name: o.first, last_name: o.last, phone: '+998' + o.phone });
+    S.me = r.profile || r.user || Object.assign({}, S.me, { phone: '+998' + o.phone, first_name: o.first, last_name: o.last });
+    B.phone = S.me.phone || '';
+    haptic.ok();
+    o.saving = false;
+    sayHello();
+  } catch (e) {
+    o.saving = false;
+    o.err = e.message;
+    if (/telefon/i.test(e.message)) S.onbStep = 1;   // raqam band bo'lsa — raqam ekraniga qaytamiz
+    haptic.err(); render(); syncBack();
+  }
+}
+function shareContact() {
+  try {
+    tg.requestContact((ok, res) => {
+      const ph = ok && res && res.responseUnsafe && res.responseUnsafe.contact && res.responseUnsafe.contact.phone_number;
+      if (ph) {
+        S.onb.phone = phoneDigits(ph);
+        const c = res.responseUnsafe.contact;
+        if (!S.onb.first && c.first_name) S.onb.first = c.first_name;
+        if (!S.onb.last && c.last_name) S.onb.last = c.last_name;
+        haptic.ok();
+        if (S.onb.phone.length === 9) { S.onbStep = 2; S.onbDir = 'f'; }
+        render(); syncBack();
+      } else if (ok) {
+        toast('Raqam yuborildi. Iltimos, uni shu yerga ham yozing.');
+      }
+    });
+  } catch (e) { toast('Raqamni qo‘lda kiriting', true); }
+}
+function sayHello() {
+  const el = document.createElement('div');
+  el.className = 'hello';
+  el.innerHTML = `<div>${logoImg()}<h2>Xush kelibsiz, ${esc(S.me.first_name || S.onb.first)}!</h2><p>TASH INDEX AVTODROM</p></div>`;
+  document.body.appendChild(el);
+  confetti();
+  const done = () => { if (!el.isConnected) return; el.classList.add('out'); setTimeout(() => el.remove(), 360); };
+  el.addEventListener('click', done);
+  go('home', true);
+  loadNotes();
+  setTimeout(done, 1700);
+}
+
+/* =========================================================================
+   MEDIA (admin paneldan: Media bo'limi) va MANZIL
+   ========================================================================= */
+const mUrl = m => safeUrl(m && m.public_url);
+const homeMedia = () => (S.media || []).find(m => m.key === 'home_image' && mUrl(m)) || null;
+const guideVideo = () => (S.media || []).find(m => m.key === 'guide_video' && m.media_type === 'video' && mUrl(m)) || null;
+const locImage = () => (S.media || []).find(m => m.key === 'location_image' && mUrl(m)) || null;
+const gallery = () => (S.media || []).filter(m => String(m.key || '').startsWith('gallery_') && mUrl(m));
+const coverMedia = () => { const h = homeMedia(), g = gallery(); return (h ? [h] : []).concat(g).slice(0, 8); };
+const bgOf = m => m && m.media_type !== 'video' ? `background-image:url('${esc(mUrl(m))}')` : '';
+
+function locInfo() {
+  const l = S.settings.location || {};
+  const lat = Number(l.latitude ?? l.lat), lng = Number(l.longitude ?? l.lng);
+  const has = Number.isFinite(lat) && Number.isFinite(lng) && !!(lat || lng);
+  const name = l.name || 'TASH INDEX AVTODROM';
+  const address = l.address || S.settings.address || '';
+  const q = has ? `${lat},${lng}` : (address || name + ' Toshkent');
+  return {
+    lat, lng, has, name, address,
+    google: safeUrl(l.google_url || l.google) || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}`,
+    yandex: safeUrl(l.yandex_url || l.yandex) || (has ? `https://yandex.uz/maps/?pt=${lng},${lat}&z=17&l=map` : `https://yandex.uz/maps/?text=${encodeURIComponent(q)}`),
+    gis: safeUrl(l.two_gis_url || l['2gis']) || (has ? `https://2gis.uz/tashkent/geo/${lng},${lat}` : `https://2gis.uz/tashkent/search/${encodeURIComponent(q)}`),
+  };
+}
+const telOf = () => String(S.settings.contact_phone || '').trim();
+const hoursText = () => S.settings.working_hours || `Har kuni ${S.settings.work_start} – ${S.settings.work_end}`;
+
+/* =========================================================================
+   ASOSIY — xush kelibsiz va katta tanlovlar
    ========================================================================= */
 const activeBookings = () => S.bookings
   .filter(b => ['pending', 'confirmed', 'in_progress'].includes(b.status))
   .sort((a, b) => Date.parse(a.start_at || 0) - Date.parse(b.start_at || 0));
 
 function renderHome() {
-  const me = S.me || {}, first = me.first_name || (tg && tg.initDataUnsafe && tg.initDataUnsafe.user && tg.initDataUnsafe.user.first_name) || '';
+  const me = S.me || {}, tu = (tg && tg.initDataUnsafe && tg.initDataUnsafe.user) || {};
+  const first = me.first_name || tu.first_name || '';
   const next = activeBookings()[0];
-  const opts = options().filter(o => o.cat);
-  const loc = S.settings.location || {};
-  const addr = loc.address || S.settings.address || '';
-  const phone = S.settings.contact_phone || '';
-  const hours = S.settings.working_hours || `${S.settings.work_start} – ${S.settings.work_end}`;
-  const p = dp(ymd());
+  const hm = homeMedia(), g = gallery(), tel = telOf(), vid = guideVideo();
+  const infoBg = (g.find(x => x.media_type !== 'video') || hm);
+  const hr = Number(hhmm(new Date()).slice(0, 2));
+  const hi = hr < 5 ? 'Xayrli tun' : hr < 11 ? 'Xayrli tong' : hr < 17 ? 'Xayrli kun' : 'Xayrli kech';
+  const photo = safeUrl(tu.photo_url);
+  const tile = (cls, icon, label, act, v = '', extra = '') =>
+    `<button class="tile rv" style="--d:${tileN++ * 0.04}s" data-act="${act}" data-v="${esc(v)}" ${extra}><span class="ti ${cls}">${ico(icon, 25)}</span>${label}</button>`;
+  let tileN = 0;
+  const n = activeBookings().length;
 
   $('#main').innerHTML = `
     <header class="top">
       ${logoImg()}
-      <div class="who"><h1>${first ? `Salom, ${esc(first)}` : 'TASH INDEX AVTODROM'}</h1>
-        <div class="sub">Bugun, ${p.day}-${MON[p.mon]} · ${WD[p.wd]}</div></div>
+      <div class="who brand"><h1>TASH INDEX<br>AVTODROM</h1></div>
       <button class="icon-btn" data-act="notes" aria-label="Bildirishnomalar">${ico('bell', 21)}<i class="dot hidden" id="noteDot"></i></button>
+      <button class="me" data-act="go" data-v="profile" aria-label="Profil" ${photo ? `style="background-image:url('${esc(photo)}')"` : ''}>${photo ? '' : esc(initials(me.full_name || first))}</button>
     </header>
 
-    ${S.me && S.me.is_blocked ? `<div class="note err" style="margin-bottom:12px">Hisobingiz bloklangan. Savollar bo‘lsa «Yordam» bo‘limiga yozing.</div>` : ''}
+    ${me.is_blocked ? `<div class="note err" style="margin-bottom:12px">Hisobingiz bloklangan. Savollar bo‘lsa «Yordam» bo‘limiga yozing.</div>` : ''}
     ${S.loadErr ? `<div class="note warn" style="margin-bottom:12px">${esc(S.loadErr)}</div>` : ''}
 
-    <section class="hero">
-      <svg class="road" width="190" height="120" viewBox="0 0 190 120" fill="none" aria-hidden="true"><path d="M20 120 80 0M170 120 110 0" stroke="#fff" stroke-width="6"/><path d="M95 110v-18M95 74V56M95 38V20" stroke="#fff" stroke-width="5" stroke-linecap="round"/></svg>
-      ${logoImg()}
-      <small>TASH INDEX AVTODROM</small>
-      <h2>Haydashni ishonch bilan o‘rganing</h2>
-      <p>Toifa, vaqt va instruktorni tanlang — bron bir daqiqada tayyor.</p>
-      <button class="btn-light" data-act="go" data-v="book">${ico('book', 19)} Bron qilish</button>
+    <section class="welcome rv ${hm ? '' : 'noimg'}">
+      ${hm ? `<div class="welcome-bg" style="${bgOf(hm)}"></div>` : '<div class="road3d" aria-hidden="true"></div>'}
+      <div class="welcome-shade"></div>
+      <div class="welcome-in">
+        <small>${esc(hi)}</small>
+        <h2>Xush kelibsiz${first ? `,<br>${esc(first)}` : ''} <span class="wave">👋</span></h2>
+        <p>TASH INDEX AVTODROMga</p>
+      </div>
     </section>
 
-    ${next ? `<div class="card next" data-act="go" data-v="bookings" role="button" tabindex="0">
+    <div class="ask rv">Nima qilamiz?</div>
+    <div class="choices">
+      <button class="choice main rv" data-act="go" data-v="book">
+        <span class="ci">${ico('book', 30, 2)}</span>
+        <span><b>Bron qilish</b><small>Toifa → soat → vaqt. Bir daqiqada</small></span>
+        <span class="go">${ico('arrow', 20, 2.4)}</span></button>
+      <button class="choice info rv" style="--d:.06s;${infoBg ? bgOf(infoBg) : ''}" data-act="about">
+        <span class="ci">${ico('pin', 30, 2)}</span>
+        <span><b>Avtodrom haqida</b><small>Rasmlar, videolar, narxlar, manzil</small></span>
+        <span class="go">${ico('chev', 20, 2.4)}</span></button>
+    </div>
+
+    ${next ? `<div class="card next rv" data-act="go" data-v="bookings" role="button" tabindex="0">
       <div class="lbl"><span>Keyingi darsingiz</span>${pill(next.status)}</div>
       <div class="when">${esc(whenText(next.start_at))}</div>
       <div class="meta">${esc(bkLine(next))}</div>
       ${next.pickup_code ? codeBox(next.pickup_code) : ''}
     </div>` : ''}
 
-    ${opts.length ? `<section class="sec">
-      <div class="sec-h"><h2>Narxlar</h2><span class="muted" style="font-size:13px">1 soat uchun</span></div>
-      <div class="tariffs">${opts.map(o => { const t = tariff(o.cat); return `<button class="tariff" data-act="quickcat" data-v="${o.key}">
-        <b>${o.cat}</b><span class="k">${esc(o.sub)}</span><span class="p">${money(t.hour)}</span><span class="h">30 daq · ${new Intl.NumberFormat('ru-RU').format(t.half).replace(/[\s\u202f]/g, '\u00a0')}</span></button>`; }).join('')}</div>
-    </section>` : ''}
-
-    ${S.instructors.length ? `<section class="sec">
-      <div class="sec-h"><h2>Instruktorlar</h2><span class="muted" style="font-size:13px">${S.instructors.length} ta</span></div>
-      <div class="inst-row">${S.instructors.map(i => `<button class="icard" data-act="ins" data-v="${esc(i.id)}">
-        ${avatar(i)}<b>${esc(insName(i))}</b>
-        <div class="r">${Number(i.total_reviews) ? `★ ${Number(i.rating || 0).toFixed(1)} · ${Number(i.total_reviews)} baho` : 'Yangi instruktor'}</div>
-        ${catTags(i)}</button>`).join('')}</div>
-    </section>` : ''}
-
-    <section class="sec">
-      <div class="sec-h"><h2>Ma’lumot</h2></div>
-      <div class="list">
-        <button class="row" data-act="location"><span class="ic">${ico('pin', 20)}</span>
-          <span class="tx"><b>Manzil</b><small>${esc(addr || loc.name || 'Xaritada ko‘rish')}</small></span><span class="chev">${ico('chev', 18)}</span></button>
-        <div class="row"><span class="ic">${ico('clock', 20)}</span>
-          <span class="tx"><b>Ish vaqti</b><small>${esc(hours)}</small></span></div>
-        ${phone ? `<a class="row" href="tel:${esc(String(phone).replace(/[^\d+]/g, ''))}" style="color:inherit;text-decoration:none"><span class="ic">${ico('phone', 20)}</span>
-          <span class="tx"><b>Qo‘ng‘iroq qilish</b><small>${esc(phone)}</small></span><span class="chev">${ico('chev', 18)}</span></a>` : ''}
-        <button class="row" data-act="go" data-v="support"><span class="ic">${ico('chat', 20)}</span>
-          <span class="tx"><b>Savol berish</b><small>Admin bilan yozishma</small></span><span class="chev">${ico('chev', 18)}</span></button>
-      </div>
-    </section>`;
+    <div class="ask rv">Katalog</div>
+    <div class="tiles">
+      ${tile('t1', 'star', 'Narxlar', 'about', 'a-prices')}
+      ${tile('t2', 'user', 'Instruktorlar', 'about', 'a-ins')}
+      ${g.length ? tile('t4', 'copy', 'Rasmlar', 'gallery', '0') : tile('t4', 'info', 'Sharoitlar', 'about', 'a-fac')}
+      ${vid ? tile('t6', 'play', 'Video', 'about', 'a-video') : tile('t6', 'clock', 'Kurs muddati', 'about', 'a-course')}
+      ${tile('t5', 'pin', 'Manzil', 'about', 'a-loc')}
+      ${tel ? `<a class="tile rv" style="--d:${tileN++ * 0.04}s;color:inherit;text-decoration:none" href="tel:${esc(tel.replace(/[^\d+]/g, ''))}"><span class="ti t7">${ico('phone', 25)}</span>Qo‘ng‘iroq</a>`
+            : tile('t7', 'chat', 'Savol berish', 'go', 'support')}
+      ${tile('t3', 'list', 'Bronlarim', 'go', 'bookings', '')}
+      ${tile('t8', 'info', 'Savollar', 'about', 'a-faq')}
+      ${tile('t9', 'user', 'Profil', 'go', 'profile')}
+    </div>`;
+  if (n) { const b = document.querySelector('.tile[data-v="bookings"]'); if (b) b.insertAdjacentHTML('beforeend', `<i class="n">${n}</i>`); }
   updateNoteDot();
 }
+
+/* =========================================================================
+   AVTODROM HAQIDA — rasmlar, videolar, natijalar, narxlar, manzil, savollar
+   Hammasi admin paneldan boshqariladi: Media bo'limi va Sozlamalar.
+   ========================================================================= */
+const COURSES = [
+  { c: 'A', t: '15 kun', s: 'Mototsikl — to‘liq kurs' },
+  { c: 'B', t: '2 oy 15 kun', s: 'Yengil avto — to‘liq kurs' },
+  { c: 'C', t: 'Amaliy', s: 'Yuk avto — soatlik haydash' },
+];
+function parseFacilities(raw) {
+  if (Array.isArray(raw)) return raw;
+  return String(raw || '').split('\n').map(l => l.trim()).filter(Boolean).map(line => {
+    const [left, ...rest] = line.split('|');
+    const head = left.trim();
+    const m = head.match(/^(\p{Extended_Pictographic}[️‍\p{Extended_Pictographic}]*)\s*(.*)$/u);
+    return { icon: m ? m[1] : '✔️', title: m ? m[2] : head, text: rest.join('|').trim() };
+  });
+}
+function facilities() {
+  const list = parseFacilities(S.settings.facilities);
+  if (list.length) return list;
+  return [
+    { icon: '🚦', title: 'Yo‘l belgilari va svetoforlar', text: 'Ishlaydigan svetoforlar, STOP, yo‘l berish va yo‘nalish belgilari.' },
+    { icon: '🛣️', title: 'Real yo‘l qatnovlari', text: 'Belgilangan yo‘laklar, chorrahalar, piyoda o‘tish joylari va bordyurlar.' },
+    { icon: '🅿️', title: 'Parkovka va manyovr zonalari', text: 'To‘xtash joylari va burilish mashqlari uchun ajratilgan maydon.' },
+    { icon: '🏛️', title: 'Imtihonga tayyorlov', text: 'Maydoncha imtihon talablariga mos — shu yerda mashq qilib, tayyor bo‘lasiz.' },
+    { icon: '👨‍🏫', title: 'Tasdiqlangan instruktorlar', text: 'Har biri admin tekshiruvidan o‘tgan, reyting real baholardan.' },
+    { icon: '🕖', title: 'Ish vaqti', text: hoursText() },
+  ];
+}
+function faqList() {
+  const L = locInfo();
+  return [
+    ['Qaysi toifalar bor?', 'A — mototsikl.\nB — yengil avtomobil.\nC — yuk avtomobili (faqat amaliy haydash).'],
+    ['Kurs qancha davom etadi?', 'A toifa — 15 kun.\nB toifa — 2 oy 15 kun.\nC toifa — to‘liq kurs yo‘q, faqat soatlik amaliy haydash.'],
+    ['Qanday bron qilaman?', '«Bron» tugmasini bosing: toifa → necha soat → vaqt → bo‘sh instruktor. Admin tasdiqlagach Telegram’ga xabar keladi.'],
+    ['To‘lov qanday?', 'To‘lov avtodrom kassasida. Bron qilgach sizga kassa kodi (AVD-1234) beriladi — kassaga shuni aytasiz.'],
+    ['Bu yerda imtihon topshiriladimi?', 'Yo‘q. Bu — imtihonga TAYYORLOV maydonchasi. Imtihonning o‘zi rasmiy imtihon markazida topshiriladi.'],
+    ['Bronni bekor qila olamanmi?', 'Ha. Tasdiqlanmagan bron darhol bekor bo‘ladi. Tasdiqlangan bron uchun sabab yozib so‘rov yuborasiz.'],
+    ['Ish vaqtingiz?', hoursText()],
+    ['Qayerda joylashgansiz?', L.address ? L.address + '\nXaritada ochish uchun «Manzil» bo‘limiga o‘ting.' : 'Manzilni «Yordam» orqali so‘rang.'],
+  ];
+}
+function stats() {
+  const ins = S.instructors;
+  const rated = ins.filter(i => Number(i.total_reviews) > 0);
+  const reviews = rated.reduce((s, i) => s + Number(i.total_reviews || 0), 0);
+  const avg = reviews ? rated.reduce((s, i) => s + Number(i.rating || 0) * Number(i.total_reviews || 0), 0) / reviews : 0;
+  const exp = ins.reduce((s, i) => s + Number(i.experience_years || 0), 0);
+  const cats = new Set(options().filter(o => o.cat).map(o => o.cat));
+  return [
+    { n: ins.length, t: 'tasdiqlangan instruktor', i: 'user' },
+    reviews ? { n: avg, dec: 1, t: `o‘rtacha baho (${reviews} ta)`, i: 'star' } : null,
+    exp ? { n: exp, t: 'yil umumiy tajriba', i: 'clock' } : null,
+    { n: cats.size || 3, t: `toifa: ${[...cats].join(', ') || 'A, B, C'}`, i: 'car' },
+  ].filter(Boolean);
+}
+function renderAbout() {
+  const cov = coverMedia(), g = gallery(), vid = guideVideo(), L = locInfo(), tel = telOf(), li = locImage();
+  const opts = options().filter(o => o.cat);
+  const about = S.settings.about_text || 'TASH INDEX AVTODROM — haydashni amaliy o‘rganish uchun to‘liq jihozlangan maydoncha. Yo‘l belgilari, svetoforlar, piyoda o‘tish joylari va real yo‘l qatnovlari bilan: ko‘chaga chiqishdan va imtihonga borishdan oldin barcha vaziyatlarni shu yerda mashq qilasiz.';
+  const secs = [['a-stats', 'Natijalar'], g.length ? ['a-gallery', 'Rasmlar'] : null, vid ? ['a-video', 'Video'] : null,
+                ['a-prices', 'Narxlar'], ['a-ins', 'Instruktorlar'], ['a-loc', 'Manzil'], ['a-faq', 'Savollar']].filter(Boolean);
+
+  $('#main').innerHTML = `
+    <div class="cover">
+      <div class="cover-track" id="coverTrack">${cov.length ? cov.map((m, i) => m.media_type === 'video'
+        ? `<div class="slide" data-act="viewer" data-v="${i}" data-src="cover"><video src="${esc(mUrl(m))}#t=0.5" muted playsinline preload="metadata"></video><span class="play">${ico('play', 30)}</span></div>`
+        : `<div class="slide" data-act="viewer" data-v="${i}" data-src="cover" style="${bgOf(m)}"></div>`).join('')
+        : `<div class="slide"><div class="road3d" aria-hidden="true" style="right:18%;width:64%;height:340px"></div></div>`}</div>
+      <div class="cover-shade"></div>
+      <button class="cover-back" data-act="go" data-v="home" aria-label="Orqaga">${ico('chevl', 22, 2.4)}</button>
+      ${cov.length > 1 ? `<div class="dots" id="coverDots">${cov.map((_, i) => `<i class="${i ? '' : 'on'}"></i>`).join('')}</div>` : ''}
+      <div class="cover-cap">${logoImg()}<div><b>TASH INDEX AVTODROM</b><small>${esc(L.address || 'Toshkent')}</small></div></div>
+    </div>
+
+    <nav class="chipsnav" id="chipsnav">${secs.map(([id, t]) => `<button data-act="jump" data-v="${id}">${t}</button>`).join('')}</nav>
+
+    <p class="about-txt rv">${esc(about)}</p>
+
+    <section class="asec" id="a-stats"><h2 class="rv">Natijalar</h2>
+      <div class="stats4">${stats().map((s, i) => `<div class="stat rv" style="--d:${i * 0.06}s"><span class="si">${ico(s.i, 20)}</span>
+        <b data-count="${s.n}" data-dec="${s.dec || 0}">0</b><span>${esc(s.t)}</span></div>`).join('')}</div>
+    </section>
+
+    <section class="asec" id="a-fac"><h2 class="rv">Sharoitlar</h2>
+      <div class="fac">${facilities().map((f, i) => `<div class="rv" style="--d:${i * 0.04}s"><i>${esc(f.icon || '✔️')}</i><span><b>${esc(f.title)}</b>${f.text ? `<span>${esc(f.text)}</span>` : ''}</span></div>`).join('')}</div>
+    </section>
+
+    ${g.length ? `<section class="asec" id="a-gallery"><h2 class="rv">Rasmlar va videolar <span class="muted" style="font-size:14px;font-weight:600">${g.length} ta</span></h2>
+      <div class="gal rv">${g.slice(0, 7).map((m, i) => `<button data-act="gallery" data-v="${i}" style="${bgOf(m)}" aria-label="${esc(m.title || 'Media')}">
+        ${m.media_type === 'video' ? `<video src="${esc(mUrl(m))}#t=0.5" muted playsinline preload="metadata" style="width:100%;height:100%;object-fit:cover"></video><span class="vi">${ico('play', 30)}</span>` : ''}
+        ${i === 6 && g.length > 7 ? `<span class="more">+${g.length - 7}</span>` : ''}</button>`).join('')}</div>
+    </section>` : ''}
+
+    ${vid ? `<section class="asec" id="a-video"><h2 class="rv">${esc(vid.title || 'Video qo‘llanma')}</h2>
+      <div class="vid rv"><video src="${esc(mUrl(vid))}" controls playsinline preload="metadata"></video></div>
+    </section>` : ''}
+
+    <section class="asec" id="a-course"><h2 class="rv">Kurs muddati</h2>
+      <div class="course">${COURSES.map((c, i) => `<div class="rv" style="--d:${i * 0.06}s"><b>${c.c}</b><span>${esc(c.t)}</span><small>${esc(c.s)}</small></div>`).join('')}</div>
+    </section>
+
+    ${opts.length ? `<section class="asec" id="a-prices"><h2 class="rv">Narxlar</h2>
+      ${opts.map((o, i) => { const t = tariff(o.cat); return `<div class="prc rv" style="--d:${i * 0.06}s">
+        <div class="prc-h"><span class="lt">${o.cat}</span><span><b>${o.cat} toifa</b><small>${esc(CAT_LONG[o.cat])} · narxlar so‘mda</small></span></div>
+        <div class="prow"><div><span>30 daq</span><b>${num(t.half)}</b></div><div><span>1 soat</span><b>${num(t.hour)}</b></div>
+          <div><span>2 soat</span><b>${num(t.hour * 2)}</b></div><div><span>5 soat</span><b>${num(t.hour * 5)}</b></div></div>
+        <button class="btn btn-primary btn-sm" style="width:100%" data-act="quickcat" data-v="${o.key}">${o.cat} toifaga bron qilish ${ico('arrow', 17)}</button>
+      </div>`; }).join('')}
+      <p class="muted" style="font-size:13px;margin:4px 2px 0">To‘lov avtodrom kassasida. Narxlar admin tomonidan yangilanadi.</p>
+    </section>` : ''}
+
+    ${S.instructors.length ? `<section class="asec" id="a-ins"><h2 class="rv">Instruktorlar</h2>
+      <div class="ins-row2">${[...S.instructors].sort(byRating).map((i, n) => {
+        const car = [i.vehicle_model, i.vehicle_plate].filter(Boolean).join(' · ');
+        return `<button class="icard2 rv" style="--d:${n * 0.05}s" data-act="ins" data-v="${esc(i.id)}">${avatar(i)}
+          <b>${esc(insName(i))}</b><small>${Number(i.total_reviews) ? `★ ${Number(i.rating || 0).toFixed(1)} · ${Number(i.total_reviews)} baho` : 'Yangi instruktor'}</small>
+          ${Number(i.experience_years) ? `<small>${Number(i.experience_years)} yil tajriba</small>` : ''}${car ? `<small>${esc(car)}</small>` : ''}${catTags(i)}</button>`; }).join('')}</div>
+    </section>` : `<section class="asec" id="a-ins"></section>`}
+
+    <section class="asec" id="a-loc"><h2 class="rv">Manzil</h2>
+      <div class="map rv">${li ? `<div class="ph" style="${bgOf(li)}"></div><span class="pin">${ico('pin', 44, 2.2)}</span>`
+        : L.has ? `<iframe title="Xarita" loading="lazy" src="https://www.openstreetmap.org/export/embed.html?bbox=${L.lng - 0.006},${L.lat - 0.003},${L.lng + 0.006},${L.lat + 0.003}&layer=mapnik&marker=${L.lat},${L.lng}"></iframe>`
+        : `<div class="road3d" aria-hidden="true" style="right:20%;width:60%"></div><span class="pin">${ico('pin', 44, 2.2)}</span>`}</div>
+      <div class="card rv" style="margin-top:10px"><b>${esc(L.name)}</b><div class="muted" style="font-size:14px;margin-top:2px">${esc(L.address || 'Manzil admin tomonidan kiritiladi')}</div>
+        <div class="muted" style="font-size:14px;margin-top:6px;display:flex;gap:6px;align-items:center">${ico('clock', 16)} ${esc(hoursText())}</div></div>
+      <div class="maprow rv"><button data-act="link" data-v="${esc(L.google)}">Google</button><button data-act="link" data-v="${esc(L.yandex)}">Yandex</button><button data-act="link" data-v="${esc(L.gis)}">2GIS</button></div>
+      ${tel ? `<a class="callbtn rv" href="tel:${esc(tel.replace(/[^\d+]/g, ''))}"><span class="ic">${ico('phone', 22)}</span><span>Qo‘ng‘iroq qilish<small>${esc(tel)}</small></span></a>` : ''}
+    </section>
+
+    <section class="asec" id="a-faq"><h2 class="rv">Ko‘p beriladigan savollar</h2>
+      ${faqList().map(([q, a], i) => `<details class="faq rv" ${i ? '' : 'open'}><summary>${esc(q)}${ico('chev', 18)}</summary><p>${esc(a)}</p></details>`).join('')}
+    </section>
+
+    <button class="btn btn-primary cta-big rv" data-act="go" data-v="book">${ico('book', 22)} Bron qilish</button>`;
+  initCover();
+  initChipsNav();
+}
+/* Muqova: rasmlar o'zi almashadi, nuqtalar ko'rsatib turadi */
+let coverTimer = 0;
+function initCover() {
+  clearInterval(coverTimer);
+  const tr = $('#coverTrack'), dots = $('#coverDots');
+  if (!tr || !dots) return;
+  const n = tr.children.length;
+  const cur = () => Math.round(tr.scrollLeft / Math.max(1, tr.clientWidth));
+  tr.addEventListener('scroll', () => { const k = cur(); [...dots.children].forEach((d, i) => d.classList.toggle('on', i === k)); }, { passive: true });
+  if (reduceMotion()) return;
+  coverTimer = setInterval(() => {
+    if (!document.body.contains(tr)) return clearInterval(coverTimer);
+    if (document.hidden || viewerOpen()) return;
+    tr.scrollTo({ left: ((cur() + 1) % n) * tr.clientWidth, behavior: 'smooth' });
+  }, 4200);
+}
+/* Bo'limlar tugmasi: qaysi bo'lim ko'rinib turgan bo'lsa o'sha yonadi */
+let navObs = null;
+function initChipsNav() {
+  if (navObs) navObs.disconnect();
+  if (!('IntersectionObserver' in window)) return;
+  navObs = new IntersectionObserver(es => es.forEach(e => {
+    if (!e.isIntersecting) return;
+    document.querySelectorAll('#chipsnav button').forEach(b => {
+      const on = b.dataset.v === e.target.id;
+      b.classList.toggle('on', on);
+      if (on) b.scrollIntoView({ inline: 'nearest', block: 'nearest' });
+    });
+  }), { rootMargin: '-30% 0px -60% 0px' });
+  document.querySelectorAll('#main .asec').forEach(s => navObs.observe(s));
+  const firstOn = () => { if (S.view !== 'about' || window.scrollY > 260) return;
+    document.querySelectorAll('#chipsnav button').forEach((b, i) => b.classList.toggle('on', i === 0)); };
+  window.removeEventListener('scroll', S.chipScroll || (() => {}));
+  S.chipScroll = firstOn; window.addEventListener('scroll', firstOn, { passive: true }); firstOn();
+}
+
+/* =========================================================================
+   MEDIA KO'RUVCHI — to'liq ekran, suriladi
+   ========================================================================= */
+const V = { list: [], i: 0 };
+const viewerOpen = () => !!$('#viewer');
+function openViewer(list, i) {
+  if (!list.length) return;
+  V.list = list; V.i = clamp(i, 0, list.length - 1);
+  let el = $('#viewer');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'viewer'; el.className = 'viewer'; el.setAttribute('role', 'dialog');
+    document.body.appendChild(el);
+    let x0 = null;
+    el.addEventListener('touchstart', e => { x0 = e.touches[0].clientX; }, { passive: true });
+    el.addEventListener('touchend', e => {
+      if (x0 === null) return;
+      const dx = e.changedTouches[0].clientX - x0; x0 = null;
+      if (Math.abs(dx) > 50) viewerStep(dx < 0 ? 1 : -1);
+    });
+  }
+  drawViewer(); syncBack();
+}
+function drawViewer() {
+  const m = V.list[V.i], el = $('#viewer');
+  if (!m || !el) return;
+  el.innerHTML = `<div class="viewer-top"><button class="viewer-x" data-act="closeviewer" aria-label="Yopish">${ico('x', 20)}</button>
+      <b>${esc(m.title || 'TASH INDEX AVTODROM')}</b><span>${V.i + 1} / ${V.list.length}</span></div>
+    <div class="viewer-stage">${m.media_type === 'video'
+      ? `<video src="${esc(mUrl(m))}" controls autoplay playsinline></video>`
+      : `<img src="${esc(mUrl(m))}" alt="${esc(m.title || '')}">`}
+      ${V.list.length > 1 ? `<button class="viewer-nav l" data-act="vstep" data-v="-1" aria-label="Oldingi">${ico('chevl', 24, 2.4)}</button>
+        <button class="viewer-nav r" data-act="vstep" data-v="1" aria-label="Keyingi">${ico('chev', 24, 2.4)}</button>` : ''}</div>`;
+}
+function viewerStep(d) { V.i = (V.i + d + V.list.length) % V.list.length; haptic.tap(); drawViewer(); }
+function closeViewer() { const el = $('#viewer'); if (el) el.remove(); syncBack(); }
 
 /* =========================================================================
    BRON QILISH — bosqichma-bosqich. Ilova o'zi yetaklaydi:
@@ -1152,6 +1787,7 @@ async function submitBooking() {
 }
 function renderDone() {
   const d = B.done;
+  if (!d.fired) { d.fired = true; setTimeout(confetti, 120); }
   $('#main').innerHTML = `<div class="slide-f done">
     <div class="big-ok">${ico('check', 38, 2.6)}</div>
     <h1 class="wz-h" style="text-align:center">Bron yuborildi!</h1>
@@ -1429,17 +2065,12 @@ async function openNotes() {
   updateNoteDot();
 }
 function openLocation() {
-  const l = S.settings.location || {};
-  const lat = Number(l.lat), lng = Number(l.lng);
-  const q = lat && lng ? `${lat},${lng}` : (l.address || S.settings.address || l.name || 'TASH INDEX AVTODROM Toshkent');
-  const links = [
-    ['Google Maps', l.google || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}`],
-    ['Yandex Maps', l.yandex || (lat && lng ? `https://yandex.uz/maps/?pt=${lng},${lat}&z=16&l=map` : `https://yandex.uz/maps/?text=${encodeURIComponent(q)}`)],
-    ['2GIS', l['2gis'] || `https://2gis.uz/tashkent/search/${encodeURIComponent(q)}`],
-  ];
-  openSheet(`<h3>${esc(l.name || 'TASH INDEX AVTODROM')}</h3>
-    <p class="lead">${esc(l.address || S.settings.address || 'Manzil admin tomonidan kiritiladi.')}</p>
-    <div class="list" style="box-shadow:none;background:var(--card-2)">${links.map(([t, u]) => `<button class="row" data-act="link" data-v="${esc(u)}"><span class="ic">${ico('pin', 20)}</span><span class="tx"><b>${t}</b><small>Xaritada ochish</small></span><span class="chev">${ico('chev', 18)}</span></button>`).join('')}</div>`);
+  const L = locInfo(), tel = telOf();
+  openSheet(`<h3>${esc(L.name)}</h3>
+    <p class="lead">${esc(L.address || 'Manzil admin tomonidan kiritiladi.')}</p>
+    <div class="list" style="box-shadow:none;background:var(--card-2)">${[['Google Maps', L.google], ['Yandex Maps', L.yandex], ['2GIS', L.gis]].map(([t, u]) =>
+      `<button class="row" data-act="link" data-v="${esc(u)}"><span class="ic">${ico('pin', 20)}</span><span class="tx"><b>${t}</b><small>Xaritada ochish</small></span><span class="chev">${ico('chev', 18)}</span></button>`).join('')}</div>
+    ${tel ? `<a class="callbtn" href="tel:${esc(tel.replace(/[^\d+]/g, ''))}"><span class="ic">${ico('phone', 22)}</span><span>Qo‘ng‘iroq qilish<small>${esc(tel)}</small></span></a>` : ''}`);
 }
 function openInstructor(id) {
   const i = S.instructors.find(x => String(x.id) === String(id));
@@ -1483,6 +2114,14 @@ document.addEventListener('click', e => {
   const v = el.dataset.v, act = el.dataset.act;
   switch (act) {
     case 'go': if (sheetOpen()) closeSheet(); haptic.tap(); go(v); break;
+    case 'about': haptic.tap(); go('about', true, v || ''); break;
+    case 'jump': { const t = document.getElementById(v); if (t) { haptic.tap(); t.scrollIntoView({ behavior: reduceMotion() ? 'auto' : 'smooth', block: 'start' }); } break; }
+    case 'gallery': haptic.tap(); openViewer(gallery(), Number(v) || 0); break;
+    case 'viewer': haptic.tap(); openViewer(coverMedia(), Number(v) || 0); break;
+    case 'vstep': viewerStep(Number(v)); break;
+    case 'closeviewer': closeViewer(); break;
+    case 'onbnext': onbNext(); break;
+    case 'sharecontact': shareContact(); break;
     case 'reload': location.reload(); break;
     case 'quickcat': haptic.tap(); startBook({ key: v }); go('book'); break;
     /* --- bron bosqichlari: tanlangach keyingisi o'zi ochiladi --- */
@@ -1542,19 +2181,26 @@ function markOn(el) {
 }
 
 document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && viewerOpen()) return closeViewer();
+  if (viewerOpen() && (e.key === 'ArrowRight' || e.key === 'ArrowLeft')) return viewerStep(e.key === 'ArrowRight' ? 1 : -1);
+  if (e.key === 'Enter' && S.view === 'onb' && e.target && /^onb/.test(e.target.id)) { e.preventDefault(); return onbNext(); }
   if (e.key === 'Escape' && sheetOpen()) closeSheet();
   if (e.target && e.target.id === 'chatIn' && e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); sendChat(e.target.value); }
   if ((e.key === 'Enter' || e.key === ' ') && e.target && e.target.matches('[role="button"][data-act]')) { e.preventDefault(); e.target.click(); }
 });
 document.addEventListener('input', e => {
   const t = e.target;
+  if (t.id === 'onbPhone') { const d = phoneDigits(t.value); S.onb.phone = d; t.value = phoneMask(d); if (d.length === 9) haptic.tap(); }
+  if (/^onb/.test(t.id) && S.onb.err) { S.onb.err = ''; const e = $('.onb-err'); if (e) e.remove(); }
+  if (t.id === 'onbFirst') S.onb.first = t.value;
+  if (t.id === 'onbLast') S.onb.last = t.value;
   if (t.id === 'noteIn') B.note = t.value;
   if (t.id === 'phoneIn') B.phone = t.value;
   if (t.id === 'chatIn') { autoGrow(t); $('#sendBtn').disabled = !t.value.trim(); }
 });
 /* Ilovaga qaytganda — bronlar holatini yangilaymiz */
 document.addEventListener('visibilitychange', () => {
-  if (document.hidden || !S.ready) return;
+  if (document.hidden || !S.ready || S.view === 'onb') return;
   refreshBookings(); loadNotes();
   if (S.view === 'book' && B.step === 'time') ensureBusy(true);
 });
