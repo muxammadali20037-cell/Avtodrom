@@ -160,7 +160,8 @@ export function toInstructorCard(row: any) {
     full_name: user?.full_name ?? '',
     phone: user?.phone ?? null,
     bio: row.bio ?? null,
-    avatar_url: row.avatar_url ?? null,
+    // eski tizimdagi rasmlar photo_url da qolgan bo'lishi mumkin
+    avatar_url: row.avatar_url || row.photo_url || null,
     categories: Array.isArray(row.categories) ? row.categories : ['B'],
     /* Mijoz qaysi mashinada o'qishini ko'radi */
     vehicle_model: row.vehicle_model ?? null,
