@@ -2286,6 +2286,14 @@ document.addEventListener('visibilitychange', () => {
   refreshBookings(); loadNotes();
   if (S.view === 'book' && B.step === 'time') ensureBusy(true);
 });
+/* Jonli: ilova ochiq turganda har 20 soniyada bron holati (tasdiqlandi,
+   boshlandi…) va bo'sh vaqtlar yangilanadi — boshqa mijoz band qilgan
+   soat ham darhol yopiladi. Yozish/tanlash jarayoniga tegmaydi. */
+setInterval(() => {
+  if (document.hidden || !S.ready || S.view === 'onb' || sheetOpen() || viewerOpen()) return;
+  if (S.view === 'home' || S.view === 'bookings') { refreshBookings(); loadNotes(); }
+  if (S.view === 'book' && B.step === 'time') ensureBusy(true);
+}, 20000);
 
 boot().catch(e => renderFatal('auth', e && e.message));
 })();
