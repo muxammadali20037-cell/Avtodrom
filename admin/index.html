@@ -758,6 +758,63 @@ pre.json{background:#F7FAFF;border:1px solid var(--line);border-radius:8px;paddi
   .bka{justify-content:flex-start;max-width:none}
 }
 @media(max-width:720px){.co2{grid-template-columns:1fr}}
+/* ===== CHEK CHIQARISH — yig'iladigan bo'limlar =====
+   Har bo'lim bitta qator: nomi + tanlangani. Bosilsa ochiladi, variantlar
+   ustma-ust (uzunasiga) chiqadi, bittasini bossa tanlanadi, yopiladi va
+   keyingi bo'lim o'zi ochiladi. */
+#checkout .acc{border:1.5px solid var(--line);border-radius:13px;background:#fff;margin-top:8px;overflow:hidden}
+#checkout .acc.open{border-color:var(--g);box-shadow:0 0 0 1px var(--g)}
+#checkout .acc-h{width:100%;display:grid;grid-template-columns:108px minmax(0,1fr) auto;gap:10px;align-items:center;min-height:52px;padding:8px 12px 8px 14px;background:none;border:0;cursor:pointer;text-align:left;font-family:inherit;color:var(--text)}
+#checkout .acc-h:hover{background:#f8faff}
+#checkout .acc-l{font-size:11px;font-weight:800;letter-spacing:.06em;color:#627086;text-transform:uppercase}
+#checkout .acc-v{font-size:15px;font-weight:800;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#checkout .acc-v small{font-weight:700;color:var(--muted);font-size:12.5px;margin-left:8px}
+#checkout .acc-v .empty{color:#b45309}
+#checkout .acc-v .nowtag{margin-left:8px}
+#checkout .acc-ch{width:30px;height:30px;border-radius:9px;background:var(--soft);color:var(--g);display:grid;place-items:center;font-size:12px;font-weight:900;transition:transform .15s}
+#checkout .acc.open .acc-ch{transform:rotate(180deg)}
+#checkout .acc-b{display:none;padding:0 10px 10px;border-top:1px solid #EEF2FB}
+#checkout .acc.open .acc-b{display:block}
+#checkout .acc-list{display:grid;gap:6px;padding-top:10px}
+#checkout .acc-list.scroll{max-height:320px;overflow-y:auto}
+#checkout .acc-opt{width:100%;display:grid;grid-template-columns:auto minmax(0,1fr) auto 24px;gap:10px;align-items:center;min-height:48px;padding:7px 12px;border:1.5px solid var(--line);border-radius:11px;background:#fff;cursor:pointer;text-align:left;font-family:inherit;color:var(--text)}
+#checkout .acc-opt.nob{grid-template-columns:minmax(0,1fr) auto 24px}
+#checkout .acc-opt:hover{border-color:var(--g2)}
+#checkout .acc-opt .bd{width:34px;height:34px;border-radius:9px;background:var(--soft);color:var(--g);display:grid;place-items:center;font-size:19px;font-weight:900}
+#checkout .acc-opt .t{font-size:14.5px;font-weight:800;min-width:0}
+#checkout .acc-opt .t small{display:block;font-size:11.5px;color:var(--muted);font-weight:600;margin-top:1px}
+#checkout .acc-opt .t small span{white-space:nowrap}
+#checkout .acc-opt .p{font-size:13.5px;font-weight:800;color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}
+#checkout .acc-opt .p.free{color:#0d7a4a}
+#checkout .acc-opt .ck{width:24px;height:24px;border-radius:50%;border:1.5px solid var(--line);display:grid;place-items:center;font-size:12px;font-style:normal;color:transparent}
+#checkout .acc-opt.on{border-color:var(--g);background:#f2f5ff}
+#checkout .acc-opt.on .bd{background:var(--g);color:#fff}
+#checkout .acc-opt.on .p{color:var(--g)}
+#checkout .acc-opt.on .ck{background:var(--g);border-color:var(--g);color:#fff}
+#checkout .acc-opt.wait{border-style:dashed}
+#checkout .acc-foot{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding-top:10px}
+#checkout .acc-foot label{font-size:11px;font-weight:800;color:#627086;text-transform:uppercase;letter-spacing:.05em}
+#checkout .acc-foot .btn{height:38px;padding:0 16px;font-size:13px}
+#checkout .acc-list .warn,#checkout .acc-list .error{margin:0}
+#checkout .ck-mini{width:112px;height:38px;padding:0 10px;margin:0}
+#checkout .ck-date{width:156px;height:38px;padding:0 10px;margin:0}
+#checkout .ck-lab{font-size:11px;font-weight:800;letter-spacing:.06em;color:#627086;text-transform:uppercase}
+#checkout .ck-price{display:grid;grid-template-columns:104px minmax(0,1fr) auto;gap:10px;align-items:center;margin-top:10px;padding:12px;border-radius:12px;background:#f7f9fd;border:1px solid var(--line)}
+#checkout .ck-price .val b{display:block;font-size:22px;font-weight:800;line-height:1.1;font-variant-numeric:tabular-nums}
+#checkout .ck-price .val small{display:block;font-size:11.5px;color:var(--muted);margin-top:2px}
+#checkout .ck-price .val small.man{color:#9a5b00;font-weight:700}
+#checkout .ck-manual{display:flex;gap:6px;align-items:center}
+#checkout .ck-manual .input{width:170px;height:40px;margin:0;font-weight:800}
+#checkout .ck-price.manual{background:#fff8ec;border-color:#f3d2a5}
+@media(max-width:720px){
+  #checkout .acc-h{grid-template-columns:82px minmax(0,1fr) auto;padding-left:12px}
+  #checkout .acc-v{white-space:normal;line-height:1.25}
+  #checkout .acc-v small{display:block;margin:1px 0 0}
+  #checkout .acc-v .nowtag{margin-left:0}
+  #checkout .acc-opt{padding:7px 10px;gap:8px}
+  #checkout .ck-price{grid-template-columns:1fr}
+  #checkout .ck-manual .input{flex:1;width:auto}
+}
 /* Davr: «Oraliq» — dan/gacha */
 .rangebar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:0 0 14px;padding:10px 12px;background:#fff;border:1px solid var(--line);border-radius:12px}
 .rangebar.hidden{display:none}
@@ -1129,24 +1186,52 @@ pre.json{background:#F7FAFF;border:1px solid var(--line);border-radius:8px;paddi
           <div class="field"><label>TELEFON</label>
             <input id="coPhone" class="input" autocomplete="off" inputmode="tel" placeholder="+998901234567"></div>
         </div>
-        <div class="field"><label>KATEGORIYA *</label>
-          <div class="pick3" id="coCats"></div></div>
-        <div class="field"><label>DAVOMIYLIK *</label>
-          <div class="durs" id="coDurs"></div>
-          <div style="display:flex;gap:8px;align-items:center;margin-top:9px">
-            <input id="coCustomMin" class="input" type="number" min="15" max="600" step="5" placeholder="Qo'lda: daqiqa" style="max-width:150px">
-            <span class="muted" style="font-size:12px">15-600 daqiqa</span>
-          </div></div>
-        <div class="co2">
-          <div class="field"><label>SANA</label><input id="coDate" class="input" type="date"></div>
-          <div class="field"><label>VAQT <span id="coNowTag" class="nowtag">hozirgi vaqt</span></label>
-            <div style="display:flex;gap:6px">
-              <input id="coTime" class="input" type="time" step="60" style="flex:1;min-width:0">
-              <button type="button" class="btn small" id="coNowBtn" title="Hozirgi vaqtga qaytarish">Hozir</button>
-            </div></div>
+        <!-- Yig'iladigan bo'limlar: bosilsa ochiladi, tanlansa yopiladi -->
+        <div class="acc" data-acc="cat">
+          <button type="button" class="acc-h" data-acc-h="cat" aria-expanded="false"><span class="acc-l">Kategoriya</span><span class="acc-v" id="accCatV">—</span><span class="acc-ch">▼</span></button>
+          <div class="acc-b"><div class="acc-list" id="coCats"></div></div>
         </div>
-        <div class="field"><label>INSTRUKTOR *</label>
-          <div id="coInsBox" class="inslist"><div class="muted" style="font-size:13px">Vaqt tanlansa bo'sh instruktorlar chiqadi.</div></div></div>
+        <div class="acc" data-acc="dur">
+          <button type="button" class="acc-h" data-acc-h="dur" aria-expanded="false"><span class="acc-l">Davomiylik</span><span class="acc-v" id="accDurV">—</span><span class="acc-ch">▼</span></button>
+          <div class="acc-b">
+            <div class="acc-list" id="coDurs"></div>
+            <div class="acc-foot hidden" id="coCustomWrap">
+              <input id="coCustomMin" class="input ck-mini" type="number" min="15" max="600" step="5" placeholder="daqiqa" aria-label="Davomiylik, daqiqa">
+              <span class="muted" style="font-size:12px">daqiqa (15–600)</span>
+              <button type="button" class="btn primary" id="coCustomOk">Tayyor</button>
+            </div>
+          </div>
+        </div>
+        <div class="acc" data-acc="time">
+          <button type="button" class="acc-h" data-acc-h="time" aria-expanded="false"><span class="acc-l">Vaqt</span><span class="acc-v"><span id="accTimeV">—</span><span id="coNowTag" class="nowtag">hozirgi vaqt</span></span><span class="acc-ch">▼</span></button>
+          <div class="acc-b">
+            <div class="acc-list">
+              <button type="button" class="acc-opt nob" id="coNowBtn"><span class="t">Hozir<small>hozirgi vaqt — soat o‘zi yurib turadi</small></span><span class="p" id="coNowClock"></span><i class="ck">✓</i></button>
+              <button type="button" class="acc-opt nob" data-coday="0"><span class="t">Bugun, boshqa soatga<small>soatni pastda tanlang</small></span><span class="p"></span><i class="ck">✓</i></button>
+              <button type="button" class="acc-opt nob" data-coday="1"><span class="t">Ertaga<small>soatni pastda tanlang</small></span><span class="p"></span><i class="ck">✓</i></button>
+            </div>
+            <div class="acc-foot">
+              <label for="coTime">Soat</label><input id="coTime" class="input ck-mini" type="time" step="60" aria-label="Vaqt">
+              <label for="coDate">Sana</label><input id="coDate" class="input ck-date" type="date" aria-label="Sana">
+              <button type="button" class="btn primary" id="coTimeOk">Tayyor</button>
+            </div>
+          </div>
+        </div>
+        <div class="acc" data-acc="ins">
+          <button type="button" class="acc-h" data-acc-h="ins" aria-expanded="false"><span class="acc-l">Instruktor</span><span class="acc-v" id="accInsV">—</span><span class="acc-ch">▼</span></button>
+          <div class="acc-b"><div id="coInsBox" class="acc-list scroll"><div class="muted" style="font-size:13px">Vaqt tanlansa bo'sh instruktorlar chiqadi.</div></div></div>
+        </div>
+      </div>
+
+      <!-- NARX — bronli va bronsiz holatda ham. Avtomatik hisoblanadi,
+           kassir istasa o'zi yozadi (chegirma, maxsus narx). -->
+      <div class="ck-price" id="coPriceBox">
+        <div class="ck-lab" style="padding:0">Narx</div>
+        <div class="val"><b id="coAutoPrice">0 so‘m</b><small id="coPriceCalc"></small></div>
+        <div class="ck-manual">
+          <input id="coManualPrice" class="input" type="number" inputmode="numeric" min="0" step="1000" placeholder="✎ Qo‘lda narx" aria-label="Narxni qo‘lda yozish">
+          <button type="button" class="btn small hidden" id="coPriceAuto" title="Avtomatik narxga qaytish">↺</button>
+        </div>
       </div>
     </div>
 
@@ -1177,8 +1262,8 @@ pre.json{background:#F7FAFF;border:1px solid var(--line);border-radius:8px;paddi
         <div class="muted" id="coSplitHint" style="font-size:12px;margin:-4px 0 10px"></div>
       </div>
 
-      <div class="field"><label>SUMMA (o‘zgartirish mumkin)</label>
-        <input id="coAmount" class="input" type="number" min="0" step="1000"></div>
+      <!-- Summa chapdagi «Narx» maydonidan keladi (avtomatik yoki qo'lda) -->
+      <input id="coAmount" type="hidden">
 
       <div id="coAlert"></div>
       <button class="btn primary" id="coIssue" style="width:100%;height:52px;font-size:16px">Chek chiqarish</button>
@@ -3795,7 +3880,10 @@ const CO = { mode:'walk_in', customer:null, booking:null, category:'', minutes:6
              /* Kassir vaqtni QO'LDA o'zgartirdimi. False bo'lsa soat
                 o'zi yurib turadi: oyna ertalabdan ochiq qolsa ham chek
                 haqiqiy vaqt bilan chiqadi. */
-             timeTouched:false };
+             timeTouched:false,
+             /* Kassir narxni QO'LDA yozgan bo'lsa — shu (chegirma va h.k.).
+                Kategoriya yoki davomiylik o'zgarsa avtomatikka qaytadi. */
+             manualPrice:null };
 
 function coCourse(){
   // Bron uchun mashg'ulot kerak (bazada bog'lanish). Kategoriyaga mosini olamiz.
@@ -3881,6 +3969,7 @@ function coPickBooking(b){
   if (!b) return;
   CO.booking = b; CO.mode = 'booked';
   CO.customer = b.customer || null;
+  coResetManualPrice();              // bron narxi o'z narxi bilan keladi
   CO.minutes = Number(b.duration_minutes || b.total_minutes || 60);
   CO.category = String(b.category || b.course?.category || '').toUpperCase();
   CO.instructor = { id: b.instructor_id, name: b.instructor?.profile?.full_name || '—' };
@@ -3894,6 +3983,7 @@ function coPickBooking(b){
 function coClearBooking(){
   const wasBooked = !!CO.booking;
   CO.booking = null; CO.mode = 'walk_in'; CO.customer = null; CO.instructor = null;
+  coResetManualPrice();
   if (wasBooked) {
     CO.timeTouched = false;
     $('coDate').value = kToday(); $('coTime').value = coNowTime();
@@ -3998,35 +4088,136 @@ $('coChangeBk').onclick = () => {
 };
 
 /* ---- kategoriya ---- */
+const CAT_NAME = { A:'Mototsikl', B:'Yengil', C:'Yuk' };
+const kSum = v => { const n = Number(v) || 0; return n >= 1000 ? new Intl.NumberFormat('ru-RU').format(n).replace(/\u00a0/g, ' ') : String(n); };
+/* ---- yig'iladigan bo'limlar ---- */
+let CO_OPEN = null;
+const ACC_NEXT = { cat:'dur', dur:'time', time:'ins', ins:null };
+function accOpen(key){
+  CO_OPEN = key || null;
+  document.querySelectorAll('#checkout .acc').forEach(a => {
+    const on = a.dataset.acc === CO_OPEN;
+    a.classList.toggle('open', on);
+    a.querySelector('.acc-h')?.setAttribute('aria-expanded', on ? 'true' : 'false');
+  });
+  if (CO_OPEN === 'ins' && CO.mode === 'walk_in') loadFreeInstructors();
+}
+/** Tanlandi — bu bo'lim yopiladi, keyingisi ochiladi. */
+function accNext(key){ accOpen(ACC_NEXT[key]); }
+document.querySelectorAll('#checkout [data-acc-h]').forEach(h => h.onclick = () =>
+  accOpen(CO_OPEN === h.dataset.accH ? null : h.dataset.accH));
+
+function coTomorrow(){ return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Tashkent' }).format(new Date(Date.now() + 864e5)); }
+function coTimeLabel(){
+  const d = $('coDate').value, t = $('coTime').value;
+  if (!d || !t) return '—';
+  if (!CO.timeTouched) return `Hozir · ${t}`;
+  const day = d === kToday() ? 'Bugun' : d === coTomorrow() ? 'Ertaga' : d.split('-').reverse().join('.');
+  return `${day} · ${t}`;
+}
+/** Yopiq bo'limlarda tanlangan qiymat ko'rinib turadi. */
+function accPaint(){
+  const cat = /^[ABC]$/.test(CO.category || '') ? CO.category : '';
+  $('accCatV').innerHTML = cat
+    ? `${esc(cat)} · ${esc(CAT_NAME[cat])}<small>1 soat ${esc(kSum(tariffFor(cat).hour))}</small>`
+    : '<span class="empty">Tanlang</span>';
+  const p = CO.minutes ? priceOf(CO.category, CO.minutes) : 0;
+  $('accDurV').innerHTML = CO.minutes
+    ? `${esc(fmtDur(CO.minutes))}${p ? `<small>${esc(kSum(p))} so‘m</small>` : ''}`
+    : '<span class="empty">Tanlang</span>';
+  $('accTimeV').textContent = coTimeLabel();
+  if ($('coNowClock')) $('coNowClock').textContent = coNowTime();
+  if (CO.instructor) {
+    const f = (CO.free || []).find(x => String(x.id) === String(CO.instructor.id));
+    const w = f ? null : (CO.busy || []).find(x => String(x.id) === String(CO.instructor.id));
+    $('accInsV').innerHTML = `${esc(CO.instructor.name || '—')}${f ? '<small>bo‘sh</small>' : w ? `<small>${esc(w.wait_minutes)} daq keyin bo‘shaydi</small>` : ''}`;
+  } else {
+    $('accInsV').innerHTML = '<span class="empty">Tanlanmagan</span>';
+  }
+}
+
 function renderCats(){
-  const cats = ['A','B','C'];
-  $('coCats').innerHTML = cats.map(c => {
+  $('coCats').innerHTML = ['A','B','C'].map(c => {
     const t = tariffFor(c);
-    return `<button type="button" class="pk ${CO.category===c?'on':''}" data-cat="${c}">
-      <b style="font-size:17px">${c}</b>
-      <small style="font-weight:600;font-size:10.5px;display:block;line-height:1.4">
-        30daq ${esc(money(t.half))}<br>1soat ${esc(money(t.hour))}</small></button>`;
+    return `<button type="button" class="acc-opt ${CO.category===c?'on':''}" data-cat="${c}">
+      <b class="bd">${c}</b><span class="t">${CAT_NAME[c]}<small><span>30 daq ${esc(kSum(t.half))}</span> · <span>1 soat ${esc(kSum(t.hour))}</span></small></span><span class="p"></span><i class="ck">✓</i></button>`;
   }).join('');
   $('coCats').querySelectorAll('[data-cat]').forEach(b => b.onclick = () => {
-    CO.category = b.dataset.cat;
-    CO.instructor = null;          // boshqa kategoriya — eski tanlov yaramaydi
-    renderCats(); coRender();
-    if (CO.mode === 'walk_in') loadFreeInstructors();
+    const changed = CO.category !== b.dataset.cat;
+    if (changed) {
+      CO.category = b.dataset.cat;
+      CO.instructor = null;          // boshqa kategoriya — eski tanlov yaramaydi
+      coResetManualPrice();
+    }
+    accNext('cat'); coRender();
+    if (changed && CO.mode === 'walk_in') loadFreeInstructors();
   });
 }
 
-/* ---- davomiylik ---- */
+/* ---- davomiylik: ro'yxatdan bosib tanlanadi, har birida narxi + «Boshqa» ---- */
 function renderDurs(){
-  $('coDurs').innerHTML = DURS.map(m => `<button type="button" data-m="${m}" class="${CO.minutes===m?'on':''}">${fmtDur(m)}</button>`).join('');
+  const custom = !!CO.minutes && !DURS.includes(CO.minutes);
+  const pr = m => { const v = priceOf(CO.category, m); return v ? `${kSum(v)} so‘m` : ''; };
+  $('coDurs').innerHTML = DURS.map(m => `<button type="button" class="acc-opt nob ${CO.minutes===m?'on':''}" data-m="${m}"><span class="t">${esc(fmtDur(m))}</span><span class="p">${esc(pr(m))}</span><i class="ck">✓</i></button>`).join('')
+    + `<button type="button" class="acc-opt nob ${custom?'on':''}" data-m="other"><span class="t">${custom ? esc(fmtDur(CO.minutes)) : 'Boshqa…'}<small>daqiqani o‘zingiz yozasiz</small></span><span class="p">${custom ? esc(pr(CO.minutes)) : ''}</span><i class="ck">✓</i></button>`;
   $('coDurs').querySelectorAll('[data-m]').forEach(b => b.onclick = () => {
-    CO.minutes = Number(b.dataset.m); $('coCustomMin').value = '';
-    renderDurs(); coRender(); if (CO.mode==='walk_in') loadFreeInstructors();
+    if (b.dataset.m === 'other') {
+      $('coCustomWrap').classList.remove('hidden');
+      const inp = $('coCustomMin'); if (custom && !inp.value) inp.value = CO.minutes; inp.focus(); return;
+    }
+    const m = Number(b.dataset.m);
+    $('coCustomMin').value = ''; $('coCustomWrap').classList.add('hidden');
+    const changed = CO.minutes !== m;
+    if (changed) { CO.minutes = m; coResetManualPrice(); }
+    accNext('dur'); coRender();
+    if (changed && CO.mode === 'walk_in') loadFreeInstructors();
   });
 }
 $('coCustomMin').addEventListener('input', () => {
   const v = Number($('coCustomMin').value);
-  if (v >= 15 && v <= 600) { CO.minutes = v; renderDurs(); coRender(); }
+  if (v >= 15 && v <= 600 && v !== CO.minutes) { CO.minutes = v; coResetManualPrice(); coRender(); }
 });
+$('coCustomMin').addEventListener('change', () => { if (CO.mode === 'walk_in') loadFreeInstructors(); });
+function coCustomDone(){
+  const v = Number($('coCustomMin').value);
+  if (!(v >= 15 && v <= 600)) { toast('Davomiylik 15–600 daqiqa bo‘lsin'); $('coCustomMin').focus(); return; }
+  $('coCustomWrap').classList.add('hidden');
+  accNext('dur'); coRender();
+}
+$('coCustomOk').onclick = coCustomDone;
+$('coCustomMin').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); coCustomDone(); } });
+
+/* ---- narx: avtomatik yoki qo'lda ---- */
+function coResetManualPrice(){
+  CO.manualPrice = null;
+  if ($('coManualPrice')) $('coManualPrice').value = '';
+}
+$('coManualPrice').addEventListener('input', () => {
+  const v = Math.round(Number($('coManualPrice').value));
+  CO.manualPrice = Number.isFinite(v) && v > 0 ? v : null;
+  coRender();
+});
+$('coPriceAuto').onclick = () => { coResetManualPrice(); coRender(); };
+
+/* ---- sana: Bugun / Ertaga ---- */
+document.querySelectorAll('[data-coday]').forEach(b => b.onclick = () => {
+  const add = Number(b.dataset.coday);
+  const d = new Date(Date.now() + add * 864e5);
+  $('coDate').value = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Tashkent' }).format(d);
+  if (add > 0 && !CO.timeTouched) $('coTime').value = '09:00';   // ertaga — ish boshi
+  CO.timeTouched = true;             // soat endi o'zi yurmaydi — kassir tanlaydi
+  coPaintNowTag(); coRender();
+  if (CO.mode === 'walk_in') loadFreeInstructors();
+  setTimeout(() => { try { $('coTime').focus(); } catch (e) {} }, 30);
+});
+$('coTimeOk').onclick = () => { accNext('time'); coRender(); };
+$('coTime').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); accNext('time'); coRender(); } });
+function coPaintDayChips(){
+  const t = kToday(), tm = coTomorrow();
+  const d = $('coDate').value;
+  document.querySelectorAll('[data-coday]').forEach(b => b.classList.toggle('on', (b.dataset.coday === '0' && d === t && CO.timeTouched) || (b.dataset.coday === '1' && d === tm)));
+  $('coNowBtn').classList.toggle('on', !CO.timeTouched);
+}
 
 /* ---- bo'sh instruktorlar ---- */
 async function loadFreeInstructors(){
@@ -4048,20 +4239,22 @@ async function loadFreeInstructors(){
       return;
     }
     if (!CO.instructor && d.suggestion) { CO.instructor = { id: d.suggestion.id, name: d.suggestion.name }; coRender(); }
-    const row = (i, wait) => `<button type="button" data-ins="${esc(i.id)}" class="${String(CO.instructor?.id)===String(i.id)?'on':''} ${wait?'wait':''}">
-      <b>${esc(i.name)}${wait?'':' · bo‘sh'}</b>
-      <span>${wait
+    const row = (i, wait) => `<button type="button" data-ins="${esc(i.id)}" class="acc-opt nob ${String(CO.instructor?.id)===String(i.id)?'on':''} ${wait?'wait':''}">
+      <span class="t">${esc(i.name)}<small>${wait
         ? `${esc(i.wait_minutes)} daqiqadan keyin bo‘shaydi (${esc(kHour(i.free_at))})`
-        : `★ ${esc(i.rating.toFixed(1))} · ${esc((i.categories || ['B']).join(', '))}`}</span></button>`;
+        : `★ ${esc(Number(i.rating || 0).toFixed(1))} · ${esc((i.categories || ['B']).join(', '))}`}</small></span>
+      <span class="p ${wait ? '' : 'free'}">${wait ? 'band' : 'bo‘sh'}</span><i class="ck">✓</i></button>`;
     box.innerHTML =
       (CO.free.length ? CO.free.map(i => row(i,false)).join('')
-        : '<div class="warn" style="margin:0 0 8px">Bu vaqtda bo‘sh instruktor yo‘q. Eng tez bo‘shaydiganlar:</div>')
+        : '<div class="warn">Bu vaqtda bo‘sh instruktor yo‘q. Eng tez bo‘shaydiganlar:</div>')
       + (CO.free.length ? '' : CO.busy.slice(0,4).map(i => row(i,true)).join(''));
+    coRender();
     box.querySelectorAll('[data-ins]').forEach(b => b.onclick = () => {
       const all = [...CO.free, ...CO.busy];
       const f = all.find(x => String(x.id) === b.dataset.ins);
       CO.instructor = f ? { id: f.id, name: f.name } : null;
-      loadFreeInstructors(); coRender();
+      box.querySelectorAll('[data-ins]').forEach(x => x.classList.toggle('on', x === b));
+      accNext('ins'); coRender();
     });
   }catch(e){ box.innerHTML = `<div class="error">${esc(e.message)}</div>`; }
 }
@@ -4075,7 +4268,7 @@ $('coTime').addEventListener('change', () => {
   CO.timeTouched = true; coPaintNowTag();
   if (CO.mode==='walk_in') loadFreeInstructors(); coRender();
 });
-$('coNowBtn').addEventListener('click', coSnapNow);
+$('coNowBtn').addEventListener('click', () => { coSnapNow(); accNext('time'); });
 
 /* ---- to'lov turi ---- */
 /* data-paytype — chek chiqarish uchun. To'lovlar bo'limi ham `data-pay`
@@ -4088,14 +4281,22 @@ document.querySelectorAll('[data-paytype]').forEach(b => b.onclick = () => {
   if (CO.pay!=='mixed') { $('coCash').value = 0; $('coCard').value = 0; }
   coRender();
 });
-['coCash','coCard','coAmount'].forEach(id => $(id).addEventListener('input', coRender));
+['coCash','coCard'].forEach(id => $(id).addEventListener('input', coRender));
 
 /* ---- xulosa ---- */
 function coRender(){
-  renderCats(); renderDurs();
-  const price = coPrice();
-  if (document.activeElement !== $('coAmount')) $('coAmount').value = price || '';
-  const total = Number($('coAmount').value || price || 0);
+  renderCats(); renderDurs(); coPaintDayChips(); accPaint();
+  const auto = coPrice();
+  const manual = CO.manualPrice;
+  const total = manual || auto || 0;
+  $('coAmount').value = total || '';
+  /* Narx qutisi */
+  $('coAutoPrice').textContent = money(total);
+  const rateTxt = coRate() ? `${money(coRate())} / soat × ${fmtDur(CO.minutes)}` : '';
+  $('coPriceCalc').textContent = manual ? `Qo‘lda yozilgan · avtomatik: ${money(auto)}` : (CO.mode === 'booked' && CO.booking ? 'Bron narxi' : rateTxt);
+  $('coPriceCalc').classList.toggle('man', !!manual);
+  $('coPriceBox').classList.toggle('manual', !!manual);
+  $('coPriceAuto').classList.toggle('hidden', !manual);
 
   $('sumCat').textContent  = CO.category || '—';
   $('sumDur').textContent  = fmtDur(CO.minutes);
@@ -4104,9 +4305,9 @@ function coRender(){
   $('sumTime').textContent = at ? `${$('coDate').value} · ${$('coTime').value}` : '—';
   $('sumTotal').textContent = money(total);
   const rate = coRate();
-  $('sumCalc').textContent = rate
-    ? `${money(rate)} / soat × ${fmtDur(CO.minutes)}`
-    : 'Kategoriya tanlanmagan yoki tarif kiritilmagan';
+  $('sumCalc').textContent = manual
+    ? `Narx qo‘lda yozilgan (avtomatik: ${money(auto)})`
+    : rate ? `${money(rate)} / soat × ${fmtDur(CO.minutes)}` : 'Kategoriya tanlanmagan yoki tarif kiritilmagan';
 
   if (CO.pay === 'mixed') {
     const cash = Number($('coCash').value||0), card = Number($('coCard').value||0);
@@ -4177,6 +4378,9 @@ $('coIssue').onclick = async () => {
 
 function coResetForm(){
   CO.customer = null; CO.booking = null; CO.instructor = null; CO.pay = '';
+  coResetManualPrice();
+  $('coCustomMin').value = ''; $('coCustomWrap').classList.add('hidden');
+  accOpen(null);
   /* Keyingi mijoz uchun soat yana o'zi yuradi */
   CO.timeTouched = false;
   if ($('coDate')) $('coDate').value = kToday();
