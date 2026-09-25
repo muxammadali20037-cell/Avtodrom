@@ -7,7 +7,11 @@ import crypto from 'node:crypto';
 import type { FastifyInstance } from 'fastify';
 import { supabaseRest } from './supabase.js';
 import { loadTariffs, computePrice } from './pricing.js';
-import { loadBookingDetails, bookingMessage, inAppMessage, fmtWhen, type BookingEvent } from './notify.js';
+import { loadBookingDetails, bookingMessage, inAppMessage, fmtWhen, fmtMoney, type BookingEvent } from './notify.js';
+import {
+  PACKAGE_MINUTES, loadPackagePrices, packagePriceOf, parseSessions, createPackage, packagesFor, durText,
+  type PackageRecord,
+} from './packages.js';
 import { sendBookingNotification } from './telegram.js';
 import type { TelegramWebAppUser } from './telegram.js';
 import {
@@ -172,6 +176,49 @@ async function notifyBookingParties(booking: any, event: BookingEvent) {
     }
   } catch (e) {
     console.error('Booking notification failed:', e);
+  }
+}
+
+/** Paket uchun BITTA xabar: mijozga va instruktorga, hamma mashg'ulotlar ro'yxati bilan. */
+async function notifyPackageParties(bookings: any[], rec: PackageRecord) {
+  try {
+    const first = bookings[0];
+    if (!first) return;
+    const d = await loadBookingDetails(first);
+    const lines = bookings.map((b, i) =>
+      `${i + 1}) ${fmtWhen(b.start_at)} · ${durText(Number(b.duration_minutes) || 60)}${b.pickup_code ? ` · kod ${b.pickup_code}` : ''}`);
+    const cText =
+      `📝 5 soatlik paketingiz qabul qilindi\n\n` +
+      (d.instructorName ? `👨‍🏫 ${d.instructorName}\n` : '') +
+      `💵 ${fmtMoney(rec.price)}${rec.list_price > rec.price ? ` (odatda ${fmtMoney(rec.list_price)})` : ''}\n\n` +
+      `${lines.join('\n')}\n\nAdmin tasdiqlashini kuting. Kassaga kelganda mashg‘ulot kodini ayting.`;
+    await notifyUser(first.customer_id, 'booking', '📝 5 soatlik paket qabul qilindi',
+      `${bookings.length} ta mashg‘ulot · ${fmtWhen(first.start_at)} dan boshlab`);
+    const customer = await telegramOf(first.customer_id);
+    const cToken = String(process.env.CUSTOMER_BOT_TOKEN || process.env.TELEGRAM_CUSTOMER_BOT_TOKEN || '');
+    const cUrl = String(process.env.CUSTOMER_MINI_APP_URL || process.env.MINI_APP_URL || '');
+    if (cToken && Number.isSafeInteger(Number(customer?.telegram_id))) {
+      await sendBookingNotification(cToken, Number(customer.telegram_id), cText, cUrl, '🚗 Mini Appni ochish');
+    }
+    if (first.instructor_id) {
+      const ip = await supabaseRest<any[]>('instructor_profiles', {
+        query: `?id=eq.${q(String(first.instructor_id))}&select=user_id&limit=1`,
+      });
+      const iu = ip[0]?.user_id;
+      const iText =
+        `📝 Yangi paket bron — 5 soat\n\n` +
+        (d.customerName ? `👤 ${d.customerName}\n` : '') + (d.customerPhone ? `📞 ${d.customerPhone}\n` : '') +
+        `\n${lines.join('\n')}`;
+      await notifyUser(iu, 'booking', '📝 Yangi paket bron', `${bookings.length} ta mashg‘ulot · ${fmtWhen(first.start_at)} dan`);
+      const ins = await telegramOf(iu);
+      const iToken = String(process.env.INSTRUCTOR_BOT_TOKEN || process.env.TELEGRAM_INSTRUCTOR_BOT_TOKEN || '');
+      const iUrl = String(process.env.INSTRUCTOR_MINI_APP_URL || '');
+      if (iToken && Number.isSafeInteger(Number(ins?.telegram_id))) {
+        await sendBookingNotification(iToken, Number(ins.telegram_id), iText, iUrl, '👨‍🏫 Instruktor paneli');
+      }
+    }
+  } catch (e) {
+    console.error('Package notification failed:', e);
   }
 }
 
@@ -356,7 +403,17 @@ export async function registerBookingRoutes(
         });
         reviews.forEach((r) => reviewed.add(String(r.booking_id)));
       }
-      return { ok: true, bookings: rows.map((b) => ({ ...shapeBooking(b), reviewed: reviewed.has(String(b.id)) })) };
+      const packs = await packagesFor(rows.map((b) => b.id));
+      return {
+        ok: true,
+        bookings: rows.map((b) => {
+          const pk = packs.get(String(b.id));
+          return {
+            ...shapeBooking(b), reviewed: reviewed.has(String(b.id)),
+            package: pk ? { id: pk.id, n: pk.n, of: pk.of, price: pk.price, list_price: pk.list_price } : null,
+          };
+        }),
+      };
     } catch (e) {
       return reply.code(400).send({ ok: false, error: e instanceof Error ? e.message : 'Bronlar yuklanmadi' });
     }
@@ -369,11 +426,21 @@ export async function registerBookingRoutes(
       if (user.is_blocked) return reply.code(403).send({ ok: false, error: 'Hisobingiz bloklangan' });
 
       const body = (request.body ?? {}) as {
-        instructor_id?: string; course_id?: string; hours?: number;
+        instructor_id?: string; course_id?: string; hours?: number; duration_minutes?: number;
         start_at?: string; end_at?: string; customer_note?: string;
       };
+      /* Davomiylik: yangi ilova daqiqada yuboradi — 30 daqiqa, 1 soat yoki
+         2 soat. 5 soat — paket, u /api/bookings/package orqali. Eski ilova
+         hali `hours` yuborishi mumkin — u ham ishlaydi. */
+      const byMinutes = body.duration_minutes !== undefined && body.duration_minutes !== null;
+      const reqMinutes = Math.round(Number(body.duration_minutes));
+      if (byMinutes && ![30, 60, 120].includes(reqMinutes)) {
+        return reply.code(400).send({ ok: false, error: reqMinutes === PACKAGE_MINUTES
+          ? '5 soat — paket. Uni paket sifatida bron qiling.'
+          : 'Davomiylik: 30 daqiqa, 1 soat yoki 2 soat' });
+      }
       // Necha birlik (soat) olinayotgani. Kurs — bir birlik, narx soatlik.
-      const hours = Math.trunc(Number(body.hours ?? 1));
+      const hours = byMinutes ? Math.max(1, Math.round(reqMinutes / 60)) : Math.trunc(Number(body.hours ?? 1));
       if (!Number.isInteger(hours) || hours < 1 || hours > 8) {
         return reply.code(400).send({ ok: false, error: 'Soat soni 1 dan 8 gacha bo‘lishi kerak' });
       }
@@ -398,11 +465,11 @@ export async function registerBookingRoutes(
       /* end_at har doim SERVERDA hisoblanadi: kurs davomiyligi × soat soni.
          Frontend yuborgan end_at e'tiborga olinmaydi — aks holda mijoz
          2 soatlik narxga 4 soat band qilib qo'yishi mumkin edi. */
-      const totalMinutes = Number(course.duration_minutes || 60) * hours;
+      const totalMinutes = byMinutes ? reqMinutes : Number(course.duration_minutes || 60) * hours;
       const bookingCat = String(course.category || '').toUpperCase();
       const bookingPrice = /^[ABC]$/.test(bookingCat)
         ? computePrice(bookingCat, totalMinutes, await loadTariffs())
-        : Math.round(Number(course.price || 0) * hours);
+        : Math.round((Number(course.price || 0) * totalMinutes) / (Number(course.duration_minutes || 60) || 60));
       const end = new Date(start.getTime() + totalMinutes * 60000);
       if (Number.isNaN(end.getTime()) || !(start < end)) {
         return reply.code(400).send({ ok: false, error: 'Vaqt oralig‘i noto‘g‘ri' });
@@ -484,6 +551,59 @@ export async function registerBookingRoutes(
     } catch (e) {
       const msg = humanizeDbError(e, 'Bron yaratilmadi');
       const code = /band|boshqa bron/.test(msg) ? 409 : 400;
+      return reply.code(code).send({ ok: false, error: msg });
+    }
+  });
+
+  /**
+   * 5 SOATLIK PAKET — mijoz 5 soatni o'zi bo'ladi (5 / 3+2 / 2+2+1 / 1×5).
+   * Har mashg'ulot alohida bron bo'lib yoziladi; bittasi band bo'lsa —
+   * HECH BIRI yozilmaydi.
+   */
+  app.post('/api/bookings/package', async (request, reply) => {
+    try {
+      const tg = await authenticate(request);
+      const user = await userForTelegram(tg);
+      if (user.is_blocked) return reply.code(403).send({ ok: false, error: 'Hisobingiz bloklangan' });
+      const body = (request.body ?? {}) as { instructor_id?: string; course_id?: string; sessions?: unknown; customer_note?: string };
+      if (!body.instructor_id) return reply.code(400).send({ ok: false, error: 'Instruktorni tanlang' });
+      if (!body.course_id) return reply.code(400).send({ ok: false, error: 'Mashg‘ulot turini tanlang' });
+
+      const parsed = parseSessions(body.sessions, { rejectPast: true });
+      if ('error' in parsed) return reply.code(400).send({ ok: false, error: parsed.error });
+
+      const course = (await supabaseRest<any[]>('courses', {
+        query: `?id=eq.${q(String(body.course_id))}&is_active=eq.true&select=id,duration_minutes,price,category&limit=1`,
+      }))[0];
+      if (!course) return reply.code(400).send({ ok: false, error: 'Mashg‘ulot topilmadi yoki faol emas' });
+      const cat = String(course.category || '').toUpperCase();
+      if (!/^[ABC]$/.test(cat)) return reply.code(400).send({ ok: false, error: 'Paket faqat A, B, C toifalar uchun' });
+
+      const ip = (await supabaseRest<any[]>('instructor_profiles', {
+        query: `?id=eq.${q(String(body.instructor_id))}&is_verified=eq.true&is_available=eq.true&select=id,categories&limit=1`,
+      }))[0];
+      if (!ip) return reply.code(400).send({ ok: false, error: 'Instruktor tasdiqlanmagan yoki faol emas' });
+      const cats: string[] = Array.isArray(ip.categories) && ip.categories.length ? ip.categories.map((x: any) => String(x).toUpperCase()) : ['B'];
+      if (!cats.includes(cat)) return reply.code(409).send({ ok: false, error: `Bu instruktor ${cat} toifani o‘rgatmaydi` });
+
+      const [tariffs, prices] = await Promise.all([loadTariffs(), loadPackagePrices()]);
+      if (!(packagePriceOf(cat, prices) > 0)) {
+        return reply.code(400).send({ ok: false, error: `${cat} toifada 5 soatlik paket hozircha yo‘q` });
+      }
+      const { bookings, record } = await createPackage({
+        customerId: String(user.id), instructorId: String(ip.id), courseId: String(course.id), category: cat,
+        sessions: parsed.sessions, status: 'pending', source: 'app',
+        note: body.customer_note?.trim() || null, tariffs, prices, newCode: newPickupCode,
+      });
+      await notifyPackageParties(bookings, record);
+      const pkg = { id: record.id, price: record.price, list_price: record.list_price, of: bookings.length };
+      return reply.code(201).send({
+        ok: true, package: pkg,
+        bookings: bookings.map((b, i) => ({ ...shapeBooking(b), package: { ...pkg, n: i + 1 } })),
+      });
+    } catch (e: any) {
+      const msg = humanizeDbError(e, 'Paket bron qilinmadi');
+      const code = e?.statusCode || (/band|boshqa bron/.test(msg) ? 409 : 400);
       return reply.code(code).send({ ok: false, error: msg });
     }
   });

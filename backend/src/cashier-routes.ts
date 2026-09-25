@@ -7,6 +7,10 @@ import { fmtWhen, fmtMoney } from './notify.js';
 import { readRegisterToken, ownRegisterFromToken } from './shift-routes.js';
 import { bookingSearchFilter } from './booking-search.js';
 import { loadBlocks, overlapping, instructorBlockedAt, blockedMessage } from './instructor-blocks.js';
+import {
+  PACKAGE_MINUTES, loadPackagePrices, priceWithPackage, parseSessions, sessionConflict, createPackage,
+  packagesFor, packageOf, type Session,
+} from './packages.js';
 import type { TelegramWebAppUser } from './telegram.js';
 import {
   isSchoolReceiptCode, normalizeSchoolCode, schoolBridgeReady,
@@ -34,6 +38,25 @@ function dayRange(date: string) {
   const d = /^\d{4}-\d{2}-\d{2}$/.test(date) ? date : today();
   const start = new Date(`${d}T00:00:00+05:00`);
   return { start: start.toISOString(), end: new Date(start.getTime() + 864e5).toISOString(), day: d };
+}
+
+/** total ni og'irliklarga proporsional bo'ladi; qoldiq birinchisiga. */
+function splitBy(total: number, weights: number[]): number[] {
+  const sum = weights.reduce((a, b) => a + b, 0) || 1;
+  const out = weights.map((w) => Math.floor((total * w) / sum));
+  out[0] += Math.round(total) - out.reduce((a, b) => a + b, 0);
+  return out;
+}
+/** amount ni qismlarga bo'ladi — hech biri o'z chegarasidan (caps) oshmaydi. */
+function splitCapped(amount: number, caps: number[]): number[] {
+  const sum = caps.reduce((a, b) => a + b, 0) || 1;
+  const out = caps.map((c) => Math.min(c, Math.floor((amount * c) / sum)));
+  let rest = Math.round(amount) - out.reduce((a, b) => a + b, 0);
+  for (let i = 0; rest > 0 && i < out.length; i++) {
+    const add = Math.min(caps[i] - out[i], rest);
+    if (add > 0) { out[i] += add; rest -= add; }
+  }
+  return out;
 }
 
 async function loadMaps(bookings: any[]) {
@@ -79,7 +102,10 @@ function shape(b: any, m: any) {
     payment: p || null,
     duration_minutes: mins,
     total_minutes: mins,
-    price: p?.amount ?? expected,
+    /* To'lov bo'lsa — to'langan summa; bo'lmasa bron yaratilganda
+       SAQLANGAN narx (paket mashg'uloti 660 000 bo'lishi mumkin); eng
+       oxiri kurs narxidan hisoblangani. */
+    price: p?.amount ?? (Number(b.price) > 0 ? Number(b.price) : expected),
     is_paid: String(p?.status) === 'paid',
   };
 }
@@ -358,9 +384,91 @@ export async function registerCashierRoutes(
                '&select=*&order=start_at.asc&limit=500',
       });
       const m = await loadMaps(bookings);
-      return { ok: true, date: day, bookings: bookings.map((b) => shape(b, m)) };
+      const packs = await packagesFor(bookings.map((b) => b.id));
+      return { ok: true, date: day, bookings: bookings.map((b) => {
+        const pk = packs.get(String(b.id));
+        return { ...shape(b, m), package: pk ? { id: pk.id, n: pk.n, of: pk.of, price: pk.price } : null };
+      }) };
     } catch (e: any) {
       return reply.code(e?.statusCode ?? 500).send({ ok: false, error: e?.message || 'Kunlik bronlar yuklanmadi' });
+    }
+  });
+
+  /* =====================================================================
+     INSTRUKTORLAR KUNLIK JADVALI (admin, operator, kassa)
+     Har instruktor — bir qator, kun — ish vaqti bo'yicha. Bron qancha
+     davom etsa (1 soat, 2 soat, 5 soat) — shuncha vaqt BAND ko'rinadi.
+     Instruktor o'zi yopgan soatlar ham alohida belgilanadi.
+     ===================================================================== */
+  app.get('/api/admin/schedule', async (req: any, reply: any) => {
+    try {
+      await requireAdmin(req);
+      const { start, end, day } = dayRange(String(req.query?.date || ''));
+      const [ips, setRows, rows] = await Promise.all([
+        supabaseRest<any[]>('instructor_profiles', { query: '?select=*&limit=500' }),
+        supabaseRest<any[]>('admin_settings', { query: '?key=in.(work_start,work_end,slot_step_min)&select=key,value' }).catch(() => []),
+        supabaseRest<any[]>('bookings', {
+          query: `?start_at=lt.${q(end)}&end_at=gt.${q(start)}` +
+                 '&status=in.(pending,confirmed,in_progress,completed,no_show)' +
+                 '&select=*&order=start_at.asc&limit=1000',
+        }),
+      ]);
+      const uids = [...new Set(ips.map((i) => i.user_id).filter(Boolean).map(String))];
+      const users = await selectIn<any>('users', 'id', uids, 'id,full_name,phone,is_active,is_blocked');
+      const um = new Map(users.map((u) => [String(u.id), u]));
+      const withBookings = new Set(rows.map((b) => String(b.instructor_id)));
+      const instructors = ips
+        .map((x) => {
+          const u: any = um.get(String(x.user_id)) || null;
+          return {
+            id: String(x.id),
+            name: u?.full_name || x.full_name || 'Instruktor',
+            phone: u?.phone || null,
+            categories: Array.isArray(x.categories) && x.categories.length ? x.categories : ['B'],
+            vehicle: [x.vehicle_model, x.vehicle_plate].filter(Boolean).join(' · ') || null,
+            active: Boolean(x.is_verified && x.is_available && u?.is_active !== false && !u?.is_blocked),
+          };
+        })
+        .filter((i) => i.active || withBookings.has(i.id))
+        .sort((a, b) => a.name.localeCompare(b.name, 'uz'));
+
+      const m = await loadMaps(rows);
+      const packs = await packagesFor(rows.map((b) => b.id));
+      const bookings = rows.map((raw) => {
+        const b: any = shape(raw, m);
+        const s = Date.parse(b.start_at);
+        const e = Date.parse(raw.end_at) || s + (Number(b.duration_minutes) || 60) * 60000;
+        const pk = packs.get(String(b.id));
+        return {
+          id: b.id, instructor_id: b.instructor_id ? String(b.instructor_id) : null,
+          start_at: new Date(s).toISOString(), end_at: new Date(e).toISOString(),
+          minutes: Math.round((e - s) / 60000), status: b.status, source: b.source || null,
+          customer_name: b.customer?.full_name || 'Mijoz', customer_phone: b.customer?.phone || null,
+          category: String(b.category || b.course?.category || '').toUpperCase() || null,
+          pickup_code: b.pickup_code || null, price: b.price || 0, is_paid: !!b.is_paid,
+          cancel_requested: !!(raw.cancel_requested_at && !raw.cancel_reviewed_at),
+          package: pk ? { n: pk.n, of: pk.of } : null,
+        };
+      });
+
+      const dayS = Date.parse(start), dayE = Date.parse(end);
+      const bm = await loadBlocks(instructors.map((i) => i.id));
+      const blocks: any[] = [];
+      for (const [iid, list] of bm) {
+        for (const x of list) {
+          if (Date.parse(x.start_at) < dayE && Date.parse(x.end_at) > dayS) blocks.push({ instructor_id: iid, start_at: x.start_at, end_at: x.end_at });
+        }
+      }
+      const sv = (k: string) => { const r = setRows.find((x: any) => x.key === k); return r ? (r.value?.value ?? r.value) : null; };
+      const hm = (v: unknown, d: string) => /^\d{1,2}:\d{2}/.test(String(v || '')) ? String(v).slice(0, 5).padStart(5, '0') : d;
+      return {
+        ok: true, date: day,
+        work_start: hm(sv('work_start'), '07:00'), work_end: hm(sv('work_end'), '19:00'),
+        slot_step_min: Number(sv('slot_step_min')) || 60,
+        instructors, bookings, blocks,
+      };
+    } catch (e: any) {
+      return reply.code(e?.statusCode ?? 500).send({ ok: false, error: e?.message || 'Jadval yuklanmadi' });
     }
   });
 
@@ -414,6 +522,20 @@ export async function registerCashierRoutes(
           ...b,
           category: String(b.category || b.course?.category || '').toUpperCase() || null,
         }));
+      const packs = await packagesFor(bookings.map((b: any) => b.id));
+      /* Paketning qaysi mashg'ulotlari to'langan — kassir «butun paketni
+         to'lash» da faqat qolganini oladi. */
+      const sids = [...new Set([...packs.values()].flatMap((pk) => pk.sessions.map((x) => String(x.booking_id))))];
+      const paidPays = sids.length ? await selectIn<any>('payments', 'booking_id', sids, 'booking_id,status') : [];
+      const paidSet = new Set(paidPays.filter((x) => String(x.status) === 'paid').map((x) => String(x.booking_id)));
+      const liveRows = sids.length ? await selectIn<any>('bookings', 'id', sids, 'id,status') : [];
+      const dead = new Set(liveRows.filter((x) => ['cancelled', 'rejected'].includes(String(x.status))).map((x) => String(x.id)));
+      for (const b of bookings as any[]) {
+        const pk = packs.get(String(b.id));
+        if (pk) b.package = { id: pk.id, n: pk.n, of: pk.of, price: pk.price, list_price: pk.list_price,
+          sessions: pk.sessions.filter((x) => !dead.has(String(x.booking_id)))
+            .map((x) => ({ ...x, paid: paidSet.has(String(x.booking_id)) })) };
+      }
       return { ok: true, bookings };
     } catch (e: any) {
       return reply.code(e?.statusCode ?? 500).send({ ok: false, error: e?.message || 'Qidiruv ishlamadi' });
@@ -747,8 +869,8 @@ export async function registerCashierRoutes(
       await requireAdmin(req);
       const category = String(req.query?.category || 'B');
       const minutes = Math.max(1, Math.min(600, Math.round(Number(req.query?.minutes || 60))));
-      const tariffs = await loadTariffs();
-      return { ok: true, category: category.toUpperCase(), minutes, price: computePrice(category, minutes, tariffs), tariffs };
+      const [tariffs, packages] = await Promise.all([loadTariffs(), loadPackagePrices()]);
+      return { ok: true, category: category.toUpperCase(), minutes, price: priceWithPackage(category, minutes, tariffs, packages), tariffs, packages };
     } catch (e: any) {
       return reply.code(e?.statusCode ?? 400).send({ ok: false, error: e?.message || 'Narx hisoblanmadi' });
     }
@@ -847,24 +969,67 @@ export async function registerCashierRoutes(
       const card = Math.max(0, Number(b.card_amount || 0));
       /* Server narxni O'ZI hisoblaydi. Kassir summani o'zgartirishi
          mumkin (chegirma, qo'shimcha), lekin katta farq bo'lsa
-         bu xato belgisi — yozib qo'yamiz va javobda qaytaramiz. */
-      const tariffs = await loadTariffs();
-      const suggested = computePrice(String(b.category || 'B'), minutes, tariffs);
-      const total = Number(b.amount ?? suggested);
+         bu xato belgisi — yozib qo'yamiz va javobda qaytaramiz.
+         5 soat — paket narxi (standart 1 100 000). */
+      const [tariffs, pkgPrices] = await Promise.all([loadTariffs(), loadPackagePrices()]);
+      const suggested = priceWithPackage(String(b.category || 'B'), minutes, tariffs, pkgPrices);
+      const total = Math.round(Number(b.amount ?? suggested));
 
       if (!(total > 0)) return reply.code(400).send({ ok: false, error: 'Summani kiriting' });
       if (cash + card !== total) {
         return reply.code(400).send({ ok: false, error: `Naqd (${cash}) + terminal (${card}) = ${cash + card}, jami esa ${total}. Mos kelmadi.` });
       }
-      const method = cash > 0 && card > 0 ? 'mixed' : (card > 0 ? 'card' : 'cash');
 
-      let booking: any = null;
+      /* Chek qaysi KASSAdan chiqarilgani — mijoz yuborgan qiymatdan EMAS,
+         imzolangan TOKENdan olinadi. */
+      const registerId = await ownRegisterFromToken(req, String(b.register_token || ''));
+      const register = registerId ? (await supabaseRest<any[]>('cash_registers', {
+        query: `?id=eq.${q(registerId)}&is_active=eq.true&select=id,code,name&limit=1`,
+      }))[0] : null;
+      if (!register) return reply.code(404).send({ ok: false, error: 'Kassa topilmadi' });
+
+      /* Chek chiqadigan bronlar. Odatda bitta; paketda — har mashg'ulotga
+         alohida chek (instruktor har darsda o'z chekini skanerlaydi). */
+      let targets: any[] = [];
+      let packageInfo: { id: string; price: number; list_price: number; of: number } | null = null;
 
       if (mode === 'booked') {
-        booking = (await supabaseRest<any[]>('bookings', { query: `?id=eq.${q(String(b.booking_id))}&select=*&limit=1` }))[0];
+        const booking = (await supabaseRest<any[]>('bookings', { query: `?id=eq.${q(String(b.booking_id))}&select=*&limit=1` }))[0];
         if (!booking) return reply.code(404).send({ ok: false, error: 'Bron topilmadi' });
         if (['cancelled', 'rejected'].includes(String(booking.status))) {
           return reply.code(409).send({ ok: false, error: 'Bekor qilingan bron uchun chek chiqarilmaydi' });
+        }
+        if (b.pay_package) {
+          /* Butun paketni bir marta to'lash — to'lanmagan hamma mashg'ulotlar */
+          const pk = await packageOf(String(booking.id));
+          if (!pk) return reply.code(400).send({ ok: false, error: 'Bu bron paketga tegishli emas' });
+          const ids = pk.sessions.map((s) => s.booking_id);
+          const [rows, pays] = await Promise.all([
+            selectIn<any>('bookings', 'id', ids, '*'),
+            selectIn<any>('payments', 'booking_id', ids, 'booking_id,status'),
+          ]);
+          const paid = new Set(pays.filter((p) => String(p.status) === 'paid').map((p) => String(p.booking_id)));
+          targets = rows
+            .filter((r) => !paid.has(String(r.id)) && !['cancelled', 'rejected'].includes(String(r.status)))
+            .sort((x, y) => String(x.start_at).localeCompare(String(y.start_at)));
+          if (!targets.length) return reply.code(409).send({ ok: false, error: 'Paketning hamma mashg‘ulotlari allaqachon to‘langan' });
+          packageInfo = { id: pk.id, price: pk.price, list_price: pk.list_price, of: pk.of };
+        } else {
+          targets = [booking];
+          // Bronli holatda ham davomiylik/kategoriya kassada aniqlanishi mumkin
+          if (Number(booking.duration_minutes || 0) !== minutes || b.category) {
+            const start = new Date(booking.start_at || booking.booking_date);
+            targets = [(await supabaseRest<any[]>('bookings', {
+              method: 'PATCH', headers: { Prefer: 'return=representation' }, query: `?id=eq.${q(String(booking.id))}`,
+              body: JSON.stringify({
+                duration_minutes: minutes,
+                end_at: new Date(start.getTime() + minutes * 60000).toISOString(),
+                category: b.category || booking.category || null,
+                status: booking.status === 'pending' ? 'confirmed' : booking.status,
+                updated_at: new Date().toISOString(),
+              }),
+            }))[0] ?? booking];
+          }
         }
       } else {
         const fullName = String(b.full_name || '').trim();
@@ -876,8 +1041,18 @@ export async function registerCashierRoutes(
         if (!instructorId) return reply.code(400).send({ ok: false, error: 'Instruktor tanlanmagan' });
         if (!courseId) return reply.code(400).send({ ok: false, error: 'Mashg‘ulot tanlanmagan' });
         if (Number.isNaN(start.getTime())) return reply.code(400).send({ ok: false, error: 'Vaqt noto‘g‘ri' });
-        {
-          const blk = await instructorBlockedAt(instructorId, start, new Date(start.getTime() + minutes * 60000));
+
+        /* 5 soat — paket: bir kunda yoki bir necha kunga bo'lingan */
+        const isPackage = minutes === PACKAGE_MINUTES || (Array.isArray(b.sessions) && b.sessions.length > 0);
+        let sessions: Session[] = [{ start, end: new Date(start.getTime() + minutes * 60000), minutes }];
+        if (isPackage) {
+          const raw = Array.isArray(b.sessions) && b.sessions.length ? b.sessions : [{ start_at: start.toISOString(), minutes: PACKAGE_MINUTES }];
+          const parsed = parseSessions(raw);
+          if ('error' in parsed) return reply.code(400).send({ ok: false, error: parsed.error });
+          sessions = parsed.sessions;
+        }
+        for (const s of sessions) {
+          const blk = await instructorBlockedAt(instructorId, s.start, s.end);
           if (blk) return reply.code(409).send({ ok: false, error: blockedMessage(blk) });
         }
 
@@ -887,6 +1062,9 @@ export async function registerCashierRoutes(
         if (!customer && phone) {
           customer = (await supabaseRest<any[]>('users', { query: `?phone=eq.${q(phone)}&select=*&limit=1` }))[0];
         }
+        /* Band vaqtga chek chiqmasin: instruktor yoki mijoz shu paytda band */
+        const clash = await sessionConflict(instructorId, customer?.id ? String(customer.id) : null, sessions);
+        if (clash) return reply.code(409).send({ ok: false, error: clash });
         if (!customer) {
           customer = (await supabaseRest<any[]>('users', {
             method: 'POST', headers: { Prefer: 'return=representation' },
@@ -895,76 +1073,95 @@ export async function registerCashierRoutes(
         }
 
         const now = new Date().toISOString();
-        booking = (await supabaseRest<any[]>('bookings', {
-          method: 'POST', headers: { Prefer: 'return=representation' },
-          body: JSON.stringify({
-            customer_id: customer.id, instructor_id: instructorId, course_id: courseId,
-            booking_date: start.toISOString(), start_at: start.toISOString(),
-            end_at: new Date(start.getTime() + minutes * 60000).toISOString(),
-            duration_minutes: minutes, category: b.category || null,
-            status: 'confirmed', source: 'walk_in', confirmed_at: now, confirmed_by: admin.id,
-          }),
-        }))[0];
+        if (isPackage) {
+          const cat = String(b.category || '').toUpperCase();
+          if (!/^[ABC]$/.test(cat)) return reply.code(400).send({ ok: false, error: 'Paket uchun kategoriyani tanlang' });
+          const { bookings, record } = await createPackage({
+            customerId: String(customer.id), instructorId, courseId, category: cat, sessions,
+            status: 'confirmed', source: 'walk_in', extra: { confirmed_at: now, confirmed_by: admin.id },
+            total, tariffs, prices: pkgPrices, newCode: nextPickupCode,
+          });
+          targets = bookings;
+          packageInfo = { id: record.id, price: record.price, list_price: record.list_price, of: bookings.length };
+        } else {
+          targets = [(await supabaseRest<any[]>('bookings', {
+            method: 'POST', headers: { Prefer: 'return=representation' },
+            body: JSON.stringify({
+              customer_id: customer.id, instructor_id: instructorId, course_id: courseId,
+              booking_date: start.toISOString(), start_at: start.toISOString(),
+              end_at: new Date(start.getTime() + minutes * 60000).toISOString(),
+              duration_minutes: minutes, category: b.category || null,
+              status: 'confirmed', source: 'walk_in', confirmed_at: now, confirmed_by: admin.id,
+            }),
+          }))[0]];
+        }
       }
 
-      // Bronli holatda ham davomiylik/kategoriya kassada aniqlanishi mumkin
-      if (mode === 'booked' && (Number(booking.duration_minutes || 0) !== minutes || b.category)) {
-        const start = new Date(booking.start_at || booking.booking_date);
-        booking = (await supabaseRest<any[]>('bookings', {
-          method: 'PATCH', headers: { Prefer: 'return=representation' }, query: `?id=eq.${q(String(booking.id))}`,
-          body: JSON.stringify({
-            duration_minutes: minutes,
-            end_at: new Date(start.getTime() + minutes * 60000).toISOString(),
-            category: b.category || booking.category || null,
-            status: booking.status === 'pending' ? 'confirmed' : booking.status,
-            updated_at: new Date().toISOString(),
-          }),
-        }))[0] ?? booking;
+      /* Bitta bronda — o'sha bron allaqachon to'langanmi */
+      const existingAll = await selectIn<any>('payments', 'booking_id', targets.map((t) => t.id), '*');
+      const existingBy = new Map(existingAll.map((p) => [String(p.booking_id), p]));
+      if (targets.length === 1) {
+        const ex = existingBy.get(String(targets[0].id));
+        if (ex && String(ex.status) === 'paid') {
+          return reply.code(409).send({ ok: false, error: `Bu bron allaqachon to‘langan. Chek: ${ex.receipt_code || '—'}` });
+        }
       }
 
-      const existing = (await supabaseRest<any[]>('payments', { query: `?booking_id=eq.${q(String(booking.id))}&select=*&limit=1` }))[0];
-      if (existing && String(existing.status) === 'paid') {
-        return reply.code(409).send({ ok: false, error: `Bu bron allaqachon to‘langan. Chek: ${existing.receipt_code || '—'}` });
+      /* Summani bronlarga bo'lamiz: har bronning o'z narxiga qarab
+         (paket 3+2 → 660 000 + 440 000). Naqd/terminal ham shu nisbatda. */
+      const base = targets.map((t) => Number(t.price) > 0 ? Number(t.price) : 1);
+      const amounts = targets.length === 1 ? [total] : splitBy(total, base);
+      const cashParts = splitCapped(cash, amounts);
+
+      const receipts: any[] = [], payments: any[] = [], shapedAll: any[] = [];
+      for (let i = 0; i < targets.length; i++) {
+        const t = targets[i];
+        if (t.status === 'pending') {
+          await supabaseRest('bookings', {
+            method: 'PATCH', query: `?id=eq.${q(String(t.id))}`,
+            body: JSON.stringify({ status: 'confirmed', confirmed_at: new Date().toISOString(), confirmed_by: admin.id, updated_at: new Date().toISOString() }),
+          }).catch(() => null);
+        }
+        const codeRes = await supabaseRest<any>('rpc/generate_receipt_code', { method: 'POST', body: '{}' });
+        const receiptCode = typeof codeRes === 'string' ? codeRes : String(codeRes ?? '');
+        if (!receiptCode) throw new Error('Chek kodi yaratilmadi');
+        const c = cashParts[i], k = amounts[i] - cashParts[i];
+        const method = c > 0 && k > 0 ? 'mixed' : (k > 0 ? 'card' : 'cash');
+        const payload = {
+          booking_id: t.id, customer_id: t.customer_id, amount: amounts[i], currency: 'UZS',
+          status: 'paid', method, cash_amount: c, card_amount: k,
+          paid_at: new Date().toISOString(), receipt_code: receiptCode, cashier_id: admin.id, register_id: register.id,
+          note: String(b.note || '').trim() || (packageInfo ? `5 soatlik paket · ${i + 1}/${targets.length}` : null),
+        };
+        const existing = existingBy.get(String(t.id));
+        const payment = existing
+          ? (await supabaseRest<any[]>('payments', {
+              method: 'PATCH', headers: { Prefer: 'return=representation' },
+              query: `?id=eq.${q(String(existing.id))}`, body: JSON.stringify(payload) }))[0]
+          : (await supabaseRest<any[]>('payments', {
+              method: 'POST', headers: { Prefer: 'return=representation' }, body: JSON.stringify(payload) }))[0];
+        await audit(admin.id, 'RECEIPT_ISSUED', 'payments', payment?.id ?? null, null,
+          { amount: amounts[i], suggested, method, cash: c, card: k, receipt_code: receiptCode, booking_id: t.id, mode,
+            register: register.code, package: packageInfo?.id || null });
+        payments.push(payment);
       }
 
-      const codeRes = await supabaseRest<any>('rpc/generate_receipt_code', { method: 'POST', body: '{}' });
-      const receiptCode = typeof codeRes === 'string' ? codeRes : String(codeRes ?? '');
-      if (!receiptCode) throw new Error('Chek kodi yaratilmadi');
-
-      /* Chek qaysi KASSAdan chiqarilgani.
-         Kassa ID'si mijoz yuborgan qiymatdan EMAS, imzolangan TOKENdan
-         olinadi. Shunday qilib brauzerni o'zgartirib boshqa kassa
-         nomidan chek chiqarib bo'lmaydi. */
-      const registerId = await ownRegisterFromToken(req, String(b.register_token || ''));
-      if (!registerId) {
-        return reply.code(401).send({ ok: false, error: 'Kassa ochilmagan yoki muddati tugagan. P1 yoki P2 ni PIN bilan qayta oching.' });
-      }
-      const register = (await supabaseRest<any[]>('cash_registers', {
-        query: `?id=eq.${q(registerId)}&is_active=eq.true&select=id,code,name&limit=1`,
-      }))[0];
-      if (!register) return reply.code(404).send({ ok: false, error: 'Kassa topilmadi' });
-
-      const now2 = new Date().toISOString();
-      const payload = {
-        booking_id: booking.id, customer_id: booking.customer_id, amount: total, currency: 'UZS',
-        status: 'paid', method, cash_amount: cash, card_amount: card,
-        paid_at: now2, receipt_code: receiptCode, cashier_id: admin.id, register_id: registerId,
-        note: String(b.note || '').trim() || null,
-      };
-      const payment = existing
-        ? (await supabaseRest<any[]>('payments', {
-            method: 'PATCH', headers: { Prefer: 'return=representation' },
-            query: `?id=eq.${q(String(existing.id))}`, body: JSON.stringify(payload) }))[0]
-        : (await supabaseRest<any[]>('payments', {
-            method: 'POST', headers: { Prefer: 'return=representation' }, body: JSON.stringify(payload) }))[0];
-
-      await audit(admin.id, 'RECEIPT_ISSUED', 'payments', payment?.id ?? null, null,
-        { amount: total, suggested, method, cash, card, receipt_code: receiptCode, booking_id: booking.id, mode, register: register.code });
-
-      const fresh = (await supabaseRest<any[]>('bookings', { query: `?id=eq.${q(String(booking.id))}&select=*&limit=1` }))[0];
-      const m = await loadMaps([fresh]);
-      const shaped = shape(fresh, m); (shaped as any).__register = register.name;
-      return reply.code(201).send({ ok: true, mode, booking: shaped, payment, receipt: buildReceipt(shaped, payment) });
+      const fresh = await selectIn<any>('bookings', 'id', targets.map((t) => t.id), '*');
+      const fm = new Map(fresh.map((x) => [String(x.id), x]));
+      const m = await loadMaps(fresh);
+      targets.forEach((t, i) => {
+        const shaped: any = shape(fm.get(String(t.id)) || t, m);
+        shaped.__register = register.name;
+        if (packageInfo) shaped.package = { ...packageInfo, n: i + 1 };
+        shapedAll.push(shaped);
+        const r: any = buildReceipt(shaped, payments[i]);
+        if (packageInfo) r.package_text = `5 soatlik paket · ${i + 1}/${targets.length}`;
+        receipts.push(r);
+      });
+      return reply.code(201).send({
+        ok: true, mode, booking: shapedAll[0], payment: payments[0], receipt: receipts[0],
+        bookings: shapedAll, payments, receipts, package: packageInfo,
+      });
     } catch (e: any) {
       const msg = String(e?.message || '');
       if (/no_instructor_overlap/.test(msg)) return reply.code(409).send({ ok: false, error: 'Instruktor bu vaqtda band' });
@@ -1002,6 +1199,16 @@ export async function registerCashierRoutes(
       if (Number.isNaN(start.getTime())) return reply.code(400).send({ ok: false, error: 'Sana yoki vaqt noto‘g‘ri' });
       if (!/^[ABC]$/.test(category)) return reply.code(400).send({ ok: false, error: 'Kategoriyani tanlang' });
 
+      /* 5 soat — paket: bir kunda yoki bir necha kunga bo'lingan mashg'ulotlar */
+      const isPackage = minutes === PACKAGE_MINUTES || (Array.isArray(b.sessions) && b.sessions.length > 0);
+      let sessions: Session[] = [{ start, end: new Date(start.getTime() + minutes * 60000), minutes }];
+      if (isPackage) {
+        const raw = Array.isArray(b.sessions) && b.sessions.length ? b.sessions : [{ start_at: start.toISOString(), minutes: PACKAGE_MINUTES }];
+        const parsed = parseSessions(raw);
+        if ('error' in parsed) return reply.code(400).send({ ok: false, error: parsed.error });
+        sessions = parsed.sessions;
+      }
+
       // Instruktor shu kategoriyani o'rgatadimi?
       const ins = (await supabaseRest<any[]>('instructor_profiles', {
         query: `?id=eq.${q(instructorId)}&select=id,categories,is_verified,is_available&limit=1`,
@@ -1012,8 +1219,8 @@ export async function registerCashierRoutes(
         return reply.code(409).send({ ok: false, error: `Bu instruktor ${category} kategoriyani o‘rgatmaydi` });
       }
       /* Instruktor bu soatni o'zi yopgan bo'lsa — qo'lda bron ham qilinmaydi */
-      {
-        const blk = await instructorBlockedAt(instructorId, start, new Date(start.getTime() + minutes * 60000));
+      for (const s of sessions) {
+        const blk = await instructorBlockedAt(instructorId, s.start, s.end);
         if (blk) return reply.code(409).send({ ok: false, error: blockedMessage(blk) });
       }
 
@@ -1030,6 +1237,11 @@ export async function registerCashierRoutes(
       if (phone) {
         customer = (await supabaseRest<any[]>('users', { query: `?phone=eq.${q(phone)}&select=*&limit=1` }))[0];
       }
+      /* Band vaqtga bron yozilmasin. Ilgari faqat bazadagi cheklovga
+         tayanilardi — u bo'lmasa, 2 soatlik bronning ikkinchi soatiga
+         boshqa mijoz yozilib qolardi. */
+      const clash = await sessionConflict(instructorId, customer?.id ? String(customer.id) : null, sessions);
+      if (clash) return reply.code(409).send({ ok: false, error: clash });
       if (!customer) {
         try {
           customer = (await supabaseRest<any[]>('users', {
@@ -1044,33 +1256,45 @@ export async function registerCashierRoutes(
         }
       }
 
-      const end = new Date(start.getTime() + minutes * 60000);
       const now = new Date().toISOString();
+      const note = String(b.note || '').trim();
+      const [tariffs, pkgPrices] = await Promise.all([loadTariffs(), loadPackagePrices()]);
+
+      if (isPackage) {
+        const { bookings, record } = await createPackage({
+          customerId: String(customer.id), instructorId, courseId: String(course.id), category, sessions,
+          status: 'confirmed', source: 'admin', extra: { confirmed_at: now, confirmed_by: admin.id },
+          note: note || 'Telefon orqali qo‘lda bron', tariffs, prices: pkgPrices, newCode: nextPickupCode,
+        });
+        await audit(admin.id, 'MANUAL_BOOKING_CREATED', 'bookings', bookings[0]?.id ?? null, null,
+          { customer: fullName, phone, category, minutes: PACKAGE_MINUTES, package: record.id, sessions: bookings.length });
+        const pkg = { id: record.id, price: record.price, list_price: record.list_price, of: bookings.length };
+        return reply.code(201).send({
+          ok: true, booking: bookings[0], bookings, customer, course, package: pkg,
+          pickup_code: bookings[0]?.pickup_code || null,
+          pickup_codes: bookings.map((x) => x.pickup_code).filter(Boolean),
+        });
+      }
+
+      const end = new Date(start.getTime() + minutes * 60000);
       const pickupCode = await nextPickupCode();
+      const price = priceWithPackage(category, minutes, tariffs, pkgPrices);
+      const base = {
+        customer_id: customer.id, instructor_id: instructorId, course_id: course.id,
+        booking_date: start.toISOString(), start_at: start.toISOString(), end_at: end.toISOString(),
+        duration_minutes: minutes, hours: Math.max(1, Math.round(minutes / 60)), category, price,
+        status: 'confirmed', source: 'admin',
+        confirmed_at: now, confirmed_by: admin.id,
+        customer_note: note || 'Telefon orqali qo‘lda bron',
+      };
       const rows = await supabaseRest<any[]>('bookings', {
         method: 'POST', headers: { Prefer: 'return=representation' },
-        body: JSON.stringify({
-          customer_id: customer.id, instructor_id: instructorId, course_id: course.id,
-          booking_date: start.toISOString(), start_at: start.toISOString(), end_at: end.toISOString(),
-          duration_minutes: minutes, category,
-          status: 'confirmed', source: 'admin',
-          confirmed_at: now, confirmed_by: admin.id,
-          pickup_code: pickupCode,
-          customer_note: String(b.note || '').trim() || 'Telefon orqali qo‘lda bron',
-        }),
+        body: JSON.stringify({ ...base, pickup_code: pickupCode }),
       }).catch(async (e: any) => {
         /* pickup_code ustuni hali yo'q bo'lsa — kodsiz yozamiz */
         if (/pickup_code/i.test(String(e?.message || ''))) {
           return await supabaseRest<any[]>('bookings', {
-            method: 'POST', headers: { Prefer: 'return=representation' },
-            body: JSON.stringify({
-              customer_id: customer.id, instructor_id: instructorId, course_id: course.id,
-              booking_date: start.toISOString(), start_at: start.toISOString(), end_at: end.toISOString(),
-              duration_minutes: minutes, category,
-              status: 'confirmed', source: 'admin',
-              confirmed_at: now, confirmed_by: admin.id,
-              customer_note: String(b.note || '').trim() || 'Telefon orqali qo‘lda bron',
-            }),
+            method: 'POST', headers: { Prefer: 'return=representation' }, body: JSON.stringify(base),
           });
         }
         throw e;

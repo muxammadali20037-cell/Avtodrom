@@ -233,6 +233,7 @@ export async function registerAnalyticsRoutes(
         return {
           id: b.id,
           start_at: b.start_at || b.booking_date,
+          end_at: b.end_at || null,
           arrived_at: b.arrived_at,
           departed_at: b.departed_at,
           status: b.status,

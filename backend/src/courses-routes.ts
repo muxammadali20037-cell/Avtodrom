@@ -36,7 +36,9 @@ export async function registerCourseRoutes(
                        'location', 'work_start', 'work_end', 'slot_step_min',
                        'about_text', 'facilities',
                        // Tariflar — mijoz narxni ko'rishi kerak
-                       'half_a', 'half_b', 'half_c', 'rate_a', 'rate_b', 'rate_c'];
+                       'half_a', 'half_b', 'half_c', 'rate_a', 'rate_b', 'rate_c',
+                       // 5 soatlik paket narxi (0 — paket o'chirilgan)
+                       'paket5_a', 'paket5_b', 'paket5_c'];
 
   app.get('/api/settings', async (_request, reply) => {
     try {

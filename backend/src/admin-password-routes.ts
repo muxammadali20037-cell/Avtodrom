@@ -8,6 +8,7 @@ import {
   type StaffIdentity, type StaffRole,
 } from './staff-auth.js';
 import { bookingSearchFilter, tashkentDayStart } from './booking-search.js';
+import { packagesFor } from './packages.js';
 import { isStoragePublicUrl } from './storage-url.js';
 
 const COOKIE = 'avtodrom_admin_session', TTL = 60 * 60 * 12;
@@ -127,6 +128,8 @@ export const OPERATOR_ALLOWED: RegExp[] = [
   /^(GET) \/api\/admin\/cashier\/(free-instructors|search|instructors)$/,
   /^(GET) \/api\/admin\/price$/,
   /^(GET) \/api\/admin\/(courses|settings)$/,
+  // Instruktorlarning kunlik jadvali (Excel ham shu ma'lumotdan)
+  /^(GET) \/api\/admin\/schedule$/,
   // Mijozlar chati
   /^(GET) \/api\/admin\/support$/,
   /^(GET) \/api\/admin\/support\/[^/]+$/,
@@ -1130,6 +1133,7 @@ export async function registerAdminPasswordRoutes(app: FastifyInstance) {
       const im = new Map(ipsR.rows.map((i: any) => [String(i.id), i]));
       const cm = new Map(coursesR.rows.map((c: any) => [String(c.id), c]));
       const warnings = [bookingsR.warning, usersR.warning, ipsR.warning, coursesR.warning, paymentsR.warning].filter(Boolean);
+      const packs = await packagesFor(bkIds);
       return {
         ok: true,
         warnings,
@@ -1153,6 +1157,8 @@ export async function registerAdminPasswordRoutes(app: FastifyInstance) {
             course: c || null,
             // Yuborilган eslatmalar (60/30/10) — admin ko'radi
             reminders: rem.get(String(b.id)) || [],
+            // 5 soatlik paketning nechanchi mashg'uloti
+            package: (() => { const pk = packs.get(String(b.id)); return pk ? { id: pk.id, n: pk.n, of: pk.of, price: pk.price } : null; })(),
           };
         }),
       };
@@ -1468,11 +1474,15 @@ async function notifyInstructorDecision(
      (tariflar, ish vaqti, manzil). PIN xeshlari va tizim yozuvlari —
      faqat administratorga. */
   const WORK_SETTING_KEYS = ['system_name', 'contact_phone', 'address', 'working_hours', 'booking_enabled',
-    'location', 'work_start', 'work_end', 'slot_step_min', 'half_a', 'half_b', 'half_c', 'rate_a', 'rate_b', 'rate_c'];
+    'location', 'work_start', 'work_end', 'slot_step_min', 'half_a', 'half_b', 'half_c', 'rate_a', 'rate_b', 'rate_c',
+    'paket5_a', 'paket5_b', 'paket5_c'];
+  /* Tizim yozuvlari (paketlar, instruktor yopgan soatlar) sozlamalar
+     ro'yxatiga kirmaydi — ular yuzlab bo'lishi mumkin. */
+  const HIDE_SYSTEM_KEYS = '&key=not.like.pack*&key=not.like.instructor_busy*';
   app.get('/api/admin/settings', async (req: any, reply: any) => {
     try {
       const me = await currentStaff(req);
-      const filter = me.role === 'admin' ? '' : `&key=in.(${WORK_SETTING_KEYS.map(q).join(',')})`;
+      const filter = me.role === 'admin' ? HIDE_SYSTEM_KEYS : `&key=in.(${WORK_SETTING_KEYS.map(q).join(',')})`;
       return { ok: true, settings: await safe<any>('admin_settings', `?select=key,value,updated_at&order=key.asc${filter}`) };
     }
     catch (e) { return err(reply, e, 'Failed to load settings'); }
