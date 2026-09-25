@@ -78,6 +78,21 @@ button,input,select,textarea{font:inherit}.hidden{display:none!important}
 .durs{display:grid;grid-template-columns:repeat(5,1fr);gap:7px}
 .durs button{border:1.5px solid var(--line);background:#fff;border-radius:11px;padding:11px 3px;font-weight:800;font-size:13px;cursor:pointer;color:var(--text)}
 .durs button.on{border-color:var(--g);background:var(--soft);color:var(--g)}
+/* Qo'lda bron: 4 ta davomiylik, 5 soat — yashil paket */
+#manual .durs{grid-template-columns:repeat(4,1fr)}
+#manual .durs button small{display:block;font-size:10.5px;font-weight:700;color:var(--muted);margin-top:2px}
+#manual .durs button.pkg{border-color:#86d9a8;background:#f0fbf4;color:#0d7a4a}
+#manual .durs button.pkg small s{color:#8a94a8}
+#manual .durs button.pkg.on{border-color:#16a34a;background:#dcf5e5;box-shadow:0 0 0 1px #16a34a}
+#manual .splits{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+#manual .splits button{border:1.5px solid var(--line);background:#fff;border-radius:11px;padding:9px 10px;text-align:left;font-weight:800;font-size:13px;cursor:pointer;color:var(--text)}
+#manual .splits button small{display:block;font-size:11px;color:var(--muted);font-weight:600;margin-top:2px}
+#manual .splits button.on{border-color:#16a34a;background:#e3f7ea}
+#manual .mbsess{display:grid;grid-template-columns:minmax(0,1fr) 150px 110px;gap:8px;align-items:center;border:1.5px solid var(--line);border-radius:11px;padding:8px 10px}
+#manual .mbsess b{font-size:13.5px}
+#manual .mbsess small{display:block;font-size:11.5px;color:var(--muted)}
+#manual .mbsess .input{margin:0;height:38px}
+@media(max-width:720px){#manual .durs{grid-template-columns:repeat(2,1fr)}#manual .splits{grid-template-columns:1fr}#manual .mbsess{grid-template-columns:1fr 1fr}#manual .mbsess>div:first-child{grid-column:1/-1}}
 .suggest{position:relative;margin-top:6px;border:1px solid var(--line);border-radius:11px;overflow:hidden;background:#fff;max-height:210px;overflow-y:auto}
 .suggest button{display:block;width:100%;text-align:left;border:0;background:#fff;padding:10px 12px;border-bottom:1px solid #E8EEFC;cursor:pointer;font-size:13px}
 .suggest button:hover{background:var(--soft)}
@@ -338,6 +353,21 @@ button,input,select,textarea{font:inherit}.hidden{display:none!important}
 .durs{display:grid;grid-template-columns:repeat(5,1fr);gap:7px}
 .durs button{border:1.5px solid var(--line);background:#fff;border-radius:11px;padding:11px 3px;font-weight:800;font-size:13px;cursor:pointer;color:var(--text)}
 .durs button.on{border-color:var(--g);background:var(--soft);color:var(--g)}
+/* Qo'lda bron: 4 ta davomiylik, 5 soat — yashil paket */
+#manual .durs{grid-template-columns:repeat(4,1fr)}
+#manual .durs button small{display:block;font-size:10.5px;font-weight:700;color:var(--muted);margin-top:2px}
+#manual .durs button.pkg{border-color:#86d9a8;background:#f0fbf4;color:#0d7a4a}
+#manual .durs button.pkg small s{color:#8a94a8}
+#manual .durs button.pkg.on{border-color:#16a34a;background:#dcf5e5;box-shadow:0 0 0 1px #16a34a}
+#manual .splits{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+#manual .splits button{border:1.5px solid var(--line);background:#fff;border-radius:11px;padding:9px 10px;text-align:left;font-weight:800;font-size:13px;cursor:pointer;color:var(--text)}
+#manual .splits button small{display:block;font-size:11px;color:var(--muted);font-weight:600;margin-top:2px}
+#manual .splits button.on{border-color:#16a34a;background:#e3f7ea}
+#manual .mbsess{display:grid;grid-template-columns:minmax(0,1fr) 150px 110px;gap:8px;align-items:center;border:1.5px solid var(--line);border-radius:11px;padding:8px 10px}
+#manual .mbsess b{font-size:13.5px}
+#manual .mbsess small{display:block;font-size:11.5px;color:var(--muted)}
+#manual .mbsess .input{margin:0;height:38px}
+@media(max-width:720px){#manual .durs{grid-template-columns:repeat(2,1fr)}#manual .splits{grid-template-columns:1fr}#manual .mbsess{grid-template-columns:1fr 1fr}#manual .mbsess>div:first-child{grid-column:1/-1}}
 .suggest{position:relative;margin-top:6px;border:1px solid var(--line);border-radius:11px;overflow:hidden;background:#fff;max-height:210px;overflow-y:auto}
 .suggest button{display:block;width:100%;text-align:left;border:0;background:#fff;padding:10px 12px;border-bottom:1px solid #E8EEFC;cursor:pointer;font-size:13px}
 .suggest button:hover{background:var(--soft)}
@@ -539,6 +569,7 @@ pre.json{background:#F7FAFF;border:1px solid var(--line);border-radius:8px;paddi
 #receiptPaper h3{text-align:center;margin:0 0 3px;font-size:20px;font-weight:900;letter-spacing:.02em;color:#000}
 #receiptPaper .c{text-align:center;color:#000}
 #receiptPaper .hr{border-top:2px dashed #000;margin:9px 0}
+#receiptPaper .rcbreak{border-top:3px dashed #000;margin:16px 0;break-after:page;page-break-after:always}
 #receiptPaper .row{display:flex;justify-content:space-between;gap:8px;color:#000}
 #receiptPaper .row span{font-weight:600}
 #receiptPaper .row b{font-weight:900}
@@ -793,6 +824,23 @@ pre.json{background:#F7FAFF;border:1px solid var(--line);border-radius:8px;paddi
 #checkout .acc-opt.on .ck{background:var(--g);border-color:var(--g);color:#fff}
 #checkout .acc-opt.wait{border-style:dashed}
 #checkout .acc-foot{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding-top:10px}
+/* 5 soatlik paket — yashil, eski narx ustidan chizilgan */
+#checkout .acc-opt.pkg{border-color:#86d9a8;background:#f0fbf4}
+#checkout .acc-opt.pkg .t{color:#0d7a4a}
+#checkout .acc-opt.pkg .p{color:#0d7a4a;text-align:right;line-height:1.15}
+#checkout .acc-opt.pkg .p s{display:block;font-size:11.5px;color:#8a94a8;font-weight:700}
+#checkout .acc-opt.pkg.on{border-color:#16a34a;background:#e3f7ea;box-shadow:0 0 0 1px #16a34a}
+#checkout .acc-opt.pkg.on .ck{background:#16a34a;border-color:#16a34a}
+#checkout .pkgtag{display:inline-block;margin-left:6px;padding:2px 8px;border-radius:99px;background:#16a34a;color:#fff;font-size:10.5px;font-weight:900;letter-spacing:.04em;vertical-align:middle}
+#checkout .sess{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:8px;align-items:center;padding:8px 10px;border:1.5px solid var(--line);border-radius:11px}
+#checkout .sess b{font-size:14px;font-weight:800}
+#checkout .sess small{display:block;font-size:11.5px;color:var(--muted);font-weight:600}
+#checkout .sess.bad{border-color:var(--red);background:#fff5f5}
+#checkout .pkgbox{margin-top:10px;border:1.5px solid #86d9a8;background:#f0fbf4;border-radius:12px;padding:10px 12px}
+#checkout .pkgbox .rw{display:flex;justify-content:space-between;gap:8px;font-size:13px;padding:3px 0}
+#checkout .pkgbox .rw.paid{color:#8a94a8;text-decoration:line-through}
+#checkout .pkgbox label{display:flex;gap:8px;align-items:center;margin-top:8px;font-weight:800;font-size:13.5px;cursor:pointer}
+@media(max-width:720px){#checkout .sess{grid-template-columns:1fr 1fr}#checkout .sess>div:first-child{grid-column:1/-1}}
 #checkout .acc-foot label{font-size:11px;font-weight:800;color:#627086;text-transform:uppercase;letter-spacing:.05em}
 #checkout .acc-foot .btn{height:38px;padding:0 16px;font-size:13px}
 #checkout .acc-list .warn,#checkout .acc-list .error{margin:0}
@@ -815,6 +863,41 @@ pre.json{background:#F7FAFF;border:1px solid var(--line);border-radius:8px;paddi
   #checkout .ck-price{grid-template-columns:1fr}
   #checkout .ck-manual .input{flex:1;width:auto}
 }
+/* ===== INSTRUKTORLAR JADVALI ===== */
+.schbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px}
+.schbar .input,.schbar .select{width:auto;margin:0;height:38px}
+.schnav{display:flex;gap:6px;align-items:center}
+.schnav .btn{height:38px;min-width:38px}
+@media(max-width:720px){.schnav{width:100%}.schnav .input{flex:1;min-width:0}.schbar .select{width:100%}}
+.schtitle{margin-left:auto;font-size:15px;font-weight:900}
+.schlegend{display:flex;gap:6px;flex-wrap:wrap;margin:4px 0 12px;font-size:12px;font-weight:700}
+.schlegend span{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:99px;background:#fff;border:1px solid var(--line)}
+.schlegend i{width:14px;height:14px;border-radius:4px;display:inline-block}
+#schSum{grid-template-columns:repeat(5,1fr)}
+#schSum .kpi small{display:block;font-size:11px;margin-top:2px}
+.schwrap{overflow-x:auto;border:1px solid var(--line);border-radius:12px;background:#fff;max-width:100%}
+.schtab{border-collapse:separate;border-spacing:0;table-layout:fixed;width:max(100%, calc(214px + var(--cols) * 38px))}
+.schtab th,.schtab td{border-right:1px solid #eef0f6;border-bottom:1px solid #eef0f6;padding:0;height:56px}
+.schtab thead th{position:sticky;top:0;background:#f7f8fc;font-size:11.5px;font-weight:800;color:#627086;height:30px;text-align:left;padding-left:5px;z-index:2}
+.schtab .nm{position:sticky;left:0;z-index:3;background:#fff;width:214px;text-align:left;padding:6px 10px;border-right:2px solid #dfe3ee}
+.schtab thead .nm{z-index:4;background:#f7f8fc}
+.schtab .nm b{display:block;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.schtab .nm small{display:block;font-size:11px;color:var(--muted);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.schtab .nm .hrs .bz{color:#c9303b}.schtab .nm .hrs .fr{color:#0d7a4a}
+.schtab td{width:38px}
+.schtab td.sf{background:#e9f8ef;cursor:pointer}
+.schtab td.sf:hover{background:#c8efd6;box-shadow:inset 0 0 0 2px #16a34a}
+.schtab td.sp{background:repeating-linear-gradient(45deg,#f4f5f8,#f4f5f8 4px,#eceef3 4px,#eceef3 8px)}
+.schtab td.sb>div,.schtab td.sk>div{margin:3px;border-radius:8px;padding:4px 7px;height:48px;overflow:hidden;display:flex;flex-direction:column;justify-content:center;line-height:1.2}
+.schtab td.sk>div{background:#9aa1b2;color:#fff;align-items:center}
+.schtab td.sb b{font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.schtab td.sb small{font-size:10.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;opacity:.9;font-weight:700}
+.schtab td.sb.conf>div{background:#f7b9be;color:#7a1219}
+.schtab td.sb.pend>div{background:#ffe08a;color:#6b4d00}
+.schtab td.sb.prog>div{background:#b9ccff;color:#1b2a7a}
+.schtab td.sb.done>div{background:#d5d9e2;color:#3b4252}
+.schtab td.sb.nosh>div{background:#ffc999;color:#7a3b00}
+@media(max-width:720px){#schSum{grid-template-columns:repeat(2,1fr)}.schtitle{margin-left:0;width:100%}.schtab .nm{width:150px}.schtab{width:calc(150px + var(--cols) * 38px)}}
 /* Davr: «Oraliq» — dan/gacha */
 .rangebar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:0 0 14px;padding:10px 12px;background:#fff;border:1px solid var(--line);border-radius:12px}
 .rangebar.hidden{display:none}
@@ -919,6 +1002,7 @@ pre.json{background:#F7FAFF;border:1px solid var(--line);border-radius:8px;paddi
   <div class="navgroup" data-grp="admin" data-op="1">BRONLAR</div>
   <button class="nav" data-grp="admin" data-p="bookings">Bronlar <span id="bookCount" class="count" title="Yangi, tasdiq kutayotgan bronlar">0</span></button>
   <button class="nav" data-grp="admin" data-p="manual">Qo‘lda bron</button>
+  <button class="nav" data-grp="admin" data-p="schedule">Instruktorlar jadvali</button>
   <button class="nav" data-grp="admin" data-p="live">Jarayonda <span id="liveCount" class="count">0</span></button>
   <button class="nav" data-grp="admin" data-p="cancels">Bekor so‘rovlari <span id="cxCount" class="count">0</span></button>
   <button class="nav" data-grp="admin" data-p="support">Mijozlar chati <span id="supCount" class="count">0</span></button>
@@ -1035,6 +1119,33 @@ pre.json{background:#F7FAFF;border:1px solid var(--line);border-radius:8px;paddi
   <div id="kliveList"></div>
 </section>
 
+<section id="schedule" class="page">
+  <div class="head"><div><h1>Instruktorlar jadvali</h1><p>Har instruktorning kunlik bandligi. Bron qancha davom etsa — shuncha vaqt band ko‘rinadi. Bo‘sh katakni bossangiz, qo‘lda bron shu vaqt bilan ochiladi.</p></div>
+    <button class="btn primary" id="schXlsx">Excel yuklab olish</button></div>
+  <div class="card">
+    <div class="schbar">
+      <div class="segs" id="schDays"></div>
+      <div class="schnav"><button class="btn small" id="schPrev" aria-label="Oldingi kun">‹</button>
+        <input id="schDate" type="date" class="input" aria-label="Sana">
+        <button class="btn small" id="schNext" aria-label="Keyingi kun">›</button></div>
+      <select id="schStep" class="select" aria-label="Katak o‘lchami"><option value="30" selected>30 daqiqalik kataklar</option><option value="60">1 soatlik kataklar</option></select>
+      <b class="schtitle" id="schTitle"></b>
+    </div>
+    <div class="schlegend">
+      <span><i style="background:#e9f8ef;border:1px solid #9fdcb6"></i>Bo‘sh</span>
+      <span><i style="background:#f7b9be"></i>Tasdiqlangan</span>
+      <span><i style="background:#ffe08a"></i>Kutilmoqda</span>
+      <span><i style="background:#b9ccff"></i>Jarayonda</span>
+      <span><i style="background:#d5d9e2"></i>Tugagan</span>
+      <span><i style="background:#ffc999"></i>Kelmagan</span>
+      <span><i style="background:#9aa1b2"></i>Instruktor yopgan</span>
+      <span><i style="background:repeating-linear-gradient(45deg,#f4f5f8,#f4f5f8 3px,#e3e5ec 3px,#e3e5ec 6px)"></i>O‘tib ketgan</span>
+    </div>
+    <div class="kpis" id="schSum"></div>
+    <div id="schGrid" class="schwrap"></div>
+  </div>
+</section>
+
 <section id="manual" class="page">
   <div class="head"><div><h1>Qo‘lda bron</h1><p>Telefon orqali murojaat qilganlar uchun. To‘lov kassada olinadi.</p></div>
     <button class="btn" id="mbClear">Tozalash</button></div>
@@ -1051,6 +1162,9 @@ pre.json{background:#F7FAFF;border:1px solid var(--line);border-radius:8px;paddi
           <span class="muted" style="font-size:12px">yoki aniq vaqtni yozing</span></div></div>
       <div class="field"><label>KATEGORIYA *</label><div class="pick3" id="mbCats"></div></div>
       <div class="field"><label>DAVOMIYLIK *</label><div class="durs" id="mbDurs"></div></div>
+      <div class="field hidden" id="mbPkgWrap"><label>5 SOATLIK PAKET — QANDAY BO‘LINADI? *</label>
+        <div class="splits" id="mbSplits"></div>
+        <div id="mbSess" style="display:grid;gap:8px;margin-top:10px"></div></div>
       <div class="field"><label>BO‘SH INSTRUKTORLAR *</label>
         <div id="mbIns" class="inslist"><div class="muted" style="font-size:13px">Sana, vaqt va kategoriyani tanlang.</div></div></div>
     </div>
@@ -1195,15 +1309,15 @@ pre.json{background:#F7FAFF;border:1px solid var(--line);border-radius:8px;paddi
           <button type="button" class="acc-h" data-acc-h="dur" aria-expanded="false"><span class="acc-l">Davomiylik</span><span class="acc-v" id="accDurV">—</span><span class="acc-ch">▼</span></button>
           <div class="acc-b">
             <div class="acc-list" id="coDurs"></div>
-            <div class="acc-foot hidden" id="coCustomWrap">
-              <input id="coCustomMin" class="input ck-mini" type="number" min="15" max="600" step="5" placeholder="daqiqa" aria-label="Davomiylik, daqiqa">
-              <span class="muted" style="font-size:12px">daqiqa (15–600)</span>
-              <button type="button" class="btn primary" id="coCustomOk">Tayyor</button>
-            </div>
           </div>
         </div>
+        <!-- 5 soatlik paket: qanday bo'linadi -->
+        <div class="acc hidden" data-acc="split" id="accSplit">
+          <button type="button" class="acc-h" data-acc-h="split" aria-expanded="false"><span class="acc-l">Paket</span><span class="acc-v" id="accSplitV">—</span><span class="acc-ch">▼</span></button>
+          <div class="acc-b"><div class="acc-list" id="coSplits"></div></div>
+        </div>
         <div class="acc" data-acc="time">
-          <button type="button" class="acc-h" data-acc-h="time" aria-expanded="false"><span class="acc-l">Vaqt</span><span class="acc-v"><span id="accTimeV">—</span><span id="coNowTag" class="nowtag">hozirgi vaqt</span></span><span class="acc-ch">▼</span></button>
+          <button type="button" class="acc-h" data-acc-h="time" aria-expanded="false"><span class="acc-l" id="accTimeL">Vaqt</span><span class="acc-v"><span id="accTimeV">—</span><span id="coNowTag" class="nowtag">hozirgi vaqt</span></span><span class="acc-ch">▼</span></button>
           <div class="acc-b">
             <div class="acc-list">
               <button type="button" class="acc-opt nob" id="coNowBtn"><span class="t">Hozir<small>hozirgi vaqt — soat o‘zi yurib turadi</small></span><span class="p" id="coNowClock"></span><i class="ck">✓</i></button>
@@ -1216,6 +1330,13 @@ pre.json{background:#F7FAFF;border:1px solid var(--line);border-radius:8px;paddi
               <button type="button" class="btn primary" id="coTimeOk">Tayyor</button>
             </div>
           </div>
+        </div>
+        <!-- Paketning keyingi kunlari -->
+        <div class="acc hidden" data-acc="sess" id="accSess">
+          <button type="button" class="acc-h" data-acc-h="sess" aria-expanded="false"><span class="acc-l">Keyingi kunlar</span><span class="acc-v" id="accSessV">—</span><span class="acc-ch">▼</span></button>
+          <div class="acc-b"><div class="acc-list" id="coSessBox"></div>
+            <div class="acc-foot"><button type="button" class="btn primary" id="coSessOk">Tayyor</button>
+              <span class="muted" style="font-size:12px">Har mashg‘ulot — alohida chek. Instruktor har kuni o‘z chekini skanerlaydi.</span></div></div>
         </div>
         <div class="acc" data-acc="ins">
           <button type="button" class="acc-h" data-acc-h="ins" aria-expanded="false"><span class="acc-l">Instruktor</span><span class="acc-v" id="accInsV">—</span><span class="acc-ch">▼</span></button>
@@ -1523,8 +1644,13 @@ pre.json{background:#F7FAFF;border:1px solid var(--line);border-radius:8px;paddi
         <input id="rateA" class="input" type="number" min="0" step="1000" placeholder="350000">
         <input id="rateB" class="input" type="number" min="0" step="1000" placeholder="250000">
         <input id="rateC" class="input" type="number" min="0" step="1000" placeholder="400000">
+
+        <div style="font-size:11px;font-weight:900;color:#0d7a4a">5 soat PAKET</div>
+        <input id="pakA" class="input" type="number" min="0" step="1000" placeholder="1100000" style="border-color:#86d9a8">
+        <input id="pakB" class="input" type="number" min="0" step="1000" placeholder="1100000" style="border-color:#86d9a8">
+        <input id="pakC" class="input" type="number" min="0" step="1000" placeholder="1100000" style="border-color:#86d9a8">
       </div>
-      <div class="muted" style="font-size:12px;margin-top:6px">30 daqiqa — alohida narx. Undan uzun vaqt soatlik tarifga proporsional (1.5 soat = soat × 1.5).</div></div>
+      <div class="muted" style="font-size:12px;margin-top:6px">30 daqiqa — alohida narx. 1 va 2 soat — soatlik tarif bo‘yicha. <b style="color:#0d7a4a">5 soatlik paket</b> — chegirmali narx: mijoz uni bir kunda yoki bir necha kunga bo‘lib oladi (5 × 1 soat, 3 + 2, 2 + 2 + 1). Paket narxi 0 bo‘lsa — shu toifada paket o‘chiriladi.</div></div>
 
     <div class="field"><label>AVTODROM HAQIDA <span class="muted">(mijoz panelidagi «INDEX AVTODROM» bo‘limi)</span></label>
       <textarea id="aboutText" class="input" rows="3" placeholder="Maydoncha haqida qisqacha…"></textarea></div>
@@ -1717,7 +1843,7 @@ const ROLE_KEY = 'avtodrom_admin_role';
 const ROLE_NAMES = { P1: 'KASSA P1', P2: 'KASSA P2', admin: 'BOSHQARUV', operator: 'OPERATOR' };
 /* Operator faqat shu to'rt bo'limni ko'radi. Server ham xuddi shunday
    cheklaydi (app.ts dagi oq ro'yxat) — ekranni aylanib o'tib ham kirib bo'lmaydi. */
-const OPERATOR_PAGES = ['bookings', 'manual', 'cancels', 'support'];
+const OPERATOR_PAGES = ['bookings', 'manual', 'schedule', 'cancels', 'support'];
 let PICKED_ROLE = '';
 try { const v = localStorage.getItem(ROLE_KEY); if (ROLE_NAMES[v]) PICKED_ROLE = v; } catch (e) {}
 
@@ -1867,6 +1993,7 @@ function showPage(id){
   if(id==='staff')loadStaff();
   if(id==='settings'&&adminMode==='admin'&&$('remBadge').textContent==='tekshirilmagan')checkReminders();
   if(id==='manual')initManual();
+  if(id==='schedule')loadSchedule();
   if(id==='live')loadLive('live');
   if(id==='klive')loadLive('klive');
   if(id==='kdash'){ if(!$('kdDate').value)$('kdDate').value=kToday(); loadKdash(); }
@@ -1932,9 +2059,9 @@ function bkRow(b){
   const paid=b.payment?.status==='paid';
   const sent=Array.isArray(b.reminders)?b.reminders:[];
   return `<div class="bkrow ${esc(b.status)}">
-    <div class="bkt"><b>${esc(kHour(b.start_at))}</b><span>${mins?esc(fmtDur(mins)):'—'}</span></div>
+    <div class="bkt"><b>${esc(kHour(b.start_at))}</b><span>${mins?esc(fmtDur(mins)):'—'}</span>${b.end_at?`<span class="muted" style="font-size:11px">–${esc(kHour(b.end_at))}</span>`:''}</div>
     <div class="bkm">
-      <b>${esc(uname(b.customer))}</b>${b.pickup_code?`<span class="rcp bkcode">${esc(b.pickup_code)}</span>`:''}${b.status==='pending'?'<span class="newtag">YANGI</span>':''}
+      <b>${esc(uname(b.customer))}</b>${b.pickup_code?`<span class="rcp bkcode">${esc(b.pickup_code)}</span>`:''}${b.status==='pending'?'<span class="newtag">YANGI</span>':''}${b.package?`<span class="newtag" style="background:#16a34a;color:#fff" title="5 soatlik paket">PAKET ${esc(b.package.n)}/${esc(b.package.of)}</span>`:''}
       <div class="r2">${esc(b.customer?.phone||'telefon yo‘q')} · ${esc(iname(b.instructor))}${b.course?.name?` · ${esc(b.course.name)}`:(cat?` · ${esc(cat)} toifa`:'')}</div>
       ${sent.length||b.customer_note?`<div class="r3">${sent.length?`Eslatma yuborildi: ${esc(sent.join(', '))} daq oldin`:''}${sent.length&&b.customer_note?' · ':''}${b.customer_note?`Izoh: ${esc(b.customer_note)}`:''}</div>`:''}
     </div>
@@ -2709,7 +2836,7 @@ function renderAudit(){
    (a) avtomatik yangilanish to'xtaydi, (b) loadSettings maydonlarga tegmaydi.
    Saqlangandan yoki bekor qilingandan keyingina qulf ochiladi. */
 let editing = false;
-const SETTING_FIELDS = ['systemName','bookingEnabled','contactPhone','contactPhone2','workingHours','halfA','halfB','halfC','rateA','rateB','rateC','aboutText','facilities','workStart','workEnd','slotStep',
+const SETTING_FIELDS = ['systemName','bookingEnabled','contactPhone','contactPhone2','workingHours','halfA','halfB','halfC','rateA','rateB','rateC','pakA','pakB','pakC','aboutText','facilities','workStart','workEnd','slotStep',
                         'locName','locAddress','locLat','locLng','locGoogle','locYandex','loc2gis'];
 function markEditing(){ if(!editing){ editing=true; $('locDirty').classList.remove('hidden'); } }
 function clearEditing(){ editing=false; $('locDirty').classList.add('hidden'); }
@@ -2735,6 +2862,9 @@ function loadSettings(){
   $('rateA').value=val('rate_a')||350000;
   $('rateB').value=val('rate_b')||250000;
   $('rateC').value=val('rate_c')||400000;
+  /* Paket narxi: sozlama yo'q bo'lsa 1 100 000; 0 — paket o'chirilgan */
+  const pk=k=>{ const v=val(k); return v===''||v===null||v===undefined ? 1100000 : Number(v); };
+  $('pakA').value=pk('paket5_a'); $('pakB').value=pk('paket5_b'); $('pakC').value=pk('paket5_c');
   $('facilities').value=val('facilities');
   $('workStart').value=val('work_start')||'07:00';
   $('workEnd').value=val('work_end')||'19:00';
@@ -2790,6 +2920,7 @@ $('saveSettingsBtn').onclick=async()=>{
   const button=$('saveSettingsBtn');if(button.disabled)return;
   const priceIds=['halfA','halfB','halfC','rateA','rateB','rateC'];
   if(priceIds.some(id=>!$(id).value||!Number.isFinite(Number($(id).value))||Number($(id).value)<=0))return notice('Tariflar musbat son bo‘lishi kerak.');
+  if(['pakA','pakB','pakC'].some(id=>$(id).value===''||!Number.isFinite(Number($(id).value))||Number($(id).value)<0))return notice('Paket narxi 0 yoki musbat son bo‘lishi kerak (0 — paket o‘chiq).');
   if($('workStart').value >= $('workEnd').value)return notice('Ish boshlanishi tugashidan oldin bo‘lsin.');
   button.disabled=true;button.textContent='Saqlanmoqda…';let saved=0;
   try{
@@ -2805,6 +2936,9 @@ $('saveSettingsBtn').onclick=async()=>{
     await put('rate_a',Number($('rateA').value)||350000);
     await put('rate_b',Number($('rateB').value)||250000);
     await put('rate_c',Number($('rateC').value)||400000);
+    await put('paket5_a',Math.max(0,Math.round(Number($('pakA').value))));
+    await put('paket5_b',Math.max(0,Math.round(Number($('pakB').value))));
+    await put('paket5_c',Math.max(0,Math.round(Number($('pakC').value))));
     await put('facilities',$('facilities').value.trim());
     await put('work_start',$('workStart').value||'07:00');
     await put('work_end',$('workEnd').value||'19:00');
@@ -3039,20 +3173,19 @@ function renderCashier(){
       </div>`;
     }).join('');
   } else {
-    // Maxsus instruktor tanlanganda: 07:00 dan 20:00 gacha soatma-soat jadval ko'rsatish
+    // Maxsus instruktor tanlanganda: 07:00 dan 20:00 gacha soatma-soat jadval ko'rsatish.
+    // Bron BUTUN davomiyligi bilan band: 10:00–12:00 bo'lsa 10:00 ham, 11:00 ham qizil.
+    const day = S.kday.date || $('kDate').value || kToday();
     let html = '<div style="display:grid;gap:6px">';
     for (let h = 7; h <= 20; h++) {
       const timeStr = (h < 10 ? '0' + h : h) + ':00';
-      const slotBookings = rows.filter(b => {
-         const bh = new Date(b.start_at).getUTCHours() + 5; // Toshkent vaqti
-         return bh === h;
-      });
-      
+      const slotBookings = rows.filter(b => !['cancelled','rejected'].includes(String(b.status)) && inHour(b, day, h));
+
       if (slotBookings.length > 0) {
         // Band vaqt (Qizil)
         html += `<div style="display:flex;gap:12px;background:#FFE5E5;border:1px solid #F5C2C7;border-radius:12px;padding:12px">
            <div style="font-weight:900;color:#C93232;width:50px">${timeStr}</div>
-           <div style="flex:1">${slotBookings.map(slotHtml).join('')}</div>
+           <div style="flex:1">${slotBookings.map(b => startsInHour(b, day, h) ? slotHtml(b) : contHtml(b)).join('')}</div>
         </div>`;
       } else {
         // Bo'sh vaqt (Yashil)
@@ -3069,13 +3202,34 @@ function renderCashier(){
   $('kGrid').querySelectorAll('[data-rcp]').forEach(b => b.onclick = () => showReceipt(b.dataset.rcp));
 }
 
+/** Bron shu soat bilan kesishadimi (Toshkent kuni, soat h:00–h+1:00). */
+function bookingEnd(b){
+  const s = Date.parse(b.start_at);
+  return Date.parse(b.end_at) || s + (Number(b.duration_minutes || b.total_minutes) || 60) * 60000;
+}
+function inHour(b, day, h){
+  const s = new Date(`${day}T${String(h).padStart(2,'0')}:00:00+05:00`).getTime(), e = s + 3600e3;
+  const bs = Date.parse(b.start_at);
+  return bs < e && bookingEnd(b) > s;
+}
+function startsInHour(b, day, h){
+  const s = new Date(`${day}T${String(h).padStart(2,'0')}:00:00+05:00`).getTime();
+  const bs = Date.parse(b.start_at);
+  return bs >= s && bs < s + 3600e3 || (h === 7 && bs < s);
+}
+/** Oldingi soatda boshlangan bronning davomi */
+function contHtml(b){
+  return `<div class="slot" style="opacity:.85"><div><b>↳ ${esc(uname(b.customer))} — davomi</b>
+    <div class="meta2">${esc(kHour(b.start_at))}–${esc(kHour(new Date(bookingEnd(b)).toISOString()))} · ${esc(fmtDur(Math.round((bookingEnd(b) - Date.parse(b.start_at)) / 60000)))}</div></div></div>`;
+}
+
 function slotHtml(b){
   const paid = b.is_paid;
   const name = uname(b.customer);
   const who = b.instructor?.profile?.full_name || '—';
   return `<div class="slot ${paid?'paid':''}">
     <div>
-      <b>${esc(kHour(b.start_at))} · ${esc(name)}</b>
+      <b>${esc(kHour(b.start_at))}–${esc(kHour(new Date(bookingEnd(b)).toISOString()))} · ${esc(name)}</b>${b.package ? ` <span class="count" style="background:#dcf5e5;color:#0d7a4a">paket ${esc(b.package.n)}/${esc(b.package.of)}</span>` : ''}
       <div class="meta2">${esc(b.customer?.phone||'telefon yo‘q')} · ${esc(who)} · ${esc(b.course?.name||'—')}${(b.hours||1)>1?` · <b>${esc(b.hours)} soat</b>`:''}
         ${b.source==='walk_in'?' · <span class="count">bronsiz</span>':''}</div>
     </div>
@@ -3196,36 +3350,44 @@ async function showReceipt(code){
   try{ const d = await api(`/api/admin/cashier/receipt/${encodeURIComponent(code)}`); receiptModal(d.receipt); }
   catch(e){ notice(e.message); }
 }
+/** Chek oynasi. Bir nechta chek (paket) bo'lsa — hammasi ketma-ket,
+    har biri alohida qog'ozga chop etiladi. */
 function receiptModal(r){
-  if (!r) return;
-  openModal('Chek', `
-    <div id="receiptPaper">
+  const list = (Array.isArray(r) ? r : [r]).filter(Boolean);
+  if (!list.length) return;
+  const addr = S.settings?.find?.(x=>x.key==='address')?.value?.value || '';
+  const one = x => `<div class="rcone">
       <h3>TASH INDEX AVTODROM</h3>
-      <div class="c" style="font-size:11px">${esc(S.settings?.find?.(x=>x.key==='address')?.value?.value || '')}</div>
+      <div class="c" style="font-size:11px">${esc(addr)}</div>
       <div class="hr"></div>
-      <div class="row"><span>Mijoz</span><b>${esc(r.customer_name)}</b></div>
-      ${r.customer_phone?`<div class="row"><span>Telefon</span><span>${esc(r.customer_phone)}</span></div>`:''}
-      <div class="row"><span>Mashg‘ulot</span><span>${esc(r.course_name)}</span></div>
-      ${r.category?`<div class="row"><span>Kategoriya</span><b>${esc(r.category)}</b></div>`:''}
-      ${r.duration_minutes?`<div class="row"><span>Davomiylik</span><b>${esc(fmtDur(r.duration_minutes))}</b></div>`:''}
-      ${r.instructor_name?`<div class="row"><span>Instruktor</span><span>${esc(r.instructor_name)}</span></div>`:''}
-      <div class="row"><span>Vaqt</span><b>${esc(r.starts_at_text)}</b></div>
+      <div class="row"><span>Mijoz</span><b>${esc(x.customer_name)}</b></div>
+      ${x.customer_phone?`<div class="row"><span>Telefon</span><span>${esc(x.customer_phone)}</span></div>`:''}
+      <div class="row"><span>Mashg‘ulot</span><span>${esc(x.course_name)}</span></div>
+      ${x.package_text?`<div class="row"><span>Paket</span><b>${esc(x.package_text)}</b></div>`:''}
+      ${x.category?`<div class="row"><span>Kategoriya</span><b>${esc(x.category)}</b></div>`:''}
+      ${x.duration_minutes?`<div class="row"><span>Davomiylik</span><b>${esc(fmtDur(x.duration_minutes))}</b></div>`:''}
+      ${x.instructor_name?`<div class="row"><span>Instruktor</span><span>${esc(x.instructor_name)}</span></div>`:''}
+      <div class="row"><span>Vaqt</span><b>${esc(x.starts_at_text)}</b></div>
       <div class="hr"></div>
-      <div class="row big"><span>Summa</span><span>${esc(r.amount_text)}</span></div>
-      <div class="row"><span>To‘lov</span><b>${esc(r.method_text)}</b></div>
-      ${r.method==='mixed'?`<div class="row"><span>· Naqd</span><span>${esc(money(r.cash_amount))}</span></div>
-      <div class="row"><span>· Terminal</span><span>${esc(money(r.card_amount))}</span></div>`:''}
-      <div class="row"><span>Sana</span><span>${esc(r.paid_at_text)}</span></div>
+      <div class="row big"><span>Summa</span><span>${esc(x.amount_text)}</span></div>
+      <div class="row"><span>To‘lov</span><b>${esc(x.method_text)}</b></div>
+      ${x.method==='mixed'?`<div class="row"><span>· Naqd</span><span>${esc(money(x.cash_amount))}</span></div>
+      <div class="row"><span>· Terminal</span><span>${esc(money(x.card_amount))}</span></div>`:''}
+      <div class="row"><span>Sana</span><span>${esc(x.paid_at_text)}</span></div>
       <div class="hr"></div>
-      <div class="c" id="qrBox"></div>
-      <div class="code">${esc(r.code)}</div>
+      <div class="c qrBox" data-code="${esc(x.code)}"></div>
+      <div class="code">${esc(x.code)}</div>
       <div class="c" style="font-size:10px;margin-top:6px">Instruktorga ushbu chekni ko‘rsating</div>
-    </div>
+    </div>`;
+  const total = list.reduce((a, x) => a + (Number(x.amount) || 0), 0);
+  openModal(list.length > 1 ? `${list.length} ta chek` : 'Chek', `
+    ${list.length > 1 ? `<div class="muted" style="font-size:12.5px;margin-bottom:10px">Paket: har mashg‘ulot uchun alohida chek. Jami <b>${esc(money(total))}</b>. Hammasi birga chop etiladi.</div>` : ''}
+    <div id="receiptPaper">${list.map(one).join('<div class="rcbreak"></div>')}</div>
     <div style="display:flex;gap:8px;margin-top:16px">
       <button class="btn" style="flex:1" id="rcClose">Yopish</button>
       <button class="btn primary" style="flex:1" id="rcPrint">Chop etish</button>
     </div>`);
-  drawQR(document.getElementById('qrBox'), r.code);
+  document.querySelectorAll('#receiptPaper .qrBox').forEach(el => drawQR(el, el.dataset.code));
   $('rcClose').onclick = closeModal;
   $('rcPrint').onclick = () => window.print();
 }
@@ -3804,13 +3966,11 @@ function renderControl(d){
   // Agar KUNLIK rejim tanlangan bo'lsa, 07:00 dan 20:00 gacha soatma-soat ko'rinish
   if (S.ctlPeriod === 'day') {
     scheduleHtml += '<div class="card"><h3 style="margin-top:0">Kunlik jadval (07:00 - 20:00)</h3><div style="display:grid;gap:6px">';
+    const cday = $('cDate').value || kToday();
     for (let h = 7; h <= 20; h++) {
       const timeStr = (h < 10 ? '0' + h : h) + ':00';
-      const slotBookings = rows.filter(b => {
-         if (!b.start_at) return false;
-         const bh = new Date(b.start_at).getUTCHours() + 5; // Toshkent vaqti
-         return bh === h;
-      });
+      /* Bron butun davomiyligi bilan: 2 soatlik bron ikkala soatda ham band */
+      const slotBookings = rows.filter(b => b.start_at && !['cancelled','rejected'].includes(String(b.status)) && inHour(b, cday, h));
       
       if (slotBookings.length > 0) {
         // Band vaqt (Qizil)
@@ -3819,7 +3979,8 @@ function renderControl(d){
            <div style="flex:1;font-size:13px">
              ${slotBookings.map(r => `
                 <div style="margin-bottom:4px">
-                  <b>${esc(uname(r.customer))}</b> (${esc(r.customer?.phone||'')})
+                  <b>${startsInHour(r, cday, h) ? '' : '↳ '}${esc(uname(r.customer))}</b> (${esc(r.customer?.phone||'')})
+                  · ${esc(kHour(r.start_at))}–${esc(kHour(new Date(bookingEnd(r)).toISOString()))}
                   · ${esc(r.course?.name||'—')} · <span class="badge ${r.status==='completed'?'ok':'yellow'}">${esc(r.status)}</span>
                 </div>
              `).join('')}
@@ -3872,7 +4033,15 @@ function renderControl(d){
    Bronli va bronsiz mijoz bir ekranda. Narx davomiylikka qarab avtomatik
    hisoblanadi (kurs birligiga nisbatan), kassir uni o'zgartira oladi.
    ========================================================================= */
-const DURS = [30, 60, 90, 120, 150, 180, 210, 240, 270, 300];
+/* Kassada faqat shular: 30 daqiqa, 1 soat, 2 soat va 5 soatlik PAKET */
+const DURS = [30, 60, 120, 300];
+const PKG_MIN = 300;
+const SPLITS = [
+  { k: '5',     m: [300],                t: 'Bir kunda — 5 soat',        s: 'hammasi bugun' },
+  { k: '3+2',   m: [180, 120],           t: '2 kunda: 3 + 2 soat',       s: '1-kuni 3 soat, 2-kuni 2 soat' },
+  { k: '2+2+1', m: [120, 120, 60],       t: '3 kunda: 2 + 2 + 1 soat',   s: '2 soat, 2 soat, 1 soat' },
+  { k: '1x5',   m: [60, 60, 60, 60, 60], t: '5 kunda: har kuni 1 soat',  s: '5 kun, 1 soatdan' },
+];
 const CO = { mode:'walk_in', customer:null, booking:null, category:'', minutes:60,
              instructor:null, pay:'', free:[], busy:[],
              /* bronli rejimda qidirish usuli: 'code' yoki 'name' */
@@ -3883,7 +4052,11 @@ const CO = { mode:'walk_in', customer:null, booking:null, category:'', minutes:6
              timeTouched:false,
              /* Kassir narxni QO'LDA yozgan bo'lsa — shu (chegirma va h.k.).
                 Kategoriya yoki davomiylik o'zgarsa avtomatikka qaytadi. */
-             manualPrice:null };
+             manualPrice:null,
+             /* 5 soatlik paket: qanday bo'lingan va keyingi kunlar vaqti */
+             split: null, sess: [],
+             /* Bron qilingan paketni butunlay to'lash */
+             payPkg: false };
 
 function coCourse(){
   // Bron uchun mashg'ulot kerak (bazada bog'lanish). Kategoriyaga mosini olamiz.
@@ -3922,12 +4095,24 @@ function tariffFor(cat){
 /** Soatlik tarif (ko'rsatish uchun). */
 function coRate(){ return tariffFor(CO.category).hour; }
 
-/** Narx: 30 daqiqa maxsus, qolgani proporsional. */
-function priceOf(cat, minutes){
+/** 5 soatlik paket narxi (sozlamada yo'q bo'lsa 1 100 000; 0 — o'chirilgan). */
+function pkgPrice(cat){
+  const v = settingVal('paket5_' + String(cat || 'B').toLowerCase());
+  if (v === null || v === undefined || v === '') return 1100000;
+  const n = Number(v);
+  return Number.isFinite(n) && n > 0 ? Math.round(n) : 0;
+}
+/** Tarif bo'yicha narx (paketsiz) — «odatda» deb ko'rsatiladi. */
+function listPriceOf(cat, minutes){
   const t = tariffFor(cat);
   const m = Math.max(1, Math.round(Number(minutes) || 0));
   if (m === 30) return Math.round(t.half);
   return Math.round((t.hour * m) / 60);
+}
+/** Narx: 30 daqiqa maxsus, 5 soat — paket, qolgani proporsional. Server bilan bir xil. */
+function priceOf(cat, minutes){
+  if (Math.round(Number(minutes) || 0) === PKG_MIN) { const p = pkgPrice(cat); if (p > 0) return p; }
+  return listPriceOf(cat, minutes);
 }
 
 function coPrice(){
@@ -3935,10 +4120,57 @@ function coPrice(){
      Aks holда tarifдан hisoblaymiz. */
   /* Bron tanlangan bo'lsa — bronning o'z narxi (mijozga aytilgani). */
   if (CO.mode === 'booked' && CO.booking) {
+    if (CO.payPkg && coPkgUnpaid().length) return coPkgUnpaid().reduce((a, x) => a + (Number(x.price) || 0), 0);
     const p = Number(CO.booking.price);
     if (Number.isFinite(p) && p > 0) return Math.round(p);
   }
   return priceOf(CO.category, CO.minutes);
+}
+/* ---- 5 soatlik paket (kassada) ---- */
+const coIsPkg = () => CO.mode === 'walk_in' && CO.minutes === PKG_MIN;
+const coSplit = () => CO.split || SPLITS[0];
+const coSplitMins = () => coIsPkg() ? coSplit().m : [CO.minutes];
+const coFirstMin = () => coSplitMins()[0];
+/** Bron qilingan paketning hali to'lanmagan mashg'ulotlari */
+function coPkgUnpaid(){
+  const pk = CO.booking && CO.booking.package;
+  return pk && Array.isArray(pk.sessions) ? pk.sessions.filter(x => !x.paid) : [];
+}
+const dmy = d => String(d || '').split('-').reverse().slice(0, 2).join('.');
+/** Keyingi kunlar: split o'zgarsa — ro'yxatni moslaymiz (kiritilganini saqlab). */
+function coSyncSess(){
+  const need = coIsPkg() ? coSplit().m.length - 1 : 0;
+  const base = $('coDate').value || kToday();
+  const hh = String($('coTime').value || '09:00').slice(0, 2) + ':00';
+  const addD = (d, n) => new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Tashkent' })
+    .format(new Date(new Date(d + 'T12:00:00+05:00').getTime() + n * 864e5));
+  while (CO.sess.length < need) {
+    const prev = CO.sess.length ? CO.sess[CO.sess.length - 1].date : base;
+    CO.sess.push({ date: addD(prev, 1), time: hh });
+  }
+  CO.sess.length = need;
+  /* 1-mashg'ulot kuni o'zgarsa — keyingilari undan KEYIN bo'lsin (har kuni bittadan) */
+  let prev = base;
+  CO.sess.forEach(x => { if (!x.date || x.date <= prev) x.date = addD(prev, 1); prev = x.date; });
+}
+/** Keyingi kunlarning [{at, minutes}] ro'yxati */
+function coExtraSessions(){
+  if (!coIsPkg()) return [];
+  const mins = coSplit().m;
+  return CO.sess.map((x, i) => ({ at: x.date && x.time ? new Date(`${x.date}T${x.time}:00+05:00`) : null, minutes: mins[i + 1], date: x.date, time: x.time }));
+}
+/** Keyingi kunlarda xato: bo'sh maydon, o'tgan vaqt, bir kunga ikki marta */
+function coSessError(){
+  const list = coExtraSessions();
+  const first = $('coDate').value;
+  const days = new Set([first]);
+  for (const [i, s] of list.entries()) {
+    if (!s.at || Number.isNaN(s.at.getTime())) return `${i + 2}-mashg‘ulot sanasi va vaqtini tanlang`;
+    if (s.at.getTime() < Date.now()) return `${i + 2}-mashg‘ulot vaqti o‘tib ketgan`;
+    if (days.has(s.date)) return `${i + 2}-mashg‘ulot boshqa kunda bo‘lsin — har kuni bitta mashg‘ulot`;
+    days.add(s.date);
+  }
+  return '';
 }
 
 function coStartAt(){
@@ -3969,6 +4201,8 @@ function coPickBooking(b){
   if (!b) return;
   CO.booking = b; CO.mode = 'booked';
   CO.customer = b.customer || null;
+  /* Paket: to'lanmagan mashg'ulotlar bir nechta bo'lsa — odatda hammasi birga to'lanadi */
+  CO.payPkg = !!(b.package && Array.isArray(b.package.sessions) && b.package.sessions.filter(x => !x.paid).length > 1);
   coResetManualPrice();              // bron narxi o'z narxi bilan keladi
   CO.minutes = Number(b.duration_minutes || b.total_minutes || 60);
   CO.category = String(b.category || b.course?.category || '').toUpperCase();
@@ -3982,7 +4216,7 @@ function coPickBooking(b){
 /** Brondan voz kechish — yana qidiruv va bronsiz maydonlar. */
 function coClearBooking(){
   const wasBooked = !!CO.booking;
-  CO.booking = null; CO.mode = 'walk_in'; CO.customer = null; CO.instructor = null;
+  CO.booking = null; CO.mode = 'walk_in'; CO.customer = null; CO.instructor = null; CO.payPkg = false;
   coResetManualPrice();
   if (wasBooked) {
     CO.timeTouched = false;
@@ -4031,7 +4265,7 @@ async function coSearch(term){
     }
     box.innerHTML = S.coFound.map(b => `<button type="button" data-cobk="${esc(b.id)}">
         <b>${esc(uname(b.customer))}${b.pickup_code ? ` <span class="rcp bkcode">${esc(b.pickup_code)}</span>` : ''}</b>
-        <span>${esc(relDay(b.start_at))} ${esc(kHour(b.start_at))} · ${esc(b.category || '—')} · ${esc(fmtDur(b.duration_minutes))} · ${esc(b.instructor?.profile?.full_name || 'instruktor —')}</span>
+        <span>${esc(relDay(b.start_at))} ${esc(kHour(b.start_at))} · ${esc(b.category || '—')} · ${esc(fmtDur(b.duration_minutes))} · ${esc(b.instructor?.profile?.full_name || 'instruktor —')}${b.package ? ` · <b style="color:#0d7a4a">paket ${esc(b.package.n)}/${esc(b.package.of)}</b>` : ''}</span>
         <span>${esc(b.customer?.phone || 'telefon yo‘q')} · <strong style="color:var(--g)">${esc(money(b.price))}</strong></span></button>`).join('');
     box.querySelectorAll('[data-cobk]').forEach(btn => btn.onclick = () =>
       coPickBooking(S.coFound.find(x => String(x.id) === btn.dataset.cobk)));
@@ -4078,7 +4312,22 @@ function coRenderPicked(){
     <div class="row"><span>Mashg‘ulot</span><b>${esc(b.course?.name || '—')}</b></div>
     <div class="row"><span>Davomiylik</span><b>${esc(fmtDur(CO.minutes))}</b></div>
     <div class="row"><span>Instruktor</span><b>${esc(b.instructor?.profile?.full_name || CO.instructor?.name || '—')}</b></div>
-    ${/^[ABC]$/.test(cat) ? '' : `<div class="warn" style="margin:8px 0 0">Bu bronda kategoriya belgilanmagan — summani tekshiring.</div>`}`;
+    ${/^[ABC]$/.test(cat) ? '' : `<div class="warn" style="margin:8px 0 0">Bu bronda kategoriya belgilanmagan — summani tekshiring.</div>`}
+    ${coPkgHtml(b)}`;
+  const cb = $('coPayPkg');
+  if (cb) cb.onchange = () => { CO.payPkg = cb.checked; coResetManualPrice(); coRender(); };
+}
+/** Bron paketga tegishli bo'lsa — mashg'ulotlar ro'yxati va «butun paketni to'lash» */
+function coPkgHtml(b){
+  const pk = b && b.package;
+  if (!pk) return '';
+  const ss = Array.isArray(pk.sessions) ? pk.sessions : [];
+  const unpaid = ss.filter(x => !x.paid);
+  return `<div class="pkgbox">
+    <div style="font-weight:900;color:#0d7a4a">5 soatlik paket · ${esc(pk.n)}/${esc(pk.of)}-mashg‘ulot <span class="pkgtag">${esc(kSum(pk.price))}</span></div>
+    ${ss.map((x, i) => `<div class="rw ${x.paid ? 'paid' : ''}"><span>${i + 1}) ${esc(relDay(x.start_at))} ${esc(kHour(x.start_at))} · ${esc(fmtDur(x.minutes))}</span><b>${esc(kSum(x.price))}${x.paid ? ' · to‘langan' : ''}</b></div>`).join('')}
+    ${unpaid.length > 1 ? `<label><input type="checkbox" id="coPayPkg" ${CO.payPkg ? 'checked' : ''}> Butun paketni hozir to‘lash — ${unpaid.length} ta chek, ${esc(kSum(unpaid.reduce((a, x) => a + (Number(x.price) || 0), 0)))} so‘m</label>` : ''}
+  </div>`;
 }
 
 $('coChangeBk').onclick = () => {
@@ -4092,7 +4341,9 @@ const CAT_NAME = { A:'Mototsikl', B:'Yengil', C:'Yuk' };
 const kSum = v => { const n = Number(v) || 0; return n >= 1000 ? new Intl.NumberFormat('ru-RU').format(n).replace(/\u00a0/g, ' ') : String(n); };
 /* ---- yig'iladigan bo'limlar ---- */
 let CO_OPEN = null;
-const ACC_NEXT = { cat:'dur', dur:'time', time:'ins', ins:null };
+/* Bo'limlar tartibi: paket bo'lsa «Paket» va «Keyingi kunlar» qo'shiladi */
+const accOrder = () => ['cat', 'dur', ...(coIsPkg() ? ['split'] : []), 'time',
+  ...(coIsPkg() && coSplit().m.length > 1 ? ['sess'] : []), 'ins'];
 function accOpen(key){
   CO_OPEN = key || null;
   document.querySelectorAll('#checkout .acc').forEach(a => {
@@ -4103,7 +4354,7 @@ function accOpen(key){
   if (CO_OPEN === 'ins' && CO.mode === 'walk_in') loadFreeInstructors();
 }
 /** Tanlandi — bu bo'lim yopiladi, keyingisi ochiladi. */
-function accNext(key){ accOpen(ACC_NEXT[key]); }
+function accNext(key){ const o = accOrder(); accOpen(o[o.indexOf(key) + 1] || null); }
 document.querySelectorAll('#checkout [data-acc-h]').forEach(h => h.onclick = () =>
   accOpen(CO_OPEN === h.dataset.accH ? null : h.dataset.accH));
 
@@ -4123,9 +4374,19 @@ function accPaint(){
     : '<span class="empty">Tanlang</span>';
   const p = CO.minutes ? priceOf(CO.category, CO.minutes) : 0;
   $('accDurV').innerHTML = CO.minutes
-    ? `${esc(fmtDur(CO.minutes))}${p ? `<small>${esc(kSum(p))} so‘m</small>` : ''}`
+    ? `${esc(fmtDur(CO.minutes))}${coIsPkg() ? '<span class="pkgtag">PAKET</span>' : ''}${p ? `<small>${esc(kSum(p))} so‘m</small>` : ''}`
     : '<span class="empty">Tanlang</span>';
-  $('accTimeV').textContent = coTimeLabel();
+  const pkg = coIsPkg(), many = pkg && coSplit().m.length > 1;
+  $('accSplit').classList.toggle('hidden', !pkg);
+  $('accSess').classList.toggle('hidden', !many);
+  $('accSplitV').innerHTML = `${esc(coSplit().t)}`;
+  $('accTimeL').textContent = many ? '1-mashg‘ulot' : 'Vaqt';
+  if (many) {
+    const bad = coSessError();
+    $('accSessV').innerHTML = bad ? `<span class="empty">${esc(bad)}</span>`
+      : esc(coExtraSessions().map(x => `${dmy(x.date)} ${x.time}`).join(' · '));
+  }
+  $('accTimeV').textContent = coTimeLabel() + (many ? ` · ${fmtDur(coFirstMin())}` : '');
   if ($('coNowClock')) $('coNowClock').textContent = coNowTime();
   if (CO.instructor) {
     const f = (CO.free || []).find(x => String(x.id) === String(CO.instructor.id));
@@ -4154,38 +4415,73 @@ function renderCats(){
   });
 }
 
-/* ---- davomiylik: ro'yxatdan bosib tanlanadi, har birida narxi + «Boshqa» ---- */
+/* ---- davomiylik: 30 daqiqa, 1 soat, 2 soat va 5 soatlik PAKET ---- */
 function renderDurs(){
-  const custom = !!CO.minutes && !DURS.includes(CO.minutes);
-  const pr = m => { const v = priceOf(CO.category, m); return v ? `${kSum(v)} so‘m` : ''; };
-  $('coDurs').innerHTML = DURS.map(m => `<button type="button" class="acc-opt nob ${CO.minutes===m?'on':''}" data-m="${m}"><span class="t">${esc(fmtDur(m))}</span><span class="p">${esc(pr(m))}</span><i class="ck">✓</i></button>`).join('')
-    + `<button type="button" class="acc-opt nob ${custom?'on':''}" data-m="other"><span class="t">${custom ? esc(fmtDur(CO.minutes)) : 'Boshqa…'}<small>daqiqani o‘zingiz yozasiz</small></span><span class="p">${custom ? esc(pr(CO.minutes)) : ''}</span><i class="ck">✓</i></button>`;
-  $('coDurs').querySelectorAll('[data-m]').forEach(b => b.onclick = () => {
-    if (b.dataset.m === 'other') {
-      $('coCustomWrap').classList.remove('hidden');
-      const inp = $('coCustomMin'); if (custom && !inp.value) inp.value = CO.minutes; inp.focus(); return;
+  const cat = CO.category || 'B';
+  $('coDurs').innerHTML = DURS.map(m => {
+    const on = CO.minutes === m ? 'on' : '';
+    if (m === PKG_MIN) {
+      const p = pkgPrice(cat), list = listPriceOf(cat, m);
+      if (!(p > 0)) return `<button type="button" class="acc-opt nob ${on}" data-m="${m}"><span class="t">5 soat</span><span class="p">${esc(kSum(list))} so‘m</span><i class="ck">✓</i></button>`;
+      return `<button type="button" class="acc-opt nob pkg ${on}" data-m="${m}"><span class="t">5 soat <span class="pkgtag">PAKET</span>
+        <small>bir kunda yoki bir necha kunga bo‘lib · ${esc(kSum(Math.max(0, list - p)))} so‘m tejaladi</small></span>
+        <span class="p">${esc(kSum(p))} so‘m${list > p ? `<s>${esc(kSum(list))}</s>` : ''}</span><i class="ck">✓</i></button>`;
     }
+    return `<button type="button" class="acc-opt nob ${on}" data-m="${m}"><span class="t">${esc(fmtDur(m))}</span><span class="p">${esc(kSum(priceOf(cat, m)))} so‘m</span><i class="ck">✓</i></button>`;
+  }).join('');
+  $('coDurs').querySelectorAll('[data-m]').forEach(b => b.onclick = () => {
     const m = Number(b.dataset.m);
-    $('coCustomMin').value = ''; $('coCustomWrap').classList.add('hidden');
     const changed = CO.minutes !== m;
     if (changed) { CO.minutes = m; coResetManualPrice(); }
+    if (m === PKG_MIN && !CO.split) CO.split = SPLITS[0];
+    coSyncSess();
     accNext('dur'); coRender();
     if (changed && CO.mode === 'walk_in') loadFreeInstructors();
   });
 }
-$('coCustomMin').addEventListener('input', () => {
-  const v = Number($('coCustomMin').value);
-  if (v >= 15 && v <= 600 && v !== CO.minutes) { CO.minutes = v; coResetManualPrice(); coRender(); }
-});
-$('coCustomMin').addEventListener('change', () => { if (CO.mode === 'walk_in') loadFreeInstructors(); });
-function coCustomDone(){
-  const v = Number($('coCustomMin').value);
-  if (!(v >= 15 && v <= 600)) { toast('Davomiylik 15–600 daqiqa bo‘lsin'); $('coCustomMin').focus(); return; }
-  $('coCustomWrap').classList.add('hidden');
-  accNext('dur'); coRender();
+/* ---- paketni bo'lish: bir kunda / 3+2 / 2+2+1 / 5 kun ---- */
+function renderSplits(){
+  const cat = CO.category || 'B', p = pkgPrice(cat);
+  $('coSplits').innerHTML = SPLITS.map(x => {
+    const parts = x.m.map(m => Math.floor(p * m / PKG_MIN));
+    return `<button type="button" class="acc-opt nob ${coSplit().k === x.k ? 'on' : ''}" data-split="${esc(x.k)}">
+      <span class="t">${esc(x.t)}<small>${esc(x.s)}${x.m.length > 1 ? ` · har biri o‘z cheki` : ''}</small></span>
+      <span class="p">${x.m.length > 1 ? esc(parts.map(kSum).join(' + ')) : esc(kSum(p)) + ' so‘m'}</span><i class="ck">✓</i></button>`;
+  }).join('');
+  $('coSplits').querySelectorAll('[data-split]').forEach(b => b.onclick = () => {
+    CO.split = SPLITS.find(x => x.k === b.dataset.split) || SPLITS[0];
+    coSyncSess();
+    accNext('split'); coRender();
+    if (CO.mode === 'walk_in') loadFreeInstructors();
+  });
 }
-$('coCustomOk').onclick = coCustomDone;
-$('coCustomMin').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); coCustomDone(); } });
+/* ---- paketning keyingi kunlari: sana va soat ---- */
+let coSessT = null;
+function renderSess(){
+  const box = $('coSessBox');
+  if (!coIsPkg() || coSplit().m.length < 2) { box.innerHTML = ''; return; }
+  const mins = coSplit().m;
+  /* Kiritish paytida qayta chizmaymiz — kursor yo'qolmasin */
+  if (box.contains(document.activeElement)) return;
+  box.innerHTML = CO.sess.map((x, i) => `<div class="sess" data-si="${i}">
+      <div><b>${i + 2}-mashg‘ulot · ${esc(fmtDur(mins[i + 1]))}</b><small>${esc(x.date ? relDay(x.date + 'T12:00:00+05:00') : 'sana tanlanmagan')}</small></div>
+      <input class="input ck-date" type="date" value="${esc(x.date)}" min="${esc(kToday())}" data-sf="date" aria-label="${i + 2}-mashg‘ulot sanasi">
+      <input class="input ck-mini" type="time" step="900" value="${esc(x.time)}" data-sf="time" aria-label="${i + 2}-mashg‘ulot vaqti">
+    </div>`).join('');
+  box.querySelectorAll('[data-sf]').forEach(inp => inp.addEventListener('change', () => {
+    const i = Number(inp.closest('[data-si]').dataset.si);
+    CO.sess[i][inp.dataset.sf] = inp.value;
+    clearTimeout(coSessT);
+    coSessT = setTimeout(() => { if (CO.mode === 'walk_in') loadFreeInstructors(); }, 250);
+    const keep = document.activeElement; keep && keep.blur && keep.blur();
+    coRender();
+  }));
+}
+$('coSessOk').onclick = () => {
+  const bad = coSessError();
+  if (bad) { toast(bad); return; }
+  accNext('sess'); coRender();
+};
 
 /* ---- narx: avtomatik yoki qo'lda ---- */
 function coResetManualPrice(){
@@ -4230,8 +4526,23 @@ async function loadFreeInstructors(){
     /* Kategoriya filtri SHART: C tanlangan bo'lsa faqat C ni
        o'rgatadigan instruktorlar chiqishi kerak. Busiz hamma
        chiqib, kassir noto'g'ri instruktorga chek yozib yuborardi. */
-    const d = await api(`/api/admin/cashier/free-instructors?at=${encodeURIComponent(at.toISOString())}&minutes=${CO.minutes}&category=${encodeURIComponent(CO.category || '')}`);
-    CO.free = d.free||[]; CO.busy = d.busy||[];
+    const fq = (t, m) => api(`/api/admin/cashier/free-instructors?at=${encodeURIComponent(t.toISOString())}&minutes=${m}&category=${encodeURIComponent(CO.category || '')}`);
+    const extra = coExtraSessions().filter(x => x.at && !Number.isNaN(x.at.getTime()));
+    const [d, ...more] = await Promise.all([fq(at, coFirstMin()), ...extra.map(x => fq(x.at, x.minutes).catch(() => null))]);
+    /* Paket: instruktor HAMMA kunlarda bo'sh bo'lishi kerak. Qaysi kuni
+       band bo'lsa — shuni yozib qo'yamiz. */
+    const busyDays = new Map();
+    more.forEach((r, i) => {
+      if (!r) return;
+      const ok = new Set((r.free || []).map(x => String(x.id)));
+      for (const x of [...(r.free || []), ...(r.busy || [])]) if (!ok.has(String(x.id))) {
+        const k = String(x.id); busyDays.set(k, [...(busyDays.get(k) || []), `${dmy(extra[i].date)} ${extra[i].time}`]);
+      }
+    });
+    const freeAll = (d.free || []).filter(x => !busyDays.has(String(x.id)));
+    const busyLater = (d.free || []).filter(x => busyDays.has(String(x.id))).map(x => ({ ...x, later: busyDays.get(String(x.id)) }));
+    CO.free = freeAll; CO.busy = [...busyLater, ...(d.busy || [])];
+    if (!d.suggestion || busyDays.has(String(d.suggestion.id))) d.suggestion = freeAll[0] || null;
     if (!CO.free.length && !CO.busy.length) {
       box.innerHTML = `<div class="warn" style="margin:0">
         <b>${esc(CO.category || '')}</b> kategoriyani o‘rgatadigan faol instruktor yo‘q.
@@ -4240,13 +4551,16 @@ async function loadFreeInstructors(){
     }
     if (!CO.instructor && d.suggestion) { CO.instructor = { id: d.suggestion.id, name: d.suggestion.name }; coRender(); }
     const row = (i, wait) => `<button type="button" data-ins="${esc(i.id)}" class="acc-opt nob ${String(CO.instructor?.id)===String(i.id)?'on':''} ${wait?'wait':''}">
-      <span class="t">${esc(i.name)}<small>${wait
+      <span class="t">${esc(i.name)}<small>${i.later
+        ? `keyingi kunda band: ${esc(i.later.join(', '))}`
+        : wait
         ? `${esc(i.wait_minutes)} daqiqadan keyin bo‘shaydi (${esc(kHour(i.free_at))})`
         : `★ ${esc(Number(i.rating || 0).toFixed(1))} · ${esc((i.categories || ['B']).join(', '))}`}</small></span>
       <span class="p ${wait ? '' : 'free'}">${wait ? 'band' : 'bo‘sh'}</span><i class="ck">✓</i></button>`;
+    const later = CO.busy.filter(i => i.later);
     box.innerHTML =
       (CO.free.length ? CO.free.map(i => row(i,false)).join('')
-        : '<div class="warn">Bu vaqtda bo‘sh instruktor yo‘q. Eng tez bo‘shaydiganlar:</div>')
+        : `<div class="warn">${later.length ? 'Paketning hamma kunlarida bo‘sh instruktor yo‘q — keyingi kunlar vaqtini o‘zgartiring.' : 'Bu vaqtda bo‘sh instruktor yo‘q. Eng tez bo‘shaydiganlar:'}</div>`)
       + (CO.free.length ? '' : CO.busy.slice(0,4).map(i => row(i,true)).join(''));
     coRender();
     box.querySelectorAll('[data-ins]').forEach(b => b.onclick = () => {
@@ -4285,28 +4599,35 @@ document.querySelectorAll('[data-paytype]').forEach(b => b.onclick = () => {
 
 /* ---- xulosa ---- */
 function coRender(){
-  renderCats(); renderDurs(); coPaintDayChips(); accPaint();
+  if (coIsPkg()) coSyncSess();
+  renderCats(); renderDurs(); renderSplits(); renderSess(); coPaintDayChips(); accPaint();
   const auto = coPrice();
   const manual = CO.manualPrice;
   const total = manual || auto || 0;
   $('coAmount').value = total || '';
   /* Narx qutisi */
   $('coAutoPrice').textContent = money(total);
-  const rateTxt = coRate() ? `${money(coRate())} / soat × ${fmtDur(CO.minutes)}` : '';
-  $('coPriceCalc').textContent = manual ? `Qo‘lda yozilgan · avtomatik: ${money(auto)}` : (CO.mode === 'booked' && CO.booking ? 'Bron narxi' : rateTxt);
+  const pkgNow = coIsPkg() && pkgPrice(CO.category || 'B') > 0;
+  const listNow = listPriceOf(CO.category || 'B', PKG_MIN);
+  const rateTxt = pkgNow ? `5 soatlik paket · odatda ${money(listNow)}`
+    : coRate() ? `${money(coRate())} / soat × ${fmtDur(CO.minutes)}` : '';
+  $('coPriceCalc').textContent = manual ? `Qo‘lda yozilgan · avtomatik: ${money(auto)}`
+    : (CO.mode === 'booked' && CO.booking ? (CO.payPkg && coPkgUnpaid().length ? `Paket: ${coPkgUnpaid().length} ta mashg‘ulot` : 'Bron narxi') : rateTxt);
   $('coPriceCalc').classList.toggle('man', !!manual);
   $('coPriceBox').classList.toggle('manual', !!manual);
   $('coPriceAuto').classList.toggle('hidden', !manual);
 
   $('sumCat').textContent  = CO.category || '—';
-  $('sumDur').textContent  = fmtDur(CO.minutes);
+  $('sumDur').textContent  = coIsPkg() ? `5 soat · paket (${coSplit().m.map(m => m / 60).join(' + ')})` : fmtDur(CO.minutes);
   $('sumIns').textContent  = CO.instructor?.name || '—';
   const at = coStartAt();
-  $('sumTime').textContent = at ? `${$('coDate').value} · ${$('coTime').value}` : '—';
+  $('sumTime').textContent = at ? `${$('coDate').value} · ${$('coTime').value}` + (coIsPkg() && CO.sess.length
+    ? ' + ' + coExtraSessions().map(x => `${dmy(x.date)} ${x.time}`).join(', ') : '') : '—';
   $('sumTotal').textContent = money(total);
   const rate = coRate();
   $('sumCalc').textContent = manual
     ? `Narx qo‘lda yozilgan (avtomatik: ${money(auto)})`
+    : pkgNow ? `Paket narxi · odatda ${money(listNow)} · ${money(Math.max(0, listNow - auto))} tejaladi`
     : rate ? `${money(rate)} / soat × ${fmtDur(CO.minutes)}` : 'Kategoriya tanlanmagan yoki tarif kiritilmagan';
 
   if (CO.pay === 'mixed') {
@@ -4344,6 +4665,7 @@ $('coIssue').onclick = async () => {
   if (CO.mode === 'booked') {
     if (!CO.booking) return err('Mijozning bronini tanlang');
     body.booking_id = CO.booking.id;
+    if (CO.payPkg && coPkgUnpaid().length) body.pay_package = true;
   } else {
     const at = coStartAt();
     if (!$('coName').value.trim()) return err('Bron tanlanmagan. Yangi mijoz bo‘lsa — ismini kiriting, bron bo‘lsa — yuqoridan toping.');
@@ -4359,13 +4681,22 @@ $('coIssue').onclick = async () => {
       customer_id: CO.customer?.id || null, instructor_id: CO.instructor.id,
       course_id: course.id, start_at: startAt.toISOString(),
     });
+    /* 5 soatlik paket: har mashg'ulot — alohida bron va chek */
+    if (coIsPkg()) {
+      const bad = coSessError();
+      if (bad) { accOpen('sess'); return err(bad); }
+      body.duration_minutes = PKG_MIN;
+      body.sessions = [{ start_at: startAt.toISOString(), minutes: coFirstMin() },
+        ...coExtraSessions().map(x => ({ start_at: x.at.toISOString(), minutes: x.minutes }))];
+    }
   }
 
   const btn = $('coIssue'); btn.disabled = true; btn.textContent = 'Chiqarilmoqda…';
   try{
     const d = await api('/api/admin/cashier/issue', { method:'POST', body: JSON.stringify(body) });
-    toast('Chek chiqarildi');
-    receiptModal(d.receipt);
+    const many = (d.receipts || []).length > 1;
+    toast(many ? `${d.receipts.length} ta chek chiqarildi` : 'Chek chiqarildi');
+    receiptModal(many ? d.receipts : d.receipt);
     // Avtomatik chop etishga o'tamiz
     setTimeout(() => { try { window.print(); } catch(e){} }, 400);
     coResetForm(); loadRegToday(); loadReceipts();
@@ -4379,7 +4710,7 @@ $('coIssue').onclick = async () => {
 function coResetForm(){
   CO.customer = null; CO.booking = null; CO.instructor = null; CO.pay = '';
   coResetManualPrice();
-  $('coCustomMin').value = ''; $('coCustomWrap').classList.add('hidden');
+  CO.split = null; CO.sess = []; CO.payPkg = false;
   accOpen(null);
   /* Keyingi mijoz uchun soat yana o'zi yuradi */
   CO.timeTouched = false;
@@ -5067,8 +5398,62 @@ function renderKdash(d){
    o'rgatadigan instruktorlar chiqadi. Bron yaratilgach o'sha vaqt
    onlayn bron qilayotganlarga band ko'rinadi.
    ========================================================================= */
-const MB = { cat: 'B', minutes: 60, ins: null, free: [], busy: [] };
-const MB_DURS = [30, 60, 90, 120, 150, 180, 240, 300];
+const MB = { cat: 'B', minutes: 60, ins: null, free: [], busy: [], split: null, sess: [] };
+/* Faqat shular: 30 daqiqa, 1 soat, 2 soat va 5 soatlik PAKET */
+const MB_DURS = [30, 60, 120, 300];
+const mbIsPkg = () => MB.minutes === PKG_MIN;
+const mbSplit = () => MB.split || SPLITS[0];
+const mbFirstMin = () => mbIsPkg() ? mbSplit().m[0] : MB.minutes;
+function mbSyncSess(){
+  const need = mbIsPkg() ? mbSplit().m.length - 1 : 0;
+  const base = $('mbDate').value || kToday();
+  const hh = $('mbTime').value || '09:00';
+  const addD = (d, n) => new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Tashkent' })
+    .format(new Date(new Date(d + 'T12:00:00+05:00').getTime() + n * 864e5));
+  while (MB.sess.length < need) {
+    const prev = MB.sess.length ? MB.sess[MB.sess.length - 1].date : base;
+    MB.sess.push({ date: addD(prev, 1), time: hh });
+  }
+  MB.sess.length = need;
+  let prev = base;
+  MB.sess.forEach(x => { if (!x.date || x.date <= prev) x.date = addD(prev, 1); prev = x.date; });
+}
+function mbExtra(){
+  if (!mbIsPkg()) return [];
+  const mins = mbSplit().m;
+  return MB.sess.map((x, i) => ({ at: x.date && x.time ? new Date(`${x.date}T${x.time}:00+05:00`) : null, minutes: mins[i + 1], date: x.date, time: x.time }));
+}
+function mbSessError(){
+  const days = new Set([$('mbDate').value]);
+  for (const [i, x] of mbExtra().entries()) {
+    if (!x.at || Number.isNaN(x.at.getTime())) return `${i + 2}-mashg‘ulot sanasi va vaqtini tanlang`;
+    if (x.at.getTime() < Date.now()) return `${i + 2}-mashg‘ulot vaqti o‘tib ketgan`;
+    if (days.has(x.date)) return `${i + 2}-mashg‘ulot boshqa kunda bo‘lsin`;
+    days.add(x.date);
+  }
+  return '';
+}
+function mbPaintPkg(){
+  $('mbPkgWrap').classList.toggle('hidden', !mbIsPkg());
+  if (!mbIsPkg()) return;
+  const p = pkgPrice(MB.cat);
+  $('mbSplits').innerHTML = SPLITS.map(x => `<button type="button" data-mbsplit="${esc(x.k)}" class="${mbSplit().k === x.k ? 'on' : ''}">
+    ${esc(x.t)}<small>${x.m.length > 1 ? esc(x.m.map(m => kSum(Math.floor(p * m / PKG_MIN))).join(' + ')) + ' so‘m' : esc(kSum(p)) + ' so‘m'}</small></button>`).join('');
+  $('mbSplits').querySelectorAll('[data-mbsplit]').forEach(b => b.onclick = () => {
+    MB.split = SPLITS.find(x => x.k === b.dataset.mbsplit) || SPLITS[0];
+    MB.pref = MB.ins ? String(MB.ins.id) : MB.pref; MB.ins = null; mbSyncSess(); mbPaintPkg(); mbLoadFree(); mbSum();
+  });
+  const mins = mbSplit().m;
+  $('mbSess').innerHTML = (mins.length > 1 ? `<div class="muted" style="font-size:12px">1-mashg‘ulot — yuqoridagi sana va vaqtda (${esc(fmtDur(mins[0]))}). Keyingilari:</div>` : '')
+    + MB.sess.map((x, i) => `<div class="mbsess" data-msi="${i}">
+      <div><b>${i + 2}-mashg‘ulot · ${esc(fmtDur(mins[i + 1]))}</b><small>${esc(x.date ? relDay(x.date + 'T12:00:00+05:00') : '')}</small></div>
+      <input class="input" type="date" value="${esc(x.date)}" min="${esc(kToday())}" data-msf="date" aria-label="${i + 2}-mashg‘ulot sanasi">
+      <input class="input" type="time" step="900" value="${esc(x.time)}" data-msf="time" aria-label="${i + 2}-mashg‘ulot vaqti"></div>`).join('');
+  $('mbSess').querySelectorAll('[data-msf]').forEach(inp => inp.addEventListener('change', () => {
+    MB.sess[Number(inp.closest('[data-msi]').dataset.msi)][inp.dataset.msf] = inp.value;
+    MB.pref = MB.ins ? String(MB.ins.id) : MB.pref; MB.ins = null; mbPaintPkg(); mbLoadFree(); mbSum();
+  }));
+}
 
 function mbStart(){
   const d = $('mbDate').value, t = $('mbTime').value;
@@ -5085,14 +5470,22 @@ function mbPaintCats(){
         30daq ${esc(money(t.half))}<br>1soat ${esc(money(t.hour))}</small></button>`;
   }).join('');
   $('mbCats').querySelectorAll('[data-mbcat]').forEach(b => b.onclick = () => {
-    MB.cat = b.dataset.mbcat; MB.ins = null; mbPaintCats(); mbLoadFree(); mbSum();
+    MB.cat = b.dataset.mbcat; MB.ins = null; mbPaintCats(); mbPaintDurs(); mbPaintPkg(); mbLoadFree(); mbSum();
   });
 }
 function mbPaintDurs(){
-  $('mbDurs').innerHTML = MB_DURS.map(m =>
-    `<button type="button" data-mbdur="${m}" class="${MB.minutes===m?'on':''}">${fmtDur(m)}</button>`).join('');
+  $('mbDurs').innerHTML = MB_DURS.map(m => {
+    if (m === PKG_MIN && pkgPrice(MB.cat) > 0) {
+      const p = pkgPrice(MB.cat), list = listPriceOf(MB.cat, m);
+      return `<button type="button" data-mbdur="${m}" class="pkg ${MB.minutes===m?'on':''}">5 soat · PAKET
+        <small>${esc(kSum(p))}${list > p ? ` <s>${esc(kSum(list))}</s>` : ''}</small></button>`;
+    }
+    return `<button type="button" data-mbdur="${m}" class="${MB.minutes===m?'on':''}">${fmtDur(m)}<small>${esc(kSum(priceOf(MB.cat, m)))}</small></button>`;
+  }).join('');
   $('mbDurs').querySelectorAll('[data-mbdur]').forEach(b => b.onclick = () => {
-    MB.minutes = Number(b.dataset.mbdur); MB.ins = null; mbPaintDurs(); mbLoadFree(); mbSum();
+    MB.minutes = Number(b.dataset.mbdur); MB.pref = MB.ins ? String(MB.ins.id) : MB.pref; MB.ins = null;
+    if (mbIsPkg() && !MB.split) MB.split = SPLITS[0];
+    mbSyncSess(); mbPaintDurs(); mbPaintPkg(); mbLoadFree(); mbSum();
   });
 }
 
@@ -5102,16 +5495,30 @@ async function mbLoadFree(){
   if (!at) { box.innerHTML = '<div class="muted" style="font-size:13px">Sana va vaqtni tanlang.</div>'; return; }
   box.innerHTML = '<div class="muted" style="font-size:13px">Tekshirilmoqda…</div>';
   try{
-    const d = await api(`/api/admin/cashier/free-instructors?at=${encodeURIComponent(at.toISOString())}&minutes=${MB.minutes}&category=${encodeURIComponent(MB.cat)}`);
-    MB.free = d.free || []; MB.busy = d.busy || [];
+    const fq = (t, m) => api(`/api/admin/cashier/free-instructors?at=${encodeURIComponent(t.toISOString())}&minutes=${m}&category=${encodeURIComponent(MB.cat)}`);
+    const extra = mbExtra().filter(x => x.at && !Number.isNaN(x.at.getTime()));
+    const [d, ...more] = await Promise.all([fq(at, mbFirstMin()), ...extra.map(x => fq(x.at, x.minutes).catch(() => null))]);
+    /* Paket: instruktor HAMMA kunlarda bo'sh bo'lishi kerak */
+    const busyDays = new Map();
+    more.forEach((r, i) => {
+      if (!r) return;
+      const ok = new Set((r.free || []).map(x => String(x.id)));
+      for (const x of [...(r.free || []), ...(r.busy || [])]) if (!ok.has(String(x.id))) {
+        const k = String(x.id); busyDays.set(k, [...(busyDays.get(k) || []), `${dmy(extra[i].date)} ${extra[i].time}`]);
+      }
+    });
+    MB.free = (d.free || []).filter(x => !busyDays.has(String(x.id)));
+    if (MB.pref) { const p = MB.free.find(x => String(x.id) === MB.pref); if (p) MB.ins = p; MB.pref = null; mbSum(); }
+    MB.busy = [...(d.free || []).filter(x => busyDays.has(String(x.id))).map(x => ({ ...x, later: busyDays.get(String(x.id)) })), ...(d.busy || [])];
     if (!MB.free.length && !MB.busy.length) {
       box.innerHTML = `<div class="warn" style="margin:0">${esc(MB.cat)} kategoriyani o‘rgatadigan faol instruktor yo‘q.</div>`;
       return;
     }
     const row = (i, wait) => `<button type="button" data-mbins="${esc(i.id)}" class="${String(MB.ins?.id)===String(i.id)?'on':''} ${wait?'wait':''}">
       <b>${esc(i.name)}${wait?'':' · bo‘sh'}</b>
-      <span>${wait ? `${esc(i.wait_minutes)} daqiqadan keyin bo‘shaydi (${esc(kHour(i.free_at))})`
-                   : `★ ${esc(i.rating.toFixed(1))} · ${esc((i.categories||['B']).join(', '))}`}</span></button>`;
+      <span>${i.later ? `keyingi kunda band: ${esc(i.later.join(', '))}`
+                   : wait ? `${esc(i.wait_minutes)} daqiqadan keyin bo‘shaydi (${esc(kHour(i.free_at))})`
+                   : `★ ${esc(Number(i.rating || 0).toFixed(1))} · ${esc((i.categories||['B']).join(', '))}`}</span></button>`;
     box.innerHTML = MB.free.length
       ? MB.free.map(i => row(i, false)).join('')
       : '<div class="warn" style="margin:0 0 8px">Bu vaqtda bo‘sh instruktor yo‘q. Eng tez bo‘shaydiganlar:</div>'
@@ -5124,14 +5531,16 @@ async function mbLoadFree(){
 }
 
 function mbSum(){
+  if (mbIsPkg()) { const before = JSON.stringify(MB.sess); mbSyncSess(); if (JSON.stringify(MB.sess) !== before) mbPaintPkg(); }
   $('mbSumCat').textContent = MB.cat;
-  $('mbSumDur').textContent = fmtDur(MB.minutes);
+  $('mbSumDur').textContent = mbIsPkg() ? `5 soat · paket (${mbSplit().m.map(m => m / 60).join(' + ')})` : fmtDur(MB.minutes);
   $('mbSumIns').textContent = MB.ins?.name || '—';
-  // Narx — kassa bilan BIR XIL formula
+  // Narx — kassa bilan BIR XIL formula (5 soat — paket narxi)
   const mbPrice = priceOf(MB.cat, MB.minutes);
   $('mbSumPrice').textContent = money(mbPrice);
   const at = mbStart();
-  $('mbSumTime').textContent = at ? `${$('mbDate').value} · ${$('mbTime').value}` : '—';
+  $('mbSumTime').textContent = at ? `${$('mbDate').value} · ${$('mbTime').value}`
+    + (mbIsPkg() && MB.sess.length ? ' + ' + mbExtra().map(x => `${dmy(x.date)} ${x.time}`).join(', ') : '') : '—';
 }
 
 $('mbDate').addEventListener('change', () => { MB.ins = null; mbPaintDays(); mbPaintTimes(); mbLoadFree(); mbSum(); });
@@ -5201,17 +5610,24 @@ $('mbSave').onclick = async () => {
   if (!$('mbName').value.trim()) return err('Mijoz ismini kiriting');
   if (!at) return err('Sana va vaqtni tanlang');
   if (!MB.ins) return err('Instruktorni tanlang');
+  if (mbIsPkg()) { const bad = mbSessError(); if (bad) return err(bad); }
 
   const btn = $('mbSave'); btn.disabled = true; btn.textContent = 'Saqlanmoqda…';
   try{
-    const d = await api('/api/admin/manual-booking', { method:'POST', body: JSON.stringify({
+    const payload = {
       full_name: $('mbName').value.trim(), phone: $('mbPhone').value.trim(),
       instructor_id: MB.ins.id, category: MB.cat, duration_minutes: MB.minutes,
-      start_at: at.toISOString(), note: $('mbNote').value.trim() })});
-    toast('Bron yaratildi');
+      start_at: at.toISOString(), note: $('mbNote').value.trim() };
+    if (mbIsPkg()) payload.sessions = [{ start_at: at.toISOString(), minutes: mbFirstMin() },
+      ...mbExtra().map(x => ({ start_at: x.at.toISOString(), minutes: x.minutes }))];
+    const d = await api('/api/admin/manual-booking', { method:'POST', body: JSON.stringify(payload)});
+    toast(d.bookings && d.bookings.length > 1 ? `Paket yaratildi — ${d.bookings.length} ta mashg‘ulot` : 'Bron yaratildi');
     /* KOD — eng muhimi. Mijozga telefonda shuni aytish kerak, aks holda
        u kassaga kelib "bron qilganman" deydi-yu, kassir topolmaydi. */
     const pcode = d.pickup_code || d.booking?.pickup_code || '';
+    const pkgList = d.bookings && d.bookings.length > 1
+      ? `<div style="margin:8px 0 0;font-size:12.5px">${d.bookings.map((x, i) => `<div>${i + 1}) ${esc(relDay(x.start_at))} ${esc(kHour(x.start_at))} · ${esc(fmtDur(x.duration_minutes))} — <b style="font-family:ui-monospace,Menlo,monospace">${esc(x.pickup_code || '—')}</b></div>`).join('')}</div>`
+      : '';
     $('mbAlert').innerHTML = `<div class="ok-box" style="background:#E9F7EF;border:1px solid #BFE6D0;border-radius:11px;padding:13px;font-size:13px">
       <b>${esc(d.customer?.full_name || '')}</b> — ${esc(kHour(d.booking?.start_at))}, ${esc(MB.ins.name)}
       ${pcode ? `<div style="margin:10px 0 8px;text-align:center">
@@ -5219,7 +5635,7 @@ $('mbSave').onclick = async () => {
           <div style="font-family:ui-monospace,Menlo,monospace;font-size:26px;font-weight:900;letter-spacing:2px;color:#1F7A45;margin-top:2px">${esc(pcode)}</div>
           <button type="button" class="btn small" id="mbCopyCode" style="margin-top:6px">Nusxalash</button>
         </div>
-        <div style="text-align:center">Mijoz kassada shu kodni aytadi.<br>Kodni unutsa — kassir uni ismi yoki telefoni bilan ham topa oladi.</div>`
+        <div style="text-align:center">Mijoz kassada shu kodni aytadi.<br>Kodni unutsa — kassir uni ismi yoki telefoni bilan ham topa oladi.</div>${pkgList}`
         : `<br>Mijoz kelib kassada to‘laydi. Kassir uni ismi yoki telefoni bilan topadi.`}
       </div>`;
     const cp = $('mbCopyCode');
@@ -5242,6 +5658,7 @@ $('mbSave').onclick = async () => {
 function mbClearForm(all){
   $('mbName').value = ''; $('mbPhone').value = ''; $('mbNote').value = '';
   MB.ins = null;
+  if (mbIsPkg()) { MB.sess = []; mbSyncSess(); mbPaintPkg(); }
   if (all) $('mbAlert').innerHTML = '';
   mbLoadFree(); mbSum();
 }
@@ -5255,10 +5672,366 @@ function initManual(){
     const slots = mbSlots();
     $('mbTime').value = slots.find(t => t > now) || slots[0];
   }
-  mbPaintDays(); mbPaintTimes(); mbPaintCats(); mbPaintDurs(); mbLoadFree(); mbSum();
+  mbPaintDays(); mbPaintTimes(); mbPaintCats(); mbPaintDurs(); mbSyncSess(); mbPaintPkg(); mbLoadFree(); mbSum();
 }
 
 
+
+/* =========================================================================
+   INSTRUKTORLAR JADVALI — kunlik bandlik (admin va operator)
+   Har instruktor — bir qator, ustunlar — 30 daqiqalik oraliqlar.
+   Bron qancha davom etsa (30 daq, 1 soat, 2 soat, 5 soat) — shuncha
+   katak band bo'lib, bitta yaxlit blok ko'rinadi. Bo'sh katakni bossangiz
+   «Qo'lda bron» shu instruktor va vaqt bilan ochiladi.
+   Excel — o'sha jadval, ranglari bilan (+ bronlar ro'yxati varag'i).
+   ========================================================================= */
+const SCH = { date: '', data: null, step: 30, loading: false };
+const SCH_ST = {
+  confirmed:   { t: 'Tasdiqlangan', c: 'conf' },
+  pending:     { t: 'Kutilmoqda',   c: 'pend' },
+  in_progress: { t: 'Jarayonda',    c: 'prog' },
+  completed:   { t: 'Tugagan',      c: 'done' },
+  no_show:     { t: 'Kelmagan',     c: 'nosh' },
+};
+const schMin = hm => { const m = /^(\d{1,2}):(\d{2})/.exec(String(hm || '')); return m ? Number(m[1]) * 60 + Number(m[2]) : null; };
+const schHM = m => String(Math.floor(m / 60)).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0');
+const schAt = (day, m) => new Date(`${day}T${schHM(m)}:00+05:00`).getTime();
+const schDayAdd = (d, n) => new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Tashkent' })
+  .format(new Date(new Date(d + 'T12:00:00+05:00').getTime() + n * 864e5));
+function schDayTitle(d){
+  const MON = ['yanvar','fevral','mart','aprel','may','iyun','iyul','avgust','sentabr','oktabr','noyabr','dekabr'];
+  const WD = ['yakshanba','dushanba','seshanba','chorshanba','payshanba','juma','shanba'];
+  const [y, m, dd] = d.split('-').map(Number);
+  return `${dd}-${MON[m - 1]} ${y}, ${WD[new Date(d + 'T12:00:00Z').getUTCDay()]}`;
+}
+
+async function loadSchedule(){
+  if (!$('schDate').value) $('schDate').value = kToday();
+  const date = $('schDate').value;
+  SCH.date = date; SCH.loading = true;
+  schPaintDays();
+  if (!SCH.data || SCH.data.date !== date) $('schGrid').innerHTML = '<div class="empty">Yuklanmoqda…</div>';
+  try{
+    const d = await api(`/api/admin/schedule?date=${encodeURIComponent(date)}`);
+    if (date !== $('schDate').value) return;       // shu orada boshqa kun tanlandi
+    SCH.data = d;
+    renderSchedule();
+  }catch(e){ $('schGrid').innerHTML = `<div class="error">${esc(e.message)}</div>`; }
+  finally{ SCH.loading = false; }
+}
+function schPaintDays(){
+  const t = kToday(), cur = $('schDate').value;
+  const list = [[t, 'Bugun'], [schDayAdd(t, 1), 'Ertaga'], [schDayAdd(t, 2), 'Indinga']];
+  $('schDays').innerHTML = list.map(([d, l]) => `<button class="seg ${cur === d ? 'on' : ''}" data-schday="${d}">${l}</button>`).join('');
+  $('schDays').querySelectorAll('[data-schday]').forEach(b => b.onclick = () => { $('schDate').value = b.dataset.schday; loadSchedule(); });
+  $('schTitle').textContent = cur ? schDayTitle(cur) : '';
+}
+
+/** Jadval modeli — ekran ham, Excel ham shundan chiziladi. */
+function schModel(){
+  const d = SCH.data;
+  const step = SCH.step;
+  let a = schMin(d.work_start) ?? 7 * 60, b = schMin(d.work_end) ?? 19 * 60;
+  /* Ish vaqtidan tashqaridagi bron ham ko'rinsin — jadvalni kengaytiramiz */
+  for (const x of d.bookings) {
+    const s = Math.floor((Date.parse(x.start_at) - schAt(d.date, 0)) / 60000), e = Math.ceil((Date.parse(x.end_at) - schAt(d.date, 0)) / 60000);
+    if (s >= 0 && s < a) a = Math.floor(s / 60) * 60;
+    if (e <= 24 * 60 && e > b) b = Math.ceil(e / 60) * 60;
+  }
+  a = Math.floor(a / step) * step; b = Math.ceil(b / step) * step;
+  const slots = [];
+  for (let m = a; m < b; m += step) slots.push(m);
+  const now = Date.now();
+  const rows = d.instructors.map(ins => {
+    const bk = d.bookings.filter(x => String(x.instructor_id) === String(ins.id));
+    const bl = d.blocks.filter(x => String(x.instructor_id) === String(ins.id));
+    const cells = slots.map(m => {
+      const s = schAt(d.date, m), e = s + step * 60000;
+      let best = null, bestOv = 0;
+      for (const x of bk) {
+        const ov = Math.min(e, Date.parse(x.end_at)) - Math.max(s, Date.parse(x.start_at));
+        if (ov > bestOv) { best = x; bestOv = ov; }
+      }
+      if (best) return { kind: 'b', key: 'b' + best.id, b: best, s, e };
+      const blk = bl.find(x => Date.parse(x.start_at) < e && Date.parse(x.end_at) > s);
+      if (blk) return { kind: 'k', key: 'k' + blk.start_at, s, e };
+      return { kind: e <= now ? 'p' : 'f', key: '', s, e };
+    });
+    /* Ketma-ket bir xil bron/yopiq katak — bitta blok */
+    const spans = [];
+    for (const c of cells) {
+      const last = spans[spans.length - 1];
+      if (last && c.key && last.key === c.key) { last.n++; last.e = c.e; continue; }
+      spans.push({ ...c, n: 1 });
+    }
+    const busyMin = bk.reduce((acc, x) => acc + Math.max(0, Math.min(schAt(d.date, b), Date.parse(x.end_at)) - Math.max(schAt(d.date, a), Date.parse(x.start_at))) / 60000, 0);
+    const blockMin = cells.filter(c => c.kind === 'k').length * step;
+    const freeMin = cells.filter(c => c.kind === 'f').length * step;
+    return { ins, spans, busyMin, blockMin, freeMin, count: bk.length };
+  });
+  return { slots, rows, step, a, b };
+}
+const schHours = m => { const h = m / 60; return Number.isInteger(h) ? `${h}` : h.toFixed(1).replace('.', ','); };
+
+function renderSchedule(){
+  const d = SCH.data;
+  if (!d) return;
+  if (!d.instructors.length) { $('schGrid').innerHTML = '<div class="empty">Faol instruktor yo‘q.</div>'; $('schSum').innerHTML = ''; return; }
+  const M = schModel();
+  const tot = M.rows.reduce((o, r) => ({ busy: o.busy + r.busyMin, free: o.free + r.freeMin, n: o.n + r.count }), { busy: 0, free: 0, n: 0 });
+  const cap = M.rows.length * (M.b - M.a);
+  const kpi = (l, v, s = '') => `<div class="kpi"><span>${esc(l)}</span><b>${v}</b>${s ? `<small class="muted">${esc(s)}</small>` : ''}</div>`;
+  $('schSum').innerHTML =
+    kpi('Instruktorlar', M.rows.length) +
+    kpi('Bronlar', tot.n) +
+    kpi('Band vaqt', `${schHours(tot.busy)} soat`) +
+    kpi('Bo‘sh vaqt', `${schHours(tot.free)} soat`, 'hali o‘tmagan') +
+    kpi('Bandlik', cap ? `${Math.round(tot.busy / cap * 100)}%` : '—', `${schHM(M.a)}–${schHM(M.b)}`);
+
+  const perHour = 60 / M.step;
+  const head = M.slots.filter(m => m % 60 === 0 || m === M.a).map(m => {
+    const span = Math.min(m % 60 === 0 ? perHour : (60 - m % 60) / M.step, (M.b - m) / M.step);
+    return `<th colspan="${span}">${schHM(m)}</th>`;
+  }).join('');
+  const body = M.rows.map(r => {
+    const tds = r.spans.map(c => {
+      const w = `colspan="${c.n}"`;
+      if (c.kind === 'b') {
+        const st = SCH_ST[c.b.status] || SCH_ST.confirmed;
+        const tip = `${c.b.customer_name}${c.b.customer_phone ? ' · ' + c.b.customer_phone : ''}\n${kHour(c.b.start_at)}–${kHour(c.b.end_at)} · ${fmtDur(c.b.minutes)} · ${st.t}` +
+          (c.b.package ? `\n5 soatlik paket ${c.b.package.n}/${c.b.package.of}` : '') + (c.b.pickup_code ? `\nKod: ${c.b.pickup_code}` : '') +
+          (c.b.is_paid ? '\nTo‘langan' : '');
+        return `<td ${w} class="sb ${st.c}" title="${esc(tip)}"><div><b>${esc(c.b.customer_name)}</b><small>${esc(kHour(c.b.start_at))}–${esc(kHour(c.b.end_at))}${c.b.package ? ` · paket ${esc(c.b.package.n)}/${esc(c.b.package.of)}` : ''}${c.b.is_paid ? ' · ✓' : ''}</small></div></td>`;
+      }
+      if (c.kind === 'k') return `<td ${w} class="sk" title="Instruktor bu vaqtni yopgan"><div><small>yopiq</small></div></td>`;
+      if (c.kind === 'p') return `<td class="sp" title="O‘tib ketgan"></td>`;
+      return `<td class="sf" data-schfree="${esc(r.ins.id)}|${c.s}" title="${esc(r.ins.name)} · ${esc(kHour(new Date(c.s).toISOString()))} — bo‘sh. Bosing: qo‘lda bron"></td>`;
+    }).join('');
+    return `<tr><th class="nm"><b>${esc(r.ins.name)}</b><small>${esc((r.ins.categories || []).join(', '))}${r.ins.vehicle ? ' · ' + esc(r.ins.vehicle) : ''}</small>
+      <small class="hrs"><span class="bz">band ${schHours(r.busyMin)} soat</span> · <span class="fr">bo‘sh ${schHours(r.freeMin)} soat</span></small></th>${tds}</tr>`;
+  }).join('');
+  $('schGrid').innerHTML = `<table class="schtab" style="--cols:${M.slots.length}">
+    <thead><tr><th class="nm">Instruktor</th>${head}</tr></thead><tbody>${body}</tbody></table>`;
+  $('schGrid').querySelectorAll('[data-schfree]').forEach(td => td.onclick = () => {
+    const [id, t] = td.dataset.schfree.split('|');
+    schToManual(id, Number(t));
+  });
+}
+/** Bo'sh katak → «Qo'lda bron» shu instruktor, sana va vaqt bilan */
+function schToManual(insId, t){
+  const ins = (SCH.data?.instructors || []).find(x => String(x.id) === String(insId));
+  const d = new Date(t);
+  $('mbDate').value = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Tashkent' }).format(d);
+  $('mbTime').value = d.toLocaleTimeString('en-GB', { timeZone: 'Asia/Tashkent', hour: '2-digit', minute: '2-digit' });
+  if (ins && Array.isArray(ins.categories) && ins.categories.length && !ins.categories.includes(MB.cat)) MB.cat = ins.categories[0];
+  MB.pref = String(insId); MB.ins = null;
+  showPage('manual');
+  toast(`${ins ? ins.name + ' · ' : ''}${kHour(d.toISOString())} — mijoz ma’lumotini kiriting`);
+}
+
+/* ------------------------------------------------------------------
+   EXCEL (.xlsx) — kutubxonasiz. XLSX — bu bir nechta XML fayl
+   solingan ZIP. Ranglar (bo'sh — yashil, band — qizil, kutilmoqda —
+   sariq, yopiq — kulrang) Excel'da ham xuddi ekrandagidek.
+   ------------------------------------------------------------------ */
+const XL = (() => {
+  const enc = new TextEncoder();
+  let CRC = null;
+  function crc32(u8){
+    if (!CRC) { CRC = new Uint32Array(256); for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; CRC[n] = c >>> 0; } }
+    let c = 0xFFFFFFFF;
+    for (let i = 0; i < u8.length; i++) c = CRC[(c ^ u8[i]) & 0xFF] ^ (c >>> 8);
+    return (c ^ 0xFFFFFFFF) >>> 0;
+  }
+  /** ZIP (siqmasdan — «stored»). Excel buni bemalol ochadi. */
+  function zip(files){
+    const parts = [], central = [];
+    let off = 0;
+    const d = new Date(), dt = ((d.getFullYear() - 1980) << 25) | ((d.getMonth() + 1) << 21) | (d.getDate() << 16) | (d.getHours() << 11) | (d.getMinutes() << 5) | (d.getSeconds() >> 1);
+    for (const f of files) {
+      const name = enc.encode(f.name), data = typeof f.data === 'string' ? enc.encode(f.data) : f.data;
+      const crc = crc32(data);
+      const lh = new DataView(new ArrayBuffer(30));
+      lh.setUint32(0, 0x04034b50, true); lh.setUint16(4, 20, true); lh.setUint16(6, 0x0800, true); lh.setUint16(8, 0, true);
+      lh.setUint32(10, dt, true); lh.setUint32(14, crc, true); lh.setUint32(18, data.length, true); lh.setUint32(22, data.length, true);
+      lh.setUint16(26, name.length, true); lh.setUint16(28, 0, true);
+      parts.push(new Uint8Array(lh.buffer), name, data);
+      const ch = new DataView(new ArrayBuffer(46));
+      ch.setUint32(0, 0x02014b50, true); ch.setUint16(4, 20, true); ch.setUint16(6, 20, true); ch.setUint16(8, 0x0800, true); ch.setUint16(10, 0, true);
+      ch.setUint32(12, dt, true); ch.setUint32(16, crc, true); ch.setUint32(20, data.length, true); ch.setUint32(24, data.length, true);
+      ch.setUint16(28, name.length, true); ch.setUint16(30, 0, true); ch.setUint16(32, 0, true); ch.setUint16(34, 0, true);
+      ch.setUint16(36, 0, true); ch.setUint32(38, 0, true); ch.setUint32(42, off, true);
+      central.push(new Uint8Array(ch.buffer), name);
+      off += 30 + name.length + data.length;
+    }
+    const csize = central.reduce((a, x) => a + x.length, 0);
+    const end = new DataView(new ArrayBuffer(22));
+    end.setUint32(0, 0x06054b50, true); end.setUint16(8, files.length, true); end.setUint16(10, files.length, true);
+    end.setUint32(12, csize, true); end.setUint32(16, off, true);
+    return new Blob([...parts, ...central, new Uint8Array(end.buffer)], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+  }
+  const x = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]).replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, '');
+  const col = n => { let s = ''; n++; while (n) { const r = (n - 1) % 26; s = String.fromCharCode(65 + r) + s; n = Math.floor((n - 1) / 26); } return s; };
+  /** Varaq: rows = [{h, cells:[{v, s, n}]}], merges = ['A1:C1'], cols = [kengliklar] */
+  function sheet({ rows, merges = [], cols = [], freeze = null }){
+    const colsXml = cols.length ? `<cols>${cols.map((w, i) => `<col min="${i + 1}" max="${i + 1}" width="${w}" customWidth="1"/>`).join('')}</cols>` : '';
+    const pane = freeze ? `<sheetViews><sheetView workbookViewId="0"><pane xSplit="${freeze.x}" ySplit="${freeze.y}" topLeftCell="${col(freeze.x)}${freeze.y + 1}" activePane="bottomRight" state="frozen"/></sheetView></sheetViews>` : '';
+    const data = rows.map((r, ri) => `<row r="${ri + 1}"${r.h ? ` ht="${r.h}" customHeight="1"` : ''}>${(r.cells || []).map((c, ci) => {
+      if (!c) return '';
+      const ref = col(ci) + (ri + 1), s = c.s ? ` s="${c.s}"` : '';
+      if (c.v === undefined || c.v === null || c.v === '') return `<c r="${ref}"${s}/>`;
+      if (typeof c.v === 'number') return `<c r="${ref}"${s}><v>${c.v}</v></c>`;
+      return `<c r="${ref}"${s} t="inlineStr"><is><t xml:space="preserve">${x(c.v)}</t></is></c>`;
+    }).join('')}</row>`).join('');
+    return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheetPr><pageSetUpPr fitToPage="1"/></sheetPr>${pane}${colsXml}<sheetData>${data}</sheetData>${merges.length ? `<mergeCells count="${merges.length}">${merges.map(m => `<mergeCell ref="${m}"/>`).join('')}</mergeCells>` : ''}<pageMargins left="0.3" right="0.3" top="0.4" bottom="0.4" header="0.2" footer="0.2"/><pageSetup orientation="landscape" fitToWidth="1" fitToHeight="0"/></worksheet>`;
+  }
+  /* Uslublar (s=…): 1 sarlavha, 2 ustun boshi, 3 instruktor, 4 bo'sh, 5 tasdiqlangan,
+     6 kutilmoqda, 7 jarayonda, 8 tugagan, 9 yopiq, 10 o'tgan, 11 kelmagan, 12 oddiy, 13 qalin, 14 izoh */
+  const STYLES = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+<fonts count="6"><font><sz val="10"/><name val="Calibri"/><family val="2"/></font><font><b/><sz val="10"/><name val="Calibri"/><family val="2"/></font><font><b/><sz val="10"/><color rgb="FFFFFFFF"/><name val="Calibri"/><family val="2"/></font><font><b/><sz val="15"/><color rgb="FF1B1E66"/><name val="Calibri"/><family val="2"/></font><font><sz val="9"/><color rgb="FF5A6478"/><name val="Calibri"/><family val="2"/></font><font><b/><sz val="9"/><color rgb="FF1F2433"/><name val="Calibri"/><family val="2"/></font></fonts>
+<fills count="11"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill>
+<fill><patternFill patternType="solid"><fgColor rgb="FF2B2F8F"/><bgColor indexed="64"/></patternFill></fill>
+<fill><patternFill patternType="solid"><fgColor rgb="FFDDF5E6"/><bgColor indexed="64"/></patternFill></fill>
+<fill><patternFill patternType="solid"><fgColor rgb="FFF7B9BE"/><bgColor indexed="64"/></patternFill></fill>
+<fill><patternFill patternType="solid"><fgColor rgb="FFFFE08A"/><bgColor indexed="64"/></patternFill></fill>
+<fill><patternFill patternType="solid"><fgColor rgb="FFB9CCFF"/><bgColor indexed="64"/></patternFill></fill>
+<fill><patternFill patternType="solid"><fgColor rgb="FFD5D9E2"/><bgColor indexed="64"/></patternFill></fill>
+<fill><patternFill patternType="solid"><fgColor rgb="FF9AA1B2"/><bgColor indexed="64"/></patternFill></fill>
+<fill><patternFill patternType="solid"><fgColor rgb="FFF1F2F5"/><bgColor indexed="64"/></patternFill></fill>
+<fill><patternFill patternType="solid"><fgColor rgb="FFFFC999"/><bgColor indexed="64"/></patternFill></fill></fills>
+<borders count="2"><border><left/><right/><top/><bottom/><diagonal/></border><border><left style="thin"><color rgb="FFC9CEDA"/></left><right style="thin"><color rgb="FFC9CEDA"/></right><top style="thin"><color rgb="FFC9CEDA"/></top><bottom style="thin"><color rgb="FFC9CEDA"/></bottom><diagonal/></border></borders>
+<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>
+<cellXfs count="15">
+<xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>
+<xf numFmtId="0" fontId="3" fillId="0" borderId="0" xfId="0" applyFont="1"/>
+<xf numFmtId="0" fontId="2" fillId="2" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf>
+<xf numFmtId="0" fontId="1" fillId="0" borderId="1" xfId="0" applyFont="1" applyBorder="1" applyAlignment="1"><alignment vertical="center" wrapText="1"/></xf>
+<xf numFmtId="0" fontId="0" fillId="3" borderId="1" xfId="0" applyFill="1" applyBorder="1"/>
+<xf numFmtId="0" fontId="5" fillId="4" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf>
+<xf numFmtId="0" fontId="5" fillId="5" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf>
+<xf numFmtId="0" fontId="5" fillId="6" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf>
+<xf numFmtId="0" fontId="5" fillId="7" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf>
+<xf numFmtId="0" fontId="2" fillId="8" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf>
+<xf numFmtId="0" fontId="0" fillId="9" borderId="1" xfId="0" applyFill="1" applyBorder="1"/>
+<xf numFmtId="0" fontId="5" fillId="10" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf>
+<xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1" applyAlignment="1"><alignment vertical="center" wrapText="1"/></xf>
+<xf numFmtId="0" fontId="1" fillId="0" borderId="1" xfId="0" applyFont="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>
+<xf numFmtId="0" fontId="4" fillId="0" borderId="0" xfId="0" applyFont="1"/>
+</cellXfs>
+<cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles>
+</styleSheet>`;
+  function book(sheets){
+    const files = [
+      { name: '[Content_Types].xml', data: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>${sheets.map((_, i) => `<Override PartName="/xl/worksheets/sheet${i + 1}.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>`).join('')}</Types>` },
+      { name: '_rels/.rels', data: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>` },
+      { name: 'xl/workbook.xml', data: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets>${sheets.map((s, i) => `<sheet name="${x(s.name)}" sheetId="${i + 1}" r:id="rId${i + 1}"/>`).join('')}</sheets></workbook>` },
+      { name: 'xl/_rels/workbook.xml.rels', data: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">${sheets.map((_, i) => `<Relationship Id="rId${i + 1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet${i + 1}.xml"/>`).join('')}<Relationship Id="rId${sheets.length + 1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>` },
+      { name: 'xl/styles.xml', data: STYLES },
+      ...sheets.map((s, i) => ({ name: `xl/worksheets/sheet${i + 1}.xml`, data: sheet(s) })),
+    ];
+    return zip(files);
+  }
+  return { book, col };
+})();
+
+function schExcel(){
+  const d = SCH.data;
+  if (!d) return toast('Jadval hali yuklanmadi');
+  const M = schModel();
+  const STY = { confirmed: 5, pending: 6, in_progress: 7, completed: 8, no_show: 11 };
+  const n = M.slots.length;
+  const rows = [], merges = [];
+  const title = `Instruktorlar jadvali — ${schDayTitle(d.date)}`;
+  rows.push({ h: 24, cells: [{ v: title, s: 1 }] }); merges.push(`A1:${XL.col(n + 2)}1`);
+  rows.push({ cells: [{ v: `TASH INDEX AVTODROM · ish vaqti ${schHM(M.a)}–${schHM(M.b)} · ${M.step} daqiqalik kataklar · yuklab olindi: ${new Date().toLocaleString('uz-UZ', { timeZone: 'Asia/Tashkent' })}`, s: 14 }] });
+  merges.push(`A2:${XL.col(n + 2)}2`);
+  /* Ranglar izohi — har biri 2 katak (tor ustunlarga sig'sin) */
+  const legend = [['Bo‘sh', 4], ['Tasdiqlangan', 5], ['Kutilmoqda', 6], ['Jarayonda', 7], ['Tugagan', 8], ['Kelmagan', 11], ['Yopiq', 9], ['O‘tgan', 10]];
+  const lg = [{ v: 'Ranglar:', s: 13 }];
+  legend.forEach(([v, st], i) => {
+    const c0 = 1 + i * 2;
+    if (c0 + 1 > n) return;
+    lg[c0] = { v, s: st }; lg[c0 + 1] = { v: '', s: st };
+    merges.push(`${XL.col(c0)}3:${XL.col(c0 + 1)}3`);
+  });
+  rows.push({ h: 18, cells: lg });
+  /* Sarlavha: soatlar (har soat — 2 katak, birlashtirilgan) */
+  const hr = [{ v: 'Instruktor', s: 2 }];
+  for (let i = 0; i < n; i++) hr.push({ v: M.slots[i] % 60 === 0 || i === 0 ? schHM(M.slots[i]) : '', s: 2 });
+  hr.push({ v: 'Band, soat', s: 2 }, { v: 'Bo‘sh, soat', s: 2 });
+  rows.push({ h: 20, cells: hr });
+  const R = rows.length;
+  for (let i = 0; i < n; i++) {
+    const m = M.slots[i];
+    if (m % 60 === 0 || i === 0) {
+      const span = Math.min(m % 60 === 0 ? 60 / M.step : (60 - m % 60) / M.step, n - i);
+      if (span > 1) merges.push(`${XL.col(i + 1)}${R}:${XL.col(i + span)}${R}`);
+    }
+  }
+  for (const r of M.rows) {
+    const cells = [{ v: `${r.ins.name}${r.ins.categories?.length ? ' (' + r.ins.categories.join(', ') + ')' : ''}`, s: 3 }];
+    const rn = rows.length + 1;
+    let ci = 1;
+    for (const c of r.spans) {
+      let cell;
+      if (c.kind === 'b') {
+        const st = STY[c.b.status] || 5;
+        cell = { v: `${c.b.customer_name} · ${kHour(c.b.start_at)}–${kHour(c.b.end_at)}${c.b.package ? ` · paket ${c.b.package.n}/${c.b.package.of}` : ''}`, s: st };
+      } else if (c.kind === 'k') cell = { v: 'Yopiq', s: 9 };
+      else if (c.kind === 'p') cell = { v: '', s: 10 };
+      else cell = { v: '', s: 4 };
+      cells[ci] = cell;
+      for (let k = 1; k < c.n; k++) cells[ci + k] = { v: '', s: cell.s };
+      if (c.n > 1) merges.push(`${XL.col(ci)}${rn}:${XL.col(ci + c.n - 1)}${rn}`);
+      ci += c.n;
+    }
+    cells[n + 1] = { v: Math.round(r.busyMin / 6) / 10, s: 13 };
+    cells[n + 2] = { v: Math.round(r.freeMin / 6) / 10, s: 13 };
+    rows.push({ h: 34, cells });
+  }
+  const tb = M.rows.reduce((a, r) => a + r.busyMin, 0), tf = M.rows.reduce((a, r) => a + r.freeMin, 0);
+  const totRow = [{ v: 'JAMI', s: 3 }];
+  for (let i = 1; i <= n; i++) totRow[i] = { v: '', s: 12 };
+  totRow[n + 1] = { v: Math.round(tb / 6) / 10, s: 13 }; totRow[n + 2] = { v: Math.round(tf / 6) / 10, s: 13 };
+  rows.push({ h: 20, cells: totRow });
+  const sheet1 = { name: 'Jadval', rows, merges, cols: [30, ...Array(n).fill(M.step === 30 ? 7.5 : 12), 11, 11], freeze: { x: 1, y: 4 } };
+
+  /* 2-varaq: bronlar ro'yxati */
+  const insName = new Map(d.instructors.map(i => [String(i.id), i.name]));
+  const list = [...d.bookings].sort((a, b) => (insName.get(String(a.instructor_id)) || '').localeCompare(insName.get(String(b.instructor_id)) || '', 'uz') || a.start_at.localeCompare(b.start_at));
+  const r2 = [
+    { h: 22, cells: [{ v: `Bronlar — ${schDayTitle(d.date)}`, s: 1 }] },
+    { h: 20, cells: ['Instruktor', 'Boshlanish', 'Tugash', 'Davomiylik', 'Mijoz', 'Telefon', 'Toifa', 'Holat', 'Kod', 'Paket', 'To‘lov'].map(v => ({ v, s: 2 })) },
+    ...list.map(b => ({ cells: [
+      { v: insName.get(String(b.instructor_id)) || '—', s: 12 }, { v: kHour(b.start_at), s: 13 }, { v: kHour(b.end_at), s: 13 },
+      { v: fmtDur(b.minutes), s: 12 }, { v: b.customer_name, s: 12 }, { v: b.customer_phone || '', s: 12 }, { v: b.category || '', s: 13 },
+      { v: (SCH_ST[b.status] || { t: b.status }).t, s: STY[b.status] || 12 }, { v: b.pickup_code || '', s: 12 },
+      { v: b.package ? `${b.package.n}/${b.package.of}` : '', s: 13 }, { v: b.is_paid ? 'To‘langan' : '—', s: 12 },
+    ] })),
+  ];
+  if (!list.length) r2.push({ cells: [{ v: 'Bu kunda bron yo‘q', s: 14 }] });
+  const sheet2 = { name: 'Bronlar', rows: r2, merges: ['A1:K1'], cols: [24, 11, 10, 12, 24, 16, 7, 14, 12, 8, 12], freeze: { x: 0, y: 2 } };
+
+  const blob = XL.book([sheet1, sheet2]);
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `instruktorlar-jadvali-${d.date}.xlsx`;
+  document.body.appendChild(a); a.click();
+  setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1500);
+  toast('Excel fayl yuklab olindi');
+}
+
+$('schDate').addEventListener('change', loadSchedule);
+$('schPrev').onclick = () => { $('schDate').value = schDayAdd($('schDate').value || kToday(), -1); loadSchedule(); };
+$('schNext').onclick = () => { $('schDate').value = schDayAdd($('schDate').value || kToday(), 1); loadSchedule(); };
+$('schStep').onchange = () => { SCH.step = Number($('schStep').value) || 30; renderSchedule(); };
+$('schXlsx').onclick = schExcel;
 
 /* =========================================================================
    BOSHQARUV PIN QULFI
@@ -5924,7 +6697,7 @@ function refreshActivePage(show=false){
     live:()=>loadLive('live'),klive:()=>loadLive('klive'),kdash:loadKdash,
     cashier:loadCashier,checkout:()=>CO.mode==='walk_in'?loadFreeInstructors():null,
     control:loadControl,insacc:loadInsAcc,payments:loadPayments,staff:loadStaff,
-    audit:loadAudit,support:loadSupport,cancels:loadCancels,media:loadMedia};
+    audit:loadAudit,support:loadSupport,cancels:loadCancels,media:loadMedia,schedule:loadSchedule};
   // Manual-entry forms are never reset by a background timer.
   if(!show&&['manual','settings','checkout'].includes(page))return Promise.resolve();
   const fn=loaders[page]||(()=>loadAll());
