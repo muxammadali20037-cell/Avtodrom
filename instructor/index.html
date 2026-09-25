@@ -1251,9 +1251,13 @@ async function boot(){
   }
   await checkRegistration(true);
 }
+/* Jonli: har 15 soniyada va ilovaga qaytganda bronlar yangilanadi */
 setInterval(() => {
   if (S.profile && !$('sheet').classList.contains('on') && !document.hidden) loadBookings();
-}, 30000);
+}, 15000);
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden && S.profile) { loadBookings(); loadBlocks().then(() => { if (current === 'free') renderFree(); }); }
+});
 boot();
 </script>
 </body>
