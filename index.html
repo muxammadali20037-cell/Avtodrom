@@ -231,6 +231,52 @@ textarea.input{min-height:88px;resize:none;line-height:1.4}
 .dur small{display:block;color:var(--hint);font-weight:600;font-size:13.5px;margin-top:3px}
 .dur.on{background:var(--accent-soft);box-shadow:inset 0 0 0 2px var(--accent)}
 .dur.on b,.dur.on small{color:var(--accent)}
+/* Davomiylik: 30 daq, 1 soat, 2 soat — uchta; ostida yashil 5 soatlik PAKET */
+.dur-grid.three{grid-template-columns:repeat(3,minmax(0,1fr))}
+.dur-grid.three .dur{padding:15px 12px}
+.dur-grid.three .dur b{font-size:19px}
+.dur-grid.three .dur small{font-size:12.5px}
+.pkg-card{position:relative;display:block;width:100%;margin-top:12px;padding:18px 16px 16px;border-radius:22px;text-align:left;
+  background:linear-gradient(135deg,#0f9d58,#16a34a 55%,#22c55e);color:#fff;box-shadow:0 10px 26px rgba(22,163,74,.32);overflow:hidden}
+.pkg-card:active{transform:scale(.985)}
+.pkg-card.on{box-shadow:0 0 0 3px #fff,0 0 0 5px #16a34a,0 10px 26px rgba(22,163,74,.32)}
+.pkg-card .badge{display:inline-block;padding:4px 10px;border-radius:99px;background:rgba(255,255,255,.22);font-size:12px;font-weight:800;letter-spacing:.3px}
+.pkg-card .ttl{display:block;font-size:24px;font-weight:800;letter-spacing:-.4px;margin-top:8px}
+.pkg-card .sub{display:block;font-size:13.5px;opacity:.92;margin-top:3px}
+.pkg-card .pr{position:relative;z-index:1;display:flex;align-items:baseline;justify-content:flex-end;gap:10px;flex-wrap:wrap;margin-top:12px;padding-top:10px;border-top:1px solid rgba(255,255,255,.25)}
+.pkg-card .pr s{font-size:14px;opacity:.8;font-weight:600}
+.pkg-card .pr b{font-size:23px;font-weight:800;letter-spacing:-.3px}
+.pkg-card::after{content:'';position:absolute;right:-30px;top:-30px;width:120px;height:120px;border-radius:50%;background:rgba(255,255,255,.12)}
+.split-list{display:grid;gap:10px;margin-top:6px}
+.split{display:flex;align-items:center;gap:12px;width:100%;padding:14px;border-radius:18px;background:var(--card-2);text-align:left}
+.split.on{background:var(--ok-soft);box-shadow:inset 0 0 0 2px var(--ok)}
+.split .bars{display:flex;gap:3px;flex:none;width:74px}
+.split .bars i{height:26px;border-radius:6px;background:var(--ok);opacity:.85}
+.split .tx{flex:1;min-width:0}
+.split .tx b{display:block;font-size:16px}
+.split .tx small{display:block;color:var(--hint);font-size:13px;margin-top:2px}
+.sess-tabs{display:flex;gap:8px;overflow-x:auto;padding:2px 2px 12px;margin:0 -2px;scrollbar-width:none}
+.sess-tabs::-webkit-scrollbar{display:none}
+.sess-tab{flex:none;padding:9px 12px;border-radius:14px;background:var(--card);box-shadow:var(--shadow);text-align:left;font-size:12.5px;line-height:1.25}
+.sess-tab b{display:block;font-size:13.5px}
+.sess-tab small{color:var(--hint);font-weight:600}
+.sess-tab.on{background:var(--accent);color:var(--on-accent)}
+.sess-tab.on small{color:inherit;opacity:.85}
+.sess-tab.set:not(.on){box-shadow:inset 0 0 0 2px var(--ok)}
+.day.used{opacity:.45}
+.day.used .w::after{content:' ✓'}
+.pkg-note{display:flex;gap:8px;align-items:flex-start;background:var(--ok-soft);color:var(--ok);border-radius:14px;padding:11px 13px;font-size:13.5px;font-weight:600;margin:0 0 12px}
+.sum-total s{display:block;color:var(--hint);font-size:13.5px;font-weight:600;text-align:right;letter-spacing:0}
+.sum-total b{text-align:right}
+.save-tag{display:inline-block;margin-left:6px;padding:2px 8px;border-radius:99px;background:var(--ok-soft);color:var(--ok);font-size:11.5px;font-weight:800;vertical-align:middle}
+.done-list{display:grid;gap:8px;margin:14px 0}
+.done-row{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:16px;background:var(--card);box-shadow:var(--shadow)}
+.done-row .n{width:30px;height:30px;border-radius:10px;background:var(--ok-soft);color:var(--ok);display:grid;place-items:center;font-weight:800;flex:none}
+.done-row .tx{flex:1;min-width:0}
+.done-row .tx b{display:block;font-size:14.5px}
+.done-row .tx small{color:var(--hint);font-size:12.5px}
+.done-row .cd{font-family:ui-monospace,Menlo,monospace;font-weight:800;color:var(--accent);font-size:14px}
+.pkg-pill{display:inline-block;margin-left:6px;padding:2px 8px;border-radius:99px;background:var(--ok-soft);color:var(--ok);font-size:11.5px;font-weight:800}
 .day-title{margin:16px 2px 10px;font-weight:700;font-size:15px}
 .time small{display:block;font-size:11px;font-weight:600;color:var(--accent);margin-top:1px;text-decoration:none}
 .time:disabled small{color:var(--hint)}
@@ -742,6 +788,7 @@ const api = {
   busy: (id, date) => req(`/api/instructors/${encodeURIComponent(id)}/availability?date=${encodeURIComponent(date)}`),
   bookings: () => req('/api/bookings'),
   book: b => req('/api/bookings', { method: 'POST', body: b }),
+  bookPackage: b => req('/api/bookings/package', { method: 'POST', body: b }),
   cancel: (id, reason) => req(`/api/bookings/${encodeURIComponent(id)}/cancel`, { method: 'PATCH', body: { reason } }),
   review: b => req('/api/reviews', { method: 'POST', body: b }),
   notes: () => req('/api/notifications'),
@@ -760,7 +807,7 @@ const S = {
 };
 /* Bron qilish oqimi */
 const B = {
-  started: false, step: 'cat', mode: 'time', key: '', hours: 0, date: '', time: '', ins: '', auto: false, insLocked: false,
+  started: false, step: 'cat', mode: 'time', key: '', hours: 0, min: 0, pkg: null, date: '', time: '', ins: '', auto: false, insLocked: false,
   note: '', showNote: false, phone: '', busy: {}, loading: false, err: '', token: 0, sending: false, done: null, dir: 'f', advancing: false,
 };
 const CACHE = new Map();   // "insId|date" -> {t, v}
@@ -797,6 +844,35 @@ function priceOf(opt, hours) {
   return Math.round(Number(opt.course.price || 0) * hours);
 }
 const unitOf = opt => Math.max(15, Number(opt && opt.course && opt.course.duration_minutes) || 60);
+/* Toifali mashg'ulot: 30 daqiqa, 1 soat, 2 soat va 5 soatlik PAKET */
+const MINS = [30, 60, 120];
+const PKG_MIN = 300;
+const SPLITS = [
+  { k: '5',     m: [300],                t: 'Bir kunda — 5 soat',       s: 'Hammasini bir kunda haydaysiz' },
+  { k: '3+2',   m: [180, 120],           t: '2 kunda — 3 + 2 soat',     s: '1-kuni 3 soat, 2-kuni 2 soat' },
+  { k: '2+2+1', m: [120, 120, 60],       t: '3 kunda — 2 + 2 + 1 soat', s: '2 soat, 2 soat va 1 soat' },
+  { k: '1x5',   m: [60, 60, 60, 60, 60], t: '5 kunda — har kuni 1 soat', s: '5 kun, 1 soatdan' },
+];
+/** Tarif bo'yicha narx (daqiqada) — server bilan bir xil formula */
+function minPrice(cat, minutes) {
+  const t = tariff(cat), m = Math.max(1, Math.round(minutes));
+  return m === 30 ? Math.round(t.half) : Math.round(t.hour * m / 60);
+}
+/** 5 soatlik paket narxi. Sozlama yo'q — 1 100 000; 0 — paket o'chirilgan. */
+function pkgPrice(cat) {
+  const v = S.settings['paket5_' + String(cat || 'B').toLowerCase()];
+  if (v === undefined || v === null || v === '') return 1100000;
+  const n = Number(v);
+  return Number.isFinite(n) && n > 0 ? Math.round(n) : 0;
+}
+/** Hozirgi tanlov narxi: paket, daqiqa yoki (toifasiz kurs) soat */
+function bkPrice(opt = curOpt()) {
+  if (!opt) return 0;
+  if (B.pkg && opt.cat) return pkgPrice(opt.cat);
+  if (B.min && opt.cat) return minPrice(opt.cat, B.min);
+  return priceOf(opt, B.hours || 1);
+}
+const pkgSplit = () => (B.pkg ? B.pkg.m : []);
 
 /* --- kategoriyalar: faol mashg'ulotlardan --- */
 const CAT_INFO = { A: 'Mototsikl', B: 'Yengil avto', C: 'Yuk avto' };
@@ -1529,7 +1605,7 @@ const byRating = (a, b) => ((Number(b.rating) || 0) - (Number(a.rating) || 0)) |
 /** Yangi bronni boshlash. key — toifa oldindan tanlangan bo'lsa, ins — instruktor. */
 function startBook({ key = '', ins = '' } = {}) {
   Object.assign(B, {
-    started: true, step: 'cat', mode: 'time', key: '', hours: 0, date: '', time: '', ins: '', auto: false,
+    started: true, step: 'cat', mode: 'time', key: '', hours: 0, min: 0, pkg: null, date: '', time: '', ins: '', auto: false,
     insLocked: false, note: '', showNote: false, busy: {}, loading: false, err: '', done: null, dir: 'f', advancing: false,
   });
   B.token++;
@@ -1548,7 +1624,49 @@ function maxHours(opt) {
   const span = toMin(S.settings.work_end) - toMin(S.settings.work_start);
   return clamp(Math.floor(span / unitOf(opt)), 1, 8);
 }
-const dur = () => unitOf(curOpt()) * (B.hours || 1);
+/** Hozirgi (paketda — tanlanayotgan mashg'ulot) davomiyligi, daqiqada */
+const dur = () => B.pkg ? B.pkg.m[B.pkg.i] : B.min ? B.min : unitOf(curOpt()) * (B.hours || 1);
+/* ---- paket: har mashg'ulot vaqti ---- */
+function pkgStart(k) {
+  const sp = SPLITS.find(x => x.k === k) || SPLITS[0];
+  B.pkg = { k: sp.k, m: sp.m.slice(), i: 0, s: sp.m.map(() => null) };
+  B.min = 0; B.hours = 0; B.time = '';
+  if (B.mode === 'time') { B.ins = ''; B.auto = false; }
+}
+const pkgUsedDays = () => B.pkg ? B.pkg.s.filter((x, j) => x && j !== B.pkg.i).map(x => x.date) : [];
+/** Instruktor shu mashg'ulot vaqtida bo'shmi — yuklangan bandlikdan (CACHE) */
+function freeOn(ins, date, time, minutes) {
+  const c = CACHE.get(ins.id + '|' + date);
+  if (!c || !Array.isArray(c.v)) return true;              // hali yuklanmagan — server tekshiradi
+  const s = at(date, time).getTime(), e = s + minutes * 60000;
+  return !c.v.some(([a, b]) => s < b && e > a);
+}
+/** Paketning boshqa (tanlangan) mashg'ulotlarida ham bo'sh instruktorlar */
+function pkgOthersFree(list) {
+  if (!B.pkg) return list;
+  return list.filter(ins => B.pkg.s.every((x, j) => j === B.pkg.i || !x || freeOn(ins, x.date, x.time, B.pkg.m[j])));
+}
+/** Paketning HAMMA mashg'ulotlarida bo'sh instruktorlar */
+function pkgAllFree(list) {
+  if (!B.pkg) return list;
+  return list.filter(ins => B.pkg.s.every((x, j) => x && freeOn(ins, x.date, x.time, B.pkg.m[j])));
+}
+/** Mashg'ulot vaqti tanlandi → keyingi bo'sh mashg'ulotga yoki keyingi bosqichga */
+function pkgPickTime(time) {
+  B.pkg.s[B.pkg.i] = { date: B.date, time };
+  const n = B.pkg.m.length;
+  let next = -1;
+  for (let k = 1; k <= n; k++) { const j = (B.pkg.i + k) % n; if (!B.pkg.s[j]) { next = j; break; } }
+  if (next < 0) { B.time = time; advance(); return; }
+  const prev = B.pkg.s[B.pkg.i];
+  B.pkg.i = next; B.time = '';
+  /* Keyingi kun — oldingi mashg'ulotdan keyingi birinchi bo'sh kun */
+  let d = addDays(prev.date, 1);
+  const used = pkgUsedDays();
+  for (let k = 0; k < 14 && used.includes(d); k++) d = addDays(d, 1);
+  B.date = d;
+  setTimeout(() => { if (S.view === 'book' && B.step === 'time') { render(); window.scrollTo(0, 0); ensureBusy(); } }, 190);
+}
 function slotsFor(date) {
   const st = toMin(S.settings.work_start), en = toMin(S.settings.work_end), step = S.settings.step, d = dur();
   const cut = Date.now() + 10 * 60000;   // 10 daqiqadan keyingi vaqtlar
@@ -1564,7 +1682,7 @@ function firstOpenDay() {
   return slotsFor(t).some(s => !s.past) ? t : addDays(t, 1);
 }
 /* Qaysi instruktorlarning bandligi kerak: vaqt bo'yicha — hammasi, instruktor bo'yicha — faqat tanlangani */
-const candidates = () => (B.mode === 'ins' && B.ins) ? catInstructors().filter(i => String(i.id) === B.ins) : catInstructors();
+const candidates = () => pkgOthersFree((B.mode === 'ins' && B.ins) ? catInstructors().filter(i => String(i.id) === B.ins) : catInstructors());
 function freeFor(time) {
   const s = at(B.date, time).getTime(), e = s + dur() * 60000;
   return candidates().filter(i => {
@@ -1599,7 +1717,15 @@ async function ensureBusy(force = false) {
 function bookGo(step, dir = 'f') {
   hideToast();   // oldingi bosqichning xabari endi kerak emas
   B.step = step; B.dir = dir; B.advancing = false;
+  if (step === 'time' && B.pkg) {
+    if (!(B.pkg.i >= 0 && B.pkg.i < B.pkg.m.length)) B.pkg.i = 0;
+    const cur = B.pkg.s[B.pkg.i];
+    if (cur) { B.date = cur.date; B.time = cur.time; }
+  }
   if (step === 'time' && (!B.date || B.date < ymd() || !slotsFor(B.date).some(s => !s.past))) B.date = firstOpenDay();
+  if (step === 'time' && B.pkg && pkgUsedDays().includes(B.date)) {
+    let d = B.date; for (let k = 0; k < 14 && pkgUsedDays().includes(d); k++) d = addDays(d, 1); B.date = d;
+  }
   render();
   window.scrollTo(0, 0);
   syncBack();
@@ -1664,8 +1790,10 @@ function crumbs() {
   for (const st of s.slice(0, idx)) {
     let t = '';
     if (st === 'cat' && opt) t = opt.cat ? `${opt.cat} toifa` : opt.title;
-    if (st === 'dur' && B.hours) t = fmtDur(dur());
-    if (st === 'time' && B.time) t = `${dayName(B.date, false)}, ${B.time}`;
+    if (st === 'dur' && B.pkg) t = `5 soat paket · ${B.pkg.m.map(m => m / 60).join('+')}`;
+    else if (st === 'dur' && (B.hours || B.min)) t = fmtDur(dur());
+    if (st === 'time' && B.pkg) { const k = B.pkg.s.filter(Boolean).length; if (k) t = `${k} ta kun tanlangan`; }
+    else if (st === 'time' && B.time) t = `${dayName(B.date, false)}, ${B.time}`;
     if (st === 'ins' && selIns()) t = insName(selIns());
     if (t) out.push(`<button data-act="wzjump" data-v="${st}">${esc(t)}${ico('edit', 13)}</button>`);
   }
@@ -1690,6 +1818,20 @@ function stepCat() {
 
 function stepDur() {
   const opt = curOpt(), maxH = maxHours(opt);
+  if (opt && opt.cat) {
+    const p = pkgPrice(opt.cat), list = minPrice(opt.cat, PKG_MIN);
+    return `<h1 class="wz-h">Necha soat haydaysiz?</h1>
+    <p class="wz-sub">Narx avtomatik hisoblanadi</p>
+    <div class="dur-grid three">${MINS.map(m => `
+      <button class="dur ${!B.pkg && B.min === m ? 'on' : ''}" data-act="wzmin" data-v="${m}">
+        <b>${fmtDur(m)}</b><small>${money(minPrice(opt.cat, m))}</small></button>`).join('')}</div>
+    ${p > 0 ? `<button class="pkg-card ${B.pkg ? 'on' : ''}" data-act="wzpkg">
+      <span class="badge">PAKET${list > p ? ` · ${money(list - p)} tejaysiz` : ''}</span>
+      <span class="ttl">5 soat</span>
+      <span class="sub">Bir kunda yoki bir necha kunga bo‘lib — o‘zingiz tanlaysiz</span>
+      <span class="pr">${list > p ? `<s>${money(list)}</s>` : ''}<b>${money(p)}</b></span>
+    </button>` : ''}`;
+  }
   return `<h1 class="wz-h">Necha soat haydaysiz?</h1>
     <p class="wz-sub">Narx avtomatik hisoblanadi</p>
     <div class="dur-grid">${Array.from({ length: maxH }, (_, n) => n + 1).map(h => `
@@ -1700,10 +1842,17 @@ function stepDur() {
 function stepTime() {
   const days = Array.from({ length: 14 }, (_, n) => addDays(ymd(), n));
   const who = B.mode === 'ins' ? selIns() : null;
-  return `<h1 class="wz-h">Qachon kelasiz?</h1>
-    <p class="wz-sub">${who ? `${esc(insName(who))} bo‘sh bo‘lgan vaqtlar` : 'Vaqtni tanlang — keyin shu vaqtda bo‘sh instruktorlar chiqadi'}</p>
-    <div class="scroller" id="days">${days.map(d => { const p = dp(d); return `
-      <button class="day ${d === B.date ? 'on' : ''}" data-act="wzday" data-v="${d}" aria-pressed="${d === B.date}">
+  const used = pkgUsedDays();
+  const pk = B.pkg && B.pkg.m.length > 1;
+  return `<h1 class="wz-h">${pk ? `${B.pkg.i + 1}-mashg‘ulot — qachon?` : 'Qachon kelasiz?'}</h1>
+    <p class="wz-sub">${pk ? `${esc(fmtDur(dur()))} · ${B.pkg.m.length} ta mashg‘ulotdan ${B.pkg.i + 1}-si. Har biri boshqa kunda.`
+      : B.pkg ? `5 soat birdaniga · ${who ? esc(insName(who)) + ' bo‘sh bo‘lgan vaqtlar' : 'boshlanish vaqtini tanlang'}`
+      : who ? `${esc(insName(who))} bo‘sh bo‘lgan vaqtlar` : 'Vaqtni tanlang — keyin shu vaqtda bo‘sh instruktorlar chiqadi'}</p>
+    ${pk ? `<div class="sess-tabs">${B.pkg.m.map((m, j) => { const x = B.pkg.s[j]; return `
+      <button class="sess-tab ${j === B.pkg.i ? 'on' : ''} ${x ? 'set' : ''}" data-act="wzsess" data-v="${j}">
+        <b>${j + 1}) ${esc(fmtDur(m))}</b><small>${x ? `${esc(dayName(x.date, false))}, ${esc(x.time)}` : 'tanlanmagan'}</small></button>`; }).join('')}</div>` : ''}
+    <div class="scroller" id="days">${days.map(d => { const p = dp(d); const u = used.includes(d); return `
+      <button class="day ${d === B.date ? 'on' : ''} ${u ? 'used' : ''}" data-act="wzday" data-v="${d}" aria-pressed="${d === B.date}" ${u ? 'disabled title="Bu kunda boshqa mashg‘ulot tanlangan"' : ''}>
         <span class="w">${d === ymd() ? 'Bugun' : WD_S[p.wd]}</span><span class="d">${p.day}</span><span class="m">${MON_S[p.mon]}</span></button>`; }).join('')}
     </div>
     <div class="day-title">${esc(dayName(B.date))}</div>
@@ -1711,6 +1860,12 @@ function stepTime() {
     ${B.mode === 'time'
       ? `<button class="switch-link" data-act="wzmode" data-v="ins">${ico('user', 19)} Avval instruktorni tanlamoqchiman</button>`
       : `<button class="switch-link" data-act="wzmode" data-v="time">${ico('clock', 19)} Farqi yo‘q — hamma bo‘sh vaqtlarni ko‘rish</button>`}`;
+}
+/** Shu vaqtda mijozning o'zida boshqa faol bron bormi */
+function mineAt(date, time, minutes) {
+  const s = at(date, time).getTime(), e = s + minutes * 60000;
+  return (S.bookings || []).some(b => ['pending', 'confirmed', 'in_progress'].includes(b.status)
+    && Date.parse(b.start_at) < e && (Date.parse(b.end_at) || Date.parse(b.start_at) + (Number(b.duration_minutes) || 60) * 60000) > s);
 }
 function renderTimes() {
   const box = $('#times');
@@ -1721,7 +1876,12 @@ function renderTimes() {
   }
   if (B.loading) { box.innerHTML = `<div class="times">${'<div class="sk"></div>'.repeat(12)}</div>`; return; }
   if (B.err) { box.innerHTML = `<div class="note err">${esc(B.err)} <button class="link" data-act="retry">Qayta urinish</button></div>`; return; }
-  const list = slotsFor(B.date).map(s => ({ ...s, n: s.past ? 0 : freeFor(s.t).length }));
+  /* Mijozning O'Z bronlari (va paketning boshqa mashg'ulotlari) bilan ustma-ust
+     tushadigan vaqt ham yopiq — server baribir rad etardi. */
+  const list = slotsFor(B.date).map(s => {
+    const mine = !s.past && mineAt(B.date, s.t, dur());
+    return { ...s, mine, n: s.past || mine ? 0 : freeFor(s.t).length };
+  });
   if (!list.some(s => s.n)) {
     const next = addDays(B.date, 1);
     box.innerHTML = `<div class="card empty" style="padding:22px 16px"><div class="ill" style="width:52px;height:52px">${ico('clock', 26)}</div>
@@ -1732,7 +1892,7 @@ function renderTimes() {
   }
   const many = B.mode === 'time' && candidates().length > 1;
   box.innerHTML = `<div class="times">${list.map(s => `<button class="time ${s.t === B.time ? 'on' : ''}" data-act="wztime" data-v="${s.t}"
-      ${s.n ? '' : 'disabled'} aria-pressed="${s.t === B.time}">${s.t}${many ? `<small>${s.n ? s.n + ' bo‘sh' : 'band'}</small>` : ''}</button>`).join('')}</div>`;
+      ${s.n ? '' : 'disabled'} aria-pressed="${s.t === B.time}">${s.t}${s.mine ? '<small>sizda bron</small>' : many ? `<small>${s.n ? s.n + ' bo‘sh' : 'band'}</small>` : ''}</button>`).join('')}</div>`;
 }
 
 function insOpt(i) {
@@ -1748,11 +1908,12 @@ function insOpt(i) {
 }
 function stepIns() {
   if (B.mode === 'time') {
-    const free = freeFor(B.time).sort(byRating);
+    const free = (B.pkg ? pkgAllFree(catInstructors()) : freeFor(B.time)).sort(byRating);
     if (!free.length) return `<h1 class="wz-h">Kim bilan haydaysiz?</h1>
-      <div class="note warn">Bu vaqtda bo‘sh instruktor qolmadi. <button class="link" data-act="wzjump" data-v="time">Boshqa vaqtni tanlash</button></div>`;
+      <div class="note warn">${B.pkg ? 'Tanlangan hamma kunlarda bo‘sh bitta instruktor topilmadi.' : 'Bu vaqtda bo‘sh instruktor qolmadi.'} <button class="link" data-act="wzjump" data-v="time">Boshqa vaqtni tanlash</button></div>`;
     return `<h1 class="wz-h">Kim bilan haydaysiz?</h1>
-      <p class="wz-sub">${esc(dayName(B.date, false))}, ${esc(B.time)} da bo‘sh — ${free.length} ta instruktor</p>
+      <p class="wz-sub">${B.pkg ? `Paketning hamma kunlarida bo‘sh — ${free.length} ta instruktor`
+        : `${esc(dayName(B.date, false))}, ${esc(B.time)} da bo‘sh — ${free.length} ta instruktor`}</p>
       <div class="opt-list">
         ${free.length > 1 ? `<button class="opt" data-act="wzins" data-v="auto">
           <span class="lt solid">${ico('check', 26, 2.6)}</span>
@@ -1770,6 +1931,25 @@ function stepIns() {
 function stepConfirm() {
   const opt = curOpt(), who = selIns();
   const row = (st, k, v) => `<button class="sum-row" data-act="wzjump" data-v="${st}"><span>${k}</span><b>${esc(v)}</b><i>${ico('edit', 15)}</i></button>`;
+  if (B.pkg) {
+    const p = pkgPrice(opt.cat), list = minPrice(opt.cat, PKG_MIN);
+    return `<h1 class="wz-h">Hammasi to‘g‘rimi?</h1>
+    <p class="wz-sub">Qatorni bossangiz — o‘zgartirasiz</p>
+    <div class="card sum-card">
+      ${row('cat', 'Toifa', opt.cat ? `${opt.cat} — ${CAT_LONG[opt.cat]}` : opt.title)}
+      ${row('dur', 'Paket', `5 soat · ${B.pkg.m.map(m => m / 60).join(' + ')}`)}
+      ${B.pkg.m.map((m, j) => { const x = B.pkg.s[j]; return `<button class="sum-row" data-act="wzsess" data-v="${j}"><span>${j + 1}-mashg‘ulot</span>
+        <b>${x ? `${esc(dayName(x.date))} · ${esc(x.time)}` : '—'} · ${esc(fmtDur(m))}</b><i>${ico('edit', 15)}</i></button>`; }).join('')}
+      ${row('ins', 'Instruktor', insName(who) + (B.auto ? ' · avtomatik' : ''))}
+      <div class="sum-total"><span>Jami${list > p ? `<span class="save-tag">−${money(list - p)}</span>` : ''}</span><b class="tnum">${list > p ? `<s>${money(list)}</s>` : ''}${money(p)}</b></div>
+    </div>
+    <div class="note info" style="margin-top:12px;display:flex;gap:10px;align-items:flex-start">${ico('info', 19)}<span>To‘lov avtodrom kassasida — butun paketni bir marta to‘laysiz. Har mashg‘ulot uchun alohida kassa kodi beriladi.</span></div>
+    ${!S.me.phone ? `<label class="field"><span>Telefon raqamingiz — admin siz bilan bog‘lanadi</span>
+      <input class="input" id="phoneIn" type="tel" inputmode="tel" autocomplete="tel" placeholder="+998 90 123 45 67" value="${esc(B.phone)}"></label>` : ''}
+    ${B.showNote
+      ? `<label class="field"><span>Izoh (ixtiyoriy)</span><textarea class="input" id="noteIn" maxlength="500" placeholder="Masalan: birinchi marta haydayman">${esc(B.note)}</textarea></label>`
+      : `<button class="link" style="margin-top:16px;padding:6px 2px" data-act="shownote">+ Izoh qo‘shish</button>`}`;
+  }
   return `<h1 class="wz-h">Hammasi to‘g‘rimi?</h1>
     <p class="wz-sub">Qatorni bossangiz — o‘zgartirasiz</p>
     <div class="card sum-card">
@@ -1777,7 +1957,7 @@ function stepConfirm() {
       ${row('dur', 'Davomiylik', fmtDur(dur()))}
       ${row('time', 'Kun va vaqt', `${dayName(B.date)} · ${B.time}`)}
       ${row('ins', 'Instruktor', insName(who) + (B.auto ? ' · avtomatik' : ''))}
-      <div class="sum-total"><span>Jami</span><b class="tnum">${money(priceOf(opt, B.hours))}</b></div>
+      <div class="sum-total"><span>Jami</span><b class="tnum">${money(bkPrice(opt))}</b></div>
     </div>
     <div class="note info" style="margin-top:12px;display:flex;gap:10px;align-items:flex-start">${ico('info', 19)}<span>To‘lov avtodrom kassasida. Bron qilgach sizga kassa kodi beriladi.</span></div>
     ${!S.me.phone ? `<label class="field"><span>Telefon raqamingiz — admin siz bilan bog‘lanadi</span>
@@ -1791,7 +1971,9 @@ function renderBar() {
   const d = $('#dock'), opt = curOpt();
   if (B.step !== 'confirm' || B.done || !opt || !S.settings.bookingOn || (S.me && S.me.is_blocked)) { d.innerHTML = ''; return; }
   d.innerHTML = `<div class="bar"><div class="bar-in">
-    <div class="sum"><b class="tnum">${money(priceOf(opt, B.hours))}</b><span>${esc(dayName(B.date, false))}, ${esc(B.time)} · ${esc(fmtDur(dur()))}</span></div>
+    <div class="sum"><b class="tnum">${money(bkPrice(opt))}</b><span>${B.pkg
+      ? `5 soatlik paket · ${B.pkg.m.length > 1 ? B.pkg.m.length + ' kun' : 'bir kunda'}`
+      : `${esc(dayName(B.date, false))}, ${esc(B.time)} · ${esc(fmtDur(dur()))}`}</span></div>
     <button class="btn btn-primary" data-act="submit" ${B.sending ? 'disabled' : ''}>${B.sending ? '<span class="spin"></span>' : 'Tasdiqlash'}</button>
   </div></div>`;
 }
@@ -1806,7 +1988,10 @@ async function submitBooking() {
   if (B.sending) return;
   const opt = curOpt(), who = selIns();
   if (!opt) return bookGo('cat', 'b');
-  if (!B.time) return bookGo('time', 'b');
+  if (B.pkg) {
+    const miss = B.pkg.s.findIndex(x => !x);
+    if (miss >= 0) { B.pkg.i = miss; return bookGo('time', 'b'); }
+  } else if (!B.time) return bookGo('time', 'b');
   if (!who) return bookGo('ins', 'b');
 
   let phone = null;
@@ -1830,10 +2015,41 @@ async function submitBooking() {
         B.phone = ''; store.set('onb_skip', '1');
       }
     }
-    const r = await api.book({
+    if (B.pkg) {
+      /* 5 soatlik paket — hamma mashg'ulotlar bitta so'rovda */
+      const r = await api.bookPackage({
+        instructor_id: who.id,
+        course_id: opt.course.id,
+        sessions: B.pkg.s.map((x, j) => ({ start_at: `${x.date}T${x.time}:00+05:00`, minutes: B.pkg.m[j] })),
+        customer_note: B.note.trim() || undefined,
+      });
+      haptic.ok();
+      CACHE.clear();
+      const list = r.bookings || [];
+      S.bookings = [...list, ...S.bookings.filter(x => !list.some(y => y.id === x.id))];
+      B.done = {
+        pkg: true,
+        list: list.map(b => ({ code: b.pickup_code || '', when: whenText(b.start_at), dur: fmtDur(b.duration_minutes) })),
+        cat: opt.cat ? `${opt.cat} — ${CAT_LONG[opt.cat]}` : opt.title,
+        ins: insName(who),
+        price: (r.package && r.package.price) || pkgPrice(opt.cat),
+        list_price: (r.package && r.package.list_price) || minPrice(opt.cat, PKG_MIN),
+      };
+      B.sending = false;
+      hideToast(); render(); window.scrollTo(0, 0); syncBack();
+      refreshBookings();
+      return;
+    }
+    const r = await api.book(opt.cat && B.min ? {
       instructor_id: who.id,
       course_id: opt.course.id,
-      hours: B.hours,
+      duration_minutes: B.min,
+      start_at: `${B.date}T${B.time}:00+05:00`,
+      customer_note: B.note.trim() || undefined,
+    } : {
+      instructor_id: who.id,
+      course_id: opt.course.id,
+      hours: B.hours || 1,
       start_at: `${B.date}T${B.time}:00+05:00`,
       customer_note: B.note.trim() || undefined,
     });
@@ -1847,7 +2063,7 @@ async function submitBooking() {
       cat: opt.cat ? `${opt.cat} — ${CAT_LONG[opt.cat]}` : opt.title,
       dur: fmtDur(bk.duration_minutes || dur()),
       ins: insName(who),
-      price: bk.price || bk.total_price || priceOf(opt, B.hours),
+      price: bk.price || bk.total_price || bkPrice(opt),
     };
     B.sending = false;
     hideToast(); render(); window.scrollTo(0, 0); syncBack();
@@ -1857,6 +2073,7 @@ async function submitBooking() {
     if (e.status === 409) {           // shu orada kimdir band qilib qo'ydi
       CACHE.clear(); B.time = '';
       if (B.mode === 'time') { B.ins = ''; B.auto = false; }
+      if (B.pkg) B.pkg.i = 0;          // paket: vaqtlar saqlanadi, birinchisidan tekshiriladi
       B.sending = false; bookGo('time', 'b');
     }
     toast(e.message, true);
@@ -1867,6 +2084,25 @@ async function submitBooking() {
 function renderDone() {
   const d = B.done;
   if (!d.fired) { d.fired = true; setTimeout(confetti, 120); }
+  if (d.pkg) {
+    $('#main').innerHTML = `<div class="slide-f done">
+      <div class="big-ok">${ico('check', 38, 2.6)}</div>
+      <h1 class="wz-h" style="text-align:center">Paket bron qilindi!</h1>
+      <p class="wz-sub" style="text-align:center">5 soatlik paket · ${d.list.length} ta mashg‘ulot. Admin tasdiqlagach Telegram’ga xabar keladi.</p>
+      <div class="done-list">${d.list.map((x, j) => `<div class="done-row" ${x.code ? `data-act="copy" data-v="${esc(x.code)}" role="button" tabindex="0"` : ''}>
+        <span class="n">${j + 1}</span><span class="tx"><b>${esc(x.when)}</b><small>${esc(x.dur)}${x.code ? ' · kassa kodi — bosib nusxalang' : ''}</small></span>
+        ${x.code ? `<span class="cd">${esc(x.code)}</span>` : ''}</div>`).join('')}</div>
+      <div class="card" style="padding:4px 16px">
+        <div class="kv"><span>Toifa</span><b>${esc(d.cat)}</b></div>
+        <div class="kv"><span>Instruktor</span><b>${esc(d.ins)}</b></div>
+        <div class="kv"><span>Paket narxi</span><b class="tnum">${d.list_price > d.price ? `<s style="color:var(--hint);font-weight:600;margin-right:6px">${money(d.list_price)}</s>` : ''}${money(d.price)}</b></div>
+      </div>
+      <div class="note info" style="margin:12px 0 0">Kassaga kelganda istalgan kodni ayting — kassir butun paketni bir marta qabul qiladi.</div>
+      <div class="btn-row" style="margin-top:16px"><button class="btn btn-soft" data-act="wznew">Yana bron</button>
+        <button class="btn btn-primary" data-act="gobookings">Bronlarim</button></div>
+    </div>`;
+    return;
+  }
   $('#main').innerHTML = `<div class="slide-f done">
     <div class="big-ok">${ico('check', 38, 2.6)}</div>
     <h1 class="wz-h" style="text-align:center">Bron yuborildi!</h1>
@@ -1948,10 +2184,10 @@ function bkCard(b) {
 
   return `<article class="bk">
     <div class="bk-top"><div><div class="bk-when">${esc(whenText(b.start_at))}</div>
-      <div class="bk-meta">${esc(bkCat(b) ? bkCat(b) + ' toifa' : (b.course && b.course.name) || 'Mashg‘ulot')}${bkMin(b) ? ' · ' + esc(fmtDur(bkMin(b))) : ''}</div></div>${pill(b.status)}</div>
+      <div class="bk-meta">${esc(bkCat(b) ? bkCat(b) + ' toifa' : (b.course && b.course.name) || 'Mashg‘ulot')}${bkMin(b) ? ' · ' + esc(fmtDur(bkMin(b))) : ''}${b.package ? `<span class="pkg-pill">Paket ${esc(b.package.n)}/${esc(b.package.of)}</span>` : ''}</div></div>${pill(b.status)}</div>
     <div class="bk-grid"><div><span>Instruktor</span><b>${esc(bkIns(b))}</b></div><div><span>Narx</span><b class="tnum">${price ? money(price) : '—'}</b></div></div>
     ${active && b.pickup_code ? codeBox(b.pickup_code) : ''}
-    ${b.customer_note ? `<div class="foot">Izoh: ${esc(b.customer_note)}</div>` : ''}
+    ${b.customer_note && !b.package ? `<div class="foot">Izoh: ${esc(b.customer_note)}</div>` : ''}
     ${foot}
   </article>`;
 }
@@ -2178,6 +2414,16 @@ function openSheet(html) {
   document.body.style.overflow = 'hidden';
   syncBack();
 }
+/** «5 soatni qanday bo'lasiz?» — paket tanlanganda chiqadi */
+function openSplits() {
+  const opt = curOpt();
+  const p = opt && opt.cat ? pkgPrice(opt.cat) : 0;
+  openSheet(`<h3>5 soatni qanday bo‘lasiz?</h3>
+    <p class="lead">Paket narxi o‘zgarmaydi — ${money(p)}. Har mashg‘ulot boshqa kunda bo‘ladi.</p>
+    <div class="split-list">${SPLITS.map(x => `<button class="split ${B.pkg && B.pkg.k === x.k ? 'on' : ''}" data-act="wzsplit" data-v="${x.k}">
+      <span class="bars">${x.m.map(m => `<i style="flex:${m}"></i>`).join('')}</span>
+      <span class="tx"><b>${esc(x.t)}</b><small>${esc(x.s)}</small></span>${ico('chev', 18)}</button>`).join('')}</div>`);
+}
 function closeSheet() {
   $('#sheet').classList.remove('show'); $('#sheetBg').classList.remove('show');
   document.body.style.overflow = '';
@@ -2208,22 +2454,35 @@ document.addEventListener('click', e => {
     /* --- bron bosqichlari: tanlangach keyingisi o'zi ochiladi --- */
     case 'wzcat':
       if (el.disabled) break;
-      if (B.key !== v) { B.key = v; B.hours = 0; B.time = ''; if (!B.insLocked) { B.ins = ''; B.auto = false; } }
+      if (B.key !== v) { B.key = v; B.hours = 0; B.min = 0; B.pkg = null; B.time = ''; if (!B.insLocked) { B.ins = ''; B.auto = false; } }
       haptic.tap(); markOn(el); advance(); break;
     case 'wzdur':
-      if (B.hours !== Number(v)) { B.hours = Number(v); B.time = ''; if (B.mode === 'time') { B.ins = ''; B.auto = false; } }
+      if (B.hours !== Number(v) || B.pkg || B.min) { B.hours = Number(v); B.min = 0; B.pkg = null; B.time = ''; if (B.mode === 'time') { B.ins = ''; B.auto = false; } }
       haptic.tap(); markOn(el); advance(); break;
+    case 'wzmin':
+      if (B.min !== Number(v) || B.pkg) { B.min = Number(v); B.hours = 0; B.pkg = null; B.time = ''; if (B.mode === 'time') { B.ins = ''; B.auto = false; } }
+      haptic.tap(); document.querySelectorAll('.pkg-card.on').forEach(x => x.classList.remove('on')); markOn(el); advance(); break;
+    case 'wzpkg': haptic.tap(); openSplits(); break;
+    case 'wzsplit':
+      if (!B.pkg || B.pkg.k !== v) pkgStart(v);
+      haptic.tap(); closeSheet(); render(); advance(); break;
+    case 'wzsess':
+      if (!B.pkg) break;
+      haptic.tap(); B.pkg.i = Number(v) || 0; B.time = ''; bookGo('time', 'b'); break;
     case 'wzday': if (B.date !== v) { B.date = v; B.time = ''; haptic.tap(); render(); ensureBusy(); } break;
     case 'wztime':
       if (el.disabled) break;
-      B.time = v; if (B.mode === 'time') { B.ins = ''; B.auto = false; }
-      haptic.tap(); markOn(el); advance(); break;
+      if (B.mode === 'time') { B.ins = ''; B.auto = false; }
+      haptic.tap(); markOn(el);
+      if (B.pkg) { pkgPickTime(v); break; }
+      B.time = v; advance(); break;
     case 'wzins':
-      if (v === 'auto') { const best = freeFor(B.time).sort(byRating)[0]; if (!best) break; B.ins = String(best.id); B.auto = true; }
+      if (v === 'auto') { const best = (B.pkg ? pkgAllFree(catInstructors()) : freeFor(B.time)).sort(byRating)[0]; if (!best) break; B.ins = String(best.id); B.auto = true; }
       else { if (B.mode === 'ins' && B.ins !== v) B.time = ''; B.ins = v; B.auto = false; }
       haptic.tap(); markOn(el.closest('.opt') || el); advance(); break;
     case 'wzmode':
       haptic.tap(); B.mode = v; B.ins = ''; B.auto = false; B.insLocked = false; B.time = '';
+      if (B.pkg) { B.pkg.s = B.pkg.m.map(() => null); B.pkg.i = 0; }
       bookGo(v === 'ins' ? 'ins' : 'time'); break;
     case 'wzjump': haptic.tap(); bookGo(v, 'b'); break;
     case 'wzback': haptic.tap(); prevStep(); break;
