@@ -758,6 +758,39 @@ pre.json{background:#F7FAFF;border:1px solid var(--line);border-radius:8px;paddi
   .bka{justify-content:flex-start;max-width:none}
 }
 @media(max-width:720px){.co2{grid-template-columns:1fr}}
+/* ---- CHIQARILGAN CHEKLAR (faqat kassa) ---- */
+.rcpcard{margin-top:16px}
+.rcphead{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+.rcphead h3{margin:0;flex:1;min-width:180px}
+.rcphead .input{width:auto;min-width:150px}
+.rcpsum{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;margin-bottom:12px}
+.rcpsum button{border:1.5px solid var(--line);background:#fff;border-radius:12px;padding:9px 10px;text-align:left;cursor:pointer;font-family:inherit}
+.rcpsum button.on{border-color:var(--g);background:var(--soft)}
+.rcpsum span{display:block;font-size:10.5px;font-weight:800;letter-spacing:.05em;color:var(--muted);text-transform:uppercase}
+.rcpsum b{display:block;font-size:20px;line-height:1.2;font-variant-numeric:tabular-nums}
+.rcpsum .s-active b{color:var(--ok)}.rcpsum .s-used b{color:#1769aa}.rcpsum .s-no_show b{color:#9a6800}.rcpsum .s-cancelled b{color:#bd2525}
+.rcprow{display:grid;grid-template-columns:70px minmax(0,1.2fr) minmax(0,1fr) auto auto;gap:14px;align-items:center;border:1px solid var(--line);border-radius:12px;padding:11px 14px;margin-bottom:7px;background:#fff}
+.rcprow.st-active{border-color:#bfe3cf;box-shadow:inset 3px 0 #0d7a4a}
+.rcprow.st-cancelled{opacity:.62}
+.rcprow .t b{display:block;font-size:18px;font-weight:750;font-variant-numeric:tabular-nums;line-height:1.1}
+.rcprow .t span{font-size:10.5px;color:var(--muted)}
+.rcprow .m{min-width:0}
+.rcprow .m b{font-size:14px}
+.rcprow .m div{font-size:12px;color:#46507a;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rcprow .st{display:flex;flex-direction:column;gap:3px;align-items:flex-start}
+.rcprow .st small{font-size:11px;color:var(--muted)}
+.rcprow .sum{text-align:right;white-space:nowrap}
+.rcprow .sum b{display:block;font-size:14px}
+.rcprow .sum small{font-size:11px;color:var(--muted)}
+.st-pill{display:inline-block;padding:4px 9px;border-radius:99px;font-size:11px;font-weight:900;white-space:nowrap}
+.st-pill.active{background:#e7f6ee;color:#0d7a4a}.st-pill.used{background:#e4f0ff;color:#1769aa}
+.st-pill.no_show{background:#fff4d7;color:#9a6800}.st-pill.cancelled{background:#ffe8e8;color:#bd2525}
+@media(max-width:900px){
+  .rcpsum{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .rcprow{grid-template-columns:62px minmax(0,1fr) auto}
+  .rcprow .x{grid-column:2}
+  .rcprow .sum{grid-column:3;grid-row:1}
+}
 /* Telefonda tepa panel sig'sin: ism nishoni yashiriladi, tugmalar ixcham */
 @media(max-width:560px){
   .ultra-admin .tools .who{display:none}
@@ -818,7 +851,7 @@ pre.json{background:#F7FAFF;border:1px solid var(--line);border-radius:8px;paddi
   
 
   <!-- Kundalik ish tepada: bronlar va mijozlar. Kam ishlatiladigani pastda. -->
-  <div class="navgroup" data-grp="admin">BRONLAR</div>
+  <div class="navgroup" data-grp="admin" data-op="1">BRONLAR</div>
   <button class="nav" data-grp="admin" data-p="bookings">Bronlar <span id="bookCount" class="count" title="Yangi, tasdiq kutayotgan bronlar">0</span></button>
   <button class="nav" data-grp="admin" data-p="manual">Qo‘lda bron</button>
   <button class="nav" data-grp="admin" data-p="live">Jarayonda <span id="liveCount" class="count">0</span></button>
@@ -1125,6 +1158,24 @@ pre.json{background:#F7FAFF;border:1px solid var(--line);border-radius:8px;paddi
       <div class="muted" style="font-size:11.5px;margin-top:8px;text-align:center">Chek avtomatik chop etishga yuboriladi</div>
     </div>
   </div>
+
+  <!-- CHIQARILGAN CHEKLAR — faqat shu kassaniki. Holati, vaqti, qayta chiqarish. -->
+  <div class="card rcpcard" id="rcpCard">
+    <div class="rcphead">
+      <h3>Chiqarilgan cheklar <span class="muted" id="rcpReg" style="font-size:13px;font-weight:600"></span></h3>
+      <input id="rcpQ" class="input" type="search" placeholder="Chek kodi, mijoz yoki instruktor…" autocomplete="off" style="min-width:230px">
+      <input id="rcpDate" class="input" type="date" aria-label="Sana">
+      <button class="btn" id="rcpReload" data-ultra-icon="refresh">Yangilash</button>
+    </div>
+    <div class="rcpsum" id="rcpSum">
+      <button type="button" class="on" data-rst=""><span>Hammasi</span><b id="rcAll">0</b></button>
+      <button type="button" class="s-active" data-rst="active"><span>Faol</span><b id="rcActive">0</b></button>
+      <button type="button" class="s-used" data-rst="used"><span>Ishlatilgan</span><b id="rcUsed">0</b></button>
+      <button type="button" class="s-no_show" data-rst="no_show"><span>Kelmadi</span><b id="rcNoShow">0</b></button>
+      <button type="button" class="s-cancelled" data-rst="cancelled"><span>Bekor</span><b id="rcCancelled">0</b></button>
+    </div>
+    <div id="rcpList"><div class="empty">Yuklanmoqda…</div></div>
+  </div>
 </section>
 
 <section id="cashier" class="page">
@@ -1279,8 +1330,8 @@ pre.json{background:#F7FAFF;border:1px solid var(--line);border-radius:8px;paddi
   <div id="staffAlert"></div>
   <!-- Har bir kassaning o'z logini: kassir shu login/parol bilan kirsa
        to'g'ri o'z kassasiga tushadi, rol tanlamaydi. -->
-  <div class="card"><h3 style="margin-top:0">Kassa loginlari</h3>
-    <p class="muted" style="margin:-4px 0 14px;font-size:12.5px">Kassir shu login va parol bilan kirsa, to‘g‘ridan-to‘g‘ri o‘z kassasiga tushadi. Administrator logini boshqaruv paneliga kiradi.</p>
+  <div class="card"><h3 style="margin-top:0">Panel loginlari — 4 ta alohida panel</h3>
+    <p class="muted" style="margin:-4px 0 14px;font-size:12.5px">Har kim o‘z login-paroli bilan faqat o‘z paneliga tushadi: kassir — o‘z kassasiga (P1 va P2 bir-birini ko‘rmaydi), operator — bron stoliga, administrator — hamma narsaga. Panellar bir-biriga ulanmaydi.</p>
     <div id="staffKassa" class="kassa-logins"></div></div>
   <div class="card">
     <div class="tableWrap"><table class="table">
@@ -1291,6 +1342,36 @@ pre.json{background:#F7FAFF;border:1px solid var(--line);border-radius:8px;paddi
 
 <section id="settings" class="page">
   <div class="head"><div><h1>Sozlamalar</h1><p>Tizim nomi va bronlarni boshqarish.</p></div></div>
+
+  <!-- ESLATMALAR: har bir bron egasiga dars oldidan Telegram xabari -->
+  <div class="card" id="remCard" style="margin-bottom:15px">
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px">
+      <h3 style="margin:0;flex:1">🔔 Mijozlarga eslatmalar</h3>
+      <span id="remBadge" class="status wait">tekshirilmagan</span>
+      <button class="btn" id="remCheck">Tekshirish</button>
+      <button class="btn primary" id="remNow">Hozir yuborish</button>
+    </div>
+    <div class="muted" style="font-size:13px;line-height:1.5">
+      Bron qilgan <b>har bir mijozga</b> (tasdiqlangan va kutilayotgan) dars boshlanishiga
+      <b>60, 30 va 10 daqiqa</b> qolganda botdan xabar ketadi: «✅ Kelaman» / «🚫 Bekor qilmoqchiman».
+      Instruktor ham bron kartasidagi «🔔 Eslatish» tugmasi bilan qo‘lda yubora oladi.
+    </div>
+    <div id="remBody" style="margin-top:10px"></div>
+    <details id="remSetup" style="margin-top:12px">
+      <summary style="cursor:pointer;font-weight:700">Panel yopiq bo‘lsa ham ishlashi uchun (bir marta sozlanadi)</summary>
+      <div style="font-size:13px;line-height:1.55;margin-top:10px">
+        Admin yoki kassa paneli ochiq turganda eslatmalar <b>har 2 daqiqada</b> o‘zi tekshiriladi.
+        Kechasi/panel yopiq paytda ham ishlashi uchun Supabase → <b>SQL Editor</b> da quyidagini bir marta ishga tushiring.
+        <b>CRON_SECRET</b> o‘rniga Vercel’dagi qiymatni yozing.
+      </div>
+      <div class="field" style="margin-top:10px"><label>1) JADVAL <span class="muted">(«Eslatmalar jadvali» qizil bo‘lsa)</span></label>
+        <textarea id="remSqlTable" class="input" rows="6" readonly style="font-family:ui-monospace,Menlo,monospace;font-size:12px"></textarea>
+        <button class="btn small" data-copy="remSqlTable" style="margin-top:6px">Nusxa olish</button></div>
+      <div class="field"><label>2) HAR 2 DAQIQADA AVTOMATIK</label>
+        <textarea id="remSqlCron" class="input" rows="8" readonly style="font-family:ui-monospace,Menlo,monospace;font-size:12px"></textarea>
+        <button class="btn small" data-copy="remSqlCron" style="margin-top:6px">Nusxa olish</button></div>
+    </details>
+  </div>
 
   <!-- Avtoshkola QR cheklari: instruktorga "sozlanmagan" chiqsa,
        administrator shu yerdan sababini ko'radi -->
@@ -1517,7 +1598,10 @@ window.addEventListener('online', () => { if(AUTHED)refreshActivePage(true); });
    shuning uchun kim qaysi chekni chiqargani nomi bilan yozilaveradi.
    ========================================================================= */
 const ROLE_KEY = 'avtodrom_admin_role';
-const ROLE_NAMES = { P1: 'KASSA P1', P2: 'KASSA P2', admin: 'BOSHQARUV' };
+const ROLE_NAMES = { P1: 'KASSA P1', P2: 'KASSA P2', admin: 'BOSHQARUV', operator: 'OPERATOR' };
+/* Operator faqat shu to'rt bo'limni ko'radi. Server ham xuddi shunday
+   cheklaydi (app.ts dagi oq ro'yxat) — ekranni aylanib o'tib ham kirib bo'lmaydi. */
+const OPERATOR_PAGES = ['bookings', 'manual', 'cancels', 'support'];
 let PICKED_ROLE = '';
 try { const v = localStorage.getItem(ROLE_KEY); if (ROLE_NAMES[v]) PICKED_ROLE = v; } catch (e) {}
 
@@ -1531,8 +1615,9 @@ function setPickedRole(r){
 function roleAllowed(me, role){
   if (!ROLE_NAMES[role]) return false;
   if (!me) return false;
-  if (me.role !== 'cashier') return true;           // admin / xodim
-  if (role === 'admin') return false;               // kassir boshqaruvga kirmaydi
+  if (me.role === 'admin') return true;             // administrator — hammasi
+  if (me.role === 'operator') return role === 'operator';   // operator — faqat o'z paneli
+  if (role === 'admin' || role === 'operator') return false; // kassir boshqaruvga kirmaydi
   const reg = (S.registers || []).find(r => String(r.id) === String(me.register_id));
   if (reg) return reg.code === role;
   if (me.register && me.register.code) return me.register.code === role;
@@ -1558,6 +1643,7 @@ function roleError(msg){
     kassir → o'ziga biriktirilgan kassa kodi ('P1', 'P2'). */
 function roleFor(me){
   if (!me) return '';
+  if (me.role === 'operator') return 'operator';
   if (me.role !== 'cashier') return 'admin';
   const reg = (S.registers || []).find(r => String(r.id) === String(me.register_id)) || me.register;
   return reg && reg.code ? reg.code : '';
@@ -1602,7 +1688,7 @@ $('loginForm').addEventListener('submit',async e=>{
   try{
     const res = await api('/api/admin/login',{method:'POST',body:JSON.stringify({login:$('loginUser').value.trim(),password:$('loginPass').value})});
     // Kim kirдi — qisqa xush kelibsiz (rolга qarab)
-    const roleName = res.role === 'cashier' ? 'Kassir' : 'Administrator';
+    const roleName = res.role === 'cashier' ? 'Kassir' : res.role === 'operator' ? 'Operator' : 'Administrator';
     toast(`Xush kelibsiz, ${res.full_name || res.login} · ${roleName}`);
     /* Login javobida rol keladi — uni darhol qo'llaymiz, aks holda
        kassir kirsa ham boshqaruv menyusi ko'rinib qolardi. */
@@ -1613,7 +1699,7 @@ $('loginForm').addEventListener('submit',async e=>{
     }
     AUTHED = true;
     /* Kassirlar ro'yxati ruxsatni tekshirish uchun kerak */
-    if (!S.registers.length) {
+    if (!S.registers.length && res.role !== 'operator') {
       try { S.registers = (await api('/api/admin/registers')).registers || []; } catch (e) {}
     }
     /* Rol TANLANMAYDI — login/paroldan aniqlanadi */
@@ -1649,8 +1735,9 @@ function showPage(id){
      - kassa qulflangan bo'lsa hech nima ochilmaydi */
   const nb = document.querySelector(`.nav[data-p="${id}"]`);
   const grp = nb ? nb.dataset.grp : null;
-  const wantGrp = adminMode === 'admin' ? 'admin' : 'kassa';
+  const wantGrp = (adminMode === 'admin' || adminMode === 'operator') ? 'admin' : 'kassa';
   if (grp && grp !== wantGrp) return;
+  if (adminMode === 'operator' && !OPERATOR_PAGES.includes(id)) return;
   if (grp === 'kassa' && !REG_TOKEN) { openPinFor(adminMode); return; }
   if (typeof toastHide === 'function') toastHide();   // eski xabar qolib ketmasin
   document.querySelectorAll('.page').forEach(x=>x.classList.toggle('on',x.id===id));
@@ -1662,6 +1749,7 @@ function showPage(id){
   if(id==='support')loadSupport();
   if(id==='cancels')loadCancels();
   if(id==='staff')loadStaff();
+  if(id==='settings'&&adminMode==='admin'&&$('remBadge').textContent==='tekshirilmagan')checkReminders();
   if(id==='manual')initManual();
   if(id==='live')loadLive('live');
   if(id==='klive')loadLive('klive');
@@ -2248,6 +2336,79 @@ async function checkSchoolBridge(){
 }
 $('sbCheck').onclick = checkSchoolBridge;
 
+/* ---------- Eslatmalar ---------- */
+const REM_SQL_TABLE = `-- Eslatmalar jadvali (bir necha marta ishga tushirish xavfsiz)
+create table if not exists public.booking_reminders (
+  id uuid primary key default gen_random_uuid(),
+  booking_id uuid not null references public.bookings(id) on delete cascade,
+  kind integer, telegram_ok boolean,
+  created_at timestamptz not null default now()
+);
+alter table public.booking_reminders add column if not exists kind integer;
+alter table public.booking_reminders add column if not exists telegram_ok boolean;
+alter table public.booking_reminders add column if not exists created_at timestamptz not null default now();
+do $$ begin
+  if exists (select 1 from information_schema.columns where table_schema='public' and table_name='booking_reminders' and column_name='reminder_minutes') then
+    execute 'alter table public.booking_reminders alter column reminder_minutes drop not null'; end if;
+  if exists (select 1 from information_schema.columns where table_schema='public' and table_name='booking_reminders' and column_name='send_at') then
+    execute 'alter table public.booking_reminders alter column send_at drop not null'; end if;
+end $$;
+drop trigger if exists booking_reminder_trigger on public.bookings;
+delete from public.booking_reminders a using public.booking_reminders b
+ where a.kind is not null and a.booking_id=b.booking_id and a.kind=b.kind and a.ctid>b.ctid;
+create unique index if not exists booking_reminders_booking_kind_key on public.booking_reminders(booking_id, kind);
+alter table public.booking_reminders enable row level security;`;
+function remSqlCron(){
+  return `create extension if not exists pg_cron;
+create extension if not exists pg_net;
+select cron.unschedule(jobid) from cron.job where jobname = 'avtodrom-eslatmalar';
+select cron.schedule('avtodrom-eslatmalar', '*/2 * * * *', $$
+  select net.http_get(
+    url := '${location.origin}/api/cron/reminders',
+    headers := jsonb_build_object('x-cron-secret', 'CRON_SECRET'),
+    timeout_milliseconds := 30000);
+$$);`;
+}
+function remRender(d){
+  const badge=$('remBadge');
+  badge.className='status '+(d.ready?'ok':'bad');
+  badge.textContent=d.ready?'ishlayapti':'sozlash kerak';
+  const rows=(d.checks||[]).map(c=>`<div style="display:flex;gap:8px;align-items:flex-start;font-size:13px;padding:5px 0;border-bottom:1px solid var(--line,#e8e8ef)">
+      <b style="color:${c.ok?'#0d7a4a':'#bd2525'};width:16px">${c.ok?'✓':'✕'}</b>
+      <span style="flex:1"><b>${esc(c.name)}</b> — ${esc(c.detail)}</span></div>`).join('');
+  $('remBody').innerHTML=`<div style="font-weight:700;margin-bottom:6px">${esc(d.summary||'')}</div>${rows}
+    ${d.note?`<div class="muted" style="font-size:12px;margin-top:8px">${esc(d.note)}</div>`:''}`;
+  const late=(d.checks||[]).some(c=>c.name==='Oxirgi tekshiruv'&&!c.ok);
+  const badTable=(d.checks||[]).some(c=>c.name==='Eslatmalar jadvali'&&!c.ok);
+  if(late||badTable) $('remSetup').open=true;
+}
+async function checkReminders(){
+  const btn=$('remCheck'); btn.disabled=true;
+  $('remBadge').className='status wait'; $('remBadge').textContent='tekshirilmoqda…';
+  try{ remRender(await api('/api/admin/reminder-check')); }
+  catch(e){ $('remBadge').className='status bad'; $('remBadge').textContent='xato'; $('remBody').innerHTML=`<div class="error">${esc(e.message)}</div>`; }
+  finally{ btn.disabled=false; }
+}
+$('remCheck').onclick=checkReminders;
+$('remNow').onclick=async()=>{
+  const btn=$('remNow'); btn.disabled=true;
+  try{
+    const r=(await api('/api/admin/reminder-test',{method:'POST'})).result||{};
+    const extra=[r.no_telegram?`${r.no_telegram} ta mijozda Telegram yo‘q`:'',r.failed?`${r.failed} ta xato`:''].filter(Boolean).join(', ');
+    toast(r.sent?`${r.sent} ta eslatma yuborildi${extra?' · '+extra:''}`:`Hozir yuboriladigan eslatma yo‘q (yaqin 65 daqiqada ${r.checked||0} ta dars)${extra?' · '+extra:''}`);
+    if((r.details||[]).some(x=>/xato/i.test(x))) notice((r.details||[]).filter(x=>/xato/i.test(x)).join(' · '));
+    checkReminders();
+  }catch(e){ notice(e.message); }
+  finally{ btn.disabled=false; }
+};
+$('remSqlTable').value=REM_SQL_TABLE;
+$('remSqlCron').value=remSqlCron();
+document.querySelectorAll('[data-copy]').forEach(b=>b.onclick=async()=>{
+  const ta=$(b.dataset.copy); ta.select();
+  try{ await navigator.clipboard.writeText(ta.value); }catch(e){ try{ document.execCommand('copy'); }catch(_){} }
+  toast('Nusxa olindi');
+});
+
 /* ---------- Hisobot ---------- */
 function filteredReport(){
   const f=$('from').value,t=$('to').value,i=$('reportInst').value;
@@ -2543,6 +2704,25 @@ window.addEventListener('beforeunload',e=>{if(editing){e.preventDefault();e.retu
    qolardi. Saqlangandan keyin "o'zgarmadi" ko'rinishining sababi shu edi.
    Endi allSettled: yiqilgani o'tkazib yuboriladi, qolgani yangilanadi. */
 async function loadAll(show){
+  /* OPERATOR: faqat bron stoli ma'lumoti — kassa, pul va hisobot
+     so'rovlari umuman yuborilmaydi (server ularni baribir 403 qiladi). */
+  if (S.me && S.me.role === 'operator') {
+    const [bk, crs, st, ins] = await Promise.allSettled([
+      api(bookingListUrl(S.bkPage)), api('/api/admin/courses'), api('/api/admin/settings'),
+      api('/api/admin/cashier/instructors'),
+    ]);
+    if (bk.status === 'fulfilled') { S.bookings = bk.value.bookings || []; S.bkTotal = Number(bk.value.total || 0); renderBkPager(bk.value); }
+    if (crs.status === 'fulfilled') S.courses = crs.value.courses || [];
+    if (st.status === 'fulfilled') S.settings = st.value.settings || [];
+    if (ins.status === 'fulfilled') S.instructors = ins.value.instructors || [];
+    try { renderBookings(); } catch (e) {}
+    loadNewCount(); loadSupport(); loadCancels();
+    const failed = [bk, crs, st, ins].filter(x => x.status === 'rejected');
+    if (failed.length) showWarnings(failed.map(x => x.reason?.message || 'Ma’lumot yuklanmadi'));
+    $('lastSync').textContent = (failed.length ? 'Qisman yangilandi: ' : 'Yangilandi: ') + new Date().toLocaleTimeString('uz-UZ', { timeZone: 'Asia/Tashkent' });
+    if (show) toast('Ma’lumotlar yangilandi');
+    return;
+  }
   /* Kassir boshqaruv so'rovlarини UMUMAN yubormaydi — ular unга
      403 qaytaradi va keraksiz ogohlantirish chiqarardi. Kassirга
      faqat o'z kassasi kerak (u boshqa funksiyalar bilan yuklanadi). */
@@ -3917,7 +4097,7 @@ $('coIssue').onclick = async () => {
     receiptModal(d.receipt);
     // Avtomatik chop etishga o'tamiz
     setTimeout(() => { try { window.print(); } catch(e){} }, 400);
-    coResetForm(); loadRegToday();
+    coResetForm(); loadRegToday(); loadReceipts();
     /* Endi bu instruktor band — ro'yxat darhol yangilansin */
     coInsAt = Date.now();
     if (CO.mode === 'walk_in') loadFreeInstructors();
@@ -4015,7 +4195,7 @@ let adminMode = 'P1';
 let REGISTER = null, REG_TOKEN = '';
 S.registers = [];
 
-try { const v = localStorage.getItem(MODE_KEY); if (['P1','P2','admin'].includes(v)) adminMode = v; } catch (e) {}
+try { const v = localStorage.getItem(MODE_KEY); if (['P1','P2','admin','operator'].includes(v)) adminMode = v; } catch (e) {}
 
 function readTokens(){ try { return JSON.parse(localStorage.getItem(REG_KEY) || '{}'); } catch (e) { return {}; } }
 function writeTokens(o){ try { localStorage.setItem(REG_KEY, JSON.stringify(o)); } catch (e) {} }
@@ -4031,13 +4211,21 @@ function applyMode(mode){
   adminMode = mode;
   try { localStorage.setItem(MODE_KEY, mode); } catch (e) {}
   document.querySelectorAll('.ms').forEach(b => b.classList.toggle('on', b.dataset.mode === mode));
-  const grp = mode === 'admin' ? 'admin' : 'kassa';
+  const grp = (mode === 'admin' || mode === 'operator') ? 'admin' : 'kassa';
   document.querySelectorAll('[data-grp]').forEach(el => el.classList.toggle('hidden', el.dataset.grp !== grp));
   /* applyMode guruh bo'yicha hammasini ochib yuboradi — rol cheklovini
      ustidan QAYTA qo'llaymiz, aks holda oddiy xodimga "Xodimlar" va
      "Sozlamalar" kabi bo'limlar ochilib qolardi. */
   try { applyRoleLimits(); } catch (e) { /* boot paytida hali yo'q bo'lishi mumkin */ }
 
+  if (mode === 'operator') {
+    /* Operator: kassa yo'q, faqat bron stoli. */
+    REGISTER = null; REG_TOKEN = '';
+    if ($('regLock')) $('regLock').classList.add('hidden');
+    if ($('mgmtLock')) $('mgmtLock').classList.add('hidden');
+    showPage('bookings');
+    return;
+  }
   if (mode === 'admin') {
     /* Admin: login/parol yetarli — PIN yo'q. To'g'ridan boshqaruvga. */
     REGISTER = null; REG_TOKEN = '';
@@ -4053,7 +4241,7 @@ function applyMode(mode){
   if (saved) {
     REG_TOKEN = saved.t; REGISTER = saved.r;
     if ($('regLock')) $('regLock').classList.add('hidden');
-    showPage('checkout'); showCheckout(); loadRegToday(); loadPayments();
+    showPage('checkout'); showCheckout(); loadRegToday(); loadPayments(); loadReceipts();
   } else {
     /* Token yo'q — bu faqat admin boshqa kassaga o'tганда bo'lishi
        mumkin. Admin uchun tokenни so'rovda olamiz (PINsiz). */
@@ -4074,7 +4262,7 @@ async function unlockRegisterNoPin(code){
     const d = await api(`/api/admin/registers/${encodeURIComponent(reg.id)}/token`, { method:'POST', body:'{}' });
     REG_TOKEN = d.token; REGISTER = d.register || reg;
     const o = readTokens(); o[code] = { t: d.token, r: REGISTER }; writeTokens(o);
-    showPage('checkout'); showCheckout(); loadRegToday(); loadPayments();
+    showPage('checkout'); showCheckout(); loadRegToday(); loadPayments(); loadReceipts();
   } catch (e) {
     /* Token olinmadi (kassirga bu yo'l yopiq). Bo'sh ekran qoldirmaymiz —
        PIN oynasini ochamiz. */
@@ -4213,6 +4401,94 @@ async function loadRegToday(){
       <div><span>Bugun jami</span><b style="color:var(--g)">${esc(money(mine.total))}</b></div>`;
   }catch(e){ el.innerHTML = ''; }
 }
+
+/* =========================================================================
+   CHIQARILGAN CHEKLAR — faqat shu kassaning cheklari.
+   Holati: Faol (hali ishlatilmagan) · Ishlatilgan (instruktor skanerlagan)
+   · Kelmadi · Bekor. Qachon chiqqani va «Qayta chiqarish».
+   Server kassa tokeniga qarab beradi: P1 P2 ning chekini ko'rmaydi.
+   ========================================================================= */
+S.rcp = { rows: [], filter: '', seq: 0 };
+const RC_STATE = { active: 'Faol', used: 'Ishlatilgan', no_show: 'Kelmadi', cancelled: 'Bekor qilingan' };
+const hhmmT = v => v ? new Date(v).toLocaleTimeString('en-GB', { timeZone: 'Asia/Tashkent', hour: '2-digit', minute: '2-digit' }) : '—';
+const payText = m => m === 'mixed' ? 'Naqd + terminal' : m === 'card' ? 'Terminal' : 'Naqd';
+
+async function loadReceipts(){
+  if (!REG_TOKEN || !$('rcpList')) return;
+  if (!$('rcpDate').value) $('rcpDate').value = kToday();
+  const seq = ++S.rcp.seq;
+  try{
+    const d = await api(`/api/admin/cashier/receipts?token=${encodeURIComponent(REG_TOKEN)}&date=${encodeURIComponent($('rcpDate').value)}`);
+    if (seq !== S.rcp.seq) return;             // eskirgan javob
+    S.rcp.rows = d.receipts || [];
+    const sm = d.summary || {};
+    $('rcAll').textContent = sm.total ?? 0;
+    $('rcActive').textContent = sm.active ?? 0;
+    $('rcUsed').textContent = sm.used ?? 0;
+    $('rcNoShow').textContent = sm.no_show ?? 0;
+    $('rcCancelled').textContent = sm.cancelled ?? 0;
+    $('rcpReg').textContent = REGISTER ? `· ${REGISTER.code}` : '';
+    renderReceipts();
+  }catch(e){
+    if (seq !== S.rcp.seq) return;
+    $('rcpList').innerHTML = `<div class="error">${esc(e.message)}</div>`;
+  }
+}
+function renderReceipts(){
+  const q = String($('rcpQ').value || '').trim().toLowerCase();
+  let rows = S.rcp.rows;
+  if (S.rcp.filter) rows = rows.filter(r => r.state === S.rcp.filter);
+  if (q) rows = rows.filter(r => [r.code, r.customer?.full_name, r.customer?.phone, r.instructor_name]
+    .some(v => String(v || '').toLowerCase().includes(q)));
+  const box = $('rcpList');
+  if (!rows.length) {
+    box.innerHTML = `<div class="empty">${S.rcp.rows.length ? 'Bu filtr bo‘yicha chek yo‘q.' : esc(relDay($('rcpDate').value) || $('rcpDate').value) + ' chek chiqarilmagan.'}</div>`;
+    return;
+  }
+  box.innerHTML = rows.map(r => {
+    let note = '';
+    if (r.state === 'active') note = r.start_at ? `Dars: ${esc(hhmmT(r.start_at))}` : 'Hali ishlatilmagan';
+    if (r.state === 'used') note = r.used_at ? `${esc(hhmmT(r.used_at))} da skanerlandi` : 'Dars boshlangan';
+    if (r.state === 'no_show') note = 'Mijoz kelmagan';
+    if (r.state === 'cancelled') note = r.payment_status === 'refunded' ? 'Pul qaytarilgan' : 'Bekor qilingan';
+    const meta = [r.instructor_name, r.category ? r.category + ' toifa' : '', r.duration_minutes ? fmtDur(r.duration_minutes) : ''].filter(Boolean).join(' · ');
+    return `<div class="rcprow st-${esc(r.state)}">
+      <div class="t"><b>${esc(hhmmT(r.paid_at))}</b><span>chiqarilgan</span></div>
+      <div class="m"><b>${esc(r.customer?.full_name || 'Mijoz')}</b>
+        <div><span class="rcp">${esc(r.code)}</span>${r.customer?.phone ? ' · ' + esc(r.customer.phone) : ''}</div>
+        <div>${esc(meta || '—')}</div></div>
+      <div class="st x"><span class="st-pill ${esc(r.state)}">${esc(RC_STATE[r.state] || r.state)}</span><small>${note}</small></div>
+      <div class="sum"><b>${esc(money(r.amount))}</b><small>${esc(payText(r.method))}</small></div>
+      <div class="x"><button class="btn small" data-reprint="${esc(r.code)}">🖨 Qayta chiqarish</button></div>
+    </div>`;
+  }).join('');
+  box.querySelectorAll('[data-reprint]').forEach(b => b.onclick = () => reprintReceipt(b.dataset.reprint, b));
+}
+/* Qayta chiqarish: chek oynasi ochiladi va chop etishga yuboriladi */
+async function reprintReceipt(code, btn){
+  if (btn) btn.disabled = true;
+  try{
+    const d = await api(`/api/admin/cashier/receipt/${encodeURIComponent(code)}`);
+    receiptModal(d.receipt);
+    setTimeout(() => { try { window.print(); } catch(e){} }, 400);
+  }catch(e){ notice(e.message); }
+  finally{ if (btn) btn.disabled = false; }
+}
+document.querySelectorAll('#rcpSum [data-rst]').forEach(b => b.onclick = () => {
+  S.rcp.filter = b.dataset.rst;
+  document.querySelectorAll('#rcpSum [data-rst]').forEach(x => x.classList.toggle('on', x === b));
+  renderReceipts();
+});
+$('rcpQ').addEventListener('input', renderReceipts);
+$('rcpDate').addEventListener('change', loadReceipts);
+$('rcpReload').onclick = loadReceipts;
+/* Chek chiqarish oynasi ochiq tursa ro'yxat har daqiqada yangilanadi
+   (instruktor skanerlasa holat «Ishlatilgan»ga o'tadi). Forma tegilmaydi. */
+setInterval(() => {
+  if (!AUTHED || document.hidden || !REG_TOKEN) return;
+  if (!$('checkout').classList.contains('on') || $('modal').classList.contains('open')) return;
+  loadReceipts();
+}, 60000);
 
 /* =========================================================================
    JARAYONDAGI DARSLAR
@@ -5021,7 +5297,18 @@ function renderKassaLogins(){
       <button class="btn ${active.length ? 'small' : 'primary small'}" data-kassanew="${esc(r.id)}" style="margin-top:10px">${active.length ? '+ Yana kassir' : 'Login berish'}</button>
     </div>`;
   }).join('');
+  /* OPERATOR — alohida panel: bronlar, qo'lda bron, bekor so'rovlari, chat */
+  const ops = (S.staff || []).filter(x => x.role === 'operator' && x.is_active);
+  box.insertAdjacentHTML('beforeend', `<div class="klog">
+      <div class="kc">OPERATOR</div><h4>Bron stoli</h4>
+      <div class="muted" style="font-size:12px;margin:-4px 0 8px">Bronlar · Qo‘lda bron · Bekor so‘rovlari · Mijozlar chati</div>
+      ${ops.length ? ops.map(x => `<div class="kl"><span>Login: <b>${esc(x.login)}</b>${x.full_name ? ` · ${esc(x.full_name)}` : ''}</span>
+          <button class="btn small" data-stedit="${esc(x.id)}">Parolni o‘zgartirish</button></div>`).join('')
+        : '<div class="none">Login berilmagan — operator paneliga hali hech kim kira olmaydi.</div>'}
+      <button class="btn ${ops.length ? 'small' : 'primary small'}" id="opNew" style="margin-top:10px">${ops.length ? '+ Yana operator' : 'Login berish'}</button>
+    </div>`);
   box.querySelectorAll('[data-kassanew]').forEach(b => b.onclick = () => staffForm(null, { role: 'cashier', register_id: b.dataset.kassanew }));
+  $('opNew').onclick = () => staffForm(null, { role: 'operator' });
 }
 
 function renderStaff(legacyAdmin){
@@ -5037,8 +5324,8 @@ function renderStaff(legacyAdmin){
     <td>${esc(x.full_name || '—')}</td>
     <td>${x.role === 'admin'
       ? '<span class="status ok">Administrator</span>'
-      : '<span class="status">Kassir</span>'}</td>
-    <td>${esc(x.register?.code || (x.role === 'admin' ? 'hammasi' : '—'))}</td>
+      : x.role === 'operator' ? '<span class="status run">Operator</span>' : '<span class="status">Kassir</span>'}</td>
+    <td>${esc(x.register?.code || (x.role === 'admin' ? 'hammasi' : x.role === 'operator' ? 'bron stoli' : '—'))}</td>
     <td>${x.last_login_at ? esc(dt(x.last_login_at)) : '—'}</td>
     <td>${x.is_active ? '<span class="status ok">Faol</span>' : '<span class="status">O‘chirilgan</span>'}</td>
     <td><div style="display:flex;gap:6px;flex-wrap:wrap">
@@ -5061,7 +5348,7 @@ function staffForm(id, preset){
 
   openModal(x ? 'Xodimni tahrirlash' : 'Yangi xodim', `
     <div class="field"><label>LOGIN *</label>
-      <input id="stLogin" class="input" value="${esc(x?.login || (presetReg ? 'kassa' + String(presetReg.code).replace(/\D/g, '') : ''))}" ${x ? 'disabled' : ''} autocomplete="off"
+      <input id="stLogin" class="input" value="${esc(x?.login || (presetReg ? 'kassa' + String(presetReg.code).replace(/\D/g, '') : (preset?.role === 'operator' ? 'operator' : '')))}" ${x ? 'disabled' : ''} autocomplete="off"
              placeholder="masalan: kassir1">
       ${x ? '<div class="muted" style="font-size:11.5px;margin-top:4px">Login o‘zgartirilmaydi</div>' : ''}</div>
     <div class="field"><label>ISM FAMILIYA</label>
@@ -5069,7 +5356,8 @@ function staffForm(id, preset){
     <div class="field"><label>PAROL ${x ? '<span class="muted">(bo‘sh qoldirsangiz o‘zgarmaydi)</span>' : '*'}</label>
       <input id="stPass" class="input" type="password" autocomplete="new-password" placeholder="kamida 8 belgi"></div>
     <div class="field"><label>ROL *</label>
-      <div class="pick3" id="stRoles"></div></div>
+      <div class="pick3" id="stRoles"></div>
+      <div class="muted" id="stRoleHint" style="font-size:11.5px;margin-top:6px"></div></div>
     <div class="field" id="stRegWrap"><label>KASSA *</label>
       ${S.registers2.length
         ? `<select id="stReg" class="input"><option value="">Tanlang…</option>${regOpts}</select>
@@ -5094,13 +5382,18 @@ function staffForm(id, preset){
 
   let role = x?.role || preset?.role || 'cashier';
   const paintRoles = () => {
-    $('stRoles').innerHTML = [['cashier','Kassir'],['admin','Administrator']].map(([v,l]) =>
+    $('stRoles').innerHTML = [['cashier','Kassir'],['operator','Operator'],['admin','Administrator']].map(([v,l]) =>
       `<button type="button" class="pk ${role===v?'on':''}" data-strole="${v}">${l}</button>`).join('');
     $('stRoles').querySelectorAll('[data-strole]').forEach(b => b.onclick = () => {
       role = b.dataset.strole; paintRoles();
     });
-    // Adminga kassa kerak emas
+    // Admin va operatorga kassa kerak emas
     $('stRegWrap').style.display = role === 'cashier' ? '' : 'none';
+    const hint = $('stRoleHint');
+    if (hint) hint.textContent = role === 'operator'
+      ? 'Operator faqat: Bronlar, Qo‘lda bron, Bekor so‘rovlari, Mijozlar chati. Kassa va hisobotni ko‘rmaydi.'
+      : role === 'cashier' ? 'Kassir faqat o‘z kassasini ko‘radi: chek chiqarish, cheklar, to‘lovlar.'
+      : 'Administrator hamma narsani ko‘radi va sozlaydi.';
   };
   paintRoles();
 
@@ -5248,7 +5541,7 @@ function applyRole(){
   const badge = $('whoami');
   if (badge) {
     const kc = isCashier ? (((S.registers || []).find(r => String(r.id) === String(me.register_id)) || me.register || {}).code || '') : '';
-    let rName = isCashier ? `Kassir${kc ? ' · ' + kc : ''}` : 'Administrator';
+    let rName = isCashier ? `Kassir${kc ? ' · ' + kc : ''}` : (me.role === 'operator' ? 'Operator' : 'Administrator');
     badge.textContent = `${me.full_name || me.login || ''} \u00b7 ${rName}`;
     badge.classList.toggle('cashier', isCashier);
   }
@@ -5263,9 +5556,14 @@ function applyRoleLimits(){
      tanlovidan qat'i nazar. Administrator esa hammasini ko'radi:
      serverda ham ruxsat rol bo'yicha beriladi, login nomi bo'yicha
      emas. */
-  const kassaMode = (typeof adminMode !== 'undefined') && adminMode !== 'admin';
+  const isOperator = me.role === 'operator';
+  const kassaMode = (typeof adminMode !== 'undefined') && adminMode !== 'admin' && adminMode !== 'operator';
   document.querySelectorAll('.nav[data-grp="admin"]').forEach(b => {
-    b.classList.toggle('hidden', isCashier || kassaMode);
+    b.classList.toggle('hidden', isCashier || kassaMode || (isOperator && !OPERATOR_PAGES.includes(b.dataset.p)));
+  });
+  /* Operator: faqat «BRONLAR» sarlavhasi; BOSHQARUV va TIZIM yo'q */
+  document.querySelectorAll('.navgroup[data-grp="admin"]').forEach(g => {
+    g.classList.toggle('hidden', isCashier || kassaMode || (isOperator && !g.dataset.op));
   });
 }
 
@@ -5282,6 +5580,8 @@ function routeByRole(){
   if (me.role === 'cashier') {
     const own = (S.registers || []).find(r => String(r.id) === String(me.register_id));
     applyMode(own?.code || 'P1');
+  } else if (me.role === 'operator') {
+    applyMode('operator');
   } else {
     applyMode('admin');
   }
@@ -5301,7 +5601,7 @@ async function boot(){
   }
 
   /* Sessiya ochiq — panel login/paroldan aniqlanadi, qayta tanlash yo'q. */
-  if (!S.registers.length) {
+  if (!S.registers.length && S.me.role !== 'operator') {
     try { S.registers = (await api('/api/admin/registers')).registers || []; } catch (e) {}
   }
   const role = roleFor(S.me);
@@ -5354,6 +5654,15 @@ function refreshActivePage(show=false){
   return refreshing;
 }
 setInterval(()=>{if(!document.hidden)refreshActivePage();},30000);
+/* ESLATMALAR «TICK»: panel ochiq turganda (fonda bo'lsa ham) har 2 daqiqada
+   serverga «muddati kelgan eslatmalarni yubor» deymiz. Server daqiqasiga
+   bir martadan ko'p ishlamaydi va takror xabar yubormaydi. Jim ishlaydi. */
+function reminderTick(){
+  if(!AUTHED) return;
+  fetch('/api/admin/reminders/tick',{method:'POST',credentials:'include',cache:'no-store',headers:{Accept:'application/json'}}).catch(()=>{});
+}
+setInterval(reminderTick,120000);
+setTimeout(reminderTick,20000);
 AvtodromUI.initAdmin({navigate:showPage,refresh:()=>refreshActivePage(true)});
 /* Menyudagi «0» nishonlar ko'rinmaydi — faqat e'tibor kerak bo'lganda chiqadi */
 document.querySelectorAll('.nav .count').forEach(el=>{
