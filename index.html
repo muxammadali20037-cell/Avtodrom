@@ -582,6 +582,9 @@ body.onb-mode .wrap{padding-bottom:calc(120px + var(--sb))}
 .prow div{background:var(--card-2);border-radius:12px;padding:8px 4px;text-align:center}
 .prow span{display:block;font-size:12px;color:var(--hint);font-weight:600}
 .prow b{display:block;font-size:13px;margin-top:2px;font-variant-numeric:tabular-nums}
+.prow .pkgp{background:var(--ok-soft);box-shadow:inset 0 0 0 1.5px var(--ok)}
+.prow .pkgp span,.prow .pkgp b{color:var(--ok)}
+.prow .pkgp s{display:block;font-size:11px;color:var(--hint);font-weight:600}
 .ins-row2{display:flex;gap:10px;overflow-x:auto;scrollbar-width:none;margin:0 -16px;padding:2px 16px 8px;scroll-snap-type:x proximity;scroll-padding:0 16px}
 .ins-row2::-webkit-scrollbar{display:none}
 .icard2{flex:none;width:210px;scroll-snap-align:start;background:var(--card);border-radius:20px;box-shadow:var(--shadow);padding:16px;text-align:left}
@@ -858,9 +861,10 @@ function minPrice(cat, minutes) {
   const t = tariff(cat), m = Math.max(1, Math.round(minutes));
   return m === 30 ? Math.round(t.half) : Math.round(t.hour * m / 60);
 }
-/** 5 soatlik paket narxi. Sozlama yo'q — 1 100 000; 0 — paket o'chirilgan. */
+/** 5 soatlik paket — FAQAT B toifa. Sozlama yo'q — 1 100 000; 0 — o'chirilgan. */
 function pkgPrice(cat) {
-  const v = S.settings['paket5_' + String(cat || 'B').toLowerCase()];
+  if (String(cat || '').toUpperCase() !== 'B') return 0;
+  const v = S.settings.paket5_b;
   if (v === undefined || v === null || v === '') return 1100000;
   const n = Number(v);
   return Number.isFinite(n) && n > 0 ? Math.round(n) : 0;
@@ -1480,7 +1484,9 @@ function renderAbout() {
       ${opts.map((o, i) => { const t = tariff(o.cat); return `<div class="prc rv" style="--d:${i * 0.06}s">
         <div class="prc-h"><span class="lt">${o.cat}</span><span><b>${o.cat} toifa</b><small>${esc(CAT_LONG[o.cat])} · narxlar so‘mda</small></span></div>
         <div class="prow"><div><span>30 daq</span><b>${num(t.half)}</b></div><div><span>1 soat</span><b>${num(t.hour)}</b></div>
-          <div><span>2 soat</span><b>${num(t.hour * 2)}</b></div><div><span>5 soat</span><b>${num(t.hour * 5)}</b></div></div>
+          <div><span>2 soat</span><b>${num(t.hour * 2)}</b></div>${pkgPrice(o.cat) > 0
+            ? `<div class="pkgp"><span>5 soat · paket</span><b>${num(pkgPrice(o.cat))}</b>${t.hour * 5 > pkgPrice(o.cat) ? `<s>${num(t.hour * 5)}</s>` : ''}</div>`
+            : `<div><span>5 soat</span><b>${num(t.hour * 5)}</b></div>`}</div>
         <button class="btn btn-primary btn-sm" style="width:100%" data-act="quickcat" data-v="${o.key}">${o.cat} toifaga bron qilish ${ico('arrow', 17)}</button>
       </div>`; }).join('')}
       <p class="muted" style="font-size:13px;margin:4px 2px 0">To‘lov avtodrom kassasida. Narxlar admin tomonidan yangilanadi.</p>
