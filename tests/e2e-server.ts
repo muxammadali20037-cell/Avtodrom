@@ -67,7 +67,8 @@ db.instructor_profiles.push({ id: 'ip-2', user_id: 'u-ins2', is_verified: true, 
 db.courses.push({ id: 'c-b', name: 'B toifa — yengil', category: 'B', price: 250000, duration_minutes: 60, is_active: true });
 db.courses.push({ id: 'c-c', name: 'C toifa — yuk', category: 'C', price: 400000, duration_minutes: 60, is_active: true });
 for (const [key, value] of Object.entries({ half_b: 150000, rate_b: 250000, half_c: 250000, rate_c: 400000, half_a: 200000, rate_a: 350000,
-  work_start: '08:00', work_end: '18:00', slot_step_min: 60, address: 'Toshkent, Yangihayot tumani', mgmt_pin: { hash: 'maxfiy' } })) {
+  work_start: '08:00', work_end: '18:00', slot_step_min: 60, address: 'Toshkent, Yangihayot tumani', mgmt_pin: { hash: 'maxfiy' },
+  contact_phone: '+998507525555 +998703084888' })) {
   db.admin_settings.push({ key, value });
 }
 
