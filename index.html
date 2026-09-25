@@ -1416,7 +1416,10 @@ function initChipsNav() {
     document.querySelectorAll('#chipsnav button').forEach(b => {
       const on = b.dataset.v === e.target.id;
       b.classList.toggle('on', on);
-      if (on) b.scrollIntoView({ inline: 'nearest', block: 'nearest' });
+      /* Faqat chiplar qatorini suramiz. scrollIntoView sahifani ham surib,
+         «Narxlar» kabi uzoq bo'limga ketayotgan silliq aylantirishni yarim
+         yo'lda to'xtatib qo'yardi. */
+      if (on) { const nav = b.parentElement; nav.scrollTo({ left: Math.max(0, b.offsetLeft - (nav.clientWidth - b.offsetWidth) / 2), behavior: 'smooth' }); }
     });
   }), { rootMargin: '-30% 0px -60% 0px' });
   document.querySelectorAll('#main .asec').forEach(s => navObs.observe(s));
