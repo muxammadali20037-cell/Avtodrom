@@ -1646,11 +1646,11 @@ pre.json{background:#F7FAFF;border:1px solid var(--line);border-radius:8px;paddi
         <input id="rateC" class="input" type="number" min="0" step="1000" placeholder="400000">
 
         <div style="font-size:11px;font-weight:900;color:#0d7a4a">5 soat PAKET</div>
-        <input id="pakA" class="input" type="number" min="0" step="1000" placeholder="1100000" style="border-color:#86d9a8">
+        <div class="muted" style="font-size:11px;text-align:center">paket yo‘q</div>
         <input id="pakB" class="input" type="number" min="0" step="1000" placeholder="1100000" style="border-color:#86d9a8">
-        <input id="pakC" class="input" type="number" min="0" step="1000" placeholder="1100000" style="border-color:#86d9a8">
+        <div class="muted" style="font-size:11px;text-align:center">paket yo‘q</div>
       </div>
-      <div class="muted" style="font-size:12px;margin-top:6px">30 daqiqa — alohida narx. 1 va 2 soat — soatlik tarif bo‘yicha. <b style="color:#0d7a4a">5 soatlik paket</b> — chegirmali narx: mijoz uni bir kunda yoki bir necha kunga bo‘lib oladi (5 × 1 soat, 3 + 2, 2 + 2 + 1). Paket narxi 0 bo‘lsa — shu toifada paket o‘chiriladi.</div></div>
+      <div class="muted" style="font-size:12px;margin-top:6px">30 daqiqa — alohida narx. 1 va 2 soat — soatlik tarif bo‘yicha. <b style="color:#0d7a4a">5 soatlik paket — faqat B toifa</b>: chegirmali narx, mijoz uni bir kunda yoki bir necha kunga bo‘lib oladi (5 × 1 soat, 3 + 2, 2 + 2 + 1). 0 yozilsa — paket o‘chiriladi. A va C da 5 soat oddiy soatlik tarif bilan.</div></div>
 
     <div class="field"><label>AVTODROM HAQIDA <span class="muted">(mijoz panelidagi «INDEX AVTODROM» bo‘limi)</span></label>
       <textarea id="aboutText" class="input" rows="3" placeholder="Maydoncha haqida qisqacha…"></textarea></div>
@@ -2836,7 +2836,7 @@ function renderAudit(){
    (a) avtomatik yangilanish to'xtaydi, (b) loadSettings maydonlarga tegmaydi.
    Saqlangandan yoki bekor qilingandan keyingina qulf ochiladi. */
 let editing = false;
-const SETTING_FIELDS = ['systemName','bookingEnabled','contactPhone','contactPhone2','workingHours','halfA','halfB','halfC','rateA','rateB','rateC','pakA','pakB','pakC','aboutText','facilities','workStart','workEnd','slotStep',
+const SETTING_FIELDS = ['systemName','bookingEnabled','contactPhone','contactPhone2','workingHours','halfA','halfB','halfC','rateA','rateB','rateC','pakB','aboutText','facilities','workStart','workEnd','slotStep',
                         'locName','locAddress','locLat','locLng','locGoogle','locYandex','loc2gis'];
 function markEditing(){ if(!editing){ editing=true; $('locDirty').classList.remove('hidden'); } }
 function clearEditing(){ editing=false; $('locDirty').classList.add('hidden'); }
@@ -2864,7 +2864,7 @@ function loadSettings(){
   $('rateC').value=val('rate_c')||400000;
   /* Paket narxi: sozlama yo'q bo'lsa 1 100 000; 0 — paket o'chirilgan */
   const pk=k=>{ const v=val(k); return v===''||v===null||v===undefined ? 1100000 : Number(v); };
-  $('pakA').value=pk('paket5_a'); $('pakB').value=pk('paket5_b'); $('pakC').value=pk('paket5_c');
+  $('pakB').value=pk('paket5_b');
   $('facilities').value=val('facilities');
   $('workStart').value=val('work_start')||'07:00';
   $('workEnd').value=val('work_end')||'19:00';
@@ -2920,7 +2920,7 @@ $('saveSettingsBtn').onclick=async()=>{
   const button=$('saveSettingsBtn');if(button.disabled)return;
   const priceIds=['halfA','halfB','halfC','rateA','rateB','rateC'];
   if(priceIds.some(id=>!$(id).value||!Number.isFinite(Number($(id).value))||Number($(id).value)<=0))return notice('Tariflar musbat son bo‘lishi kerak.');
-  if(['pakA','pakB','pakC'].some(id=>$(id).value===''||!Number.isFinite(Number($(id).value))||Number($(id).value)<0))return notice('Paket narxi 0 yoki musbat son bo‘lishi kerak (0 — paket o‘chiq).');
+  if($('pakB').value===''||!Number.isFinite(Number($('pakB').value))||Number($('pakB').value)<0)return notice('Paket narxi 0 yoki musbat son bo‘lishi kerak (0 — paket o‘chiq).');
   if($('workStart').value >= $('workEnd').value)return notice('Ish boshlanishi tugashidan oldin bo‘lsin.');
   button.disabled=true;button.textContent='Saqlanmoqda…';let saved=0;
   try{
@@ -2936,9 +2936,7 @@ $('saveSettingsBtn').onclick=async()=>{
     await put('rate_a',Number($('rateA').value)||350000);
     await put('rate_b',Number($('rateB').value)||250000);
     await put('rate_c',Number($('rateC').value)||400000);
-    await put('paket5_a',Math.max(0,Math.round(Number($('pakA').value))));
     await put('paket5_b',Math.max(0,Math.round(Number($('pakB').value))));
-    await put('paket5_c',Math.max(0,Math.round(Number($('pakC').value))));
     await put('facilities',$('facilities').value.trim());
     await put('work_start',$('workStart').value||'07:00');
     await put('work_end',$('workEnd').value||'19:00');
@@ -4095,9 +4093,11 @@ function tariffFor(cat){
 /** Soatlik tarif (ko'rsatish uchun). */
 function coRate(){ return tariffFor(CO.category).hour; }
 
-/** 5 soatlik paket narxi (sozlamada yo'q bo'lsa 1 100 000; 0 — o'chirilgan). */
+/** 5 soatlik paket — FAQAT B toifa. Narxi sozlamadan (yo'q bo'lsa 1 100 000;
+    0 — o'chirilgan). A va C da 5 soat oddiy soatlik tarif bilan. */
 function pkgPrice(cat){
-  const v = settingVal('paket5_' + String(cat || 'B').toLowerCase());
+  if (String(cat || '').toUpperCase() !== 'B') return 0;
+  const v = settingVal('paket5_b');
   if (v === null || v === undefined || v === '') return 1100000;
   const n = Number(v);
   return Number.isFinite(n) && n > 0 ? Math.round(n) : 0;
@@ -4127,7 +4127,7 @@ function coPrice(){
   return priceOf(CO.category, CO.minutes);
 }
 /* ---- 5 soatlik paket (kassada) ---- */
-const coIsPkg = () => CO.mode === 'walk_in' && CO.minutes === PKG_MIN;
+const coIsPkg = () => CO.mode === 'walk_in' && CO.minutes === PKG_MIN && pkgPrice(CO.category || 'B') > 0;
 const coSplit = () => CO.split || SPLITS[0];
 const coSplitMins = () => coIsPkg() ? coSplit().m : [CO.minutes];
 const coFirstMin = () => coSplitMins()[0];
@@ -5401,7 +5401,7 @@ function renderKdash(d){
 const MB = { cat: 'B', minutes: 60, ins: null, free: [], busy: [], split: null, sess: [] };
 /* Faqat shular: 30 daqiqa, 1 soat, 2 soat va 5 soatlik PAKET */
 const MB_DURS = [30, 60, 120, 300];
-const mbIsPkg = () => MB.minutes === PKG_MIN;
+const mbIsPkg = () => MB.minutes === PKG_MIN && pkgPrice(MB.cat) > 0;
 const mbSplit = () => MB.split || SPLITS[0];
 const mbFirstMin = () => mbIsPkg() ? mbSplit().m[0] : MB.minutes;
 function mbSyncSess(){
