@@ -360,8 +360,8 @@ export async function registerAdminPasswordRoutes(app: FastifyInstance) {
       if (!/^[a-zA-Z0-9_.-]{3,32}$/.test(login)) {
         return reply.code(400).send({ ok: false, error: 'Login 3–32 belgi: harf, raqam, _ . - ' });
       }
-      if (password.length < 8) {
-        return reply.code(400).send({ ok: false, error: 'Parol kamida 8 belgi bo‘lsin' });
+      if (password.length < 4) {
+        return reply.code(400).send({ ok: false, error: 'Parol kamida 4 belgi bo‘lsin' });
       }
       if (role !== 'admin' && role !== 'cashier' && role !== 'operator') {
         return reply.code(400).send({ ok: false, error: 'Rol: admin, cashier yoki operator' });
@@ -423,7 +423,7 @@ export async function registerAdminPasswordRoutes(app: FastifyInstance) {
       if (b.register_id !== undefined) patch.register_id = b.register_id ? String(b.register_id) : null;
       if (b.password !== undefined) {
         const p = String(b.password);
-        if (p.length < 8) return reply.code(400).send({ ok: false, error: 'Parol kamida 8 belgi' });
+        if (p.length < 4) return reply.code(400).send({ ok: false, error: 'Parol kamida 4 belgi' });
         patch.password_hash = hashPassword(p);
       }
       if (typeof b.is_active === 'boolean') {
