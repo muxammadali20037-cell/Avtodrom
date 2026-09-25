@@ -120,6 +120,10 @@ bk('u-6', 'ip-1', '17:00', 'pending', { start: at('10:00', tomorrow) });
 bk('u-7', 'ip-2', '17:00', 'pending', { start: at('13:00', tomorrow) });
 bk('u-8', 'ip-1', '17:00', 'confirmed', { start: at('15:00', tomorrow),
   cancel_requested_at: at('09:30'), cancel_request_reason: 'Ishim chiqib qoldi', cancel_requested_by: 'u-8' });
+// 2 soatlik bron (ertaga 10:00–12:00) — ikkala soat ham band ko'rinishi kerak
+bk('u-2', 'ip-2', '17:00', 'confirmed', { start: at('10:00', tomorrow), end_at: at('12:00', tomorrow), duration_minutes: 120, hours: 2, price: 500000 });
+// Instruktor o'zi yopgan soat: bugun 13:00–14:00
+db.admin_settings.push({ key: 'instructor_busy:ip-2', value: { blocks: [{ start_at: at('13:00'), end_at: at('14:00') }] } });
 db.support_messages = [
   { id: 'sm-1', user_id: 'u-2', sender: 'customer', body: 'Assalomu alaykum, ertaga soat 10 ga bo‘sh joy bormi?', created_at: at('09:12'), is_read: false },
 ];

@@ -61,6 +61,10 @@ function testCond(v: any, op: string, val: string): boolean {
       const [op2, ...rest] = val.split('.');
       return !testCond(v, op2, rest.join('.'));
     }
+    case 'like': {
+      const re = '^' + val.split(/[*%]/).map((x) => x.replace(/[.+?^${}()|[\]\\]/g, '\\$&')).join('.*') + '$';
+      return new RegExp(re, 's').test(String(v ?? ''));
+    }
     case 'ilike': {
       // PostgREST kabi: * va % — istalgan belgilar, katta-kichik harf farqsiz
       const re = '^' + val.split(/[*%]/).map((x) => x.replace(/[.+?^${}()|[\]\\]/g, '\\$&')).join('.*') + '$';
