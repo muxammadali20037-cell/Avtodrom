@@ -133,6 +133,20 @@ h2{font-size:20px;margin:0 0 3px}
 .slotsum div{flex:1;border-radius:14px;padding:11px;text-align:center;font-weight:800;font-size:12px}
 .slotsum b{display:block;font-size:24px;line-height:1.1}
 .slotsum .f{background:var(--okbg);color:var(--ok)}.slotsum .b{background:var(--bluebg);color:var(--blue)}
+.slotsum .c{background:#fff3e0;color:#9a5b00}
+/* Instruktor soatni o'zi yopadi / ochadi */
+.slots{grid-template-columns:minmax(0,1fr)}
+.slot{min-width:0}
+button.slot{width:100%;text-align:left;cursor:pointer;font:inherit;color:inherit}
+button.slot:active{transform:scale(.985)}
+.slot.closed{border-color:#f3d2a5;background:#fff6e8}.slot.closed .s{color:#9a5b00}
+.tgl{width:50px;height:30px;border-radius:99px;background:#d9a35a;position:relative;flex:none;transition:background .18s}
+.tgl::after{content:"";position:absolute;top:3px;left:3px;width:24px;height:24px;border-radius:50%;background:#fff;box-shadow:0 2px 5px rgba(0,0,0,.2);transition:left .18s}
+.tgl.on{background:var(--ok)}.tgl.on::after{left:23px}
+.slots.saving{pointer-events:none;opacity:.7}
+.freeacts{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:10px}
+.freeacts .btn{height:46px;font-size:14px}
+.hint{font-size:12.5px;color:var(--muted);margin:0 2px 12px;line-height:1.45}
 
 /* ---------- hisob-kitob ---------- */
 .range{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:9px}
@@ -352,11 +366,17 @@ details.list[open] summary::after{content:"▴"}
   <div class="backbar"><button class="back" data-back><span>‹</span> Orqaga</button><h2>Bo‘sh vaqtlarim</h2></div>
   <div class="chips" id="freeDays"></div>
   <div class="slotsum">
-    <div class="f"><b id="fFree">0</b>bo‘sh vaqt</div>
-    <div class="b"><b id="fBusy">0</b>band</div>
+    <div class="f"><b id="fFree">0</b>ochiq</div>
+    <div class="c"><b id="fClosed">0</b>yopiq</div>
+    <div class="b"><b id="fBusy">0</b>bron</div>
   </div>
+  <div class="freeacts">
+    <button class="btn" id="closeDay">🔒 Kunni yopish</button>
+    <button class="btn" id="openDay">🔓 Hammasini ochish</button>
+  </div>
+  <p class="hint">Soatni bosing — <b>yopiladi</b> yoki <b>ochiladi</b>. Yopiq soatga mijoz ham, operator ham, kassa ham bron qila olmaydi. Masalan, faqat soat 7 da bo‘sh bo‘lsangiz: «Kunni yopish», keyin 07:00 ni bosib oching.</p>
   <div class="slots" id="slotList"></div>
-  <p class="sub" style="margin-top:12px;font-size:12px">Mijozlar Mini App’da faqat bo‘sh vaqtlarni bron qila oladi. Ish vaqti admin sozlamasidan olinadi.</p>
+  <p class="sub" style="margin-top:12px;font-size:12px">Ish vaqti admin sozlamasidan olinadi. Bron bor soatni yopib bo‘lmaydi.</p>
 </section>
 
 <!-- ============ 4. HISOB-KITOB ============ -->
@@ -434,7 +454,7 @@ function minutesOf(b){
   return Number(b.course?.duration_minutes || 60);
 }
 
-const S = { profile:null, instructor:null, bookings:[], settings:null, bkFilter:'today', freeDay:'', calc:null, month:null };
+const S = { profile:null, instructor:null, bookings:[], settings:null, bkFilter:'today', freeDay:'', calc:null, month:null, blocks:[] };
 
 /* ------------------------------ API ------------------------------ */
 function errText(d, status, path){
@@ -499,7 +519,7 @@ function openSection(id){
   try { if (history.state?.sec !== id) history.pushState({ sec: id }, '', '#' + id); } catch (e) {}
   if (id === 'scan') renderScan();
   if (id === 'bookings') renderBookings();
-  if (id === 'free') renderFree();
+  if (id === 'free') { renderFree(); loadBlocks().then(() => { if (current === 'free') renderFree(); }); }
   if (id === 'calc' && !S.calc) loadCalc();
 }
 function showMenu(){
@@ -571,7 +591,7 @@ async function openPanel(){
     /* Qayta yuklanganda ham bosh menyudan boshlaymiz */
     try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {}
     showMenu();
-    await Promise.allSettled([loadSettings(), loadBookings(), loadMonth()]);
+    await Promise.allSettled([loadSettings(), loadBookings(), loadMonth(), loadBlocks()]);
     renderMenu();
     reminderTick();
   } catch (e) {
@@ -667,7 +687,7 @@ function renderMenu(){
     : (tm ? `Bugun yo‘q · ertaga ${tm} ta` : 'Bugun dars yo‘q');
   $('tBookBadge').textContent = left; $('tBookBadge').classList.toggle('hide', !left);
 
-  const slots = slotsFor(t).filter(x => !x.b && !x.past).length;
+  const slots = slotsFor(t).filter(x => !x.b && !x.past && !x.closed).length;
   $('tFree').textContent = slots ? `Bugun ${slots} ta bo‘sh vaqt` : 'Bugun bo‘sh vaqt yo‘q';
 
   const m = S.month?.summary;
@@ -831,27 +851,90 @@ function slotsFor(d){
       const be = x.end_at ? new Date(x.end_at).getTime() : bs + minutesOf(x) * 60000;
       return bs < s1 && be > s0;
     }) || null;
-    return { a, z, b, past: s1 <= now };
+    const closed = !b && S.blocks.some(k => Date.parse(k.start_at) < s1 && Date.parse(k.end_at) > s0);
+    return { a, z, b, past: s1 <= now, closed };
   });
 }
+
+/* Yopiq soatlar serverdan (7 kun oldinga) */
+async function loadBlocks(){
+  try {
+    const t = today();
+    const d = await api(`/api/instructor/blocks?from=${t}&to=${addDays(t, 6)}`);
+    S.blocks = d.blocks || [];
+  } catch (e) { /* ro'yxat ikkilamchi — bo'sh qoladi */ }
+}
+
 function renderFree(){
   renderFreeDays();
-  let free = 0, busy = 0;
-  const html = slotsFor(S.freeDay).map(({ a, z, b, past }) => {
+  let free = 0, busy = 0, closed = 0;
+  const html = slotsFor(S.freeDay).map(({ a, z, b, past, closed: cl }) => {
+    const time = `<div class="h">${hm(a)} <small>– ${hm(z)}</small></div>`;
     if (b) {
       busy++;
       const cat = String(b.category || '').toUpperCase();
-      return `<div class="slot busy ${past ? 'past' : ''}"><div class="h">${hm(a)} <small>– ${hm(z)}</small></div>
-        <div class="s">Band${b.status === 'completed' ? ' · dars bo‘ldi' : b.status === 'in_progress' ? ' · hozir dars' : ''}
+      return `<div class="slot busy ${past ? 'past' : ''}">${time}
+        <div class="s">Bron${b.status === 'completed' ? ' · dars bo‘ldi' : b.status === 'in_progress' ? ' · hozir dars' : ''}
           <span>${esc(custName(b))}${cat ? ' · ' + esc(cat) : ''}${isSchool(b) ? ' · avtoshkola' : ''}</span></div></div>`;
     }
-    if (!past) free++;
-    return `<div class="slot free ${past ? 'past' : ''}"><div class="h">${hm(a)} <small>– ${hm(z)}</small></div>
-      <div class="s">${past ? 'O‘tib ketdi' : 'Bo‘sh'}<span>${past ? '' : 'Mijoz bron qila oladi'}</span></div></div>`;
+    if (past) return `<div class="slot ${cl ? 'closed' : 'free'} past">${time}<div class="s">O‘tib ketdi</div></div>`;
+    if (cl) {
+      closed++;
+      return `<button class="slot closed" data-tog="${hm(a)}">${time}
+        <div class="s">Yopiq<span>Siz band qildingiz</span></div><span class="tgl"></span></button>`;
+    }
+    free++;
+    return `<button class="slot free" data-tog="${hm(a)}">${time}
+      <div class="s">Ochiq<span>Mijoz bron qila oladi</span></div><span class="tgl on"></span></button>`;
   }).join('');
-  $('slotList').innerHTML = html || '<div class="empty">Ish vaqti sozlanmagan.</div>';
-  $('fFree').textContent = free; $('fBusy').textContent = busy;
+  const box = $('slotList');
+  box.innerHTML = html || '<div class="empty">Ish vaqti sozlanmagan.</div>';
+  box.querySelectorAll('[data-tog]').forEach(el => el.onclick = () => toggleSlot(el.dataset.tog));
+  $('fFree').textContent = free; $('fBusy').textContent = busy; $('fClosed').textContent = closed;
+  $('closeDay').disabled = !free; $('openDay').disabled = !closed;
 }
+
+/** Kunning yopiq soatlarini serverga yozadi (butun kun almashadi). */
+let savingBlocks = false;
+async function saveDayClosed(day, closedStarts){
+  if (savingBlocks) return;
+  const slots = workSlots().filter(([a]) => closedStarts.has(hm(a))).map(([a, z]) => ({ from: hm(a), to: hm(z) }));
+  /* Darhol ekranda — keyin serverga */
+  const dayStart = at(day, '00:00').getTime(), dayEnd = dayStart + 864e5;
+  const prev = S.blocks;
+  S.blocks = [...S.blocks.filter(k => { const t = Date.parse(k.start_at); return t < dayStart || t >= dayEnd; }),
+    ...slots.map(x => ({ start_at: at(day, x.from).toISOString(), end_at: at(day, x.to).toISOString() }))];
+  renderFree(); renderMenu();
+  savingBlocks = true; $('slotList').classList.add('saving');
+  try {
+    await api('/api/instructor/blocks', { method:'PUT', body: JSON.stringify({ date: day, slots }) });
+  } catch (e) {
+    S.blocks = prev; toast(e.message);
+  } finally {
+    savingBlocks = false; $('slotList').classList.remove('saving');
+    renderFree(); renderMenu();
+  }
+}
+function closedStartsOf(day){
+  return new Set(slotsFor(day).filter(x => x.closed).map(x => hm(x.a)));
+}
+function toggleSlot(start){
+  const day = S.freeDay, set = closedStartsOf(day);
+  if (set.has(start)) { set.delete(start); toast(`${start} ochildi — mijozlar bron qila oladi`); }
+  else { set.add(start); toast(`${start} yopildi`); }
+  saveDayClosed(day, set);
+}
+$('closeDay').onclick = () => {
+  const day = S.freeDay, set = closedStartsOf(day);
+  slotsFor(day).forEach(x => { if (!x.b && !x.past) set.add(hm(x.a)); });
+  toast('Kun yopildi. Bo‘sh soatingizni bosib oching.');
+  saveDayClosed(day, set);
+};
+$('openDay').onclick = () => {
+  const day = S.freeDay;
+  toast('Hamma soat ochildi');
+  saveDayClosed(day, new Set(slotsFor(day).filter(x => x.closed && x.past).map(x => hm(x.a))));
+};
 
 /* =========================================================================
    4. HISOB-KITOB — shu sanadan shu sanagacha: nechta avtoshkola, nechta
