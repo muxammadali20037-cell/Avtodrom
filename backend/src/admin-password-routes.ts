@@ -113,6 +113,7 @@ export async function guardDesk(req: any) {
  */
 export const OPERATOR_ALLOWED: RegExp[] = [
   /^(GET) \/api\/admin\/me$/,
+  /^(GET) \/api\/admin\/pulse$/,
   /^(POST) \/api\/admin\/(login|logout)$/,
   /^(GET) \/api\/admin\/logout$/,
   // Bronlar: ro'yxat, qidiruv, holatini o'zgartirish (tasdiqlash / rad etish)
@@ -659,6 +660,36 @@ export async function registerAdminPasswordRoutes(app: FastifyInstance) {
   });
 
   app.post('/api/admin/logout', async (_req: any, reply: any) => { clearCookie(reply); return { ok: true }; });
+
+  /* =====================================================================
+     «PULS» — jonli yangilanish uchun.
+     Panel har 5 soniyada shu kichik so'rovni yuboradi. Javobda oxirgi
+     o'zgarish vaqtlari: bron, to'lov/chek, skaner, chat. Birortasi
+     o'zgarsa — panel ochiq sahifani DARHOL yangilaydi. Og'ir ro'yxatlar
+     keraksiz qayta yuklanmaydi, sahifa qotmaydi.
+     ===================================================================== */
+  app.get('/api/admin/pulse', async (req: any, reply: any) => {
+    try {
+      await currentStaff(req);
+      const last = async (table: string, cols: string, order: string) => {
+        try {
+          const r = await supabaseRest<any[]>(table, { query: `?select=${cols}&order=${order}.desc.nullslast&limit=1` });
+          const x = r?.[0] || {};
+          return String(x.updated_at || x.paid_at || x.created_at || '');
+        } catch { return ''; }
+      };
+      /* Amallar tarixi — to'lovni qaytarish, xodim, sozlama kabi qolgan
+         hamma muhim amal ham shu yerda iz qoldiradi */
+      const [b, p, sc, sm, au] = await Promise.all([
+        last('bookings', 'updated_at,created_at', 'updated_at'),
+        last('payments', 'created_at,paid_at', 'created_at'),
+        last('attendance_verifications', 'created_at', 'created_at'),
+        last('support_messages', 'created_at', 'created_at'),
+        last('admin_audit_logs', 'created_at', 'created_at'),
+      ]);
+      return { ok: true, stamp: [b, p, sc, sm, au].join('|'), parts: { bookings: b, payments: p, scans: sc, support: sm, audit: au } };
+    } catch (e) { return err(reply, e, 'Puls xatosi', 401); }
+  });
 
   app.get('/api/admin/me', async (req: any, reply: any) => {
     try {

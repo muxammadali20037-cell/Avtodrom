@@ -1,5 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 import { supabaseRest } from './supabase.js';
+import { selectIn } from './rest-chunks.js';
 import { loadTariffs, computePrice } from './pricing.js';
 import { q, findUserByTelegram, toProfile } from './identity.js';
 import { fmtWhen, fmtMoney } from './notify.js';
@@ -42,16 +43,14 @@ async function loadMaps(bookings: any[]) {
   const bids = bookings.map((b) => String(b.id));
 
   const [users, ips, courses, pays] = await Promise.all([
-    uids.length ? supabaseRest<any[]>('users', { query: `?id=in.(${uids.map(q).join(',')})&select=id,full_name,phone,telegram_id` }) : [],
-    iids.length ? supabaseRest<any[]>('instructor_profiles', { query: `?id=in.(${iids.map(q).join(',')})&select=id,user_id` }) : [],
-    cids.length ? supabaseRest<any[]>('courses', { query: `?id=in.(${cids.map(q).join(',')})&select=id,name,duration_minutes,price,category` }) : [],
-    bids.length ? supabaseRest<any[]>('payments', { query: `?booking_id=in.(${bids.map(q).join(',')})&select=*` }) : [],
+    selectIn<any>('users', 'id', uids, 'id,full_name,phone,telegram_id'),
+    selectIn<any>('instructor_profiles', 'id', iids, 'id,user_id'),
+    selectIn<any>('courses', 'id', cids, 'id,name,duration_minutes,price,category'),
+    selectIn<any>('payments', 'booking_id', bids, '*'),
   ]);
   const um = new Map(users.map((u) => [String(u.id), u]));
   const iuids = [...new Set(ips.map((i) => i.user_id).filter(Boolean).map(String))];
-  const iu = iuids.length
-    ? await supabaseRest<any[]>('users', { query: `?id=in.(${iuids.map(q).join(',')})&select=id,full_name,phone` })
-    : [];
+  const iu = await selectIn<any>('users', 'id', iuids, 'id,full_name,phone');
   const ium = new Map(iu.map((u) => [String(u.id), u]));
   return {
     um,
@@ -679,14 +678,8 @@ export async function registerCashierRoutes(
       });
       const withCode = pays.filter((p) => p.receipt_code);
       const bids = [...new Set(withCode.map((p) => p.booking_id).filter(Boolean).map(String))];
-      const bookings = bids.length
-        ? await supabaseRest<any[]>('bookings', { query: `?id=in.(${bids.map(q).join(',')})&select=*` })
-        : [];
-      const scans = bids.length
-        ? await supabaseRest<any[]>('attendance_verifications', {
-            query: `?booking_id=in.(${bids.map(q).join(',')})&select=booking_id,receipt_code,created_at&order=created_at.asc`,
-          }).catch(() => [])
-        : [];
+      const bookings = await selectIn<any>('bookings', 'id', bids, '*');
+      const scans = await selectIn<any>('attendance_verifications', 'booking_id', bids, 'booking_id,receipt_code,created_at', '&order=created_at.asc').catch(() => []);
       const m = await loadMaps(bookings);
       const bm = new Map(bookings.map((b) => [String(b.id), b]));
       const sm = new Map<string, any>();

@@ -454,9 +454,10 @@ export async function registerInstructorRoutes(
 
       const uids = [...new Set(bookings.map((b) => b.customer_id).filter(Boolean).map(String))];
       const cids = [...new Set(bookings.map((b) => b.course_id).filter(Boolean).map(String))];
+      const { selectIn } = await import('./rest-chunks.js');
       const [users, courses] = await Promise.all([
-        uids.length ? supabaseRest<any[]>('users', { query: `?id=in.(${uids.map(q).join(',')})&select=id,full_name,phone` }) : [],
-        cids.length ? supabaseRest<any[]>('courses', { query: `?id=in.(${cids.map(q).join(',')})&select=id,name,duration_minutes` }) : [],
+        selectIn<any>('users', 'id', uids, 'id,full_name,phone'),
+        selectIn<any>('courses', 'id', cids, 'id,name,duration_minutes'),
       ]);
       const um = new Map(users.map((u) => [String(u.id), u]));
       const cm = new Map(courses.map((c) => [String(c.id), c]));

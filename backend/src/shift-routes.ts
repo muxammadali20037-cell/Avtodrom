@@ -285,8 +285,8 @@ export async function registerShiftRoutes(
   app.get('/api/admin/register-report', async (req: any, reply: any) => {
     try {
       await requireAdmin(req);
-      const { periodRange } = await import('./analytics-routes.js');
-      const { from, to, label, anchor } = periodRange(String(req.query?.period || 'day'), req.query?.date);
+      const { rangeFromQuery } = await import('./analytics-routes.js');
+      const { from, to, label, anchor } = rangeFromQuery(req.query);
       const rows = await supabaseRest<any>('rpc/register_report', {
         method: 'POST',
         body: JSON.stringify({ p_from: from.toISOString(), p_to: to.toISOString() }),
@@ -523,8 +523,8 @@ export async function registerShiftRoutes(
       }))[0];
       if (!reg) return reply.code(404).send({ ok: false, error: 'Kassa topilmadi' });
 
-      const { periodRange } = await import('./analytics-routes.js');
-      const { from, to, label, anchor, bucket } = periodRange(String(req.query?.period || 'day'), req.query?.date);
+      const { rangeFromQuery } = await import('./analytics-routes.js');
+      const { from, to, label, anchor, bucket, period } = rangeFromQuery(req.query);
 
       const span = to.getTime() - from.getTime();
       const prevFrom = new Date(from.getTime() - span);
@@ -543,7 +543,7 @@ export async function registerShiftRoutes(
 
       return {
         ok: true,
-        register: reg, period: String(req.query?.period || 'day'), label, anchor, bucket,
+        register: reg, period, label, anchor, bucket,
         from: from.toISOString(), to: to.toISOString(),
         totals: t0,
         change: { total: delta(t0.total, p0.total), receipts: delta(t0.receipts, p0.receipts) },

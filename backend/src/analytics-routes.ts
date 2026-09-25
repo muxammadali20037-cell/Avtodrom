@@ -1,6 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import { lessonMinutes, isSchoolLesson } from './lesson-math.js';
 import { supabaseRest } from './supabase.js';
+import { selectIn } from './rest-chunks.js';
 
 /**
  * HISOBOT VA ANALITIKA
@@ -48,6 +49,31 @@ export function periodRange(period: string, anchor?: string) {
   return { from, to, bucket, label, anchor: base };
 }
 
+/**
+ * So'rovdan davr: `?from=YYYY-MM-DD&to=YYYY-MM-DD` berilsa — aynan shu
+ * oraliq (ikkala kun ham KIRADI, Toshkent vaqti bilan; yil almashsa ham
+ * to'g'ri: 1-oktabr → 3-yanvar). Berilmasa — `?period=&date=` (eski usul).
+ */
+export function rangeFromQuery(query: any, fallbackPeriod = 'day') {
+  const isYmd = (v: any) => /^\d{4}-\d{2}-\d{2}$/.test(String(v || ''));
+  const f = String(query?.from || ''), t = String(query?.to || '');
+  if (isYmd(f) && isYmd(t)) {
+    const [a, b] = f <= t ? [f, t] : [t, f];
+    const at5 = (ymd: string) => { const [y, m, d] = ymd.split('-').map(Number); return new Date(Date.UTC(y, m - 1, d) - 5 * 3600e3); };
+    const from = at5(a), to = new Date(at5(b).getTime() + 864e5);
+    if (Number.isNaN(from.getTime()) || Number.isNaN(to.getTime())) {
+      const e: any = new Error('Sana noto‘g‘ri'); e.statusCode = 400; throw e;
+    }
+    const days = Math.round((to.getTime() - from.getTime()) / 864e5);
+    if (days > 3 * 366) { const e: any = new Error('Oraliq 3 yildan oshmasin'); e.statusCode = 400; throw e; }
+    const bucket: 'hour' | 'day' | 'month' = days <= 1 ? 'hour' : days <= 62 ? 'day' : 'month';
+    const fmt = (ymd: string) => { const [y, m, d] = ymd.split('-').map(Number); return `${d}.${String(m).padStart(2, '0')}.${y}`; };
+    return { from, to, bucket, label: `${fmt(a)} — ${fmt(b)}`, anchor: a, period: 'range', fromYmd: a, toYmd: b, days };
+  }
+  const period = String(query?.period || fallbackPeriod);
+  return { ...periodRange(period, query?.date), period, fromYmd: '', toYmd: '', days: 0 };
+}
+
 async function report(from: Date, to: Date, bucket: string) {
   const res = await supabaseRest<any>('rpc/analytics_report', {
     method: 'POST',
@@ -75,8 +101,7 @@ export async function registerAnalyticsRoutes(
   app.get('/api/admin/analytics', async (req: any, reply: any) => {
     try {
       await requireAdmin(req);
-      const period = String(req.query?.period || 'day');
-      const { from, to, bucket, label, anchor } = periodRange(period, req.query?.date);
+      const { from, to, bucket, label, anchor, period } = rangeFromQuery(req.query);
 
       // Oldingi davr — bir xil uzunlikda
       const span = to.getTime() - from.getTime();
@@ -180,11 +205,12 @@ export async function registerAnalyticsRoutes(
       }
       const payFilter = regId ? `&register_id=eq.${q(regId)}` : '';
 
+      /* Bo'laklab — uzoq davrda ham hech bir to'lov yoki skaner tushib qolmaydi */
       const [users, courses, pays, scans] = await Promise.all([
-        uids.length ? supabaseRest<any[]>('users', { query: `?id=in.(${uids.map(q).join(',')})&select=id,full_name,phone` }) : [],
-        cids.length ? supabaseRest<any[]>('courses', { query: `?id=in.(${cids.map(q).join(',')})&select=id,name,duration_minutes,price` }) : [],
-        ids.length ? supabaseRest<any[]>('payments', { query: `?booking_id=in.(${ids.map(q).join(',')})&select=booking_id,amount,method,status,receipt_code,paid_at${payFilter}` }) : [],
-        ids.length ? supabaseRest<any[]>('attendance_verifications', { query: `?booking_id=in.(${ids.map(q).join(',')})&select=booking_id,method,receipt_code,created_at` }) : [],
+        selectIn<any>('users', 'id', uids, 'id,full_name,phone'),
+        selectIn<any>('courses', 'id', cids, 'id,name,duration_minutes,price'),
+        selectIn<any>('payments', 'booking_id', ids, 'booking_id,amount,method,status,receipt_code,paid_at', payFilter),
+        selectIn<any>('attendance_verifications', 'booking_id', ids, 'booking_id,method,receipt_code,created_at'),
       ]);
       const um = new Map(users.map((u) => [String(u.id), u]));
       const cm = new Map(courses.map((c) => [String(c.id), c]));
