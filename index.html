@@ -1170,7 +1170,36 @@ function locInfo() {
     gis: safeUrl(l.two_gis_url || l['2gis']) || (has ? `https://2gis.uz/tashkent/geo/${lng},${lat}` : `https://2gis.uz/tashkent/search/${encodeURIComponent(q)}`),
   };
 }
-const telOf = () => String(S.settings.contact_phone || '').trim();
+/* Aloqa raqamlari — admin bir nechtasini yozishi mumkin
+   («+998507525555, +998703084888» yoki bo'sh joy bilan). Har biri
+   alohida qo'ng'iroq tugmasi bo'ladi. Ilgari ikkalasi bitta tel:
+   havolaga qo'shilib ketardi va qo'ng'iroq ishlamasdi. */
+function fmtTel(d) {
+  const m = d.match(/^(\+?998)(\d{2})(\d{3})(\d{2})(\d{2})$/);
+  return m ? `+998 ${m[2]} ${m[3]} ${m[4]} ${m[5]}` : d;
+}
+function phonesOf() {
+  const raw = String(S.settings.contact_phone || '');
+  const out = [];
+  for (const part of raw.split(/[,;\n|]+|\s+(?=\+)/)) {
+    let d = part.replace(/[^\d+]/g, '');
+    const digits = d.replace(/\D/g, '');
+    if (digits.length < 7) continue;
+    if (!d.startsWith('+') && digits.length === 9) d = '+998' + digits;     // 90 123 45 67
+    else if (!d.startsWith('+') && digits.startsWith('998')) d = '+' + digits;
+    if (!out.some(x => x.tel === d)) out.push({ tel: d, text: fmtTel(d) });
+  }
+  return out.slice(0, 3);
+}
+const telOf = () => phonesOf().length ? phonesOf()[0].tel : '';
+const callBtns = (cls = '') => phonesOf().map(p =>
+  `<a class="callbtn ${cls}" href="tel:${esc(p.tel)}"><span class="ic">${ico('phone', 22)}</span><span>Qo‘ng‘iroq qilish<small>${esc(p.text)}</small></span></a>`).join('');
+function openCalls() {
+  const ph = phonesOf();
+  if (ph.length === 1) { location.href = 'tel:' + ph[0].tel; return; }
+  openSheet(`<h3>Qo‘ng‘iroq qilish</h3>
+    <p class="lead">Qaysi raqamga qo‘ng‘iroq qilamiz?</p>${callBtns()}`);
+}
 const hoursText = () => S.settings.working_hours || `Har kuni ${S.settings.work_start} – ${S.settings.work_end}`;
 
 /* =========================================================================
@@ -1241,7 +1270,7 @@ function renderHome() {
       ${g.length ? tile('t4', 'copy', 'Rasmlar', 'gallery', '0') : tile('t4', 'info', 'Sharoitlar', 'about', 'a-fac')}
       ${vid ? tile('t6', 'play', 'Video', 'about', 'a-video') : tile('t6', 'clock', 'Kurs muddati', 'about', 'a-course')}
       ${tile('t5', 'pin', 'Manzil', 'about', 'a-loc')}
-      ${tel ? `<a class="tile rv" style="--d:${tileN++ * 0.04}s;color:inherit;text-decoration:none" href="tel:${esc(tel.replace(/[^\d+]/g, ''))}"><span class="ti t7">${ico('phone', 25)}</span>Qo‘ng‘iroq</a>`
+      ${tel ? tile('t7', 'phone', 'Qo‘ng‘iroq', 'calls')
             : tile('t7', 'chat', 'Savol berish', 'go', 'support')}
       ${tile('t3', 'list', 'Bronlarim', 'go', 'bookings', '')}
       ${tile('t8', 'info', 'Savollar', 'about', 'a-faq')}
@@ -1379,7 +1408,7 @@ function renderAbout() {
       <div class="card rv" style="margin-top:10px"><b>${esc(L.name)}</b><div class="muted" style="font-size:14px;margin-top:2px">${esc(L.address || 'Manzil admin tomonidan kiritiladi')}</div>
         <div class="muted" style="font-size:14px;margin-top:6px;display:flex;gap:6px;align-items:center">${ico('clock', 16)} ${esc(hoursText())}</div></div>
       <div class="maprow rv"><button data-act="link" data-v="${esc(L.google)}">Google</button><button data-act="link" data-v="${esc(L.yandex)}">Yandex</button><button data-act="link" data-v="${esc(L.gis)}">2GIS</button></div>
-      ${tel ? `<a class="callbtn rv" href="tel:${esc(tel.replace(/[^\d+]/g, ''))}"><span class="ic">${ico('phone', 22)}</span><span>Qo‘ng‘iroq qilish<small>${esc(tel)}</small></span></a>` : ''}
+      ${tel ? callBtns('rv') : ''}
     </section>
 
     <section class="asec" id="a-faq"><h2 class="rv">Ko‘p beriladigan savollar</h2>
@@ -2103,7 +2132,7 @@ function openLocation() {
     <p class="lead">${esc(L.address || 'Manzil admin tomonidan kiritiladi.')}</p>
     <div class="list" style="box-shadow:none;background:var(--card-2)">${[['Google Maps', L.google], ['Yandex Maps', L.yandex], ['2GIS', L.gis]].map(([t, u]) =>
       `<button class="row" data-act="link" data-v="${esc(u)}"><span class="ic">${ico('pin', 20)}</span><span class="tx"><b>${t}</b><small>Xaritada ochish</small></span><span class="chev">${ico('chev', 18)}</span></button>`).join('')}</div>
-    ${tel ? `<a class="callbtn" href="tel:${esc(tel.replace(/[^\d+]/g, ''))}"><span class="ic">${ico('phone', 22)}</span><span>Qo‘ng‘iroq qilish<small>${esc(tel)}</small></span></a>` : ''}`);
+    ${tel ? callBtns() : ''}`);
 }
 function openInstructor(id) {
   const i = S.instructors.find(x => String(x.id) === String(id));
@@ -2196,6 +2225,7 @@ document.addEventListener('click', e => {
     case 'copy': copyText(v); break;
     case 'notes': openNotes(); break;
     case 'location': openLocation(); break;
+    case 'calls': haptic.tap(); openCalls(); break;
     case 'link': openLink(v); break;
     case 'ins': openInstructor(v); break;
     case 'bookwith': closeSheet(); startBook({ ins: v }); go('book'); break;
