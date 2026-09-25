@@ -15,7 +15,17 @@ import { q } from './identity.js';
  * va parol unutilganda zaxira yo'l sifatida.
  */
 
-export type StaffRole = 'admin' | 'cashier';
+/** admin — hammasi; cashier — faqat o'z kassasi; operator — bronlar,
+ *  qo'lda bron, bekor so'rovlari va mijozlar chati. */
+export type StaffRole = 'admin' | 'cashier' | 'operator';
+
+/** Bazadagi matnni rolga o'giradi. Noma'lum qiymat — eng tor rol emas,
+ *  kassir (eski xatti-harakat), chunki kassirga kassa biriktirilmasa u
+ *  baribir hech qayerga kira olmaydi. */
+export function toStaffRole(v: unknown): StaffRole {
+  const r = String(v || '').trim().toLowerCase();
+  return r === 'admin' ? 'admin' : r === 'operator' ? 'operator' : 'cashier';
+}
 
 export interface StaffIdentity {
   id: string | null;          // null — eski env admin
@@ -106,7 +116,7 @@ export async function authenticateStaff(login: string, password: string): Promis
     return {
       id: String(staff.id),
       login: String(staff.login),
-      role: (staff.role === 'admin' ? 'admin' : 'cashier') as StaffRole,
+      role: toStaffRole(staff.role),
       register_id: staff.register_id ? String(staff.register_id) : null,
       full_name: staff.full_name ?? null,
       legacy: false,

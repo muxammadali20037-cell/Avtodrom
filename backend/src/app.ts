@@ -7,12 +7,12 @@ import { registerBookingRoutes } from './booking-routes.js';
 import { registerInstructorRoutes } from './instructor-routes.js';
 import { registerInstructorRegistrationRoutes } from './instructor-registration-routes.js';
 import { handleInstructorStart } from './instructor-start.js';
-import { registerAdminPasswordRoutes, guard as requireAdmin, guardAdmin, adminUser, audit } from './admin-password-routes.js';
+import { registerAdminPasswordRoutes, guard as requireAdmin, guardAdmin, adminUser, audit, peekStaff, operatorMayCall } from './admin-password-routes.js';
 import { registerContentRoutes } from './content-routes.js';
 import { registerCourseRoutes } from './courses-routes.js';
 import { registerReviewRoutes } from './review-routes.js';
 import { registerSupportRoutes } from './support-routes.js';
-import { sendDueReminders, handleReminderCallback } from './reminders.js';
+import { runRemindersNow, handleReminderCallback } from './reminders.js';
 import { registerCashierRoutes } from './cashier-routes.js';
 import { registerAnalyticsRoutes } from './analytics-routes.js';
 import { registerShiftRoutes } from './shift-routes.js';
@@ -29,6 +29,22 @@ app.addHook('onSend', async (req, reply, payload) => {
   }
   return payload;
 });
+/* OPERATOR PANELI BOSHQA PANELLARGA ULANMAYDI.
+   Operator hisobi bilan kelgan /api/admin/* so'rovi faqat oq ro'yxatdagi
+   yo'llarga o'tadi (bronlar, qo'lda bron, bekor so'rovlari, mijozlar
+   chati). Qolgan hammasi — kassa, hisobot, xodimlar, sozlamalar — 403.
+   Tekshiruv har bir marshrutdan OLDIN ishlaydi, shuning uchun yangi
+   endpoint qo'shilsa ham operatorga o'z-o'zidan ochilib qolmaydi. */
+app.addHook('onRequest', async (req, reply) => {
+  const url = String(req.url || '');
+  if (!url.startsWith('/api/admin/')) return;
+  const who = peekStaff(req);
+  if (!who || who.role !== 'operator') return;
+  if (!operatorMayCall(req.method, url)) {
+    return reply.code(403).send({ ok: false, error: 'Operator uchun bu bo‘lim yopiq' });
+  }
+});
+
 const CUSTOMER_BOT_TOKEN = process.env.CUSTOMER_BOT_TOKEN || process.env.TELEGRAM_CUSTOMER_BOT_TOKEN || '';
 const INSTRUCTOR_BOT_TOKEN = process.env.INSTRUCTOR_BOT_TOKEN || process.env.TELEGRAM_INSTRUCTOR_BOT_TOKEN || '';
 const ADMIN_BOT_TOKEN = process.env.ADMIN_BOT_TOKEN || process.env.TELEGRAM_ADMIN_BOT_TOKEN || '';
@@ -213,7 +229,7 @@ async function runReminders(request: any, reply: any) {
     if (!ok) return reply.code(401).send({ ok: false, error: 'Unauthorized' });
   }
   try {
-    const result = await sendDueReminders();
+    const result = await runRemindersNow('cron');
     return { ok: true, ...result };
   } catch (e) {
     return reply.code(500).send({ ok: false, error: e instanceof Error ? e.message : 'Reminder run failed' });

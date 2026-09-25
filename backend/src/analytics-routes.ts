@@ -1,4 +1,5 @@
 import type { FastifyInstance } from 'fastify';
+import { lessonMinutes, isSchoolLesson } from './lesson-math.js';
 import { supabaseRest } from './supabase.js';
 
 /**
@@ -169,8 +170,14 @@ export async function registerAnalyticsRoutes(
       /* Kassa rejimida faqat o'sha kassaning to'lovlari ko'rinadi —
          P1 kassiri P2 yiqqan pulni ko'rmasligi kerak. Kassa ID'si
          tokendan olinadi, so'rovdan emas. */
-      const { readRegisterToken } = await import('./shift-routes.js');
-      const regId = readRegisterToken(String(req.query?.token || ''));
+      const { ownRegisterFromToken } = await import('./shift-routes.js');
+      let regId = await ownRegisterFromToken(req, String(req.query?.token || ''));
+      /* Kassir tokensiz so'rasa ham faqat o'z kassasining pulini ko'radi */
+      if (!regId) {
+        const { peekStaff } = await import('./admin-password-routes.js');
+        const me = peekStaff(req);
+        if (me && me.role === 'cashier') regId = me.register_id || '00000000-0000-0000-0000-000000000000';
+      }
       const payFilter = regId ? `&register_id=eq.${q(regId)}` : '';
 
       const [users, courses, pays, scans] = await Promise.all([
@@ -187,23 +194,11 @@ export async function registerAnalyticsRoutes(
       /* Dars davomiyligi: bronda yozilgani ASOSIY. Ilgari faqat
          mashg'ulot (course) qiymati olinardi — kassada 90 daqiqaga
          yozilgan dars ham 60 daqiqa bo'lib hisoblanardi. */
-      const minutesOf = (b: any, c: any) => {
-        const own = Number(b.duration_minutes || 0);
-        if (own > 0) return own;
-        const st = b.start_at || b.booking_date, en = b.end_at;
-        if (st && en) {
-          const d = Math.round((new Date(en).getTime() - new Date(st).getTime()) / 60000);
-          if (d > 0 && d < 24 * 60) return d;
-        }
-        return Number(c?.duration_minutes || 0);
-      };
+      const minutesOf = (b: any, c: any) => lessonMinutes(b, c);
 
       /* AVTOSHKOLA darsi: avtodrom12 dan kelgan QR chek bilan ochilgan,
          pul olinmaydi. Qolganlari — pullik (platniy). */
-      const isSchool = (b: any) =>
-        String(b.source || '') === 'avtodrom12' ||
-        !!b.school_receipt_code ||
-        /avtoshkola/i.test(String(b.customer_note || ''));
+      const isSchool = (b: any) => isSchoolLesson(b);
 
       const rows = bookings.map((b) => {
         const c = cm.get(String(b.course_id));

@@ -51,12 +51,35 @@ function safeEq(a: string, b: string) {
 }
 
 /* Rolni cookie'dan xavfsiz o'qiydi (xato bo'lsa null). */
-async function currentStaffSafe(req: any): Promise<{ role: string } | null> {
+async function currentStaffSafe(req: any): Promise<{ role: string; register_id?: string | null } | null> {
   try {
     const mod: any = await import('./admin-password-routes.js');
     if (mod.currentStaff) return await mod.currentStaff(req);
   } catch {}
   return null;
+}
+
+/**
+ * Kassa tokenini o'qiydi VA kassirning o'z kassasi ekanini tekshiradi.
+ * P1 kassiri P2 tokeni bilan kelsa — rad etiladi (panellar aralashmaydi).
+ * Administrator istalgan kassani ko'ra oladi.
+ * Qaytaradi: kassa ID'si; token yo'q/yaroqsiz bo'lsa null; begona kassa — 403.
+ */
+export async function ownRegisterFromToken(req: any, token: string): Promise<string | null> {
+  const registerId = readRegisterToken(token);
+  if (!registerId) return null;
+  const me: any = await currentStaffSafe(req);
+  if (me && me.role === 'cashier' && String(me.register_id || '') !== String(registerId)) {
+    const e: any = new Error('Bu kassa sizga tegishli emas');
+    e.statusCode = 403;
+    throw e;
+  }
+  if (me && me.role === 'operator') {
+    const e: any = new Error('Operator kassaga kira olmaydi');
+    e.statusCode = 403;
+    throw e;
+  }
+  return registerId;
 }
 
 export function makeRegisterToken(registerId: string) {
@@ -268,7 +291,15 @@ export async function registerShiftRoutes(
         method: 'POST',
         body: JSON.stringify({ p_from: from.toISOString(), p_to: to.toISOString() }),
       });
-      const list = Array.isArray(rows) ? rows : [];
+      let list = Array.isArray(rows) ? rows : [];
+      /* Kassir faqat o'z kassasining hisobini ko'radi */
+      const me: any = await currentStaffSafe(req);
+      if (me && me.role === 'cashier') {
+        const own = (await supabaseRest<any[]>('cash_registers', {
+          query: `?id=eq.${q(String(me.register_id || ''))}&select=id,code&limit=1`,
+        }).catch(() => []))[0];
+        list = list.filter((r: any) => own && (String(r.register_id || r.id || '') === String(own.id) || String(r.code || '') === String(own.code)));
+      }
       return {
         ok: true, label, anchor,
         from: from.toISOString(), to: to.toISOString(),
@@ -483,7 +514,7 @@ export async function registerShiftRoutes(
   app.get('/api/admin/my-dashboard', async (req: any, reply: any) => {
     try {
       await requireAdmin(req);
-      const registerId = readRegisterToken(String(req.query?.token || ''));
+      const registerId = await ownRegisterFromToken(req, String(req.query?.token || ''));
       if (!registerId) {
         return reply.code(401).send({ ok: false, error: 'Kassa ochilmagan yoki muddati tugagan. PIN bilan qayta oching.' });
       }
@@ -641,12 +672,22 @@ export async function registerShiftRoutes(
         detail: cronSecret ? 'sozlangan' : 'yo\u2018q \u2014 cron endpoint himoyasiz yoki ishlamaydi',
       });
 
-      // 3) Yaqin 90 daqiqadagi tasdiqlangan bronlar (eslatma tegishlilari)
+      // 3) booking_reminders jadvali kerakli ustunlar bilan bormi
+      let tableOk = true, tableDetail = 'joyida';
+      try {
+        await supabaseRest<any[]>('booking_reminders', { query: '?select=booking_id,kind,created_at&limit=1' });
+      } catch (e: any) {
+        tableOk = false;
+        tableDetail = `${e?.message || 'xato'} — «Eslatmalar» kartasidagi SQL'ni Supabase'da ishga tushiring`;
+      }
+      checks.push({ name: 'Eslatmalar jadvali', ok: tableOk, detail: tableDetail });
+
+      // 4) Yaqin 90 daqiqadagi HAR BIR faol bron (pending + confirmed)
       const now = Date.now();
       const soon = new Date(now + 90 * 60000).toISOString();
       const nowIso = new Date(now).toISOString();
       const upcoming = await supabaseRest<any[]>('bookings', {
-        query: `?status=eq.confirmed&start_at=gte.${q(nowIso)}&start_at=lte.${q(soon)}&select=id,start_at,pickup_code&limit=20`,
+        query: `?status=in.(pending,confirmed)&start_at=gte.${q(nowIso)}&start_at=lte.${q(soon)}&select=id,start_at&limit=50`,
       }).catch(() => []);
       checks.push({
         name: 'Yaqin darslar (90 daq)',
@@ -654,45 +695,74 @@ export async function registerShiftRoutes(
         detail: `${upcoming.length} ta bron eslatma kutmoqda`,
       });
 
-      // 4) Bugun yuborilган eslatmalar
+      // 5) Bugun yuborilgan eslatmalar
       const dayStart = new Date(now - 18 * 3600e3).toISOString();
-      const sentToday = await supabaseRest<any[]>('booking_reminders', {
-        query: `?created_at=gte.${q(dayStart)}&select=kind&limit=200`,
-      }).catch(() => []);
+      const sentToday = tableOk ? await supabaseRest<any[]>('booking_reminders', {
+        query: `?created_at=gte.${q(dayStart)}&select=kind&limit=500`,
+      }).catch(() => []) : [];
       const byKind: Record<string, number> = {};
       sentToday.forEach((r: any) => { byKind[r.kind] = (byKind[r.kind] || 0) + 1; });
       checks.push({
-        name: 'Bugun yuborilган eslatmalar',
+        name: 'Bugun yuborilgan eslatmalar',
         ok: true,
         detail: sentToday.length
-          ? Object.entries(byKind).map(([k, n]) => `${k}: ${n}`).join(', ')
+          ? Object.entries(byKind).map(([k, n]) => `${k} daq: ${n}`).join(', ')
           : 'hali yo\u2018q (yaqin dars bo\u2018lmasa normal)',
       });
 
-      const ready = !!botToken;
+      // 6) Oxirgi avtomatik tekshiruv qachon bo'ldi
+      const { LAST_RUN_KEY } = await import('./reminders.js');
+      const lr = (await supabaseRest<any[]>('admin_settings', {
+        query: `?key=eq.${LAST_RUN_KEY}&select=value&limit=1`,
+      }).catch(() => []))[0]?.value || null;
+      const ageMin = lr?.at ? Math.round((now - new Date(lr.at).getTime()) / 60000) : null;
+      checks.push({
+        name: 'Oxirgi tekshiruv',
+        ok: ageMin !== null && ageMin <= 10,
+        detail: ageMin === null
+          ? 'hali bo\u2018lmagan \u2014 cron sozlanmagan'
+          : `${ageMin} daqiqa oldin (${lr.source || '?'})${ageMin > 10 ? ' \u2014 cron ishlamayapti, panel ochiq bo\u2018lganda ishlaydi' : ''}`,
+      });
+
+      const ready = !!botToken && tableOk;
       return {
         ok: true,
         ready,
-        summary: ready
-          ? 'Eslatma tizimi tayyor. Cron ishlаса, yaqin darslarga xabar ketadi.'
-          : 'Bot tokeni yo\u2018q \u2014 eslatma yuborilmaydi.',
+        summary: !botToken
+          ? 'Bot tokeni yo\u2018q \u2014 eslatma yuborilmaydi.'
+          : !tableOk
+            ? 'Eslatmalar jadvali mos emas \u2014 SQL\u2019ni ishga tushiring.'
+            : 'Eslatma tizimi tayyor: har bir bron egasiga 60, 30 va 10 daqiqa qolganda xabar ketadi.',
         checks,
-        note: 'Cron har 5 daqiqada ishlashi kerak. Vercel Hobby rejasi kuniga 1 marta ishlatadi \u2014 Supabase pg_cron tavsiya etiladi.',
+        last_run: lr,
+        note: 'Admin yoki kassa paneli ochiq turganda eslatmalar har 2 daqiqada tekshiriladi. Panel yopiq bo\u2018lganda ham ishlashi uchun Supabase pg_cron SQL\u2019ni bir marta ishga tushiring.',
       };
     } catch (e: any) {
       return reply.code(e?.statusCode ?? 500).send({ ok: false, error: e?.message || 'Tekshiruv xatosi' });
     }
   });
 
-  /* Admin qo'lda eslatma yuborishni sinab ko'radi (haqiqiy yuboradi). */
+  /* Admin «Hozir yuborish» — muddati kelgan eslatmalarni darhol yuboradi. */
   app.post('/api/admin/reminder-test', async (req: any, reply: any) => {
     try {
       await requireAdmin(req);
-      const { sendDueReminders } = await import('./reminders.js');
-      const result = await sendDueReminders();
+      const { runRemindersNow } = await import('./reminders.js');
+      const result = await runRemindersNow('admin');
       return { ok: true, result };
     } catch (e: any) {
       return reply.code(e?.statusCode ?? 500).send({ ok: false, error: e?.message || 'Sinov xatosi' });
+    }
+  });
+
+  /* Ochiq turgan admin/kassa paneli har 2 daqiqada chaqiradi.
+     Daqiqasiga bir martadan ko'p ishlamaydi, takror xabar ketmaydi. */
+  app.post('/api/admin/reminders/tick', async (req: any, reply: any) => {
+    try {
+      await requireAdmin(req);
+      const { tickReminders } = await import('./reminders.js');
+      return { ok: true, ...(await tickReminders('panel')) };
+    } catch (e: any) {
+      return reply.code(e?.statusCode ?? 500).send({ ok: false, error: e?.message || 'Eslatma tekshiruvi xatosi' });
     }
   });
 
@@ -843,6 +913,13 @@ export async function registerShiftRoutes(
     try {
       await requireAdmin(req);
       const id = String(req.params.id);
+      /* Kassir faqat O'Z kassasini ochadi. Ilgari P1 kassiri P2 ni
+         (PIN o'rnatilmagan bo'lsa PINsiz) ochib, uning nomidan chek
+         chiqara olardi. */
+      const me: any = await currentStaffSafe(req);
+      if (me && me.role === 'cashier' && String(me.register_id || '') !== id) {
+        return reply.code(403).send({ ok: false, error: 'Bu kassaga ruxsatingiz yo‘q' });
+      }
       const pin = String(req.body?.pin ?? '').trim();
 
       const reg = (await supabaseRest<any[]>('cash_registers', {

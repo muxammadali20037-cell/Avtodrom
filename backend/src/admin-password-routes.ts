@@ -4,7 +4,7 @@ import { supabaseRest, supabaseRestPaged } from './supabase.js';
 import { sendBookingNotification } from './telegram.js';
 import { loadBookingDetails, bookingMessage, inAppMessage, type BookingEvent } from './notify.js';
 import {
-  authenticateStaff, assertRole, hashPassword,
+  authenticateStaff, assertRole, hashPassword, ForbiddenError,
   type StaffIdentity, type StaffRole,
 } from './staff-auth.js';
 import { bookingSearchFilter, tashkentDayStart } from './booking-search.js';
@@ -61,7 +61,7 @@ function readToken(t: string): StaffIdentity | null {
 
     const ts = Number(tsRaw);
     if (!Number.isFinite(ts) || Date.now() - ts < 0 || Date.now() - ts > TTL * 1000) return null;
-    if (role !== 'admin' && role !== 'cashier') return null;
+    if (role !== 'admin' && role !== 'cashier' && role !== 'operator') return null;
 
     return {
       id: staffId === '-' ? null : staffId,
@@ -89,6 +89,60 @@ export async function guard(req: any) {
 /** Faqat administrator uchun. Kassir 403 oladi. */
 export async function guardAdmin(req: any) {
   assertRole(await currentStaff(req), 'admin');
+}
+
+/** Kim kirganini xato otmasdan aniqlaydi (kirmagan bo'lsa null). */
+export function peekStaff(req: any): StaffIdentity | null {
+  return readToken(cookie(req));
+}
+
+/** BRON STOLI: administrator va operator. Kassir 403 oladi —
+ *  kassa bron ro'yxati va bekor so'rovlari bilan ishlamaydi. */
+export async function guardDesk(req: any) {
+  const me = await currentStaff(req);
+  if (me.role !== 'admin' && me.role !== 'operator') {
+    throw new ForbiddenError('Bu bo‘lim administrator va operator uchun');
+  }
+  return me;
+}
+
+/**
+ * OPERATOR — faqat shu yo'llarga kira oladi. Qolgan HAMMA /api/admin/*
+ * so'rovi 403. Ro'yxat oq ro'yxat (allowlist): yangi endpoint qo'shilsa,
+ * operatorga u avtomatik YOPIQ bo'ladi — tasodifan ochilib qolmaydi.
+ */
+export const OPERATOR_ALLOWED: RegExp[] = [
+  /^(GET) \/api\/admin\/me$/,
+  /^(POST) \/api\/admin\/(login|logout)$/,
+  /^(GET) \/api\/admin\/logout$/,
+  // Bronlar: ro'yxat, qidiruv, holatini o'zgartirish (tasdiqlash / rad etish)
+  /^(GET) \/api\/admin\/bookings$/,
+  /^(PATCH|POST) \/api\/admin\/bookings\/[^/]+\/status$/,
+  // Bekor qilish so'rovlari
+  /^(GET) \/api\/admin\/cancellation-requests$/,
+  /^(POST) \/api\/admin\/bookings\/[^/]+\/cancel-(approve|reject)$/,
+  // Qo'lda bron va unga kerakli ma'lumotlar
+  /^(POST) \/api\/admin\/manual-booking$/,
+  /^(GET) \/api\/admin\/cashier\/(free-instructors|search|instructors)$/,
+  /^(GET) \/api\/admin\/price$/,
+  /^(GET) \/api\/admin\/(courses|settings)$/,
+  // Mijozlar chati
+  /^(GET) \/api\/admin\/support$/,
+  /^(GET) \/api\/admin\/support\/[^/]+$/,
+  /^(POST) \/api\/admin\/support\/[^/]+\/reply$/,
+  // Eslatmalarni «turtish» — xavfsiz, hech narsa ko'rsatmaydi
+  /^(POST) \/api\/admin\/reminders\/tick$/,
+];
+
+/** Bazada staff.role uchun eski CHECK cheklovi bo'lsa — operator yozilmaydi. */
+export const STAFF_ROLE_SQL_HINT =
+  'Bazada «operator» roli hali ruxsat etilmagan. Supabase → SQL Editor da ' +
+  'supabase/migrations/20260925100000_staff_operator_role.sql ni bir marta ishga tushiring.';
+
+export function operatorMayCall(method: string, url: string): boolean {
+  const path = String(url || '').split('?')[0].replace(/\/+$/, '');
+  const key = `${String(method || 'GET').toUpperCase()} ${path}`;
+  return OPERATOR_ALLOWED.some((rx) => rx.test(key));
 }
 
 function setCookie(reply: any, t: string) {
@@ -309,8 +363,8 @@ export async function registerAdminPasswordRoutes(app: FastifyInstance) {
       if (password.length < 8) {
         return reply.code(400).send({ ok: false, error: 'Parol kamida 8 belgi bo‘lsin' });
       }
-      if (role !== 'admin' && role !== 'cashier') {
-        return reply.code(400).send({ ok: false, error: 'Rol: admin yoki cashier' });
+      if (role !== 'admin' && role !== 'cashier' && role !== 'operator') {
+        return reply.code(400).send({ ok: false, error: 'Rol: admin, cashier yoki operator' });
       }
       if (role === 'cashier' && !registerId) {
         return reply.code(400).send({ ok: false, error: 'Kassirga kassa biriktirilishi shart' });
@@ -340,6 +394,9 @@ export async function registerAdminPasswordRoutes(app: FastifyInstance) {
         if (/staff_login_key/i.test(String(e?.message))) {
           return reply.code(409).send({ ok: false, error: 'Bu login band' });
         }
+        if (role === 'operator' && /check constraint|violates check|23514/i.test(String(e?.message))) {
+          return reply.code(400).send({ ok: false, error: STAFF_ROLE_SQL_HINT });
+        }
         throw e;
       }
     } catch (e) { return err(reply, e, 'Xodim qo‘shilmadi'); }
@@ -359,9 +416,9 @@ export async function registerAdminPasswordRoutes(app: FastifyInstance) {
       if (b.full_name !== undefined) patch.full_name = String(b.full_name).trim() || null;
       if (b.role !== undefined) {
         const role = String(b.role);
-        if (role !== 'admin' && role !== 'cashier') return reply.code(400).send({ ok: false, error: 'Noto‘g‘ri rol' });
+        if (role !== 'admin' && role !== 'cashier' && role !== 'operator') return reply.code(400).send({ ok: false, error: 'Noto‘g‘ri rol' });
         patch.role = role;
-        if (role === 'admin') patch.register_id = null;
+        if (role !== 'cashier') patch.register_id = null;
       }
       if (b.register_id !== undefined) patch.register_id = b.register_id ? String(b.register_id) : null;
       if (b.password !== undefined) {
@@ -399,7 +456,14 @@ export async function registerAdminPasswordRoutes(app: FastifyInstance) {
 
       if (!Object.keys(patch).length) return { ok: true, unchanged: true };
       patch.updated_at = new Date().toISOString();
-      await supabaseRest('staff', { method: 'PATCH', query: `?id=eq.${q(id)}`, body: JSON.stringify(patch) });
+      try {
+        await supabaseRest('staff', { method: 'PATCH', query: `?id=eq.${q(id)}`, body: JSON.stringify(patch) });
+      } catch (e: any) {
+        if (patch.role === 'operator' && /check constraint|violates check|23514/i.test(String(e?.message))) {
+          return reply.code(400).send({ ok: false, error: STAFF_ROLE_SQL_HINT });
+        }
+        throw e;
+      }
       try {
         const admin = await adminUser();
         await audit(admin.id, 'STAFF_UPDATED', 'staff', id, { role: cur.role, is_active: cur.is_active },
@@ -963,7 +1027,7 @@ export async function registerAdminPasswordRoutes(app: FastifyInstance) {
 
   app.get('/api/admin/bookings', async (req: any, reply: any) => {
     try {
-      await guardAdmin(req);
+      await guardDesk(req);
       const st = String(req.query?.status || '');
       const { page, perPage } = pageParams(req);
 
@@ -1066,7 +1130,7 @@ export async function registerAdminPasswordRoutes(app: FastifyInstance) {
 
   app.patch('/api/admin/bookings/:id/status', async (req: any, reply: any) => {
     try {
-      await guardAdmin(req);
+      await guardDesk(req);
       const admin = await adminUser();
       const id = String(req.params.id), status = String(req.body?.status || '');
       const allowed = ['pending', 'confirmed', 'cancelled', 'rejected', 'in_progress', 'completed', 'no_show'];
@@ -1369,8 +1433,17 @@ async function notifyInstructorDecision(
   app.post('/api/admin/instructor-applications/:id/approve', approve);
   app.post('/api/admin/instructor-applications/:id/reject', reject);
 
+  /* Kassir va operatorga faqat ish uchun kerakli sozlamalar beriladi
+     (tariflar, ish vaqti, manzil). PIN xeshlari va tizim yozuvlari —
+     faqat administratorga. */
+  const WORK_SETTING_KEYS = ['system_name', 'contact_phone', 'address', 'working_hours', 'booking_enabled',
+    'location', 'work_start', 'work_end', 'slot_step_min', 'half_a', 'half_b', 'half_c', 'rate_a', 'rate_b', 'rate_c'];
   app.get('/api/admin/settings', async (req: any, reply: any) => {
-    try { await guard(req); return { ok: true, settings: await safe<any>('admin_settings', '?select=key,value,updated_at&order=key.asc') }; }
+    try {
+      const me = await currentStaff(req);
+      const filter = me.role === 'admin' ? '' : `&key=in.(${WORK_SETTING_KEYS.map(q).join(',')})`;
+      return { ok: true, settings: await safe<any>('admin_settings', `?select=key,value,updated_at&order=key.asc${filter}`) };
+    }
     catch (e) { return err(reply, e, 'Failed to load settings'); }
   });
   app.put('/api/admin/settings/:key', async (req: any, reply: any) => {
@@ -1497,7 +1570,7 @@ async function notifyInstructorDecision(
 
   app.get('/api/admin/cancellation-requests', async (req: any, reply: any) => {
     try {
-      await guardAdmin(req);
+      await guardDesk(req);
       const [rows, users, ips, courses] = await Promise.all([
         safe<any>('bookings', '?cancel_requested_at=not.is.null&cancel_reviewed_at=is.null&select=*&order=cancel_requested_at.asc'),
         safe<any>('users', '?select=id,full_name,phone,telegram_id'),
@@ -1528,7 +1601,7 @@ async function notifyInstructorDecision(
   /** So'rovni tasdiqlash — bron bekor qilinadi. */
   app.post('/api/admin/bookings/:id/cancel-approve', async (req: any, reply: any) => {
     try {
-      await guardAdmin(req);
+      await guardDesk(req);
       const admin = await adminUser();
       const id = String(req.params.id);
       const b = (await supabaseRest<any[]>('bookings', { query: `?id=eq.${q(id)}&select=*&limit=1` }))[0];
@@ -1563,7 +1636,7 @@ async function notifyInstructorDecision(
   /** So'rovni rad etish — bron kuchda qoladi. */
   app.post('/api/admin/bookings/:id/cancel-reject', async (req: any, reply: any) => {
     try {
-      await guardAdmin(req);
+      await guardDesk(req);
       const admin = await adminUser();
       const id = String(req.params.id);
       const note = String(req.body?.note || '').trim();

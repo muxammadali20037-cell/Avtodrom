@@ -3,7 +3,7 @@ import { supabaseRest } from './supabase.js';
 import { loadTariffs, computePrice } from './pricing.js';
 import { q, findUserByTelegram, toProfile } from './identity.js';
 import { fmtWhen, fmtMoney } from './notify.js';
-import { readRegisterToken } from './shift-routes.js';
+import { readRegisterToken, ownRegisterFromToken } from './shift-routes.js';
 import { bookingSearchFilter } from './booking-search.js';
 import type { TelegramWebAppUser } from './telegram.js';
 import {
@@ -629,13 +629,18 @@ export async function registerCashierRoutes(
     }
   });
 
-  /** Chekni qayta chop etish uchun. */
+  /** Chekni qayta chop etish uchun. Kassir faqat O'Z kassasining chekini. */
   app.get('/api/admin/cashier/receipt/:code', async (req: any, reply: any) => {
     try {
       await requireAdmin(req);
       const code = String(req.params.code || '').trim().toUpperCase();
       const payment = (await supabaseRest<any[]>('payments', { query: `?receipt_code=eq.${q(code)}&select=*&limit=1` }))[0];
       if (!payment) return reply.code(404).send({ ok: false, error: 'Chek topilmadi' });
+      const { peekStaff } = await import('./admin-password-routes.js');
+      const me = peekStaff(req);
+      if (me && me.role === 'cashier' && payment.register_id && String(payment.register_id) !== String(me.register_id || '')) {
+        return reply.code(403).send({ ok: false, error: 'Bu chek boshqa kassada chiqarilgan' });
+      }
       const booking = (await supabaseRest<any[]>('bookings', { query: `?id=eq.${q(String(payment.booking_id))}&select=*&limit=1` }))[0];
       if (!booking) return reply.code(404).send({ ok: false, error: 'Bron topilmadi' });
       const m = await loadMaps([booking]);
@@ -645,6 +650,89 @@ export async function registerCashierRoutes(
     }
   });
 
+
+  /* =====================================================================
+     CHIQARILGAN CHEKLAR — faqat shu kassaning cheklari.
+     Har bir chek: qachon chiqqan, summa, mijoz, instruktor va HOLATI:
+       active    — to'langan, hali ishlatilmagan (instruktor skanerlamagan)
+       used      — ishlatilgan: instruktor skanerlagan / dars boshlangan
+       no_show   — mijoz kelmagan
+       cancelled — bekor qilingan yoki pul qaytarilgan
+     Kassa tokeni orqali: kassir faqat o'z kassasini, P1 P2 ni ko'rmaydi.
+     ===================================================================== */
+  app.get('/api/admin/cashier/receipts', async (req: any, reply: any) => {
+    try {
+      await requireAdmin(req);
+      const registerId = await ownRegisterFromToken(req, String(req.query?.token || ''));
+      if (!registerId) return reply.code(401).send({ ok: false, error: 'Kassa ochilmagan — qayta kiring' });
+      const { start, end, day } = dayRange(String(req.query?.date || ''));
+
+      const pays = await supabaseRest<any[]>('payments', {
+        query: `?register_id=eq.${q(registerId)}&paid_at=gte.${q(start)}&paid_at=lt.${q(end)}` +
+               '&select=*&order=paid_at.desc&limit=1000',
+      });
+      const withCode = pays.filter((p) => p.receipt_code);
+      const bids = [...new Set(withCode.map((p) => p.booking_id).filter(Boolean).map(String))];
+      const bookings = bids.length
+        ? await supabaseRest<any[]>('bookings', { query: `?id=in.(${bids.map(q).join(',')})&select=*` })
+        : [];
+      const scans = bids.length
+        ? await supabaseRest<any[]>('attendance_verifications', {
+            query: `?booking_id=in.(${bids.map(q).join(',')})&select=booking_id,receipt_code,created_at&order=created_at.asc`,
+          }).catch(() => [])
+        : [];
+      const m = await loadMaps(bookings);
+      const bm = new Map(bookings.map((b) => [String(b.id), b]));
+      const sm = new Map<string, any>();
+      for (const x of scans) if (!sm.has(String(x.booking_id))) sm.set(String(x.booking_id), x);
+
+      const rows = withCode.map((p) => {
+        const b = bm.get(String(p.booking_id)) || null;
+        const sh = b ? shape(b, m) : null;
+        const scan = sm.get(String(p.booking_id)) || null;
+        const bst = String(b?.status || '');
+        const pst = String(p.status || '');
+        let state: 'active' | 'used' | 'no_show' | 'cancelled' = 'active';
+        if (['refunded', 'cancelled', 'failed'].includes(pst) || ['cancelled', 'rejected'].includes(bst)) state = 'cancelled';
+        else if (bst === 'no_show') state = 'no_show';
+        else if (['in_progress', 'completed'].includes(bst) || scan) state = 'used';
+        return {
+          code: p.receipt_code,
+          paid_at: p.paid_at,
+          amount: Number(p.amount || 0),
+          method: p.method,
+          cash_amount: Number(p.cash_amount || 0),
+          card_amount: Number(p.card_amount || 0),
+          payment_status: pst,
+          state,
+          used_at: scan?.created_at || b?.arrived_at || null,
+          finished_at: b?.departed_at || null,
+          booking_id: p.booking_id,
+          booking_status: bst || null,
+          start_at: sh?.start_at || null,
+          duration_minutes: sh?.duration_minutes || null,
+          category: b?.category || sh?.course?.category || null,
+          customer: sh?.customer ? { full_name: sh.customer.full_name, phone: sh.customer.phone } : null,
+          instructor_name: sh?.instructor?.profile?.full_name || null,
+        };
+      });
+
+      rows.sort((a, b) => String(b.paid_at || '').localeCompare(String(a.paid_at || '')));
+      const count = (st: string) => rows.filter((r) => r.state === st).length;
+      const paidRows = rows.filter((r) => r.state !== 'cancelled');
+      return {
+        ok: true, date: day, register_id: registerId,
+        summary: {
+          total: rows.length, active: count('active'), used: count('used'),
+          no_show: count('no_show'), cancelled: count('cancelled'),
+          amount: paidRows.reduce((a, r) => a + r.amount, 0),
+        },
+        receipts: rows,
+      };
+    } catch (e: any) {
+      return reply.code(e?.statusCode ?? 500).send({ ok: false, error: e?.message || 'Cheklar yuklanmadi' });
+    }
+  });
 
   /* =====================================================================
      BO'SH INSTRUKTORLAR
@@ -740,8 +828,14 @@ export async function registerCashierRoutes(
   app.post('/api/admin/cashier/issue', async (req: any, reply: any) => {
     try {
       await requireAdmin(req);
-      const admin = await adminUser();
       const b = req.body || {};
+      /* Kassani ENG BOSHIDA tekshiramiz: begona yoki eskirgan kassa
+         tokeni bilan kelsa, hech narsa (ko'chadan kelgan mijoz broni
+         ham) yaratilmaydi. */
+      if (!(await ownRegisterFromToken(req, String(b.register_token || '')))) {
+        return reply.code(401).send({ ok: false, error: 'Kassa ochilmagan yoki muddati tugagan. P1 yoki P2 ni PIN bilan qayta oching.' });
+      }
+      const admin = await adminUser();
 
       const mode = b.booking_id ? 'booked' : 'walk_in';
       const minutes = Math.max(15, Math.min(600, Math.round(Number(b.duration_minutes || 60))));
@@ -833,7 +927,7 @@ export async function registerCashierRoutes(
          Kassa ID'si mijoz yuborgan qiymatdan EMAS, imzolangan TOKENdan
          olinadi. Shunday qilib brauzerni o'zgartirib boshqa kassa
          nomidan chek chiqarib bo'lmaydi. */
-      const registerId = readRegisterToken(String(b.register_token || ''));
+      const registerId = await ownRegisterFromToken(req, String(b.register_token || ''));
       if (!registerId) {
         return reply.code(401).send({ ok: false, error: 'Kassa ochilmagan yoki muddati tugagan. P1 yoki P2 ni PIN bilan qayta oching.' });
       }
