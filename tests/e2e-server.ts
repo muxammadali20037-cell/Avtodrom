@@ -36,6 +36,12 @@ globalThis.fetch = (async (u: any, o: any = {}) => {
       return { register_id: r.id, code: r.code, name: r.name, receipts: ps.length, cash: sum('cash'), card: sum('card'), total: ps.reduce((a: number, p: any) => a + Number(p.amount), 0) };
     }));
   }
+  if (url.includes('/rest/v1/rpc/get_instructor_registration_status')) {
+    // Bazadagi funksiya o'rniga: instruktor users'da bo'lsa — tasdiqlangan
+    const tg = Number(JSON.parse(String(o.body || '{}')).p_telegram_user_id);
+    const u = db.users.find((x: any) => Number(x.telegram_id) === tg && x.role === 'instructor');
+    return ok(u ? [{ status: 'APPROVED', first_name: u.full_name.split(' ')[0], last_name: u.full_name.split(' ')[1] || '', rejection_reason: null }] : []);
+  }
   if (url.includes('/rest/v1/rpc/')) return ok({});
   return baseFetch(u, o);
 }) as any;
@@ -60,9 +66,10 @@ const people = [
 for (const [id, full_name, phone, tg] of people) {
   db.users.push({ id, full_name, phone, telegram_id: tg, role: 'customer', is_active: true, is_blocked: false, created_at: at('08:00') });
 }
-db.users.push({ id: 'u-ins1', full_name: 'Aziz Karimov', phone: '+998901114455', role: 'instructor', is_active: true, is_blocked: false });
+db.users.push({ id: 'u-ins1', full_name: 'Aziz Karimov', phone: '+998901114455', telegram_id: 880001, role: 'instructor', is_active: true, is_blocked: false });
 db.users.push({ id: 'u-ins2', full_name: 'Anvar Sobirov', phone: '+998901114466', role: 'instructor', is_active: true, is_blocked: false });
-db.instructor_profiles.push({ id: 'ip-1', user_id: 'u-ins1', is_verified: true, is_available: true, categories: ['B', 'C'], experience_years: 7 });
+db.instructor_profiles.push({ id: 'ip-1', user_id: 'u-ins1', is_verified: true, is_available: true, categories: ['B', 'C'], experience_years: 7,
+  avatar_url: 'https://test.supabase.co/storage/v1/object/public/customer-media/avatars/ip-1.jpg', vehicle_model: 'Chevrolet Cobalt', vehicle_plate: '01 A 777 AA' });
 db.instructor_profiles.push({ id: 'ip-2', user_id: 'u-ins2', is_verified: true, is_available: true, categories: ['B'], experience_years: 4 });
 db.courses.push({ id: 'c-b', name: 'B toifa — yengil', category: 'B', price: 250000, duration_minutes: 60, is_active: true });
 db.courses.push({ id: 'c-c', name: 'C toifa — yuk', category: 'C', price: 400000, duration_minutes: 60, is_active: true });

@@ -756,3 +756,79 @@ describe('Avtomatik eslatmalar', () => {
     expect(names).toContain('Oxirgi tekshiruv');
   });
 });
+
+/* =========================================================================
+   INSTRUKTOR O'Z VAQTINI YOPADI — mijoz ham, operator ham bron qila olmaydi
+   ========================================================================= */
+describe('Instruktor yopgan soatlar', () => {
+  const INS_TG = 880002, CUST_TG = 777777;
+  const insCall = (method: string, url: string, payload?: any) =>
+    h.app.inject({ method, url, headers: { 'x-telegram-init-data': signedInitData({ id: INS_TG, first_name: 'Aziz' }, '1:instructor') }, payload })
+      .then((r: any) => ({ status: r.statusCode, body: JSON.parse(r.body || '{}') }));
+  const custCall = (method: string, url: string, payload?: any) =>
+    h.app.inject({ method, url, headers: { 'x-telegram-init-data': signedInitData({ id: CUST_TG, first_name: 'Ali' }) }, payload })
+      .then((r: any) => ({ status: r.statusCode, body: JSON.parse(r.body || '{}') }));
+  const day = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Tashkent' }).format(new Date(Date.now() + 2 * 864e5));
+  const at = (hm: string) => new Date(`${day}T${hm}:00+05:00`).toISOString();
+
+  beforeEach(() => {
+    h.db.users.find((x: any) => x.id === 'u-instr').telegram_id = INS_TG;
+    h.db.users.push({ id: 'u-cust', telegram_id: CUST_TG, full_name: 'Ali Mijoz', phone: '+998901119999', role: 'customer', is_active: true, is_blocked: false });
+  });
+
+  it('instruktor soatni yopadi — mijoz ko‘radi va bron qila olmaydi', async () => {
+    const put = await insCall('PUT', '/api/instructor/blocks', { date: day, slots: [{ from: '14:00', to: '15:00' }] });
+    expect(put.status).toBe(200);
+    expect(put.body.blocks).toHaveLength(1);
+    const get = await insCall('GET', `/api/instructor/blocks?from=${day}&to=${day}`);
+    expect(get.body.blocks[0].start_at).toBe(at('14:00'));
+
+    const av = await custCall('GET', `/api/instructors/ip-1/availability?date=${day}`);
+    expect(av.body.busy.some((b: any) => b.start_at === at('14:00') && b.end_at === at('15:00'))).toBe(true);
+
+    const bad = await custCall('POST', '/api/bookings', { instructor_id: 'ip-1', course_id: 'c-b', hours: 1, start_at: at('14:00') });
+    expect(bad.status).toBe(409);
+    const ok = await custCall('POST', '/api/bookings', { instructor_id: 'ip-1', course_id: 'c-b', hours: 1, start_at: at('16:00') });
+    expect(ok.status).toBe(201);
+  });
+
+  it('qo‘lda bron va bo‘sh instruktorlar ro‘yxati ham hisobga oladi', async () => {
+    await insCall('PUT', '/api/instructor/blocks', { date: day, slots: [{ from: '09:00', to: '12:00' }] });
+    const manual = await h.call('POST', '/api/admin/manual-booking', { cookie: admin, payload: {
+      full_name: 'Qo‘lda Mijoz', phone: '+998905550000', instructor_id: 'ip-1', category: 'B', duration_minutes: 60, start_at: at('10:00') } });
+    expect(manual.status).toBe(409);
+    expect(manual.body.error).toMatch(/band qilgan/);
+    const free = await h.call('GET', `/api/admin/cashier/free-instructors?at=${encodeURIComponent(at('10:00'))}&minutes=60&category=B`, { cookie: admin });
+    expect(free.body.free.map((x: any) => x.id)).not.toContain('ip-1');
+    const b = free.body.busy.find((x: any) => x.id === 'ip-1');
+    expect(b.blocked).toBe(true);
+    expect(b.free_at).toBe(at('12:00'));
+    const later = await h.call('POST', '/api/admin/manual-booking', { cookie: admin, payload: {
+      full_name: 'Qo‘lda Mijoz', phone: '+998905550000', instructor_id: 'ip-1', category: 'B', duration_minutes: 60, start_at: at('12:00') } });
+    expect(later.status).toBeLessThan(300);
+  });
+
+  it('qayta ochadi; bron bor soatni va o‘tgan kunni yopib bo‘lmaydi', async () => {
+    await insCall('PUT', '/api/instructor/blocks', { date: day, slots: [{ from: '14:00', to: '15:00' }] });
+    const open = await insCall('PUT', '/api/instructor/blocks', { date: day, slots: [] });
+    expect(open.body.blocks).toEqual([]);
+    const av = await custCall('GET', `/api/instructors/ip-1/availability?date=${day}`);
+    expect(av.body.busy).toEqual([]);
+
+    h.db.bookings.push({ id: 'b-bor', customer_id: 'u-mijoz', instructor_id: 'ip-1', start_at: at('11:00'), end_at: at('12:00'), booking_date: at('11:00'), status: 'confirmed' });
+    const clash = await insCall('PUT', '/api/instructor/blocks', { date: day, slots: [{ from: '11:00', to: '12:00' }] });
+    expect(clash.status).toBe(409);
+    const past = await insCall('PUT', '/api/instructor/blocks', { date: '2020-01-01', slots: [] });
+    expect(past.status).toBe(400);
+    const badTime = await insCall('PUT', '/api/instructor/blocks', { date: day, slots: [{ from: '15:00', to: '14:00' }] });
+    expect(badTime.status).toBe(400);
+  });
+
+  it('boshqa kunning yopiq soatlariga tegmaydi', async () => {
+    const day2 = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Tashkent' }).format(new Date(Date.now() + 3 * 864e5));
+    await insCall('PUT', '/api/instructor/blocks', { date: day, slots: [{ from: '08:00', to: '09:00' }] });
+    await insCall('PUT', '/api/instructor/blocks', { date: day2, slots: [{ from: '10:00', to: '11:00' }] });
+    const all = await insCall('GET', `/api/instructor/blocks?from=${day}&to=${day2}`);
+    expect(all.body.blocks).toHaveLength(2);
+  });
+});
