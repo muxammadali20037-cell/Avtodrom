@@ -135,13 +135,27 @@ describe('Token xavfsizligi', () => {
 });
 
 describe('Xodimlarni boshqarish', () => {
-  it('parolni kamida 8 belgi talab qiladi', async () => {
+  it('parolni kamida 4 belgi talab qiladi', async () => {
     const a = await h.login('boss', 'admin1234');
     const r = await h.call('POST', '/api/admin/staff', {
       cookie: a.cookie,
       payload: { login: 'yangi1', password: '123', role: 'cashier', register_id: 'reg-p1' },
     });
     expect(r.status).toBe(400);
+  });
+
+  it('4 belgili parol qabul qilinadi va u bilan kirsa bo‘ladi', async () => {
+    const a = await h.login('boss', 'admin1234');
+    const r = await h.call('POST', '/api/admin/staff', {
+      cookie: a.cookie,
+      payload: { login: 'kassa4', password: '1234', role: 'cashier', register_id: 'reg-p1' },
+    });
+    expect(r.status).toBe(201);
+    expect((await h.login('kassa4', '1234')).status).toBe(200);
+    const id = h.db.staff.find((x: any) => x.login === 'kassa4').id;
+    const ch = await h.call('PATCH', `/api/admin/staff/${id}`, { cookie: a.cookie, payload: { password: '4321' } });
+    expect(ch.status).toBe(200);
+    expect((await h.login('kassa4', '4321')).status).toBe(200);
   });
 
   it('kassirga kassa biriktirilishini talab qiladi', async () => {
