@@ -5354,7 +5354,7 @@ function staffForm(id, preset){
     <div class="field"><label>ISM FAMILIYA</label>
       <input id="stName" class="input" value="${esc(x?.full_name || '')}" autocomplete="off"></div>
     <div class="field"><label>PAROL ${x ? '<span class="muted">(bo‘sh qoldirsangiz o‘zgarmaydi)</span>' : '*'}</label>
-      <input id="stPass" class="input" type="password" autocomplete="new-password" placeholder="kamida 8 belgi"></div>
+      <input id="stPass" class="input" type="password" autocomplete="new-password" placeholder="kamida 4 belgi"></div>
     <div class="field"><label>ROL *</label>
       <div class="pick3" id="stRoles"></div>
       <div class="muted" id="stRoleHint" style="font-size:11.5px;margin-top:6px"></div></div>
@@ -5405,8 +5405,8 @@ function staffForm(id, preset){
 
     if (!x && !/^[a-zA-Z0-9_.-]{3,32}$/.test($('stLogin').value.trim()))
       return bad('Login 3–32 belgi: harf, raqam, _ . -');
-    if (!x && pass.length < 8) return bad('Parol kamida 8 belgi');
-    if (pass && pass.length < 8) return bad('Parol kamida 8 belgi');
+    if (!x && pass.length < 4) return bad('Parol kamida 4 belgi');
+    if (pass && pass.length < 4) return bad('Parol kamida 4 belgi');
     /* Kassa ro'yxati bo'sh bo'lsa #stReg umuman yo'q — null'ga murojaat
        qilmaymiz, sababini aytamiz. */
     if (role === 'cashier' && !$('stReg')) {
