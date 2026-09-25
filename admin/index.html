@@ -1390,7 +1390,11 @@ pre.json{background:#F7FAFF;border:1px solid var(--line);border-radius:8px;paddi
   <div class="card">
     <div class="field"><label>TIZIM NOMI</label><input id="systemName" class="input" value="AVTODROM INDEX"></div>
     <div class="field"><label>BRONLAR</label><select id="bookingEnabled" class="select"><option value="true">Yoqilgan</option><option value="false">O‘chirilgan</option></select></div>
-    <div class="field"><label>ALOQA TELEFONI <span class="muted">(mijoz panelida ko‘rinadi)</span></label><input id="contactPhone" class="input" autocomplete="off" placeholder="+998901234567"></div>
+    <div class="field"><label>ALOQA TELEFONLARI <span class="muted">(mijoz panelida ko‘rinadi — har biri alohida qo‘ng‘iroq tugmasi)</span></label>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <input id="contactPhone" class="input" type="tel" inputmode="tel" autocomplete="off" placeholder="1-raqam: +998 50 752 55 55" aria-label="1-telefon raqami">
+        <input id="contactPhone2" class="input" type="tel" inputmode="tel" autocomplete="off" placeholder="2-raqam: +998 70 308 48 88" aria-label="2-telefon raqami">
+      </div></div>
     <div class="field"><label>SOATLIK TARIF <span class="muted">(chek chiqarishda ishlatiladi)</span></label>
       <div style="display:grid;grid-template-columns:80px repeat(3,1fr);gap:10px;align-items:center">
         <div></div>
@@ -2593,7 +2597,7 @@ function renderAudit(){
    (a) avtomatik yangilanish to'xtaydi, (b) loadSettings maydonlarga tegmaydi.
    Saqlangandan yoki bekor qilingandan keyingina qulf ochiladi. */
 let editing = false;
-const SETTING_FIELDS = ['systemName','bookingEnabled','contactPhone','workingHours','halfA','halfB','halfC','rateA','rateB','rateC','aboutText','facilities','workStart','workEnd','slotStep',
+const SETTING_FIELDS = ['systemName','bookingEnabled','contactPhone','contactPhone2','workingHours','halfA','halfB','halfC','rateA','rateB','rateC','aboutText','facilities','workStart','workEnd','slotStep',
                         'locName','locAddress','locLat','locLng','locGoogle','locYandex','loc2gis'];
 function markEditing(){ if(!editing){ editing=true; $('locDirty').classList.remove('hidden'); } }
 function clearEditing(){ editing=false; $('locDirty').classList.add('hidden'); }
@@ -2608,7 +2612,9 @@ function loadSettings(){
   const val=k=>settingFromMap(m,k);
   $('systemName').value=val('system_name')||'AVTODROM INDEX';
   $('bookingEnabled').value=String(val('booking_enabled')!==false);
-  $('contactPhone').value=val('contact_phone');
+  /* Bitta sozlamada bir nechta raqam: «+998…, +998…» — ikki maydonga bo'lamiz */
+  { const ph=String(val('contact_phone')||'').split(/[,;\n|]+|\s+(?=\+)/).map(x=>x.trim()).filter(Boolean);
+    $('contactPhone').value=ph[0]||''; $('contactPhone2').value=ph.slice(1).join(', '); }
   $('workingHours').value=val('working_hours');
   $('aboutText').value=val('about_text');
   $('halfA').value=val('half_a')||200000;
@@ -2678,7 +2684,7 @@ $('saveSettingsBtn').onclick=async()=>{
     const put=async(k,v)=>{await api('/api/admin/settings/'+k,{method:'PUT',body:JSON.stringify({value:{value:v}})});saved++;};
     await put('system_name',$('systemName').value.trim()||'AVTODROM INDEX');
     await put('booking_enabled',$('bookingEnabled').value==='true');
-    await put('contact_phone',$('contactPhone').value.trim());
+    await put('contact_phone',[$('contactPhone').value.trim(),$('contactPhone2').value.trim()].filter(Boolean).join(', '));
     await put('working_hours',$('workingHours').value.trim());
     await put('about_text',$('aboutText').value.trim());
     await put('half_a',Number($('halfA').value)||200000);
