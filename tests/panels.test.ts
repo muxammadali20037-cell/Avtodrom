@@ -222,3 +222,74 @@ describe('Xodimlar: operator login berish', () => {
     expect(l.body.role).toBe('operator');
   });
 });
+
+describe('Hisobot davri: dan — gacha (yil almashsa ham)', () => {
+  const captureRpc = async (fn: () => Promise<any>, name: string) => {
+    const calls: any[] = [];
+    const orig = globalThis.fetch;
+    globalThis.fetch = (async (u: any, o: any = {}) => {
+      if (String(u).includes(`/rest/v1/rpc/${name}`)) {
+        calls.push(JSON.parse(String(o.body || '{}')));
+        return { ok: true, status: 200, text: async () => JSON.stringify({ totals: { bookings: 3 } }), headers: new Map() } as any;
+      }
+      return orig(u, o);
+    }) as any;
+    try { return { res: await fn(), calls }; } finally { globalThis.fetch = orig; }
+  };
+
+  it('1-oktabr → 3-yanvar: ikkala kun ham kiradi, Toshkent vaqti bilan', async () => {
+    const { res, calls } = await captureRpc(() => h.call('GET', '/api/admin/analytics?from=2026-10-01&to=2027-01-03', { cookie: admin }), 'analytics_report');
+    expect(res.status).toBe(200);
+    expect(res.body.period).toBe('range');
+    expect(res.body.from).toBe('2026-09-30T19:00:00.000Z');   // 1-oktabr 00:00 (UTC+5)
+    expect(res.body.to).toBe('2027-01-03T19:00:00.000Z');     // 4-yanvar 00:00 — 3-yanvar to'liq kiradi
+    expect(res.body.bucket).toBe('month');
+    expect(res.body.label).toBe('1.10.2026 — 3.01.2027');
+    expect(calls[0]).toMatchObject({ p_from: '2026-09-30T19:00:00.000Z', p_to: '2027-01-03T19:00:00.000Z' });
+    // Oldingi davr — xuddi shu uzunlikda, oldinda
+    expect(Date.parse(calls[1].p_to)).toBe(Date.parse(calls[0].p_from));
+  });
+
+  it('sanalar teskari berilsa almashtiriladi; 3 yildan uzun rad etiladi', async () => {
+    const { res } = await captureRpc(() => h.call('GET', '/api/admin/analytics?from=2027-01-03&to=2026-10-01', { cookie: admin }), 'analytics_report');
+    expect(res.body.from).toBe('2026-09-30T19:00:00.000Z');
+    const long = await h.call('GET', '/api/admin/analytics?from=2020-01-01&to=2026-10-01', { cookie: admin });
+    expect(long.status).toBe(400);
+  });
+
+  it('kassa hisobotida ham oraliq ishlaydi (faqat o‘z kassasi)', async () => {
+    const tok = makeRegisterToken('reg-p1');
+    const { res, calls } = await captureRpc(() => h.call('GET', `/api/admin/my-dashboard?token=${tok}&from=2026-10-01&to=2027-01-03`, { cookie: kassa1 }), 'register_dashboard');
+    expect(res.status).toBe(200);
+    expect(res.body.period).toBe('range');
+    expect(calls[0]).toMatchObject({ p_register: 'reg-p1', p_from: '2026-09-30T19:00:00.000Z', p_to: '2027-01-03T19:00:00.000Z' });
+  });
+
+  it('instruktor nazorati: uzoq davrda yuzlab to‘lov — hammasi hisobga olinadi', async () => {
+    const N = 420;
+    for (let i = 0; i < N; i++) {
+      const d = new Date(Date.UTC(2026, 9, 1 + (i % 90), 6, 0));
+      h.db.bookings.push({ id: `bk-${i}`, customer_id: 'u-ali', instructor_id: 'ip-1', course_id: 'c-b', start_at: d.toISOString(),
+        end_at: new Date(d.getTime() + 3600e3).toISOString(), booking_date: d.toISOString(), status: 'completed', duration_minutes: 60 });
+      h.db.payments.push({ id: `py-${i}`, booking_id: `bk-${i}`, amount: 1000, method: 'cash', status: 'paid', paid_at: d.toISOString() });
+    }
+    const r = await h.call('GET', '/api/admin/instructor-control/ip-1?from=2026-10-01&to=2027-01-03', { cookie: admin });
+    expect(r.status).toBe(200);
+    expect(r.body.summary.completed).toBe(N);
+    expect(r.body.summary.revenue).toBe(N * 1000);
+    expect(r.body.summary.minutes).toBe(N * 60);
+  });
+});
+
+describe('Jonli yangilanish (puls)', () => {
+  it('o‘zgarish bo‘lsa belgi o‘zgaradi; operator ham oladi; kirmagan — 401', async () => {
+    const a = await h.call('GET', '/api/admin/pulse', { cookie: admin });
+    expect(a.status).toBe(200);
+    h.db.bookings.push({ id: 'b-new', customer_id: 'u-ali', instructor_id: 'ip-1', start_at: todayAt('17:00'), end_at: todayAt('18:00'),
+      booking_date: todayAt('17:00'), status: 'pending', updated_at: new Date(Date.now() + 1000).toISOString() });
+    const b = await h.call('GET', '/api/admin/pulse', { cookie: operator });
+    expect(b.status).toBe(200);
+    expect(b.body.stamp).not.toBe(a.body.stamp);
+    expect((await h.call('GET', '/api/admin/pulse')).status).toBe(401);
+  });
+});

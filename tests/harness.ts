@@ -110,6 +110,22 @@ function applyFilters(rows: any[], query: string): any[] {
     const val = decodeURIComponent(rest.join('.'));
     out = out.filter((r) => testCond(r[field], op, val));
   }
+  /* PostgREST kabi tartiblash: order=col.desc[.nullslast],col2.asc */
+  const order = qs.get('order');
+  if (order) {
+    const keys = order.split(',').map((o) => { const [col, dir = 'asc'] = o.split('.'); return { col, desc: dir === 'desc' }; });
+    out.sort((a, b) => {
+      for (const k of keys) {
+        const x = a[k.col], y = b[k.col];
+        if (x == null && y == null) continue;
+        if (x == null) return 1;            // nullslast
+        if (y == null) return -1;
+        const c = String(x) < String(y) ? -1 : String(x) > String(y) ? 1 : 0;
+        if (c) return k.desc ? -c : c;
+      }
+      return 0;
+    });
+  }
   const limit = Number(qs.get('limit') || 0);
   return limit > 0 ? out.slice(0, limit) : out;
 }
@@ -176,7 +192,8 @@ export async function makeHarness(): Promise<Harness> {
     if (method === 'POST') {
       const items = Array.isArray(body) ? body : [body];
       const created = items.map((it: any) => {
-        const row = { id: it.id ?? `${table}-${db[table].length + 1}`, created_at: new Date().toISOString(), ...it };
+        const now = new Date().toISOString();
+        const row = { id: it.id ?? `${table}-${db[table].length + 1}`, created_at: now, updated_at: now, ...it };
         db[table].push(row);
         return row;
       });
