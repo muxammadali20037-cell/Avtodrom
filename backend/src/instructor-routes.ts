@@ -7,6 +7,7 @@ import type { TelegramWebAppUser } from './telegram.js';
 import { q, toProfile, findUserByTelegram, instructorProfileForUser, notifyUser } from './identity.js';
 import { completeSchoolReceipt, isSchoolReceiptCode } from './school-receipt.js';
 import { isStoragePublicUrl } from './storage-url.js';
+import { lessonMinutes, isSchoolLesson, tashkentDay, tashkentYmd } from './lesson-math.js';
 
 /** Avtoshkola cheki bo'yicha ochilgan bron bo'lsa, kodini qaytaradi.
  *  FAQAT o'z ustunidan yoki (migratsiya hali yurmagan bo'lsa) izohdan —
@@ -31,6 +32,13 @@ async function approvedInstructor(user: any) {
   if (String(user.role || '').toLowerCase() !== 'instructor') return null;
   if (user.is_active === false || user.is_blocked === true) return null;
   return await instructorProfileForUser(String(user.id), true);
+}
+
+/** Sharhlar va reyting instruktorga ko'rsatilmaydi — faqat admin ko'radi. */
+function noReviews<T extends Record<string, any> | null | undefined>(ins: T): T {
+  if (!ins) return ins;
+  const { rating, total_reviews, reviews_count, ...rest } = ins as any;
+  return rest as T;
 }
 
 async function getOwnedBooking(id: string, instructorId: string) {
@@ -90,7 +98,7 @@ export async function registerInstructorRoutes(
       if (!profile || !instructor) {
         return reply.code(403).send({ ok: false, error: 'Instructor hali Admin tomonidan tasdiqlanmagan', status: 'PENDING' });
       }
-      return { ok: true, profile: toProfile(profile), instructor };
+      return { ok: true, profile: toProfile(profile), instructor: noReviews(instructor) };
     } catch (e) {
       return reply.code(401).send({ ok: false, error: e instanceof Error ? e.message : 'Unauthorized' });
     }
@@ -273,24 +281,9 @@ export async function registerInstructorRoutes(
 
   app.post('/api/instructor/bookings/:id/no-show', (req, reply) => changeStatus(req, reply, 'no_show'));
 
-  /** Instruktorning o'z sharhlari — faqat admin tasdiqlaganlari ko'rinadi. */
-  app.get('/api/instructor/reviews', async (request, reply) => {
-    try {
-      const tgUser = await authenticate(request);
-      const profile = await profileForTelegram(tgUser);
-      const instructor = await approvedInstructor(profile);
-      if (!profile || !instructor) return reply.code(403).send({ ok: false, error: 'Instructor tasdiqlanmagan' });
-
-      const rows = await supabaseRest<any[]>('reviews', {
-        query: `?instructor_id=eq.${q(String(instructor.id))}&status=eq.approved` +
-               '&select=id,rating,comment,created_at,customer:customer_id(id,full_name)' +
-               '&order=created_at.desc',
-      });
-      return { ok: true, reviews: rows };
-    } catch (e) {
-      return reply.code(400).send({ ok: false, error: e instanceof Error ? e.message : 'Sharhlar yuklanmadi' });
-    }
-  });
+  /** Sharhlar instruktorlarga ko'rsatilmaydi — ularni faqat admin ko'radi. */
+  app.get('/api/instructor/reviews', async (_request, reply) =>
+    reply.code(403).send({ ok: false, error: 'Sharhlarni faqat admin ko‘radi' }));
 
   /** Dashboard ko'rsatkichlari — bugungi, kutilayotgan, tugagan, reyting. */
   app.get('/api/instructor/stats', async (request, reply) => {
@@ -320,8 +313,6 @@ export async function registerInstructorRoutes(
           completed: rows.filter((b) => b.status === 'completed').length,
           noShow: rows.filter((b) => b.status === 'no_show').length,
           total: rows.length,
-          rating: Number(instructor.rating || 0),
-          totalReviews: Number(instructor.total_reviews || 0),
           isAvailable: instructor.is_available !== false,
         },
       };
@@ -409,7 +400,7 @@ export async function registerInstructorRoutes(
       return {
         ok: true,
         profile: toProfile(profile),
-        instructor,
+        instructor: noReviews(instructor),
         stats: stats.stats ?? {},
         // Panel turli nomlarni kutishi mumkin — ikkalasini ham beramiz
         today: today.bookings ?? [],
@@ -418,6 +409,152 @@ export async function registerInstructorRoutes(
       };
     } catch (e) {
       return reply.code(400).send({ ok: false, error: e instanceof Error ? e.message : 'Dashboard yuklanmadi' });
+    }
+  });
+
+  /**
+   * HISOB-KITOB: «shu sanadan shu sanagacha».
+   * ?from=YYYY-MM-DD&to=YYYY-MM-DD (Toshkent kuni, ikkalasi ham kiradi).
+   * Nechta avtoshkola darsi, nechta pullik, necha soat haydagan.
+   * Hisob admin «Instruktor nazorati» bilan AYNAN bir xil (lesson-math.ts),
+   * pul summalari instruktorga ko'rsatilmaydi.
+   */
+  app.get('/api/instructor/summary', async (request, reply) => {
+    try {
+      const tgUser = await authenticate(request);
+      const profile = await profileForTelegram(tgUser);
+      const instructor = await approvedInstructor(profile);
+      if (!profile || !instructor) return reply.code(403).send({ ok: false, error: 'Instructor tasdiqlanmagan' });
+
+      const qy = (request.query ?? {}) as any;
+      const isYmd = (v: any) => /^\d{4}-\d{2}-\d{2}$/.test(String(v || ''));
+      const today = tashkentYmd(new Date());
+      let fromY = isYmd(qy.from) ? String(qy.from) : `${today.slice(0, 8)}01`;
+      let toY = isYmd(qy.to) ? String(qy.to) : today;
+      if (fromY > toY) [fromY, toY] = [toY, fromY];
+      const from = tashkentDay(fromY), to = tashkentDay(toY, 1);
+      if (Number.isNaN(from.getTime()) || Number.isNaN(to.getTime())) {
+        return reply.code(400).send({ ok: false, error: 'Sana noto‘g‘ri' });
+      }
+      if (to.getTime() - from.getTime() > 367 * 86400e3) {
+        return reply.code(400).send({ ok: false, error: 'Oraliq 1 yildan oshmasin' });
+      }
+
+      const bookings: any[] = [];
+      for (let offset = 0; offset < 10000; offset += 1000) {
+        const chunk = await supabaseRest<any[]>('bookings', {
+          query:
+            `?instructor_id=eq.${q(String(instructor.id))}` +
+            `&start_at=gte.${q(from.toISOString())}&start_at=lt.${q(to.toISOString())}` +
+            `&select=*&order=start_at.asc&limit=1000&offset=${offset}`,
+        });
+        bookings.push(...chunk);
+        if (chunk.length < 1000) break;
+      }
+
+      const uids = [...new Set(bookings.map((b) => b.customer_id).filter(Boolean).map(String))];
+      const cids = [...new Set(bookings.map((b) => b.course_id).filter(Boolean).map(String))];
+      const [users, courses] = await Promise.all([
+        uids.length ? supabaseRest<any[]>('users', { query: `?id=in.(${uids.map(q).join(',')})&select=id,full_name,phone` }) : [],
+        cids.length ? supabaseRest<any[]>('courses', { query: `?id=in.(${cids.map(q).join(',')})&select=id,name,duration_minutes` }) : [],
+      ]);
+      const um = new Map(users.map((u) => [String(u.id), u]));
+      const cm = new Map(courses.map((c) => [String(c.id), c]));
+
+      const rows = bookings.map((b) => {
+        const c = cm.get(String(b.course_id));
+        const u = um.get(String(b.customer_id));
+        return {
+          id: b.id,
+          start_at: b.start_at || b.booking_date,
+          status: String(b.status || ''),
+          school: isSchoolLesson(b),
+          category: b.category || null,
+          minutes: lessonMinutes(b, c),
+          course: c?.name || null,
+          customer_id: b.customer_id ? String(b.customer_id) : null,
+          customer: u ? { full_name: u.full_name, phone: u.phone } : null,
+        };
+      });
+
+      const attended = rows.filter((r) => r.status === 'in_progress' || r.status === 'completed');
+      const uniq = (list: any[]) => new Set(list.map((r) => r.customer_id || `x${r.id}`)).size;
+      const group = (list: any[]) => {
+        const done = list.filter((r) => r.status === 'completed');
+        return {
+          lessons: list.length,
+          completed: done.length,
+          in_progress: list.length - done.length,
+          minutes: done.reduce((a, r) => a + r.minutes, 0),
+          students: uniq(list),
+        };
+      };
+      const school = group(attended.filter((r) => r.school));
+      const paid = group(attended.filter((r) => !r.school));
+
+      // Kunma-kun: qaysi kuni nechta dars, necha daqiqa
+      const byDay = new Map<string, { date: string; school: number; paid: number; minutes: number }>();
+      for (const r of attended) {
+        const day = tashkentYmd(r.start_at);
+        if (!byDay.has(day)) byDay.set(day, { date: day, school: 0, paid: 0, minutes: 0 });
+        const x = byDay.get(day)!;
+        if (r.school) x.school++; else x.paid++;
+        if (r.status === 'completed') x.minutes += r.minutes;
+      }
+
+      const MAX_ROWS = 600;
+      return {
+        ok: true,
+        from: fromY, to: toY,
+        summary: {
+          lessons: attended.length,
+          completed: school.completed + paid.completed,
+          in_progress: school.in_progress + paid.in_progress,
+          minutes: school.minutes + paid.minutes,
+          students: uniq(attended),
+          school, paid,
+          no_show: rows.filter((r) => r.status === 'no_show').length,
+          cancelled: rows.filter((r) => r.status === 'cancelled' || r.status === 'rejected').length,
+          upcoming: rows.filter((r) => r.status === 'pending' || r.status === 'confirmed').length,
+        },
+        days: [...byDay.values()].sort((a, b) => a.date.localeCompare(b.date)),
+        rows: rows.slice(-MAX_ROWS),
+        rows_truncated: rows.length > MAX_ROWS,
+      };
+    } catch (e) {
+      return reply.code(400).send({ ok: false, error: e instanceof Error ? e.message : 'Hisob-kitob yuklanmadi' });
+    }
+  });
+
+  /** «🔔 Eslatish» — instruktor mijozga dars eslatmasini qo'lda yuboradi. */
+  app.post('/api/instructor/bookings/:id/remind', async (request, reply) => {
+    try {
+      const tgUser = await authenticate(request);
+      const profile = await profileForTelegram(tgUser);
+      const instructor = await approvedInstructor(profile);
+      if (!profile || !instructor) return reply.code(403).send({ ok: false, error: 'Instructor tasdiqlanmagan' });
+      const booking = await getOwnedBooking(String((request.params as any).id), String(instructor.id));
+      if (!booking) return reply.code(404).send({ ok: false, error: 'Bron topilmadi' });
+      const { sendManualReminder } = await import('./reminders.js');
+      const r = await sendManualReminder(booking, String(profile.full_name || '').trim());
+      if (!r.ok) return reply.code(r.code).send({ ok: false, error: r.error, phone: (r as any).phone ?? null });
+      return { ok: true };
+    } catch (e) {
+      return reply.code(400).send({ ok: false, error: e instanceof Error ? e.message : 'Eslatma yuborilmadi' });
+    }
+  });
+
+  /** Ochiq turgan instruktor paneli ham avtomatik eslatmalarni «turtadi». */
+  app.post('/api/instructor/reminders/tick', async (request, reply) => {
+    try {
+      const tgUser = await authenticate(request);
+      const profile = await profileForTelegram(tgUser);
+      const instructor = await approvedInstructor(profile);
+      if (!profile || !instructor) return reply.code(403).send({ ok: false, error: 'Instructor tasdiqlanmagan' });
+      const { tickReminders } = await import('./reminders.js');
+      return { ok: true, ...(await tickReminders('instruktor')) };
+    } catch (e) {
+      return reply.code(400).send({ ok: false, error: e instanceof Error ? e.message : 'Eslatma tekshiruvi xatosi' });
     }
   });
 
@@ -553,7 +690,7 @@ export async function registerInstructorRoutes(
 
       const [u2] = await supabaseRest<any[]>('users', { query: `?id=eq.${q(String(profile.id))}&select=*&limit=1` });
       const [i2] = await supabaseRest<any[]>('instructor_profiles', { query: `?id=eq.${q(String(instructor.id))}&select=*&limit=1` });
-      return { ok: true, profile: u2 ?? profile, instructor: i2 ?? instructor };
+      return { ok: true, profile: u2 ?? profile, instructor: noReviews(i2 ?? instructor) };
     } catch (e) {
       return reply.code(400).send({ ok: false, error: e instanceof Error ? e.message : 'Saqlanmadi' });
     }
