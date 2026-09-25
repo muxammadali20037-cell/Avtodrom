@@ -588,7 +588,7 @@ export async function registerBookingRoutes(
 
       const [tariffs, prices] = await Promise.all([loadTariffs(), loadPackagePrices()]);
       if (!(packagePriceOf(cat, prices) > 0)) {
-        return reply.code(400).send({ ok: false, error: `${cat} toifada 5 soatlik paket hozircha yo‘q` });
+        return reply.code(400).send({ ok: false, error: cat === 'B' ? '5 soatlik paket hozir o‘chirilgan' : '5 soatlik paket faqat B toifa uchun' });
       }
       const { bookings, record } = await createPackage({
         customerId: String(user.id), instructorId: String(ip.id), courseId: String(course.id), category: cat,

@@ -35,20 +35,22 @@ const q = (v: string) => encodeURIComponent(v);
 
 export type PackagePrices = Record<Cat, number>;
 
-/** Paket narxlari: sozlamalardagi paket5_a/b/c. Yo'q bo'lsa — 1 100 000.
-    0 yozilgan bo'lsa — o'sha kategoriyada paket o'chirilgan. */
+/** Paket FAQAT B toifa uchun. Narxi — sozlamadagi paket5_b (yo'q bo'lsa
+    1 100 000; 0 — paket o'chirilgan). A va C da paket yo'q: 5 soat oddiy
+    soatlik tarif bilan hisoblanadi. */
+export const PACKAGE_CATEGORIES: Cat[] = ['B'];
 export async function loadPackagePrices(): Promise<PackagePrices> {
-  const out: PackagePrices = { A: DEFAULT_PACKAGE_PRICE, B: DEFAULT_PACKAGE_PRICE, C: DEFAULT_PACKAGE_PRICE };
+  const out: PackagePrices = { A: 0, B: DEFAULT_PACKAGE_PRICE, C: 0 };
   try {
     const rows = await supabaseRest<any[]>('admin_settings', {
-      query: `?key=in.(paket5_a,paket5_b,paket5_c)&select=key,value`,
+      query: `?key=in.(paket5_b)&select=key,value`,
     });
     for (const r of rows || []) {
       const raw = r?.value?.value ?? r?.value;
       if (raw === null || raw === undefined || raw === '') continue;
       const n = Number(raw);
       const cat = String(r.key).slice(-1).toUpperCase() as Cat;
-      if (!CATS.includes(cat) || !Number.isFinite(n) || n < 0) continue;
+      if (!PACKAGE_CATEGORIES.includes(cat) || !Number.isFinite(n) || n < 0) continue;
       out[cat] = Math.round(n);
     }
   } catch (e) {
@@ -59,7 +61,7 @@ export async function loadPackagePrices(): Promise<PackagePrices> {
 
 export function packagePriceOf(category: string, prices: PackagePrices): number {
   const c = String(category || '').toUpperCase() as Cat;
-  return CATS.includes(c) ? Math.max(0, Number(prices[c]) || 0) : 0;
+  return PACKAGE_CATEGORIES.includes(c) ? Math.max(0, Number(prices[c]) || 0) : 0;
 }
 
 /** Narx: 5 soat bo'lsa va paket yoqilgan bo'lsa — paket narxi, aks holda tarif. */
@@ -288,7 +290,9 @@ export async function createPackage(o: {
   const cat = String(o.category || '').toUpperCase();
   const total = Math.round(Number(o.total ?? packagePriceOf(cat, o.prices)));
   if (!(total > 0)) {
-    const e: any = new Error(`${cat || 'Bu'} kategoriyada 5 soatlik paket o‘chirilgan`);
+    const e: any = new Error(PACKAGE_CATEGORIES.includes(cat as Cat)
+      ? `${cat} toifada 5 soatlik paket hozir o‘chirilgan`
+      : '5 soatlik paket faqat B toifa uchun');
     e.statusCode = 400; throw e;
   }
   const clash = await sessionConflict(o.instructorId, o.customerId, o.sessions);

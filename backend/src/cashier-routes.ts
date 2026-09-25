@@ -8,7 +8,7 @@ import { readRegisterToken, ownRegisterFromToken } from './shift-routes.js';
 import { bookingSearchFilter } from './booking-search.js';
 import { loadBlocks, overlapping, instructorBlockedAt, blockedMessage } from './instructor-blocks.js';
 import {
-  PACKAGE_MINUTES, loadPackagePrices, priceWithPackage, parseSessions, sessionConflict, createPackage,
+  PACKAGE_MINUTES, loadPackagePrices, priceWithPackage, packagePriceOf, parseSessions, sessionConflict, createPackage,
   packagesFor, packageOf, type Session,
 } from './packages.js';
 import type { TelegramWebAppUser } from './telegram.js';
@@ -1042,8 +1042,11 @@ export async function registerCashierRoutes(
         if (!courseId) return reply.code(400).send({ ok: false, error: 'Mashg‘ulot tanlanmagan' });
         if (Number.isNaN(start.getTime())) return reply.code(400).send({ ok: false, error: 'Vaqt noto‘g‘ri' });
 
-        /* 5 soat — paket: bir kunda yoki bir necha kunga bo'lingan */
-        const isPackage = minutes === PACKAGE_MINUTES || (Array.isArray(b.sessions) && b.sessions.length > 0);
+        /* 5 soat — paket (faqat B toifa): bir kunda yoki bir necha kunga bo'lingan.
+           A va C da 5 soat — oddiy bron, soatlik tarif bilan. */
+        const pkgOn = packagePriceOf(String(b.category || ''), pkgPrices) > 0;
+        const isPackage = (minutes === PACKAGE_MINUTES && pkgOn) || (Array.isArray(b.sessions) && b.sessions.length > 0);
+        if (isPackage && !pkgOn) return reply.code(400).send({ ok: false, error: '5 soatlik paket faqat B toifa uchun' });
         let sessions: Session[] = [{ start, end: new Date(start.getTime() + minutes * 60000), minutes }];
         if (isPackage) {
           const raw = Array.isArray(b.sessions) && b.sessions.length ? b.sessions : [{ start_at: start.toISOString(), minutes: PACKAGE_MINUTES }];
@@ -1199,8 +1202,14 @@ export async function registerCashierRoutes(
       if (Number.isNaN(start.getTime())) return reply.code(400).send({ ok: false, error: 'Sana yoki vaqt noto‘g‘ri' });
       if (!/^[ABC]$/.test(category)) return reply.code(400).send({ ok: false, error: 'Kategoriyani tanlang' });
 
-      /* 5 soat — paket: bir kunda yoki bir necha kunga bo'lingan mashg'ulotlar */
-      const isPackage = minutes === PACKAGE_MINUTES || (Array.isArray(b.sessions) && b.sessions.length > 0);
+      /* 5 soat — paket (faqat B toifa): bir kunda yoki bir necha kunga bo'lingan.
+         A va C da 5 soat — oddiy bron, soatlik tarif bilan. */
+      const [tariffs, pkgPrices] = await Promise.all([loadTariffs(), loadPackagePrices()]);
+      const isPackage = (minutes === PACKAGE_MINUTES && packagePriceOf(category, pkgPrices) > 0)
+        || (Array.isArray(b.sessions) && b.sessions.length > 0);
+      if (isPackage && !(packagePriceOf(category, pkgPrices) > 0)) {
+        return reply.code(400).send({ ok: false, error: '5 soatlik paket faqat B toifa uchun' });
+      }
       let sessions: Session[] = [{ start, end: new Date(start.getTime() + minutes * 60000), minutes }];
       if (isPackage) {
         const raw = Array.isArray(b.sessions) && b.sessions.length ? b.sessions : [{ start_at: start.toISOString(), minutes: PACKAGE_MINUTES }];
@@ -1258,7 +1267,6 @@ export async function registerCashierRoutes(
 
       const now = new Date().toISOString();
       const note = String(b.note || '').trim();
-      const [tariffs, pkgPrices] = await Promise.all([loadTariffs(), loadPackagePrices()]);
 
       if (isPackage) {
         const { bookings, record } = await createPackage({
