@@ -5,6 +5,7 @@ import { q, findUserByTelegram, toProfile } from './identity.js';
 import { fmtWhen, fmtMoney } from './notify.js';
 import { readRegisterToken, ownRegisterFromToken } from './shift-routes.js';
 import { bookingSearchFilter } from './booking-search.js';
+import { loadBlocks, overlapping, instructorBlockedAt, blockedMessage } from './instructor-blocks.js';
 import type { TelegramWebAppUser } from './telegram.js';
 import {
   isSchoolReceiptCode, normalizeSchoolCode, schoolBridgeReady,
@@ -511,6 +512,11 @@ export async function registerCashierRoutes(
         query: `?id=eq.${q(courseId)}&select=id,name,duration_minutes,price&limit=1`,
       }))[0];
       if (!course) return reply.code(400).send({ ok: false, error: 'Mashg‘ulot topilmadi' });
+      {
+        const blk = await instructorBlockedAt(instructorId, start,
+          new Date(start.getTime() + Number(course.duration_minutes || 60) * (Number(b.hours || 1) || 1) * 60000));
+        if (blk) return reply.code(409).send({ ok: false, error: blockedMessage(blk) });
+      }
 
       // Mijoz: mavjud bo'lsa topamiz (telefon bo'yicha), bo'lmasa yaratamiz
       let customer: any = null;
@@ -787,9 +793,13 @@ export async function registerCashierRoutes(
           '&select=instructor_id,start_at,end_at&limit=1000',
       });
 
+      /* Instruktor o'zi yopgan soatlar ham band hisoblanadi */
+      const blocks = await loadBlocks(ips.map((i) => String(i.id)));
+
       const free: any[] = [], busy: any[] = [];
       for (const ip of ips) {
-        const mine = busyRows.filter((b) => String(b.instructor_id) === String(ip.id));
+        const own = (blocks.get(String(ip.id)) || []).map((x) => ({ instructor_id: ip.id, start_at: x.start_at, end_at: x.end_at, blocked: true }));
+        const mine = [...busyRows.filter((b) => String(b.instructor_id) === String(ip.id)), ...own];
         const clash = mine.find((b) => new Date(b.start_at) < end && new Date(b.end_at) > at);
         const info = {
           id: ip.id,
@@ -810,7 +820,8 @@ export async function registerCashierRoutes(
             }
           }
         }
-        busy.push({ ...info, free_at: freeAt.toISOString(), wait_minutes: Math.round((freeAt.getTime() - at.getTime()) / 60000) });
+        busy.push({ ...info, free_at: freeAt.toISOString(), wait_minutes: Math.round((freeAt.getTime() - at.getTime()) / 60000),
+          blocked: !!(clash as any).blocked });
       }
       free.sort((a, b) => b.rating - a.rating);
       busy.sort((a, b) => a.wait_minutes - b.wait_minutes);
@@ -872,6 +883,10 @@ export async function registerCashierRoutes(
         if (!instructorId) return reply.code(400).send({ ok: false, error: 'Instruktor tanlanmagan' });
         if (!courseId) return reply.code(400).send({ ok: false, error: 'Mashg‘ulot tanlanmagan' });
         if (Number.isNaN(start.getTime())) return reply.code(400).send({ ok: false, error: 'Vaqt noto‘g‘ri' });
+        {
+          const blk = await instructorBlockedAt(instructorId, start, new Date(start.getTime() + minutes * 60000));
+          if (blk) return reply.code(409).send({ ok: false, error: blockedMessage(blk) });
+        }
 
         let customer: any = b.customer_id
           ? (await supabaseRest<any[]>('users', { query: `?id=eq.${q(String(b.customer_id))}&select=*&limit=1` }))[0]
@@ -1002,6 +1017,11 @@ export async function registerCashierRoutes(
       const cats: string[] = Array.isArray(ins.categories) ? ins.categories : ['B'];
       if (!cats.includes(category)) {
         return reply.code(409).send({ ok: false, error: `Bu instruktor ${category} kategoriyani o‘rgatmaydi` });
+      }
+      /* Instruktor bu soatni o'zi yopgan bo'lsa — qo'lda bron ham qilinmaydi */
+      {
+        const blk = await instructorBlockedAt(instructorId, start, new Date(start.getTime() + minutes * 60000));
+        if (blk) return reply.code(409).send({ ok: false, error: blockedMessage(blk) });
       }
 
       // Kategoriyaga mos kurs

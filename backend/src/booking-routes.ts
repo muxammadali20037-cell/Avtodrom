@@ -317,7 +317,12 @@ export async function registerBookingRoutes(
           `&start_at=lt.${q(dayEnd.toISOString())}&end_at=gt.${q(dayStart.toISOString())}` +
           `&status=in.(${ACTIVE_STATUSES})&select=start_at,end_at`,
       });
-      return { ok: true, busy: rows };
+      /* Instruktor o'zi yopgan soatlar ham band ko'rinadi (sababi aytilmaydi) */
+      const { loadBlocks } = await import('./instructor-blocks.js');
+      const own = ((await loadBlocks([instructorId])).get(instructorId) || [])
+        .filter((b) => Date.parse(b.start_at) < dayEnd.getTime() && Date.parse(b.end_at) > dayStart.getTime())
+        .map((b) => ({ start_at: b.start_at, end_at: b.end_at }));
+      return { ok: true, busy: [...rows, ...own] };
     } catch (e) {
       return reply.code(400).send({ ok: false, error: e instanceof Error ? e.message : 'Band vaqtlar yuklanmadi' });
     }
@@ -422,6 +427,12 @@ export async function registerBookingRoutes(
       }
       if (conflicts.some((x) => String(x.instructor_id) === String(body.instructor_id))) {
         return reply.code(409).send({ ok: false, error: 'Instruktor bu vaqtda band' });
+      }
+      {
+        const { instructorBlockedAt } = await import('./instructor-blocks.js');
+        if (await instructorBlockedAt(String(body.instructor_id), start, end)) {
+          return reply.code(409).send({ ok: false, error: 'Instruktor bu vaqtda band. Boshqa vaqtni tanlang.' });
+        }
       }
 
       const payload = {

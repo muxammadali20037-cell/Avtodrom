@@ -526,6 +526,83 @@ export async function registerInstructorRoutes(
     }
   });
 
+  /* =====================================================================
+     BO'SH VAQTLARIM — instruktor soatlarni o'zi yopadi / ochadi.
+     GET  /api/instructor/blocks?from=YYYY-MM-DD&to=YYYY-MM-DD
+     PUT  /api/instructor/blocks  { date, slots: [{ from: 'HH:MM', to: 'HH:MM' }] }
+          — shu kunning yopiq soatlarini ALMASHTIRADI (bo'sh ro'yxat = hammasi ochiq).
+     ===================================================================== */
+  app.get('/api/instructor/blocks', async (request, reply) => {
+    try {
+      const tgUser = await authenticate(request);
+      const profile = await profileForTelegram(tgUser);
+      const instructor = await approvedInstructor(profile);
+      if (!profile || !instructor) return reply.code(403).send({ ok: false, error: 'Instructor tasdiqlanmagan' });
+      const { blocksFor, tashkentAt } = await import('./instructor-blocks.js');
+      const qy = (request.query ?? {}) as any;
+      const isYmd = (v: any) => /^\d{4}-\d{2}-\d{2}$/.test(String(v || ''));
+      const today = tashkentYmd(new Date());
+      const from = tashkentAt(isYmd(qy.from) ? qy.from : today, '00:00').getTime();
+      const to = tashkentAt(isYmd(qy.to) ? qy.to : today, '00:00').getTime() + 864e5;
+      const blocks = (await blocksFor(String(instructor.id)))
+        .filter((b) => Date.parse(b.end_at) > from && Date.parse(b.start_at) < to);
+      return { ok: true, blocks };
+    } catch (e) {
+      return reply.code(400).send({ ok: false, error: e instanceof Error ? e.message : 'Yopiq soatlar yuklanmadi' });
+    }
+  });
+
+  app.put('/api/instructor/blocks', async (request, reply) => {
+    try {
+      const tgUser = await authenticate(request);
+      const profile = await profileForTelegram(tgUser);
+      const instructor = await approvedInstructor(profile);
+      if (!profile || !instructor) return reply.code(403).send({ ok: false, error: 'Instructor tasdiqlanmagan' });
+      const { saveDayBlocks, tashkentAt } = await import('./instructor-blocks.js');
+      const b = (request.body ?? {}) as any;
+      const day = String(b.date || '');
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(day)) return reply.code(400).send({ ok: false, error: 'Sana noto‘g‘ri' });
+      const today = tashkentYmd(new Date());
+      const dayStart = tashkentAt(day, '00:00');
+      if (Number.isNaN(dayStart.getTime())) return reply.code(400).send({ ok: false, error: 'Sana noto‘g‘ri' });
+      if (day < today) return reply.code(400).send({ ok: false, error: 'O‘tgan kunni o‘zgartirib bo‘lmaydi' });
+      if (dayStart.getTime() - tashkentAt(today, '00:00').getTime() > 60 * 864e5) {
+        return reply.code(400).send({ ok: false, error: 'Faqat 60 kun oldinga yopish mumkin' });
+      }
+
+      const raw = Array.isArray(b.slots) ? b.slots : [];
+      if (raw.length > 48) return reply.code(400).send({ ok: false, error: 'Juda ko‘p soat' });
+      const hm = (v: any) => /^([01]\d|2[0-3]):[0-5]\d$/.test(String(v || ''));
+      const slots = [] as { start_at: string; end_at: string }[];
+      for (const x of raw) {
+        if (!hm(x?.from) || !hm(x?.to) || String(x.from) >= String(x.to)) {
+          return reply.code(400).send({ ok: false, error: 'Soat noto‘g‘ri' });
+        }
+        slots.push({ start_at: tashkentAt(day, x.from).toISOString(), end_at: tashkentAt(day, x.to).toISOString() });
+      }
+
+      /* Bron bor soatni yopib bo'lmaydi — mijoz kutib qoladi */
+      if (slots.length) {
+        const dayEnd = new Date(dayStart.getTime() + 864e5);
+        const rows = await supabaseRest<any[]>('bookings', {
+          query: `?instructor_id=eq.${q(String(instructor.id))}&status=in.(pending,confirmed,in_progress)` +
+                 `&start_at=lt.${q(dayEnd.toISOString())}&end_at=gt.${q(dayStart.toISOString())}&select=id,start_at,end_at&limit=100`,
+        });
+        const hit = rows.find((r) => slots.some((x) => Date.parse(r.start_at) < Date.parse(x.end_at) && Date.parse(r.end_at) > Date.parse(x.start_at)));
+        if (hit) {
+          const t = new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Tashkent', hour: '2-digit', minute: '2-digit' }).format(new Date(hit.start_at));
+          return reply.code(409).send({ ok: false, error: `${t} da sizga bron bor — bu soatni yopib bo‘lmaydi. Admin bilan kelishing.` });
+        }
+      }
+
+      const all = await saveDayBlocks(String(instructor.id), day, slots);
+      const dEnd = dayStart.getTime() + 864e5;
+      return { ok: true, date: day, blocks: all.filter((x) => Date.parse(x.start_at) >= dayStart.getTime() && Date.parse(x.start_at) < dEnd) };
+    } catch (e) {
+      return reply.code(400).send({ ok: false, error: e instanceof Error ? e.message : 'Saqlanmadi' });
+    }
+  });
+
   /** «🔔 Eslatish» — instruktor mijozga dars eslatmasini qo'lda yuboradi. */
   app.post('/api/instructor/bookings/:id/remind', async (request, reply) => {
     try {
