@@ -68,7 +68,7 @@ describe('Kirish', () => {
 describe('Rol chegarasi', () => {
   const ADMIN_ONLY = [
     '/api/admin/stats', '/api/admin/instructors', '/api/admin/bookings',
-    '/api/admin/customers', '/api/admin/courses', '/api/admin/applications',
+    '/api/admin/customers', '/api/admin/applications',
     '/api/admin/audit-logs', '/api/admin/staff', '/api/admin/media',
   ];
 
@@ -82,10 +82,20 @@ describe('Rol chegarasi', () => {
 
   it('kassirni o‘z bo‘limlariga qo‘yadi', async () => {
     const k = await h.login('kassir1', 'kassir1234');
-    for (const url of ['/api/admin/me', '/api/admin/payments', '/api/admin/in-progress']) {
+    /* Mashg'ulotlar ro'yxatini kassir O'QIYDI — chek mashg'ulotga bog'lanadi
+       (admin panel kassir rejimida /api/admin/courses ni yuklaydi). */
+    for (const url of ['/api/admin/me', '/api/admin/payments', '/api/admin/in-progress', '/api/admin/courses']) {
       const r = await h.call('GET', url, { cookie: k.cookie });
       expect(r.status, `${url} yopiq qoldi`).toBeLessThan(400);
     }
+  });
+
+  it('kassir mashg‘ulotni o‘zgartira olmaydi', async () => {
+    const k = await h.login('kassir1', 'kassir1234');
+    const r = await h.call('POST', '/api/admin/courses', {
+      cookie: k.cookie, payload: { name: 'X', price: 1, duration_minutes: 60, category: 'B' },
+    });
+    expect(r.status).toBe(403);
   });
 
   it('adminni hamma joyga qo‘yadi', async () => {

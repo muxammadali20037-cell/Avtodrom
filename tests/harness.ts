@@ -46,36 +46,69 @@ function emptyDb(): FakeDb {
   };
 }
 
+/** Bitta shart: `v` qiymati `op.val` ga mosmi. */
+function testCond(v: any, op: string, val: string): boolean {
+  switch (op) {
+    case 'eq':    return String(v) === val;
+    case 'neq':   return String(v) !== val;
+    case 'gte':   return new Date(v).getTime() >= new Date(val).getTime();
+    case 'lte':   return new Date(v).getTime() <= new Date(val).getTime();
+    case 'gt':    return new Date(v).getTime() >  new Date(val).getTime();
+    case 'lt':    return new Date(v).getTime() <  new Date(val).getTime();
+    case 'is':    return val === 'null' ? v == null : String(v) === val;
+    case 'not': {
+      // PostgREST: not.is.null, not.eq.x ...
+      const [op2, ...rest] = val.split('.');
+      return !testCond(v, op2, rest.join('.'));
+    }
+    case 'ilike': {
+      // PostgREST kabi: * va % — istalgan belgilar, katta-kichik harf farqsiz
+      const re = '^' + val.split(/[*%]/).map((x) => x.replace(/[.+?^${}()|[\]\\]/g, '\\$&')).join('.*') + '$';
+      return new RegExp(re, 'is').test(String(v ?? ''));
+    }
+    case 'in': {
+      const list = val.replace(/^\(|\)$/g, '').split(',').map((x) => x.replace(/^"|"$/g, ''));
+      return list.includes(String(v));
+    }
+    case 'cs': {
+      const want = val.replace(/^\{|\}$/g, '').split(',');
+      return Array.isArray(v) && want.every((w) => v.includes(w));
+    }
+    default: return true;
+  }
+}
+
+/** `(a.eq.1,b.in.(x,y))` → ['a.eq.1', 'b.in.(x,y)'] — qavs ichidagi vergul bo'linmaydi. */
+function splitOr(raw: string): string[] {
+  const body = raw.replace(/^\(/, '').replace(/\)$/, '');
+  const out: string[] = []; let depth = 0, cur = '';
+  for (const ch of body) {
+    if (ch === '(') depth++;
+    if (ch === ')') depth--;
+    if (ch === ',' && depth === 0) { out.push(cur); cur = ''; continue; }
+    cur += ch;
+  }
+  if (cur) out.push(cur);
+  return out;
+}
+
 /** PostgREST filtrlarini soddalashtirib qo'llaydi. */
 function applyFilters(rows: any[], query: string): any[] {
   const qs = new URLSearchParams(query.startsWith('?') ? query.slice(1) : query);
   let out = [...rows];
   for (const [field, raw] of qs.entries()) {
     if (['select', 'order', 'limit', 'offset'].includes(field)) continue;
+    if (field === 'or') {
+      const conds = splitOr(String(raw)).map((c) => {
+        const [f, op, ...rest] = c.split('.');
+        return { f, op, val: rest.join('.') };
+      });
+      out = out.filter((r) => conds.some((c) => testCond(r[c.f], c.op, c.val)));
+      continue;
+    }
     const [op, ...rest] = String(raw).split('.');
     const val = decodeURIComponent(rest.join('.'));
-    out = out.filter((r) => {
-      const v = r[field];
-      switch (op) {
-        case 'eq':    return String(v) === val;
-        case 'neq':   return String(v) !== val;
-        case 'gte':   return new Date(v).getTime() >= new Date(val).getTime();
-        case 'lte':   return new Date(v).getTime() <= new Date(val).getTime();
-        case 'gt':    return new Date(v).getTime() >  new Date(val).getTime();
-        case 'lt':    return new Date(v).getTime() <  new Date(val).getTime();
-        case 'is':    return val === 'null' ? v == null : String(v) === val;
-        case 'ilike': return String(v ?? '').toLowerCase() === val.toLowerCase().replace(/%/g, '');
-        case 'in': {
-          const list = val.replace(/^\(|\)$/g, '').split(',').map((x) => x.replace(/^"|"$/g, ''));
-          return list.includes(String(v));
-        }
-        case 'cs': {
-          const want = val.replace(/^\{|\}$/g, '').split(',');
-          return Array.isArray(v) && want.every((w) => v.includes(w));
-        }
-        default: return true;
-      }
-    });
+    out = out.filter((r) => testCond(r[field], op, val));
   }
   const limit = Number(qs.get('limit') || 0);
   return limit > 0 ? out.slice(0, limit) : out;
@@ -88,7 +121,9 @@ export async function makeHarness(): Promise<Harness> {
   globalThis.fetch = (async (u: any, o: any = {}) => {
     const url = String(u);
     const method = String(o.method || 'GET').toUpperCase();
-    const body = o.body ? JSON.parse(o.body) : null;
+    /* Storage'ga rasm (ikkilik ma'lumot) ham yuboriladi — uni JSON deb o'qimaymiz */
+    let body: any = null;
+    if (typeof o.body === 'string') { try { body = JSON.parse(o.body); } catch { body = null; } }
     const H = new Map<string, string>();
 
     if (url.includes('api.telegram.org')) {
@@ -150,6 +185,18 @@ export async function makeHarness(): Promise<Harness> {
 
     if (method === 'PATCH') {
       const target = applyFilters(db[table], query);
+      /* Bazadagi UNIQUE cheklovlar: users.phone va users.telegram_id.
+         Busiz "raqam band" holatini sinab bo'lmasdi. */
+      if (table === 'users' && body) {
+        for (const col of ['phone', 'telegram_id']) {
+          if (body[col] === undefined || body[col] === null) continue;
+          const clash = db.users.find((r) => !target.includes(r) && String(r[col]) === String(body[col]));
+          if (clash) {
+            return { ok: false, status: 409, text: async () => JSON.stringify({
+              code: '23505', message: `duplicate key value violates unique constraint "users_${col}_key"` }), headers: H } as any;
+          }
+        }
+      }
       target.forEach((r) => Object.assign(r, body));
       return { ok: true, status: 200, text: async () => JSON.stringify(target), headers: H } as any;
     }
