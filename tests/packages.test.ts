@@ -199,15 +199,21 @@ describe('Mijoz: 5 soatlik paket', () => {
     expect(h.db.bookings).toHaveLength(0);
   });
 
-  it('paket narxi sozlamadan; 0 — paket o‘chirilgan', async () => {
-    h.db.admin_settings.push({ key: 'paket5_b', value: { value: 1_200_000 } }, { key: 'paket5_c', value: 0 });
+  it('paket FAQAT B toifada; narxi sozlamadan, 0 — o‘chirilgan', async () => {
+    h.db.admin_settings.push({ key: 'paket5_b', value: { value: 1_200_000 } }, { key: 'paket5_c', value: 900_000 });
     const ok = await tg('POST', '/api/bookings/package', { instructor_id: 'ip-1', course_id: 'c-b', sessions: [{ start_at: at(D2, '09:00'), minutes: 300 }] });
     expect(ok.status).toBe(201);
     expect(ok.body.bookings[0].price).toBe(1_200_000);
-    const off = await tg('POST', '/api/bookings/package', { instructor_id: 'ip-1', course_id: 'c-c', sessions: [{ start_at: at(D4, '09:00'), minutes: 300 }] });
-    expect(off.status).toBe(400);
+    // C toifada paket yo'q — sozlamada narx yozilgan bo'lsa ham
+    const c = await tg('POST', '/api/bookings/package', { instructor_id: 'ip-1', course_id: 'c-c', sessions: [{ start_at: at(D4, '09:00'), minutes: 300 }] });
+    expect(c.status).toBe(400);
+    expect(c.body.error).toMatch(/faqat B/);
     const pub = await h.call('GET', '/api/settings');
     expect(pub.body.settings.paket5_b).toBe(1_200_000);
+    // B da 0 — paket o'chirilgan
+    h.db.admin_settings.find((x) => x.key === 'paket5_b')!.value = 0;
+    const off = await tg('POST', '/api/bookings/package', { instructor_id: 'ip-1', course_id: 'c-b', sessions: [{ start_at: at(D5, '09:00'), minutes: 300 }] });
+    expect(off.status).toBe(400);
   });
 });
 
@@ -284,11 +290,35 @@ describe('Kassa: paket', () => {
     expect(again.status).toBe(409);
   });
 
+  it('C toifada 5 soat — paket emas, oddiy soatlik tarif (2 000 000), bitta chek', async () => {
+    const r = await h.call('POST', '/api/admin/cashier/issue', { cookie: kassa1, payload: {
+      register_token: tok(), full_name: 'Yuk Mijoz', phone: '+998901230079', instructor_id: 'ip-1', course_id: 'c-c',
+      category: 'C', duration_minutes: 300, start_at: at(D2, '08:00'), cash_amount: 2_000_000, card_amount: 0 } });
+    expect(r.status).toBe(201);
+    expect(r.body.receipts).toHaveLength(1);
+    expect(r.body.receipt.amount).toBe(2_000_000);
+    expect(r.body.receipt.package_text).toBeUndefined();
+    expect(h.db.admin_settings.some((x) => String(x.key).startsWith('pack'))).toBe(false);
+    const bad = await h.call('POST', '/api/admin/cashier/issue', { cookie: kassa1, payload: {
+      register_token: tok(), full_name: 'Yuk Mijoz 2', instructor_id: 'ip-1', course_id: 'c-c', category: 'C', duration_minutes: 300,
+      start_at: at(D3, '08:00'), sessions: [{ start_at: at(D3, '08:00'), minutes: 180 }, { start_at: at(D4, '08:00'), minutes: 120 }],
+      amount: 1_100_000, cash_amount: 1_100_000, card_amount: 0 } });
+    expect(bad.status).toBe(400);
+    expect(bad.body.error).toMatch(/faqat B/);
+    const m = await h.call('POST', '/api/admin/manual-booking', { cookie: operator, payload: {
+      full_name: 'Yuk Telefon', phone: '+998909998811', instructor_id: 'ip-1', category: 'C', duration_minutes: 300, start_at: at(D5, '08:00') } });
+    expect(m.status).toBe(201);
+    expect(m.body.package).toBeUndefined();
+    expect(h.db.bookings.find((b) => b.id === m.body.booking.id).price).toBe(2_000_000);
+  });
+
   it('narx taklifi: 5 soat — paket narxi', async () => {
     const r = await h.call('GET', '/api/admin/price?category=B&minutes=300', { cookie: kassa1 });
     expect(r.body.price).toBe(1_100_000);
     const r2 = await h.call('GET', '/api/admin/price?category=B&minutes=120', { cookie: kassa1 });
     expect(r2.body.price).toBe(500000);
+    const r3 = await h.call('GET', '/api/admin/price?category=C&minutes=300', { cookie: kassa1 });
+    expect(r3.body.price).toBe(2_000_000);
   });
 });
 
