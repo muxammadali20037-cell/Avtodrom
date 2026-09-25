@@ -758,6 +758,14 @@ pre.json{background:#F7FAFF;border:1px solid var(--line);border-radius:8px;paddi
   .bka{justify-content:flex-start;max-width:none}
 }
 @media(max-width:720px){.co2{grid-template-columns:1fr}}
+/* Davr: «Oraliq» — dan/gacha */
+.rangebar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:0 0 14px;padding:10px 12px;background:#fff;border:1px solid var(--line);border-radius:12px}
+.rangebar.hidden{display:none}
+.rangebar label{font-size:12px;font-weight:800;color:var(--muted)}
+.rangebar .input{width:auto;min-width:150px}
+/* Jonli holat belgisi */
+.livedot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#0d7a4a;margin-right:6px;box-shadow:0 0 0 3px rgba(13,122,74,.15)}
+.livedot.off{background:#c62828;box-shadow:0 0 0 3px rgba(198,40,40,.15)}
 /* ---- CHIQARILGAN CHEKLAR (faqat kassa) ---- */
 .rcpcard{margin-top:16px}
 .rcphead{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:12px}
@@ -892,8 +900,17 @@ pre.json{background:#F7FAFF;border:1px solid var(--line);border-radius:8px;paddi
         <button class="seg" data-per="week">Haftalik</button>
         <button class="seg" data-per="month">Oylik</button>
         <button class="seg" data-per="year">Yillik</button>
+        <button class="seg" data-per="range">Oraliq</button>
       </div>
     </div></div>
+  <div id="dRange" class="rangebar hidden">
+    <label>Dan</label><input id="dFrom" type="date" class="input">
+    <label>Gacha</label><input id="dTo" type="date" class="input">
+    <button class="btn small" data-rq="d" data-r="month">Bu oy</button>
+    <button class="btn small" data-rq="d" data-r="prev">O‘tgan oy</button>
+    <button class="btn small" data-rq="d" data-r="quarter">3 oy</button>
+    <button class="btn primary small" id="dRangeGo">Ko‘rsatish</button>
+  </div>
   <div id="dAlert"></div>
   <div class="ultra-quick"><button type="button" class="btn" data-shortcut="manual" data-ultra-icon="manual">Yangi bron</button><button type="button" class="btn" data-shortcut="bookings" data-ultra-icon="bookings">Bronlarni ko‘rish</button><button type="button" class="btn" data-shortcut="live" data-ultra-icon="live">Hozir jarayonda</button></div>
   <div class="kpigrid" id="dKpis"></div>
@@ -925,7 +942,17 @@ pre.json{background:#F7FAFF;border:1px solid var(--line);border-radius:8px;paddi
         <button class="seg on" data-per="day">Kunlik</button>
         <button class="seg" data-per="week">Haftalik</button>
         <button class="seg" data-per="month">Oylik</button>
+        <button class="seg" data-per="year">Yillik</button>
+        <button class="seg" data-per="range">Oraliq</button>
       </div></div></div>
+  <div id="kdRange" class="rangebar hidden">
+    <label>Dan</label><input id="kdFrom" type="date" class="input">
+    <label>Gacha</label><input id="kdTo" type="date" class="input">
+    <button class="btn small" data-rq="kd" data-r="month">Bu oy</button>
+    <button class="btn small" data-rq="kd" data-r="prev">O‘tgan oy</button>
+    <button class="btn small" data-rq="kd" data-r="quarter">3 oy</button>
+    <button class="btn primary small" id="kdRangeGo">Ko‘rsatish</button>
+  </div>
   <div id="kdAlert"></div>
   <div class="kpis" id="kdKpis"></div>
   <div class="grid2">
@@ -1287,7 +1314,7 @@ pre.json{background:#F7FAFF;border:1px solid var(--line);border-radius:8px;paddi
     <div class="toolbar">
       <input id="from" type="date" class="input"><input id="to" type="date" class="input">
       <select id="reportInst" class="select"><option value="">Barcha instruktorlar</option></select>
-      <button class="btn" id="showReport">Ko‘rsatish</button><button class="btn" id="todayBtn">Bugun</button><button class="btn" id="weekBtn">7 kun</button>
+      <button class="btn" id="showReport">Ko‘rsatish</button><button class="btn" id="todayBtn">Bugun</button><button class="btn" id="weekBtn">7 kun</button><button class="btn" data-rq="rep" data-r="month">Bu oy</button><button class="btn" data-rq="rep" data-r="prev">O‘tgan oy</button><button class="btn" data-rq="rep" data-r="quarter">3 oy</button>
     </div>
     <div id="reportCards" class="report"></div>
   </div>
@@ -3191,6 +3218,38 @@ async function drawQR(box, text){
 S.an = null; S.anPeriod = 'day';
 const nf = n => new Intl.NumberFormat('uz-UZ').format(Number(n || 0));
 
+/* ---------- DAVR: «Oraliq» (dan — gacha) ----------
+   Masalan 1-oktabr → 3-yanvar: ikkala kun ham kiradi, yil almashsa ham
+   to'g'ri. Hisob serverda (bazada) — qator chegarasiga urilmaydi. */
+function ymdAdd(ymd, n){ const [y,m,d]=ymd.split('-').map(Number); return new Date(Date.UTC(y,m-1,d+n)).toISOString().slice(0,10); }
+function quickRange(kind){
+  const t = kToday(), [y, m] = t.split('-').map(Number);
+  const first = (yy, mm) => `${yy}-${String(mm).padStart(2,'0')}-01`;
+  if (kind === 'month') return [first(y, m), t];
+  if (kind === 'prev') { const py = m === 1 ? y - 1 : y, pm = m === 1 ? 12 : m - 1; return [first(py, pm), ymdAdd(first(y, m), -1)]; }
+  /* 3 oy: ikki oy oldingi oyning 1-kunidan bugungacha */
+  let yy = y, mm = m - 2; if (mm < 1) { mm += 12; yy -= 1; }
+  return [first(yy, mm), t];
+}
+function showRange(px, on){
+  $(px + 'Range').classList.toggle('hidden', !on);
+  /* Oraliqda bitta sana maydoni kerak emas — chalkashtirmasin */
+  const one = $(px + 'Date'); if (one) one.classList.toggle('hidden', !!on);
+  if (on && !$(px + 'From').value) { const [f, t] = quickRange('month'); $(px + 'From').value = f; $(px + 'To').value = t; }
+}
+function rangeVals(px){
+  let f = $(px + 'From').value, t = $(px + 'To').value;
+  if (!f || !t) { const [a, b] = quickRange('month'); f = f || a; t = t || b; $(px + 'From').value = f; $(px + 'To').value = t; }
+  if (f > t) { [f, t] = [t, f]; $(px + 'From').value = f; $(px + 'To').value = t; }
+  return { from: f, to: t };
+}
+document.querySelectorAll('[data-rq]').forEach(b => b.onclick = () => {
+  const px = b.dataset.rq, [f, t] = quickRange(b.dataset.r);
+  if (px === 'rep') { $('from').value = f; $('to').value = t; loadReport(); return; }
+  $(px + 'From').value = f; $(px + 'To').value = t;
+  if (px === 'd') loadAnalytics(); else if (px === 'kd') loadKdash();
+});
+
 function segBind(wrap, onPick){
   document.querySelectorAll(`#${wrap} .seg`).forEach(b => b.onclick = () => {
     document.querySelectorAll(`#${wrap} .seg`).forEach(x => x.classList.remove('on'));
@@ -3203,7 +3262,12 @@ async function loadAnalytics(){
   $('dAlert').innerHTML = '';
   $('dKpis').innerHTML = '<div class="empty" style="grid-column:1/-1">Yuklanmoqda…</div>';
   try{
-    const d = await api(`/api/admin/analytics?period=${encodeURIComponent(S.anPeriod)}&date=${encodeURIComponent(date)}`);
+    let url = `/api/admin/analytics?period=${encodeURIComponent(S.anPeriod)}&date=${encodeURIComponent(date)}`;
+    if (S.anPeriod === 'range') {
+      const r = rangeVals('d'); if (!r) { $('dKpis').innerHTML = ''; return; }
+      url = `/api/admin/analytics?from=${r.from}&to=${r.to}`;
+    }
+    const d = await api(url);
     S.an = d; renderAnalytics();
   }catch(e){
     $('dKpis').innerHTML = '';
@@ -4715,8 +4779,9 @@ S.kdPeriod = 'day';
 
 document.querySelectorAll('#kdSegs .seg').forEach(b => b.onclick = () => {
   document.querySelectorAll('#kdSegs .seg').forEach(x => x.classList.remove('on'));
-  b.classList.add('on'); S.kdPeriod = b.dataset.per; loadKdash();
+  b.classList.add('on'); S.kdPeriod = b.dataset.per; showRange('kd', S.kdPeriod === 'range'); loadKdash();
 });
+$('kdRangeGo').onclick = loadKdash;
 $('kdDate').addEventListener('change', loadKdash);
 
 async function loadKdash(){
@@ -4725,7 +4790,12 @@ async function loadKdash(){
   $('kdAlert').innerHTML = '';
   $('kdKpis').innerHTML = '<div class="empty" style="grid-column:1/-1">Yuklanmoqda…</div>';
   try{
-    const d = await api(`/api/admin/my-dashboard?token=${encodeURIComponent(REG_TOKEN)}&period=${encodeURIComponent(S.kdPeriod)}&date=${encodeURIComponent(date)}`);
+    let range = '';
+    if (S.kdPeriod === 'range') {
+      const r = rangeVals('kd'); if (!r) { $('kdKpis').innerHTML = ''; return; }
+      range = `&from=${r.from}&to=${r.to}`;
+    }
+    const d = await api(`/api/admin/my-dashboard?token=${encodeURIComponent(REG_TOKEN)}&period=${encodeURIComponent(S.kdPeriod)}&date=${encodeURIComponent(date)}${range}`);
     renderKdash(d);
   }catch(e){ $('kdKpis').innerHTML=''; $('kdAlert').innerHTML = `<div class="error">${esc(e.message)}</div>`; }
 }
@@ -5495,7 +5565,8 @@ async function cxDecide(id,act){
 }
 $('cxRefresh').onclick=loadCancels;
 $('kRefresh').onclick=loadCashier;
-segBind('dSegs', p => { S.anPeriod = p; loadAnalytics(); });
+segBind('dSegs', p => { S.anPeriod = p; showRange('d', p === 'range'); loadAnalytics(); });
+$('dRangeGo').onclick = loadAnalytics;
 segBind('cSegs', p => { S.ctlPeriod = p; $('cRange').classList.toggle('hidden', p !== 'range'); if (p !== 'range') loadControl(); });
 $('cRangeBtn').onclick = loadControl;
 $('dDate').addEventListener('change', loadAnalytics);
@@ -5660,6 +5731,57 @@ function refreshActivePage(show=false){
   return refreshing;
 }
 setInterval(()=>{if(!document.hidden)refreshActivePage();},30000);
+
+/* =========================================================================
+   JONLI YANGILANISH
+   Har 5 soniyada serverdan kichik «puls» so'raladi. Bron, to'lov/chek,
+   instruktor skaneri yoki chatda o'zgarish bo'lsa — ochiq sahifa DARHOL
+   yangilanadi (boshqa kompyuterdagi kassir yoki operator qilgan amal
+   ham shu zahoti ko'rinadi). Forma to'ldirilayotgan yoki oyna ochiq
+   bo'lsa kutib turadi — yozganingiz o'chib ketmaydi.
+   ========================================================================= */
+let pulseStamp = '', pulseDirty = false, pulseBusy = false, pulseFails = 0;
+function pulseBadge(ok){
+  const el = $('lastSync'); if (!el) return;
+  el.innerHTML = `<span class="livedot ${ok ? '' : 'off'}"></span>${ok ? 'Jonli' : 'Aloqa yo‘q — qayta ulanmoqda'}`;
+}
+async function pulseTick(){
+  if (!AUTHED || document.hidden || pulseBusy) return;
+  pulseBusy = true;
+  try {
+    const c = new AbortController(), tm = setTimeout(() => c.abort(), 8000);
+    const r = await fetch('/api/admin/pulse', { credentials:'include', cache:'no-store', signal:c.signal, headers:{Accept:'application/json'} });
+    clearTimeout(tm);
+    if (r.status === 401) { pulseBusy = false; return; }
+    const d = await r.json();
+    pulseFails = 0; pulseBadge(true);
+    if (d && d.stamp && pulseStamp && d.stamp !== pulseStamp) pulseDirty = true;
+    if (d && d.stamp) pulseStamp = d.stamp;
+    if (pulseDirty) await pulseApply();
+  } catch (e) {
+    if (++pulseFails >= 2) pulseBadge(false);
+  } finally { pulseBusy = false; }
+}
+async function pulseApply(){
+  /* Tahrir yoki oyna ochiq — keyingi pulsda urinamiz */
+  if (editing || $('modal').classList.contains('open') || document.querySelector('dialog[open]')) return;
+  pulseDirty = false;
+  const page = document.querySelector('.page.on')?.id;
+  const jobs = [];
+  if (adminMode === 'admin' || adminMode === 'operator') {
+    jobs.push(Promise.resolve().then(loadNewCount), Promise.resolve().then(loadCancels), Promise.resolve().then(loadSupport));
+  } else if (REG_TOKEN) {
+    jobs.push(Promise.resolve().then(loadRegToday), Promise.resolve().then(loadReceipts));
+  }
+  /* Qo'lda bron va chek chiqarish formalari yangilanmaydi — faqat ro'yxatlar */
+  /* Og'ir hisobotlar (bronlar hisoboti, instruktor hisob-kitobi) o'zi
+     qayta hisoblanmaydi — «Ko'rsatish» bosilganda. Qolganlari jonli. */
+  if (!['manual', 'settings', 'checkout', 'cancels', 'support', 'reports', 'insacc'].includes(page)) jobs.push(refreshActivePage());
+  if (page === 'support' && S.supUser) jobs.push(Promise.resolve().then(() => openThread?.(S.supUser)).catch(() => {}));
+  await Promise.allSettled(jobs);
+}
+setInterval(pulseTick, 5000);
+document.addEventListener('visibilitychange', () => { if (!document.hidden) { pulseDirty = true; pulseTick(); } });
 /* ESLATMALAR «TICK»: panel ochiq turganda (fonda bo'lsa ham) har 2 daqiqada
    serverga «muddati kelgan eslatmalarni yubor» deymiz. Server daqiqasiga
    bir martadan ko'p ishlamaydi va takror xabar yubormaydi. Jim ishlaydi. */
