@@ -236,6 +236,26 @@ details.list[open] summary::after{content:"▴"}
 .livebar .t b{display:block;font-size:14.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .livebar .t span{display:block;font-size:12px;color:var(--ok);font-weight:800}
 .livebar .btn{height:44px;padding:0 14px;font-size:14px;flex:none}
+/* Teskari sanoq: dars qancha qoldi. Oxirgi 5 daqiqa sariq, tugasa qizil «+» */
+.cd{flex:none;text-align:center;line-height:1;font-variant-numeric:tabular-nums;color:var(--ok)}
+.cd b{display:block;font-size:22px;font-weight:900;letter-spacing:-.5px}
+.cd small{display:block;font-size:10.5px;font-weight:800;letter-spacing:.5px;margin-top:3px;text-transform:uppercase}
+.cd.soon{color:var(--warn)}
+.cd.over{color:var(--red)}
+/* Taymer bo'lsa: 1-qator — ism, 2-qator — katta sanoq va «Yakunlash» (telefonda ism kesilmasin) */
+.livebar:has(.cd){flex-wrap:wrap;row-gap:10px}
+.livebar:has(.cd) .t{flex:1 1 calc(100% - 30px)}
+.livebar .cd{margin-left:24px;text-align:left}
+.livebar .cd b{font-size:28px}
+.livebar:has(.cd) .btn{margin-left:auto}
+.livebar.over{background:var(--redbg);border-color:#f3b8b8}
+.livebar.over .dot{background:var(--red)}
+.cdrow{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:12px 15px 0;padding:10px 14px;
+ border-radius:14px;background:var(--okbg);border:1.5px solid #bfe5cf}
+.cdrow span{font-size:13px;font-weight:700;color:var(--muted)}
+.cdrow .cd b{font-size:26px}
+.cdrow.over{background:var(--redbg);border-color:#f3b8b8}
+.cdrow.soon{background:var(--warnbg);border-color:#f0dc9a}
 
 /* ---------- bo'lim sarlavhasi va ORQAGA ---------- */
 .backbar{display:flex;align-items:center;gap:10px;margin:0 0 12px}
@@ -454,6 +474,39 @@ function minutesOf(b){
   return Number(b.course?.duration_minutes || 60);
 }
 
+/* ===== TESKARI SANOQ =====
+   Dars boshlangan payt — arrived_at (avtoshkola chekini skanerlagan yoki
+   «Mijoz keldi» bosilgan payt), bo'lmasa bron boshlanishi. Tugash =
+   boshlanish + dars davomiyligi. Har soniyada tickCountdowns() yangilaydi. */
+function lessonEnd(b){
+  const s = new Date(b.arrived_at || whenOf(b)).getTime();
+  return Number.isFinite(s) ? s + minutesOf(b) * 60000 : 0;
+}
+function cdClock(sec){
+  sec = Math.max(0, Math.floor(sec));
+  const h = Math.floor(sec / 3600), m = Math.floor(sec % 3600 / 60), x = sec % 60, p = n => String(n).padStart(2, '0');
+  return h ? `${h}:${p(m)}:${p(x)}` : `${p(m)}:${p(x)}`;
+}
+const cdHtml = b => { const e = lessonEnd(b); return e ? `<div class="cd" data-end="${e}" data-id="${esc(b.id)}"><b>--:--</b><small>qoldi</small></div>` : ''; };
+const cdWarned = new Set();
+function tickCountdowns(){
+  const now = Date.now();
+  document.querySelectorAll('.cd[data-end]').forEach(el => {
+    const left = (Number(el.dataset.end) - now) / 1000;
+    const over = left < 0, soon = !over && left <= 300;
+    el.classList.toggle('over', over); el.classList.toggle('soon', soon);
+    const box = el.closest('.livebar, .cdrow');
+    if (box) { box.classList.toggle('over', over); box.classList.toggle('soon', soon); }
+    el.querySelector('b').textContent = over ? '+' + cdClock(-left) : cdClock(Math.ceil(left));
+    el.querySelector('small').textContent = over ? 'vaqt tugadi' : 'qoldi';
+    /* Vaqt tugagan zahoti bir marta titraydi */
+    if (over && !cdWarned.has(el.dataset.id)) {
+      cdWarned.add(el.dataset.id);
+      if (left > -5) { try { tg?.HapticFeedback?.notificationOccurred?.('warning'); } catch (e) {} }
+    }
+  });
+}
+
 const S = { profile:null, instructor:null, bookings:[], settings:null, bkFilter:'today', freeDay:'', calc:null, month:null, blocks:[] };
 
 /* ------------------------------ API ------------------------------ */
@@ -666,6 +719,7 @@ function card(b, opts = {}){
       ${tgId ? `<a class="call tg" href="tg://user?id=${esc(tgId)}">💬 Telegram</a>` : ''}
       ${canRemind ? `<button class="call rem" data-rem="${esc(b.id)}">🔔 Eslatish</button>` : ''}
     </div>` : ''}
+    ${st === 'in_progress' ? `<div class="cdrow"><span>Dars ${esc(hhmm(b.arrived_at || when))} da boshlandi</span>${cdHtml(b)}</div>` : ''}
     ${b.customer_note ? `<div class="note">💬 ${esc(b.customer_note)}</div>` : ''}
     ${acts || '<div style="height:15px"></div>'}
   </article>`;
@@ -673,6 +727,7 @@ function card(b, opts = {}){
 function bind(root){
   root.querySelectorAll('[data-a]').forEach(b => b.onclick = () => act(b.dataset.a, b.dataset.id));
   root.querySelectorAll('[data-rem]').forEach(b => b.onclick = () => remind(b.dataset.rem, b));
+  tickCountdowns();   /* yangi chizilgan taymerlar bir soniya «--:--» bo'lib turmasin */
 }
 
 /* BOSH MENYU: katta tugmalardagi jonli yozuvlar */
@@ -699,9 +754,11 @@ function renderMenu(){
   const live = S.bookings.filter(b => b.status === 'in_progress');
   const box = $('liveBar');
   box.innerHTML = live.map(b => `<div class="livebar"><span class="dot"></span>
-      <div class="t"><span>HOZIR DARSDA · ${esc(hhmm(whenOf(b)))}</span><b>${esc(custName(b))}</b></div>
+      <div class="t"><span>HOZIR DARSDA · ${esc(hhmm(b.arrived_at || whenOf(b)))}</span><b>${esc(custName(b))}</b></div>
+      ${cdHtml(b)}
       <button class="btn ok" data-a="departed" data-id="${esc(b.id)}">🏁 Yakunlash</button></div>`).join('');
   bind(box);
+  tickCountdowns();
 }
 
 /* 1. Chek skaner bo'limi: katta tugma + hozirgi/keyingi darslar */
@@ -1240,6 +1297,7 @@ function reminderTick(){
     headers:{ Accept:'application/json', 'X-Telegram-Init-Data': INIT } }).catch(() => {});
 }
 setInterval(reminderTick, 180000);
+setInterval(tickCountdowns, 1000);
 
 /* ------------------------- Boot ------------------------- */
 async function boot(){
