@@ -136,7 +136,10 @@ http.createServer(async (req, res) => {
   if (url.startsWith('/api/')) {
     const chunks: Buffer[] = [];
     for await (const c of req) chunks.push(c as Buffer);
-    const r = await h.app.inject({ method: req.method as any, url, headers: req.headers as any, payload: chunks.length ? Buffer.concat(chunks) : undefined });
+    /* Sinovda bir nechta brauzer (kassa, operator, admin) bitta kompyuterdan
+       ishlaydi — har ulanishga alohida «IP», aks holda umumiy chegaraga urilardi */
+    const headers = { ...(req.headers as any), 'x-real-ip': `${req.socket.remoteAddress}:${req.socket.remotePort}` };
+    const r = await h.app.inject({ method: req.method as any, url, headers, payload: chunks.length ? Buffer.concat(chunks) : undefined });
     const hdrs: Record<string, any> = {};
     for (const [k, v] of Object.entries(r.headers)) if (v !== undefined && k !== 'content-length' && k !== 'transfer-encoding') hdrs[k] = v;
     res.writeHead(r.statusCode, hdrs); res.end(r.rawPayload); return;

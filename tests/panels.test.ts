@@ -201,6 +201,15 @@ describe('Chiqarilgan cheklar (faqat kassa oynasida)', () => {
     expect(mine.body.receipt.code).toBe('AVD-260925-AAAAA');
   });
 
+  it('«Jarayonda»: P1 kassiri faqat o‘z kassasidagi darslarni ko‘radi, admin — hammasini', async () => {
+    const b2 = h.db.bookings.find((x: any) => x.id === 'b-p2');
+    Object.assign(b2, { status: 'in_progress', arrived_at: todayAt('10:05') });
+    const ids = async (cookie: string) => ((await h.call('GET', '/api/admin/in-progress', { cookie })).body.rows || []).map((r: any) => r.id).sort();
+    expect(await ids(kassa1)).toEqual(['b-used']);
+    expect(await ids(kassa2)).toEqual(['b-p2']);
+    expect(await ids(admin)).toEqual(['b-p2', 'b-used']);
+  });
+
   it('kassa tokenisiz ro‘yxat berilmaydi; boshqa kun tanlasa o‘sha kun', async () => {
     expect((await h.call('GET', '/api/admin/cashier/receipts', { cookie: kassa1 })).status).toBe(401);
     const old = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Tashkent' }).format(new Date(Date.now() - 5 * 864e5));

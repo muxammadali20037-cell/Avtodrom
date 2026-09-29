@@ -186,3 +186,15 @@ describe('Xodimlarni boshqarish', () => {
     expect(r.body.role).toBe('cashier');
   });
 });
+
+describe('So‘rovlar chegarasi har mijozga alohida', () => {
+  it('bir IP chegaraga yetsa, boshqa IP ishlashda davom etadi', async () => {
+    const hit = (ip: string) => h.app.inject({ method: 'GET', url: '/api/health', headers: { 'x-real-ip': ip } });
+    let last = 0;
+    for (let i = 0; i < 121; i++) last = (await hit('10.0.0.1')).statusCode;
+    expect(last).toBe(429);
+    expect((await hit('10.0.0.2')).statusCode).toBe(200);
+    const fwd = await h.app.inject({ method: 'GET', url: '/api/health', headers: { 'x-forwarded-for': '10.0.0.3, 70.1.1.1' } });
+    expect(fwd.statusCode).toBe(200);
+  });
+});
