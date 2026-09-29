@@ -401,7 +401,18 @@ export async function registerShiftRoutes(
           query: `?status=eq.completed&departed_at=gte.${q(dayStart)}&select=*&order=departed_at.desc&limit=100`,
         }).catch(() => []),
       ]);
-      const bookings = [...active, ...doneToday];
+      let bookings = [...active, ...doneToday];
+      /* KASSIR faqat O'Z kassasida to'langan darslarni ko'radi — P1 va P2
+         bir-birining mijozi, summasi va chekini ko'rmaydi. */
+      const me: any = await currentStaffSafe(req);
+      if (me && me.role === 'cashier' && bookings.length) {
+        const own = String(me.register_id || '');
+        const pays = await supabaseRest<any[]>('payments', {
+          query: `?booking_id=in.(${bookings.map((b) => q(String(b.id))).join(',')})&select=booking_id,register_id`,
+        }).catch(() => []);
+        const mine = new Set(pays.filter((p) => own && String(p.register_id || '') === own).map((p) => String(p.booking_id)));
+        bookings = bookings.filter((b) => mine.has(String(b.id)));
+      }
       if (!bookings.length) {
         return { ok: true, now: new Date(now).toISOString(), counts: { total: 0, red: 0, yellow: 0, stale: 0, done: 0 }, rows: [] };
       }

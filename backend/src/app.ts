@@ -20,6 +20,14 @@ import { registerMediaRoutes } from './media-routes.js';
 
 const app = Fastify({ logger: true });
 
+/** So'rov chegarasi kaliti: haqiqiy mijoz IP'si (Vercel sarlavhalaridan), bo'lmasa req.ip. */
+export function rateKey(req: any): string {
+  const h = req?.headers || {};
+  const real = String(h['x-real-ip'] || '').trim();
+  const fwd = String(h['x-forwarded-for'] || '').split(',')[0].trim();
+  return real || fwd || String(req?.ip || '');
+}
+
 /* Admin javoblari hech qachon keshlanmasin. Vercel yoki brauzer
    eski javobni qaytarsa, saqlangan o'zgarish ko'rinmay qolardi. */
 app.addHook('onSend', async (req, reply, payload) => {
@@ -60,7 +68,12 @@ const ALLOWED_ORIGIN = String(process.env.FRONTEND_ORIGIN || '').trim();
 await app.register(cors, ALLOWED_ORIGIN
   ? { origin: [ALLOWED_ORIGIN], credentials: true }
   : { origin: false, credentials: false });
-await app.register(rateLimit, { max: 120, timeWindow: '1 minute' });
+/* So'rovlar chegarasi HAR MIJOZ (IP) uchun alohida. Vercel'da so'rov
+   Fastify'ga app.inject orqali keladi — req.ip hammada bir xil (127.0.0.1)
+   bo'lib, barcha foydalanuvchilar bitta umumiy chegarani bo'lishardi:
+   bir kishi 5 marta parolni xato tersa, hamma kira olmay qolardi.
+   Vercel x-real-ip / x-forwarded-for ni o'zi yozadi (mijoz soxtalashtira olmaydi). */
+await app.register(rateLimit, { max: 120, timeWindow: '1 minute', keyGenerator: rateKey });
 app.get('/api/health', async () => ({ ok: true, service: 'avtodrom-api', bots: { customer: Boolean(CUSTOMER_BOT_TOKEN), instructor: Boolean(INSTRUCTOR_BOT_TOKEN), admin: Boolean(ADMIN_BOT_TOKEN) }, supabase: Boolean(process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY) }));
 
 function authenticateWithToken(botToken: string) {
