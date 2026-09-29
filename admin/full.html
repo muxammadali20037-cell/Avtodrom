@@ -1321,11 +1321,12 @@ pre.json{background:#F7FAFF;border:1px solid var(--line);border-radius:8px;paddi
           <button type="button" class="acc-h" data-acc-h="time" aria-expanded="false"><span class="acc-l" id="accTimeL">Vaqt</span><span class="acc-v"><span id="accTimeV">—</span><span id="coNowTag" class="nowtag">hozirgi vaqt</span></span><span class="acc-ch">▼</span></button>
           <div class="acc-b">
             <div class="acc-list">
-              <button type="button" class="acc-opt nob" id="coNowBtn"><span class="t">Hozir<small>hozirgi vaqt — soat o‘zi yurib turadi</small></span><span class="p" id="coNowClock"></span><i class="ck">✓</i></button>
-              <button type="button" class="acc-opt nob" data-coday="0"><span class="t">Bugun, boshqa soatga<small>soatni pastda tanlang</small></span><span class="p"></span><i class="ck">✓</i></button>
-              <button type="button" class="acc-opt nob" data-coday="1"><span class="t">Ertaga<small>soatni pastda tanlang</small></span><span class="p"></span><i class="ck">✓</i></button>
+              <button type="button" class="acc-opt nob" id="coNowBtn"><span class="t">Hozir<small>bronsiz chek doim real hozirgi vaqt bilan chiqadi</small></span><span class="p" id="coNowClock"></span><i class="ck">✓</i></button>
+              <!-- Bronsiz chek — faqat HOZIR (mijoz hozir keldi). Boshqa kun/soat — bu bron: «Qo'lda bron». -->
+              <button type="button" class="acc-opt nob hidden" data-coday="0"><span class="t">Bugun, boshqa soatga<small>soatni pastda tanlang</small></span><span class="p"></span><i class="ck">✓</i></button>
+              <button type="button" class="acc-opt nob hidden" data-coday="1"><span class="t">Ertaga<small>soatni pastda tanlang</small></span><span class="p"></span><i class="ck">✓</i></button>
             </div>
-            <div class="acc-foot">
+            <div class="acc-foot hidden">
               <label for="coTime">Soat</label><input id="coTime" class="input ck-mini" type="time" step="60" aria-label="Vaqt">
               <label for="coDate">Sana</label><input id="coDate" class="input ck-date" type="date" aria-label="Sana">
               <button type="button" class="btn primary" id="coTimeOk">Tayyor</button>
@@ -4674,9 +4675,9 @@ $('coIssue').onclick = async () => {
     if (!CO.instructor) return err('Instruktorni tanlang');
     const course = coCourse();
     if (!course) return err('Bu kategoriya uchun mashg‘ulot topilmadi. Mashg‘ulotlar bo‘limida qo‘shing.');
-    /* Vaqtga qo'l tegmagan bo'lsa — chekka ANIQ hozirgi payt yoziladi
-       (maydondagi daqiqa emas). Qo'lda qo'yilgan bo'lsa o'sha qoladi. */
-    const startAt = CO.timeTouched ? at : new Date();
+    /* Bronsiz chek — doim REAL hozirgi vaqt (maydondagi daqiqa emas;
+       server ham boshqa vaqtni qabul qilmaydi) */
+    const startAt = new Date();
     Object.assign(body, {
       full_name: $('coName').value.trim(), phone: $('coPhone').value.trim(),
       customer_id: CO.customer?.id || null, instructor_id: CO.instructor.id,

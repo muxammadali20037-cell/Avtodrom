@@ -440,6 +440,14 @@ button.row:active,a.row:active{background:var(--card-2)}
 .co-selh .vl.ph{color:var(--accent)}
 .co-selh .cv{color:var(--hint);transition:transform .2s;flex:none;display:grid}
 .co-sel.open .co-selh .cv{transform:rotate(90deg);color:var(--accent)}
+.co-fixed .co-selh{cursor:default;min-height:58px;padding-bottom:6px}
+.co-fixed .vl{display:inline-flex;align-items:center;gap:8px;color:var(--ok)}
+.co-fixed .co-now-t{font-variant-numeric:tabular-nums}
+.co-fixed-note{padding:0 16px 13px 52px;font-size:12.5px;color:var(--hint);line-height:1.4}
+.live-dot{width:9px;height:9px;border-radius:50%;background:#16a34a;flex:none;animation:livep 1.8s infinite}
+@keyframes livep{0%{box-shadow:0 0 0 0 rgba(22,163,74,.45)}70%{box-shadow:0 0 0 8px rgba(22,163,74,0)}100%{box-shadow:0 0 0 0 rgba(22,163,74,0)}}
+@media (prefers-reduced-motion:reduce){.live-dot{animation:none}}
+.co-sec .sess-tab.fixed{cursor:default;background:var(--ok-soft);color:var(--ok);box-shadow:none}
 .co-sel.open .co-selh{background:var(--card-2)}
 @media (hover:hover){.co-selh:hover .vl{color:var(--accent)}}
 .co-body{padding:12px 16px 16px;border-top:1px solid var(--line)}
@@ -1980,6 +1988,9 @@ async function loadIns(W){
   }catch(e){ if (seq !== W.insSeq) return; W.insErr = e.message; W.insRes = { free: [], busy: [] }; }
   if (ONE(W)) {
     if (!W.ins && W.insRes?.free?.length) { W.ins = W.insRes.free[0]; W.insAuto = true; }
+    /* Hozir hech kim bo'sh bo'lmasa — instruktorlar BIR MARTA ochiladi: kim qachon
+       bo'shashi ko'rinsin. Kassir yopsa, qayta-qayta o'zi ochilmaydi. */
+    if (!W.ins && W.insRes && !W.insRes.free.length && !W.open && !W.booking && !W.insShown) { W.open = 'ins'; W.insShown = true; }
     if (S.routeName === 'issue' && CO === W) coPaintIns();
     return;
   }
@@ -2104,11 +2115,12 @@ ACT.wzprice = () => {
   const W = curW();
   if (W.manual != null) { W.manual = null; W.priceEdit = false; }
   else W.priceEdit = !W.priceEdit;
+  if (ONE(W)) return coPatch('pay', ['pay']);
   wzRender(W);
   if (W.priceEdit) setTimeout(() => $('wzPrice')?.focus(), 50);
 };
-ACT.wzpay = el => { const W = curW(); W.pay = el.dataset.v; if (W.pay === 'mixed') { W.cash = null; W.card = null; } wzRender(W); };
-ACT.wzpaypkg = () => { const W = curW(); W.payPkg = !W.payPkg; W.manual = null; wzRender(W); };
+ACT.wzpay = el => { const W = curW(); W.pay = el.dataset.v; if (W.pay === 'mixed') { W.cash = null; W.card = null; } if (ONE(W)) return coPatch('pay', ['pay']); wzRender(W); };
+ACT.wzpaypkg = () => { const W = curW(); W.payPkg = !W.payPkg; W.manual = null; if (ONE(W)) return coPatch('pay', ['pay']); wzRender(W); };
 ACT.wzissue = async el => {
   const W = CO;
   if (!regOk()) { toast('Kassa ochilmagan — qayta kiring', true); return render(); }
@@ -2202,12 +2214,16 @@ function wzLive(W){
 /* =========================================================================
    CHEK CHIQARISH — HAMMASI BITTA OYNADA, TANLOVLAR «OCHILADIGAN»
    Har qator — tanlov maydoni: ustiga bosilsa variantlar chiqadi,
-   tanlansa yopiladi va keyingisi ochiladi.
+   tanlansa FAQAT o'sha qator yopiladi. Keyingisi o'zi ochilmaydi, sahifa
+   sakramaydi, butun oyna qayta chizilmaydi — faqat o'zgargan qator
+   joyida yangilanadi (ekran «ochilib-yopilib» chalg'itmasin).
      Toifa        → A · B · C
      Davomiylik   → 1 krug · 30 daq · 1 soat · 1,5 soat · 2 soat · 5 soatlik paket
-     Vaqt         → Hozir yoki kun va soat
-     Instruktor   → faqat shu vaqtda BO'SH bo'lganlar (bittasi avtomatik tanlanadi)
-   Oldindan tanlangan: B toifa, 1 soat, Hozir, Naqd. Kassir ismni yozadi
+     Vaqt         → DOIM HOZIR (real vaqt). Bronsiz chek — mijoz hozir keldi,
+                    sana va soat tanlanmaydi. Server ham boshqa vaqtni qabul qilmaydi.
+                    Faqat 5 soatlik paket bo'linsa — KEYINGI mashg'ulotlar uchun kun/soat.
+     Instruktor   → hozir BO'SH bo'lganlar (bittasi avtomatik tanlanadi)
+   Oldindan tanlangan: B toifa, 1 soat, Naqd. Kassir ismni yozadi
    va «Chek chiqarish»ni bosadi.
    ========================================================================= */
 function coInit(W){
@@ -2217,9 +2233,10 @@ function coInit(W){
   const ok = c => !!courseFor(c) && (!pref?.cats || pref.cats.includes(c));
   W.cat = ['B', 'A', 'C'].find(ok) || '';
   W.min = 60; W.krug = false; W.split = null; W.si = 0; W.pay = 'cash';
-  if (pref?.day && pref?.t) { W.sess = [{ m: 60, day: pref.day, t: pref.t, now: false }]; W.day = pref.day; }
-  else { W.sess = [{ m: 60, day: kToday(), t: nowHM(), now: true }]; W.day = kToday(); }
+  W.sess = [{ m: 60, day: kToday(), t: nowHM(), now: true }]; W.day = kToday();
 }
+/** 1-mashg'ulot doim HOZIR — har chizishda real vaqtga tenglanadi */
+function coNowSync(W){ if (W.sess[0]) Object.assign(W.sess[0], { day: kToday(), t: nowHM(), now: true }); }
 const coReady = W => !!W.cat && W.sess.length > 0 && W.sess.every(x => x.t);
 /** Chek chiqishi uchun nima yetishmayapti: [bo'lim, xabar] */
 function coMissing(W){
@@ -2228,9 +2245,9 @@ function coMissing(W){
   const q = W.q.trim(), nm = W.name.trim() || (q && !/\d{4,}/.test(q) ? q : '');
   if (nm.length < 2) out.push(['cust', 'Mijozning ismini yozing']);
   if (!W.cat) out.push(['cat', 'Toifani tanlang']);
-  W.sess.forEach((x, i) => { if (!x.t) out.push(['time', W.sess.length > 1 ? `${i + 1}-mashg‘ulot vaqtini tanlang` : 'Vaqtni tanlang']); });
+  W.sess.forEach((x, i) => { if (i && !x.t) out.push(['time', `${i + 1}-mashg‘ulot vaqtini tanlang`]); });
   if (coReady(W) && !W.insRes) out.push(['ins', 'Bo‘sh instruktorlar tekshirilmoqda…']);
-  else if (coReady(W) && W.insRes && !W.insRes.free.length && !W.ins) out.push(['time', 'Bu vaqtda bo‘sh instruktor yo‘q — vaqtni o‘zgartiring']);
+  else if (coReady(W) && W.insRes && !W.insRes.free.length && !W.ins) out.push(['ins', W.sess.length > 1 ? 'Hamma mashg‘ulotda bo‘sh instruktor yo‘q — keyingi kunlarni o‘zgartiring' : 'Hozir bo‘sh instruktor yo‘q — bo‘shashini kuting']);
   else if (!W.ins) out.push(['ins', 'Instruktorni tanlang']);
   return out;
 }
@@ -2300,33 +2317,45 @@ function coDurSec(W){
       <div class="cchips">${SPLITS.map(s => `<button class="cch ${W.split.k === s.k ? 'on' : ''}" data-act="cosplit" data-k="${esc(s.k)}">
         <b>${s.k === '5' ? '1 kunda 5 soat' : s.k === '1x5' ? '5 kun × 1 soat' : s.m.map(m => m / 60).join(' + ') + ' soat'}</b><small>${s.m.length} ta mashg‘ulot</small></button>`).join('')}</div>` : ''}`);
 }
+/* VAQT — o'zgarmaydi: hozir. Tanlash yo'q. */
+function coNowSec(W){
+  const pk = W.sess.length > 1;
+  return `<section class="co-sec co-sel co-fixed" id="co-now"><div class="co-selh">
+      <i>${I('check', 14, 3)}</i><span class="lb">Vaqt</span>
+      <b class="vl"><span class="live-dot"></span><span>Hozir · <span class="co-now-t">${esc(nowHM())}</span></span></b></div>
+    <div class="co-fixed-note">${pk ? '1-mashg‘ulot hozir boshlanadi. ' : ''}Bronsiz chek — real vaqt bilan chiqadi, sana va soat tanlanmaydi.</div></section>`;
+}
+/* 5 soatlik paket bo'linsa — KEYINGI mashg'ulotlar (2-, 3-…) uchun kun va soat */
 function coTimeSec(W){
-  const s = W.sess[W.si], multi = W.sess.length > 1, t0 = kToday();
-  const val = W.sess.every(x => x.t) ? W.sess.map(sessText).join(' · ') : W.sess.some(x => x.t) ? `${W.sess.filter(x => x.t).length}/${W.sess.length} tanlandi` : '';
-  return coSel('time', 4, 'Vaqt', val, W.sess.every(x => x.t), () => {
+  if (W.sess.length < 2) return '';
+  if (W.si < 1) W.si = 1;
+  const rest = W.sess.slice(1), t0 = kToday();
+  const val = rest.every(x => x.t) ? rest.map(sessText).join(' · ') : `${rest.filter(x => x.t).length}/${rest.length} tanlandi`;
+  return coSel('time', 4, 'Keyingi mashg‘ulotlar', val, rest.every(x => x.t), () => {
     const used = new Set(W.sess.filter((x, j) => j !== W.si && x.day).map(x => x.day));
-    const days = Array.from({ length: 14 }, (_, k) => dayAdd(t0, k)).map((d, k) => {
+    const days = Array.from({ length: 14 }, (_, k) => dayAdd(t0, k + 1)).map((d, k) => {
       const [, m, dd] = ymdParts(d), u = used.has(d);
       return `<button class="day ${d === W.day ? 'on' : ''}" data-act="coday" data-v="${d}" ${u ? 'disabled' : ''}>
-        <span class="w">${k === 0 ? 'Bugun' : k === 1 ? 'Ertaga' : WDS[wdOf(d)]}</span><span class="d">${dd}</span><span class="m">${u ? 'band' : MONS[m - 1]}</span></button>`;
+        <span class="w">${k === 0 ? 'Ertaga' : WDS[wdOf(d)]}</span><span class="d">${dd}</span><span class="m">${u ? 'band' : MONS[m - 1]}</span></button>`;
     }).join('');
-    return `${multi ? `<div class="sess-tabs">${W.sess.map((x, i) => `<button class="sess-tab ${i === W.si ? 'on' : ''} ${x.t ? 'set' : ''}" data-act="cosess" data-i="${i}">
-        <b>${i + 1}-mashg‘ulot · ${esc(fmtDur(x.m))}</b>${x.t ? esc(sessText(x)) : 'vaqt tanlanmagan'}</button>`).join('')}</div>` : ''}
-      ${W.si === 0 ? `<div class="cchips" style="margin-bottom:12px"><button class="cch now ${s.now ? 'on' : ''}" data-act="conow"><b>${I('play', 16, 2.2)} Hozir</b><small>${esc(nowHM())} — darhol boshlaydi</small></button></div>` : ''}
+    return `<div class="sess-tabs">${W.sess.map((x, i) => i === 0
+        ? `<div class="sess-tab set fixed"><b>1-mashg‘ulot · ${esc(fmtDur(x.m))}</b>Hozir (${esc(nowHM())})</div>`
+        : `<button class="sess-tab ${i === W.si ? 'on' : ''} ${x.t ? 'set' : ''}" data-act="cosess" data-i="${i}">
+        <b>${i + 1}-mashg‘ulot · ${esc(fmtDur(x.m))}</b>${x.t ? esc(sessText(x)) : 'kun va soatni tanlang'}</button>`).join('')}</div>
       <div class="scroller" id="coDays">${days}</div>
       <div id="coTimes" style="margin-top:12px">${coTimesHtml(W)}</div>`;
   });
 }
 function coInsBody(W){
-  if (!coReady(W)) return `<div class="note info" style="font-size:13.5px">Avval vaqtni tanlang — shu vaqtda bo‘sh instruktorlar chiqadi.</div>`;
+  if (!coReady(W)) return `<div class="note info" style="font-size:13.5px">Avval keyingi mashg‘ulotlar vaqtini tanlang — hammasida bo‘sh instruktorlar chiqadi.</div>`;
   const r = W.insRes;
   if (!r) return `<div class="co-opts">${Array.from({ length: 3 }, () => '<div class="sk" style="min-height:58px;margin:0"></div>').join('')}</div>`;
   if (W.insErr) return `<div class="note err">${esc(W.insErr)}</div>`;
-  const when = W.sess.length > 1 ? `${W.sess.length} ta mashg‘ulotning hammasida` : sessText(W.sess[0]);
+  const when = W.sess.length > 1 ? `${W.sess.length} ta mashg‘ulotning hammasida` : `Hozir (${nowHM()})`;
   let h = `<div class="muted" style="font-size:12.5px;margin:0 2px 8px">${esc(when)} · ${r.free.length} ta bo‘sh${W.insAuto && W.ins ? ' · bittasi avtomatik tanlandi, boshqasini bosib almashtiring' : ''}</div>`;
   h += r.free.length ? `<div class="co-opts">${r.free.map(i => coOpt({ act: 'coins', v: i.id, lt: esc(ini(i.name)), cls: 'ins', t: esc(i.name),
       s: `${i.rating ? `★ ${Number(i.rating).toFixed(1)} · ` : ''}${esc((i.categories || []).join(', '))} toifa`, rt: '<span class="pill ok">bo‘sh</span>', on: String(W.ins?.id) === String(i.id) })).join('')}</div>`
-    : `<div class="note warn">Bu vaqtda ${esc(W.cat)} toifa bo‘yicha bo‘sh instruktor yo‘q — vaqtni o‘zgartiring.</div>`;
+    : `<div class="note warn">${W.sess.length > 1 ? `Hamma mashg‘ulotda ${esc(W.cat)} toifa bo‘yicha bo‘sh instruktor yo‘q — keyingi kunlarni o‘zgartiring.` : `Hozir ${esc(W.cat)} toifa bo‘yicha bo‘sh instruktor yo‘q. Quyida — kim qachon bo‘shaydi; bo‘shaganda chek chiqaring.`}</div>`;
   if (r.busy.length) h += `<div class="co-opts" style="margin-top:8px">${r.busy.map(i => coOpt({ act: 'coins', v: i.id, lt: esc(ini(i.name)), cls: 'ins', t: esc(i.name),
       s: i.other ? 'boshqa mashg‘ulot vaqtida band' : i.blocked ? 'bu vaqtni yopgan' : i.free_at ? `${esc(hm(i.free_at))} da bo‘shaydi` : 'band', rt: '<span class="pill bad">band</span>', dis: true })).join('')}</div>`;
   return h;
@@ -2358,12 +2387,14 @@ function coPaySec(W){
 }
 function coSide(W){
   const b = W.booking, miss = coMissing(W);
-  const row = (k, v, s) => `<button class="side-row ${v ? '' : 'todo'}" data-act="${s === 'cust' || s === 'pay' ? 'coscroll' : 'coopen'}" data-s="${s}"><span>${k}</span><b>${v || '—'}</b></button>`;
+  const row = (k, v, s) => `<button class="side-row ${v ? '' : 'todo'}" data-act="${s === 'cust' || s === 'pay' || s === 'now' ? 'coscroll' : 'coopen'}" data-s="${s}"><span>${k}</span><b>${v || '—'}</b></button>`;
   const rows = b
     ? [row('Mijoz', esc(W.name), 'cust'), row('Bron', esc(b.pickup_code || '—'), 'cust'), row('Vaqt', esc(whenText(b.start_at)), 'cust'), row('Instruktor', esc(b.instructor?.profile?.full_name || '—'), 'cust')]
     : [row('Mijoz', esc(W.name.trim()), 'cust'), row('Toifa', W.cat ? esc(W.cat + ' toifa') : '', 'cat'),
       row('Davomiylik', W.min ? esc(coDurLabel(W)) : '', 'dur'),
-      row('Vaqt', W.sess.every(x => x.t) ? W.sess.map(x => esc(sessText(x))).join('<br>') : '', 'time'), row('Instruktor', esc(W.ins?.name || ''), 'ins')];
+      row('Vaqt', `Hozir, <span class="co-now-t">${esc(nowHM())}</span>`, 'now'),
+      ...(W.sess.length > 1 ? [row('Keyingi', W.sess.slice(1).every(x => x.t) ? W.sess.slice(1).map(x => esc(sessText(x))).join('<br>') : '', 'time')] : []),
+      row('Instruktor', esc(W.ins?.name || ''), 'ins')];
   return `<aside class="wz-side" id="coSide"><div class="side-card"><h3>${b ? 'Bron bo‘yicha to‘lov' : 'Chek'}</h3>
     <div class="side-rows">${rows.join('')}${row('To‘lov', { cash: 'Naqd', card: 'Karta', mixed: 'Naqd + karta' }[W.pay], 'pay')}</div>
     <div class="side-total"><span>To‘lanadi</span><b id="sideTotal">${nf(totalOf(W))} so‘m</b></div>
@@ -2394,15 +2425,16 @@ function coRender(){
     return;
   }
   coInit(W);
-  if (W.sess[0]?.now) W.sess[0].t = nowHM();
+  coNowSync(W);
   const keepDays = $('coDays')?.scrollLeft;
   const b = W.booking;
   const secs = [coCustSec(W)];
-  if (!b) secs.push(coCatSec(W), coDurSec(W), coTimeSec(W), coInsSec(W));
+  if (!b) secs.push(coCatSec(W), coDurSec(W), coNowSec(W), coTimeSec(W), coInsSec(W));
   secs.push(coPaySec(W));
   const v = $('view');
   v.classList.add('has-bar');
   v.innerHTML = `<div class="view"><div class="wz-grid"><div class="wz-main co-form">${secs.join('')}</div>${coSide(W)}</div></div>${coBar(W)}`;
+  for (const k of Object.keys(coHtml)) delete coHtml[k];
   const days = $('coDays');
   if (days) {
     if (keepDays != null) days.scrollLeft = keepDays;
@@ -2432,42 +2464,98 @@ function coRender(){
   $('wzPhone')?.addEventListener('input', e => { W.phone = e.target.value; });
   payBind(W);
   if (!b) {
-    if (W.open === 'time') ensureTimes(W, W.day);
+    if (W.open === 'time' && W.sess.length > 1) ensureTimes(W, W.day);
     if (coReady(W) && !W.insRes && !W.insLoading) coLoadIns(W);
   }
 }
+/* Soat yuradi: «Hozir 11:02» har daqiqada yangilanadi, bo'sh instruktorlar
+   ham qayta tekshiriladi (kimdir bo'shagan bo'lishi mumkin). */
+let coMinute = '';
+setInterval(() => {
+  if (S.routeName !== 'issue' || CO.booking || !CO.inited || document.hidden) return;
+  const t = nowHM(); if (t === coMinute) return;
+  coMinute = t; coNowSync(CO);
+  document.querySelectorAll('.co-now-t').forEach(e => { e.textContent = t; });
+  if (coReady(CO) && !CO.insLoading && !sheetOpen()) coLoadIns(CO);
+}, 10000);
 function coLoadIns(W){
   W.insLoading = true;
   loadIns(W).finally(() => { W.insLoading = false; });
 }
+/* Bir xil HTML qayta qo'yilmaydi: tugma bosilayotgan paytda almashib
+   bosish yo'qolmasin, ekran behuda «miltillamasin». */
+const coHtml = {};
+function coSwap(el, key, html){
+  if (!el) return false;
+  if (coHtml[key] === html && el.isConnected && el.dataset.v0 === '1') return false;
+  const t = document.createElement('template'); t.innerHTML = html.trim();
+  const n = t.content.firstElementChild; if (!n) { el.remove(); return true; }
+  n.dataset.v0 = '1'; el.replaceWith(n); coHtml[key] = html; return true;
+}
 function coPaintSideBar(){
   const W = CO;
-  const s = $('coSide'); if (s) s.outerHTML = coSide(W);
-  const b = $('coBar'); if (b) b.outerHTML = coBar(W);
+  coSwap($('coSide'), 'side', coSide(W));
+  coSwap($('coBar'), 'bar', coBar(W));
 }
 function coPaintIns(){
   const W = CO;
-  const sec = $('co-ins'); if (sec) sec.outerHTML = coInsSec(W);
+  coSwap($('co-ins'), 'ins', coInsSec(W));
   coPaintSideBar();
+}
+/* ---------- joyida yangilash ----------
+   Faqat berilgan bo'limlar almashtiriladi. «anchor» — bosilgan bo'lim:
+   uning sarlavhasi ekranda qayerda bo'lsa, o'sha joyda qoladi. */
+const CO_SECS = { cat: coCatSec, dur: coDurSec, now: coNowSec, time: coTimeSec, ins: coInsSec, pay: coPaySec };
+const CO_ORDER = ['cust', 'cat', 'dur', 'now', 'time', 'ins', 'pay'];
+function coScrollBy(d){ if (d) window.scrollTo({ top: window.scrollY + d, behavior: 'instant' }); }
+function coPatch(anchor, keys){
+  const W = CO, form = document.querySelector('.co-form');
+  if (!form || S.routeName !== 'issue' || W.booking) return coRender();
+  const a0 = anchor ? $('co-' + anchor)?.getBoundingClientRect().top : null;
+  coNowSync(W);
+  const changed = new Set();
+  for (const k of new Set(keys)) {
+    const fn = CO_SECS[k]; if (!fn) continue;
+    const html = fn(W), el = $('co-' + k);
+    if (el) { if (!html) { el.remove(); delete coHtml[k]; } else if (coSwap(el, k, html)) changed.add(k); }
+    else if (html) {
+      const prev = CO_ORDER.slice(0, CO_ORDER.indexOf(k)).reverse().map(x => $('co-' + x)).find(Boolean);
+      if (prev) prev.insertAdjacentHTML('afterend', html); else form.insertAdjacentHTML('afterbegin', html);
+      const n = $('co-' + k); if (n) n.dataset.v0 = '1';
+      coHtml[k] = html; changed.add(k);
+    }
+  }
+  if (changed.has('pay')) payBind(W);
+  coPaintSideBar();
+  const a1 = anchor ? $('co-' + anchor)?.getBoundingClientRect().top : null;
+  if (a0 != null && a1 != null) {
+    if (a0 < 64) coScrollBy(a1 - 76);          // sarlavha ekrandan chiqib ketgan edi — ko'rinadigan joyga
+    else coScrollBy(a1 - a0);                  // o'z joyida qolsin
+  }
+  if (W.open === 'time' && W.sess.length > 1) ensureTimes(W, W.day);
+  if (coReady(W) && !W.insRes && !W.insLoading) coLoadIns(W);
 }
 function coLive(){
   const W = CO;
   if (W.booking) return;
-  if (W.open === 'time') ensureTimes(W, W.day);
+  coNowSync(W);
+  if (W.open === 'time' && W.sess.length > 1) ensureTimes(W, W.day);
   if (coReady(W)) coLoadIns(W);
   if (W.q.trim().length >= 2) wzSearch(W);
 }
 /** Vaqt/toifa/davomiylik o'zgarsa — instruktorlar qayta tekshiriladi (tanlangani bo'sh bo'lsa qoladi) */
 function coTouch(W){ W.insRes = null; W.insLoading = false; W.insSeq++; W.manual = null; }
-/** Tanlangach — keyingi bo'lim ochiladi */
-function coGo(W, next){ W.open = next; coRender(); const el = next && $('co-' + next); if (el && window.matchMedia('(max-width: 959px)').matches) setTimeout(() => el.scrollIntoView({ behavior: 'smooth', block: 'start' }), 30); }
+/** Tanlangach — shu bo'lim yopiladi (yoki «open» ga o'tadi), boshqasi o'z joyida */
+function coDone(W, from, keys, open = null){ W.open = open; coPatch(from, [from, ...keys, ...(open && open !== from ? [open] : [])]); }
 
 /* ---------- bosishlar ---------- */
 ACT.coopen = el => {
-  const W = CO, s = el.dataset.s;
-  W.open = W.open === s ? null : s;
-  coRender();
-  if (W.open) { const sec = $('co-' + s); if (sec) { const r = sec.getBoundingClientRect(); if (r.top < 70 || r.top > window.innerHeight * .6) sec.scrollIntoView({ behavior: 'smooth', block: 'start' }); } }
+  const W = CO, s = el.dataset.s, prev = W.open;
+  W.open = prev === s ? null : s;
+  const side = !!el.closest?.('.wz-side');
+  coPatch(side ? null : s, [prev, s].filter(Boolean));
+  /* o'ng paneldan bosilsa — bo'lim ko'rinmayotgan bo'lsa, unga olib boradi */
+  if (side && W.open) { const sec = $('co-' + s); if (sec) { const r = sec.getBoundingClientRect(); if (r.top < 64 || r.top > window.innerHeight - 120) coScrollBy(r.top - 76); } }
 };
 ACT.cobook = el => {
   const W = CO, b = W.found?.[Number(el?.dataset.i)]; if (!b) return;
@@ -2493,51 +2581,48 @@ ACT.cocat = el => {
   const W = CO, c = el.dataset.v;
   if (W.cat !== c) {
     W.cat = c;
-    if (isPkg(W) || (W.min === PKG_MIN && !(pkgPrice(c) > 0))) { W.min = 60; W.split = null; W.sess = [{ ...W.sess[0], m: 60 }]; W.si = 0; W.day = W.sess[0].day || kToday(); }
+    if (isPkg(W) || (W.min === PKG_MIN && !(pkgPrice(c) > 0))) { W.min = 60; W.split = null; W.sess = [{ ...W.sess[0], m: 60 }]; W.si = 0; W.day = kToday(); }
     if (W.ins && !(W.ins.categories || ['B']).includes(c)) W.ins = null;
     coTouch(W);
   }
-  coGo(W, 'dur');
+  coDone(W, 'cat', ['dur', 'time', 'ins', 'pay']);
 };
 function coSetSplit(W, s){
-  const first = W.sess[0] || { day: kToday(), t: nowHM(), now: true };
   W.min = PKG_MIN; W.krug = false; W.split = s;
-  W.sess = s.m.map((m, i) => i === 0 ? { ...first, m } : { m, day: '', t: '', now: false });
-  W.si = 0; W.day = first.day || kToday();
+  W.sess = s.m.map((m, i) => i === 0 ? { m, day: kToday(), t: nowHM(), now: true } : { m, day: '', t: '', now: false });
+  W.si = W.sess.length > 1 ? 1 : 0; W.day = W.sess.length > 1 ? defaultDay(W, 1) : kToday();
   coTouch(W);
 }
 ACT.codur = el => {
   const W = CO, k = el.dataset.v;
-  if (k === 'pkg') { if (!isPkg(W)) coSetSplit(W, SPLITS[0]); return coGo(W, 'dur'); }
-  const first = W.sess[0] || { day: kToday(), t: nowHM(), now: true };
+  if (k === 'pkg') { if (!isPkg(W)) coSetSplit(W, SPLITS[0]); return coDone(W, 'dur', ['now', 'time', 'ins', 'pay'], 'dur'); }
   const m = k === 'krug' ? krugMin() : Number(k);
   if (!(coDurKey(W) === k)) {
     W.krug = k === 'krug'; W.min = m; W.split = null;
-    W.sess = [{ ...first, m }]; W.si = 0; W.day = first.day || kToday();
+    W.sess = [{ m, day: kToday(), t: nowHM(), now: true }]; W.si = 0; W.day = kToday();
     coTouch(W);
   }
-  coGo(W, 'time');
+  coDone(W, 'dur', ['now', 'time', 'ins', 'pay']);
 };
-ACT.cosplit = el => { const W = CO, s = SPLITS.find(x => x.k === el.dataset.k); if (!s) return; if (W.split?.k !== s.k) coSetSplit(W, s); coGo(W, 'time'); };
-ACT.cosess = el => { const W = CO; W.si = Number(el.dataset.i); W.day = defaultDay(W, W.si); coRender(); };
-ACT.coday = el => { const W = CO; W.day = el.dataset.v; coRender(); };
+/* Paket bo'linsa — keyingi mashg'ulotlar qatori chiqadi va ochiq turadi (to'ldirish shart) */
+ACT.cosplit = el => { const W = CO, s = SPLITS.find(x => x.k === el.dataset.k); if (!s) return; if (W.split?.k !== s.k) coSetSplit(W, s); coDone(W, 'dur', ['now', 'time', 'ins', 'pay'], W.sess.length > 1 && W.sess.slice(1).some(x => !x.t) ? 'time' : null); };
+ACT.cosess = el => { const W = CO, i = Number(el.dataset.i); if (!(i >= 1)) return; W.si = i; W.day = defaultDay(W, i); coPatch('time', ['time']); };
+ACT.coday = el => {
+  const W = CO, sc = $('coDays')?.scrollLeft;
+  W.day = el.dataset.v; coPatch('time', ['time']);
+  const d = $('coDays'); if (d && sc != null) d.scrollLeft = sc;
+};
 function coAfterTime(W){
   const next = W.sess.findIndex(x => !x.t);
   coTouch(W);
-  if (next >= 0) { W.si = next; W.day = defaultDay(W, next); toast(`${next + 1}-mashg‘ulot vaqtini tanlang`); return coGo(W, 'time'); }
-  coGo(W, 'ins');
+  if (next >= 0) { W.si = next; W.day = defaultDay(W, next); toast(`${next + 1}-mashg‘ulot vaqtini tanlang`); return coDone(W, 'time', ['ins'], 'time'); }
+  coDone(W, 'time', ['ins']);
 }
-ACT.conow = () => {
-  const W = CO;
-  Object.assign(W.sess[0], { day: kToday(), t: nowHM(), now: true });
-  W.si = 0; W.day = kToday();
-  coAfterTime(W);
-};
-ACT.cotime = el => { const W = CO; Object.assign(W.sess[W.si], { day: W.day, t: el.dataset.v, now: false }); coAfterTime(W); };
+ACT.cotime = el => { const W = CO; if (!(W.si >= 1)) return; Object.assign(W.sess[W.si], { day: W.day, t: el.dataset.v, now: false }); coAfterTime(W); };
 ACT.coins = el => {
   const W = CO, i = W.insRes?.free.find(x => String(x.id) === el.dataset.v); if (!i) return;
-  W.ins = i; W.insAuto = false; W.open = null;
-  coRender();
+  W.ins = i; W.insAuto = false;
+  coDone(W, 'ins', []);
 };
 ACT.coscroll = el => coScrollTo(el.dataset.s);
 
@@ -3292,19 +3377,23 @@ ACT.schfree = el => {
   const ins = (SCH.d?.instructors || []).find(x => String(x.id) === el.dataset.id); if (!ins) return;
   const t = new Date(Number(el.dataset.t)), day = ymdOf(t), time = hm(t);
   const pref = { ins: String(ins.id), cats: ins.categories || ['B'], day, t: time };
+  /* Bronsiz chek faqat HOZIRGI vaqt bilan chiqadi — kelajakdagi katakdan emas */
+  const slotMs = (SCH.step || 60) * 60000, isNow = Number(el.dataset.t) <= Date.now() + 60000 && Date.now() < Number(el.dataset.t) + slotMs;
   openSheet(`<h3>${esc(ins.name)}</h3><p class="lead">${esc(dayLabel(day))}, ${esc(time)} — bo‘sh · ${esc((ins.categories || []).join(', '))} toifa</p>
     <div class="opt-list">
       ${canDesk() ? `<button class="opt" data-act="schto" data-r="manual"><span class="lt">${I('phone', 24)}</span><span class="tx"><b>Qo‘lda bron</b><small>Telefon orqali yozilgan mijoz</small></span>${I('chev')}</button>` : ''}
-      ${canKassa() ? `<button class="opt" data-act="schto" data-r="issue"><span class="lt" style="background:#dcfce7;color:#15803d">${I('receipt', 24)}</span><span class="tx"><b>Chek chiqarish</b><small>Mijoz kassada — shu vaqtga</small></span>${I('chev')}</button>` : ''}
+      ${canKassa() ? (isNow
+        ? `<button class="opt" data-act="schto" data-r="issue"><span class="lt" style="background:#dcfce7;color:#15803d">${I('receipt', 24)}</span><span class="tx"><b>Chek chiqarish</b><small>Mijoz kassada — hozir, ${esc(nowHM())} dan</small></span>${I('chev')}</button>`
+        : `<div class="note info" style="margin-top:4px">Bronsiz chek faqat <b>hozirgi vaqt</b> bilan chiqadi. Mijoz kelganda «Chek chiqarish»ni bosing — ${esc(ins.name)} o‘sha paytda bo‘sh bo‘lsa, avtomatik tanlanadi.</div>`) : ''}
     </div>`);
   SCH.pref = pref;
 };
 ACT.schto = el => {
   const r = el.dataset.r, pref = SCH.pref;
   closeSheet();
-  if (r === 'manual') { MB_reset(); MB.pref = pref; } else { CO_reset(); CO.pref = pref; }
+  if (r === 'manual') { MB_reset(); MB.pref = pref; } else { CO_reset(); CO.pref = { ins: pref.ins, cats: pref.cats }; }
   go(r);
-  toast('Mijoz ma’lumotini kiriting — instruktor va vaqt tayyor');
+  toast(r === 'manual' ? 'Mijoz ma’lumotini kiriting — instruktor va vaqt tayyor' : 'Mijoz ismini yozing — chek hozirgi vaqt bilan chiqadi');
 };
 ACT.schbk = el => {
   const b = (SCH.d?.bookings || []).find(x => String(x.id) === el.dataset.id); if (!b) return;
