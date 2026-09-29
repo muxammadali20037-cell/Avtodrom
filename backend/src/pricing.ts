@@ -74,6 +74,26 @@ export function computePrice(category: string, minutes: number, tariffs: Tariffs
   return Math.round((t.hour * m) / 60);
 }
 
+/**
+ * 1 KRUG (avtodrom bo'ylab bir aylana) — kassada sotiladi.
+ * Narxi va davomiyligi sozlamada: krug_price (standart 80 000),
+ * krug_min (standart 15 daqiqa — instruktor shuncha vaqt band bo'ladi).
+ */
+export const KRUG_DEFAULT = { price: 80000, minutes: 15 };
+export async function loadKrug(): Promise<{ price: number; minutes: number }> {
+  const out = { ...KRUG_DEFAULT };
+  try {
+    const rows = await supabaseRest<any[]>('admin_settings', { query: '?key=in.(krug_price,krug_min)&select=key,value' });
+    for (const r of rows) {
+      const n = Number(r?.value?.value ?? r?.value);
+      if (!Number.isFinite(n)) continue;
+      if (r.key === 'krug_price' && n >= 0) out.price = Math.round(n);
+      if (r.key === 'krug_min' && n >= 15 && n <= 60) out.minutes = Math.round(n);
+    }
+  } catch { /* standart */ }
+  return out;
+}
+
 /** Qulaylik: tariflarni o'zi o'qib narx qaytaradi. */
 export async function priceFor(category: string, minutes: number): Promise<number> {
   return computePrice(category, minutes, await loadTariffs());

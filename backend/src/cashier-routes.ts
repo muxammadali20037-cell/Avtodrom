@@ -1,7 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import { supabaseRest } from './supabase.js';
 import { selectIn } from './rest-chunks.js';
-import { loadTariffs, computePrice } from './pricing.js';
+import { loadTariffs, computePrice, loadKrug } from './pricing.js';
 import { q, findUserByTelegram, toProfile } from './identity.js';
 import { fmtWhen, fmtMoney } from './notify.js';
 import { readRegisterToken, ownRegisterFromToken } from './shift-routes.js';
@@ -33,6 +33,11 @@ import {
 
 const TZ = 'Asia/Tashkent';
 const today = () => new Intl.DateTimeFormat('en-CA', { timeZone: TZ }).format(new Date());
+
+const tkYmd = (iso: unknown) => {
+  const d = new Date(String(iso || ''));
+  return Number.isNaN(d.getTime()) ? '' : new Intl.DateTimeFormat('en-CA', { timeZone: TZ }).format(d);
+};
 
 function dayRange(date: string) {
   const d = /^\d{4}-\d{2}-\d{2}$/.test(date) ? date : today();
@@ -792,12 +797,29 @@ export async function registerCashierRoutes(
       await requireAdmin(req);
       const registerId = await ownRegisterFromToken(req, String(req.query?.token || ''));
       if (!registerId) return reply.code(401).send({ ok: false, error: 'Kassa ochilmagan — qayta kiring' });
-      const { start, end, day } = dayRange(String(req.query?.date || ''));
+      /* DAVR: bitta kun (?date=), davr (?period=week|month|year&date=)
+         yoki oraliq (?from=YYYY-MM-DD&to=YYYY-MM-DD, ikkala kun kiradi).
+         Cheklar ro'yxati uchun eng uzog'i — 1 yil. */
+      const { rangeFromQuery } = await import('./analytics-routes.js');
+      const rq: any = { ...(req.query || {}) };
+      if (!rq.date && !rq.from) rq.date = dayRange('').day;
+      const rg = rangeFromQuery(rq, 'day');
+      if (rg.to.getTime() - rg.from.getTime() > 367 * 864e5) {
+        return reply.code(400).send({ ok: false, error: 'Cheklar uchun oraliq 1 yildan oshmasin' });
+      }
+      const start = rg.from.toISOString(), end = rg.to.toISOString();
+      const day = rg.fromYmd || rg.anchor;
 
-      const pays = await supabaseRest<any[]>('payments', {
-        query: `?register_id=eq.${q(registerId)}&paid_at=gte.${q(start)}&paid_at=lt.${q(end)}` +
-               '&select=*&order=paid_at.desc&limit=1000',
-      });
+      /* PostgREST 1000 qatordan ortig'ini jimgina kesadi — sahifalab olamiz */
+      const pays: any[] = [];
+      for (let offset = 0; offset < 30000; offset += 1000) {
+        const chunk = await supabaseRest<any[]>('payments', {
+          query: `?register_id=eq.${q(registerId)}&paid_at=gte.${q(start)}&paid_at=lt.${q(end)}` +
+                 `&select=*&order=paid_at.desc,id.desc&limit=1000&offset=${offset}`,
+        });
+        pays.push(...chunk);
+        if (chunk.length < 1000) break;
+      }
       const withCode = pays.filter((p) => p.receipt_code);
       const bids = [...new Set(withCode.map((p) => p.booking_id).filter(Boolean).map(String))];
       const bookings = await selectIn<any>('bookings', 'id', bids, '*');
@@ -825,6 +847,7 @@ export async function registerCashierRoutes(
           cash_amount: Number(p.cash_amount || 0),
           card_amount: Number(p.card_amount || 0),
           payment_status: pst,
+          krug: /krug/i.test(String(p.note || '')),
           state,
           used_at: scan?.created_at || b?.arrived_at || null,
           finished_at: b?.departed_at || null,
@@ -841,14 +864,45 @@ export async function registerCashierRoutes(
       rows.sort((a, b) => String(b.paid_at || '').localeCompare(String(a.paid_at || '')));
       const count = (st: string) => rows.filter((r) => r.state === st).length;
       const paidRows = rows.filter((r) => r.state !== 'cancelled');
+
+      /* Kunlar kesimida — uzun davrda har kun sarlavhasida jami ko'rinadi */
+      const dm = new Map<string, any>();
+      for (const r of rows) {
+        const k = tkYmd(r.paid_at);
+        if (!dm.has(k)) dm.set(k, { day: k, count: 0, cancelled: 0, amount: 0, cash: 0, card: 0 });
+        const x = dm.get(k);
+        if (r.state === 'cancelled') { x.cancelled++; continue; }
+        x.count++; x.amount += r.amount;
+        if (r.method === 'mixed') { x.cash += r.cash_amount; x.card += r.card_amount; }
+        else if (r.method === 'card') x.card += r.amount; else x.cash += r.amount;
+      }
+
+      /* Qidiruv va holat filtri (uzun davrda ro'yxat qisqartirilganda
+         brauzer butun davr bo'yicha serverdan qidiradi). */
+      const needle = String(req.query?.q || '').trim().toLowerCase();
+      const stF = String(req.query?.state || '');
+      let list = stF ? rows.filter((r) => r.state === stF) : rows;
+      if (needle) {
+        list = list.filter((r) => [r.code, r.customer?.full_name, r.customer?.phone, r.instructor_name]
+          .some((v) => String(v || '').toLowerCase().includes(needle)));
+      }
+      /* Javob hajmi chegarasi (Vercel ~4.5 MB): eng yangi 1500 ta chek
+         qaytadi, jami raqamlar esa BUTUN davr bo'yicha hisoblanadi. */
+      const LIMIT = 1500;
       return {
         ok: true, date: day, register_id: registerId,
+        from: rg.fromYmd || rg.anchor, to: rg.toYmd || tkYmd(new Date(rg.to.getTime() - 1).toISOString()),
         summary: {
           total: rows.length, active: count('active'), used: count('used'),
           no_show: count('no_show'), cancelled: count('cancelled'),
           amount: paidRows.reduce((a, r) => a + r.amount, 0),
+          cash: [...dm.values()].reduce((a, x) => a + x.cash, 0),
+          card: [...dm.values()].reduce((a, x) => a + x.card, 0),
         },
-        receipts: rows,
+        days: [...dm.values()].sort((a, b) => b.day.localeCompare(a.day)),
+        matched: list.length,
+        truncated: list.length > LIMIT,
+        receipts: list.slice(0, LIMIT),
       };
     } catch (e: any) {
       return reply.code(e?.statusCode ?? 500).send({ ok: false, error: e?.message || 'Cheklar yuklanmadi' });
@@ -964,7 +1018,12 @@ export async function registerCashierRoutes(
       const admin = await adminUser();
 
       const mode = b.booking_id ? 'booked' : 'walk_in';
-      const minutes = Math.max(15, Math.min(600, Math.round(Number(b.duration_minutes || 60))));
+      /* 1 KRUG — bronsiz, bitta aylana: narxi va vaqti sozlamadan */
+      const krug = mode === 'walk_in' && (b.krug === true || b.krug === 'true');
+      const krugCfg = krug ? await loadKrug() : null;
+      if (krug && !(krugCfg!.price > 0)) return reply.code(400).send({ ok: false, error: '«1 krug» o‘chirilgan (Narxlar bo‘limida narxini kiriting)' });
+      if (krug && Array.isArray(b.sessions) && b.sessions.length) return reply.code(400).send({ ok: false, error: '1 krug paket bo‘la olmaydi' });
+      const minutes = krug ? krugCfg!.minutes : Math.max(15, Math.min(600, Math.round(Number(b.duration_minutes || 60))));
       const cash = Math.max(0, Number(b.cash_amount || 0));
       const card = Math.max(0, Number(b.card_amount || 0));
       /* Server narxni O'ZI hisoblaydi. Kassir summani o'zgartirishi
@@ -972,7 +1031,7 @@ export async function registerCashierRoutes(
          bu xato belgisi — yozib qo'yamiz va javobda qaytaramiz.
          5 soat — paket narxi (standart 1 100 000). */
       const [tariffs, pkgPrices] = await Promise.all([loadTariffs(), loadPackagePrices()]);
-      const suggested = priceWithPackage(String(b.category || 'B'), minutes, tariffs, pkgPrices);
+      const suggested = krug ? krugCfg!.price : priceWithPackage(String(b.category || 'B'), minutes, tariffs, pkgPrices);
       const total = Math.round(Number(b.amount ?? suggested));
 
       if (!(total > 0)) return reply.code(400).send({ ok: false, error: 'Summani kiriting' });
@@ -1045,7 +1104,7 @@ export async function registerCashierRoutes(
         /* 5 soat — paket (faqat B toifa): bir kunda yoki bir necha kunga bo'lingan.
            A va C da 5 soat — oddiy bron, soatlik tarif bilan. */
         const pkgOn = packagePriceOf(String(b.category || ''), pkgPrices) > 0;
-        const isPackage = (minutes === PACKAGE_MINUTES && pkgOn) || (Array.isArray(b.sessions) && b.sessions.length > 0);
+        const isPackage = !krug && ((minutes === PACKAGE_MINUTES && pkgOn) || (Array.isArray(b.sessions) && b.sessions.length > 0));
         if (isPackage && !pkgOn) return reply.code(400).send({ ok: false, error: '5 soatlik paket faqat B toifa uchun' });
         let sessions: Session[] = [{ start, end: new Date(start.getTime() + minutes * 60000), minutes }];
         if (isPackage) {
@@ -1095,6 +1154,7 @@ export async function registerCashierRoutes(
               end_at: new Date(start.getTime() + minutes * 60000).toISOString(),
               duration_minutes: minutes, category: b.category || null,
               status: 'confirmed', source: 'walk_in', confirmed_at: now, confirmed_by: admin.id,
+              ...(krug ? { customer_note: '1 krug' } : {}),
             }),
           }))[0]];
         }
@@ -1134,7 +1194,7 @@ export async function registerCashierRoutes(
           booking_id: t.id, customer_id: t.customer_id, amount: amounts[i], currency: 'UZS',
           status: 'paid', method, cash_amount: c, card_amount: k,
           paid_at: new Date().toISOString(), receipt_code: receiptCode, cashier_id: admin.id, register_id: register.id,
-          note: String(b.note || '').trim() || (packageInfo ? `5 soatlik paket · ${i + 1}/${targets.length}` : null),
+          note: krug ? '1 krug' : (String(b.note || '').trim() || (packageInfo ? `5 soatlik paket · ${i + 1}/${targets.length}` : null)),
         };
         const existing = existingBy.get(String(t.id));
         const payment = existing
@@ -1144,7 +1204,7 @@ export async function registerCashierRoutes(
           : (await supabaseRest<any[]>('payments', {
               method: 'POST', headers: { Prefer: 'return=representation' }, body: JSON.stringify(payload) }))[0];
         await audit(admin.id, 'RECEIPT_ISSUED', 'payments', payment?.id ?? null, null,
-          { amount: amounts[i], suggested, method, cash: c, card: k, receipt_code: receiptCode, booking_id: t.id, mode,
+          { amount: amounts[i], suggested, method, cash: c, card: k, receipt_code: receiptCode, booking_id: t.id, mode, krug,
             register: register.code, package: packageInfo?.id || null });
         payments.push(payment);
       }
@@ -1561,6 +1621,7 @@ function buildReceipt(b: any, p: any) {
     amount_text: fmtMoney(p.amount),
     method: p.method,
     method_text: p.method === 'mixed' ? 'Naqd + Terminal' : p.method === 'card' ? 'Terminal' : 'Naqd',
+    krug_text: /krug/i.test(String(p.note || '')) ? '1 krug' : null,
     cash_amount: Number(p.cash_amount || 0),
     card_amount: Number(p.card_amount || 0),
     paid_at: p.paid_at,

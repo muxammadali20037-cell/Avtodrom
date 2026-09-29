@@ -1,5 +1,5 @@
 import type { FastifyInstance } from 'fastify';
-import { lessonMinutes, isSchoolLesson } from './lesson-math.js';
+import { lessonMinutes, isSchoolLesson, tashkentYmd } from './lesson-math.js';
 import { supabaseRest } from './supabase.js';
 import { selectIn } from './rest-chunks.js';
 
@@ -58,6 +58,9 @@ export function rangeFromQuery(query: any, fallbackPeriod = 'day') {
   const isYmd = (v: any) => /^\d{4}-\d{2}-\d{2}$/.test(String(v || ''));
   const f = String(query?.from || ''), t = String(query?.to || '');
   if (isYmd(f) && isYmd(t)) {
+    /* 2025-13-45 kabi sana jimgina boshqa kunga aylanib ketmasin */
+    const real = (v: string) => { const d = new Date(`${v}T00:00:00Z`); return !Number.isNaN(d.getTime()) && d.toISOString().slice(0, 10) === v; };
+    if (!real(f) || !real(t)) { const e: any = new Error('Sana noto‘g‘ri'); e.statusCode = 400; throw e; }
     const [a, b] = f <= t ? [f, t] : [t, f];
     const at5 = (ymd: string) => { const [y, m, d] = ymd.split('-').map(Number); return new Date(Date.UTC(y, m - 1, d) - 5 * 3600e3); };
     const from = at5(a), to = new Date(at5(b).getTime() + 864e5);
@@ -80,6 +83,18 @@ async function report(from: Date, to: Date, bucket: string) {
     body: JSON.stringify({ p_from: from.toISOString(), p_to: to.toISOString(), p_bucket: bucket }),
   });
   return res ?? {};
+}
+
+/** Bir bronga bir necha to'lov yozuvi bo'lishi mumkin (qaytarilgan +
+ *  qayta to'langan). Hisobotda TO'LANGANI ustun turadi. */
+function payMap(pays: any[]) {
+  const m = new Map<string, any>();
+  for (const p of pays) {
+    const k = String(p.booking_id);
+    const cur = m.get(k);
+    if (!cur || (cur.status !== 'paid' && p.status === 'paid')) m.set(k, p);
+  }
+  return m;
 }
 
 export async function registerAnalyticsRoutes(
@@ -141,6 +156,152 @@ export async function registerAnalyticsRoutes(
       };
     } catch (e: any) {
       return reply.code(e?.statusCode ?? 500).send({ ok: false, error: e?.message || 'Hisobot yuklanmadi' });
+    }
+  });
+
+  /**
+   * INSTRUKTORLAR HISOBOTI — barcha instruktorlar bitta jadvalda.
+   * ?from=YYYY-MM-DD&to=YYYY-MM-DD (ikkala kun kiradi) yoki ?period=&date=
+   *
+   * Har instruktor bo'yicha: nechta o'quvchi haydadi (noyob), nechta
+   * AVTOSHKOLA darsi va nechta PULLIK dars, soat, tushum.
+   * Hisob qoidasi «Instruktor nazorati» bilan AYNAN bir xil:
+   *   dars (o'tilgan) — boshlangan yoki tugagan bron;
+   *   soat — tugagan darslar davomiyligi; tushum — to'langan summa.
+   *
+   * Kassir: faqat o'z kassasida sotilgan darslar + avtoshkola darslari
+   * (ular hech bir kassaga bog'liq emas). Kassa ID tokendan/sessiyadan.
+   */
+  app.get('/api/admin/instructor-report', async (req: any, reply: any) => {
+    try {
+      await requireStaff(req);
+      const { from, to, label, anchor, period, fromYmd, toYmd } = rangeFromQuery(req.query);
+
+      const { peekStaff } = await import('./admin-password-routes.js');
+      const me: any = peekStaff(req);
+      if (me && me.role === 'operator') return reply.code(403).send({ ok: false, error: 'Bu hisobot kassa va administrator uchun' });
+      let regId: string | null = null;
+      if (me && me.role === 'cashier') regId = String(me.register_id || '00000000-0000-0000-0000-000000000000');
+
+      const bookings: any[] = [];
+      for (let offset = 0; offset < 60000; offset += 1000) {
+        const chunk = await supabaseRest<any[]>('bookings', {
+          query:
+            `?instructor_id=not.is.null&start_at=gte.${q(from.toISOString())}&start_at=lt.${q(to.toISOString())}` +
+            `&select=*&order=start_at.asc,id.asc&limit=1000&offset=${offset}`,
+        });
+        bookings.push(...chunk);
+        if (chunk.length < 1000) break;
+      }
+
+      const ids = bookings.map((b) => String(b.id));
+      const cids = [...new Set(bookings.map((b) => b.course_id).filter(Boolean).map(String))];
+      const payFilter = regId ? `&register_id=eq.${q(regId)}` : '';
+      const [ips, courses, pays] = await Promise.all([
+        supabaseRest<any[]>('instructor_profiles', { query: '?select=*&limit=1000' }),
+        selectIn<any>('courses', 'id', cids, 'id,duration_minutes'),
+        selectIn<any>('payments', 'booking_id', ids, 'booking_id,amount,method,status,cash_amount,card_amount,register_id', payFilter),
+      ]);
+      const uids = [...new Set(ips.map((i: any) => i.user_id).filter(Boolean).map(String))];
+      const users = await selectIn<any>('users', 'id', uids, 'id,full_name,phone,is_active,is_blocked');
+      const um = new Map(users.map((u) => [String(u.id), u]));
+      const cm = new Map(courses.map((c) => [String(c.id), c]));
+      const pm = payMap(pays);
+
+      /* Kassir uchun: P2 sotgan dars P1 hisobotiga umuman tushmaydi */
+      const scoped = regId ? bookings.filter((b) => isSchoolLesson(b) || pm.has(String(b.id))) : bookings;
+
+      const blank = () => ({ lessons: 0, completed: 0, minutes: 0, revenue: 0, _st: new Set<string>() });
+      const acc = new Map<string, any>();
+      const ensure = (id: string) => {
+        if (!acc.has(id)) {
+          acc.set(id, {
+            id, bookings: 0, lessons: 0, completed: 0, minutes: 0, revenue: 0, cash: 0, card: 0,
+            no_show: 0, cancelled: 0, _st: new Set<string>(), _days: new Set<string>(),
+            school: blank(), paid: blank(),
+          });
+        }
+        return acc.get(id);
+      };
+      const tot = { bookings: 0, lessons: 0, completed: 0, minutes: 0, revenue: 0, cash: 0, card: 0, no_show: 0, cancelled: 0,
+        _st: new Set<string>(), school: blank(), paid: blank() };
+      const days = new Map<string, any>();
+
+      for (const b of scoped) {
+        const x = ensure(String(b.instructor_id));
+        const p = pm.get(String(b.id));
+        const amount = p && p.status === 'paid' ? Number(p.amount || 0) : 0;
+        const st = String(b.status || '');
+        const school = isSchoolLesson(b);
+        const kind = school ? 'school' : 'paid';
+        const who = b.customer_id ? String(b.customer_id) : `x${b.id}`;
+        const attended = st === 'in_progress' || st === 'completed';
+        const mins = st === 'completed' ? lessonMinutes(b, cm.get(String(b.course_id))) : 0;
+        let cash = 0, card = 0;
+        if (amount) {
+          if (p.method === 'mixed') { cash = Number(p.cash_amount || 0); card = Number(p.card_amount || 0); }
+          else if (p.method === 'card') card = amount; else cash = amount;
+        }
+        for (const t of [x, tot]) {
+          t.bookings++; t.revenue += amount; t.cash += cash; t.card += card;
+          if (st === 'no_show') t.no_show++;
+          if (st === 'cancelled' || st === 'rejected') t.cancelled++;
+          if (attended) {
+            t.lessons++; t._st.add(who);
+            t[kind].lessons++; t[kind]._st.add(who); t[kind].revenue += amount;
+            if (st === 'completed') { t.completed++; t.minutes += mins; t[kind].completed++; t[kind].minutes += mins; }
+          }
+        }
+        const dk = tashkentYmd(b.start_at || b.booking_date);
+        if (attended && dk) x._days.add(dk);
+        if (dk) {
+          if (!days.has(dk)) days.set(dk, { day: dk, lessons: 0, school: 0, paid: 0, minutes: 0, revenue: 0, _st: new Set<string>() });
+          const d = days.get(dk);
+          d.revenue += amount;
+          if (attended) { d.lessons++; d[kind]++; d._st.add(who); d.minutes += mins; }
+        }
+      }
+
+      const fin = (g: any) => { const { _st, ...rest } = g; return { ...rest, students: _st.size }; };
+      /* Ro'yxatda HAMMA instruktor bor — shu davrda dars o'tmaganlar ham
+         (0 bilan), shunda kim ishlamagani ham ko'rinadi. */
+      const ipm = new Map(ips.map((i: any) => [String(i.id), i]));
+      for (const i of ips) {
+        const u: any = um.get(String(i.user_id));
+        const active = Boolean(i.is_verified && i.is_available && u?.is_active && !u?.is_blocked);
+        if (active) ensure(String(i.id));
+      }
+      const instructors = [...acc.values()].map((x) => {
+        const i: any = ipm.get(x.id) || {};
+        const u: any = um.get(String(i.user_id)) || {};
+        const { _st, _days, school, paid, ...rest } = x;
+        return {
+          ...rest,
+          name: u.full_name || i.full_name || 'Instruktor',
+          phone: u.phone || null,
+          vehicle_plate: i.vehicle_plate || null,
+          students: _st.size,
+          work_days: _days.size,
+          school: fin(school),
+          paid: fin(paid),
+        };
+      }).sort((a, b) => b.students - a.students || b.lessons - a.lessons || String(a.name).localeCompare(String(b.name), 'uz'));
+
+      const { _st: tst, school: ts, paid: tp, ...trest } = tot;
+      return {
+        ok: true, period, label, anchor,
+        from: from.toISOString(), to: to.toISOString(),
+        from_day: fromYmd || tashkentYmd(from.toISOString()),
+        to_day: toYmd || tashkentYmd(new Date(to.getTime() - 1).toISOString()),
+        scoped_to_register: !!regId,
+        totals: { ...trest, students: tst.size, school: fin(ts), paid: fin(tp),
+          working: instructors.filter((i) => i.lessons > 0).length },
+        instructors,
+        days: [...days.values()].map((d) => { const { _st, ...r } = d; return { ...r, students: _st.size }; })
+          .sort((a, b) => a.day.localeCompare(b.day)),
+      };
+    } catch (e: any) {
+      return reply.code(e?.statusCode ?? 500).send({ ok: false, error: e?.message || 'Instruktorlar hisoboti yuklanmadi' });
     }
   });
 
@@ -214,8 +375,16 @@ export async function registerAnalyticsRoutes(
       ]);
       const um = new Map(users.map((u) => [String(u.id), u]));
       const cm = new Map(courses.map((c) => [String(c.id), c]));
-      const pm = new Map(pays.map((p) => [String(p.booking_id), p]));
+      const pm = payMap(pays);
       const sm = new Map(scans.map((s) => [String(s.booking_id), s]));
+
+      /* ?own=1 — kassa rejimida faqat SHU kassada sotilgan darslar
+         (va kassaga bog'liq bo'lmagan avtoshkola darslari) qoladi:
+         P1 kassiri P2 sotgan darslarni umuman ko'rmaydi. */
+      if (regId && String(req.query?.own || '') === '1') {
+        const keep = bookings.filter((b) => isSchoolLesson(b) || pm.has(String(b.id)));
+        bookings.length = 0; bookings.push(...keep);
+      }
 
       /* Dars davomiyligi: bronda yozilgani ASOSIY. Ilgari faqat
          mashg'ulot (course) qiymati olinardi — kassada 90 daqiqaga

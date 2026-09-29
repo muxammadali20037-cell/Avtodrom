@@ -1475,7 +1475,7 @@ async function notifyInstructorDecision(
      faqat administratorga. */
   const WORK_SETTING_KEYS = ['system_name', 'contact_phone', 'address', 'working_hours', 'booking_enabled',
     'location', 'work_start', 'work_end', 'slot_step_min', 'half_a', 'half_b', 'half_c', 'rate_a', 'rate_b', 'rate_c',
-    'paket5_a', 'paket5_b', 'paket5_c'];
+    'paket5_a', 'paket5_b', 'paket5_c', 'krug_price', 'krug_min'];
   /* Tizim yozuvlari (paketlar, instruktor yopgan soatlar) sozlamalar
      ro'yxatiga kirmaydi — ular yuzlab bo'lishi mumkin. */
   const HIDE_SYSTEM_KEYS = '&key=not.like.pack*&key=not.like.instructor_busy*';
