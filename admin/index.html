@@ -126,7 +126,6 @@ svg{display:block;flex:none}
   .bar{left:var(--rail)!important;bottom:0!important}
   .toast{margin-left:calc(var(--rail) / 2)}
 }
-}
 /* ---------- kompyuter: ikki ustun, o'ngda xulosa paneli ---------- */
 .home-side,.wz-side{display:none}
 .side-card{background:var(--card);border-radius:20px;box-shadow:var(--shadow);padding:16px 18px}
@@ -218,7 +217,7 @@ select.input{appearance:none;-webkit-appearance:none;background-image:linear-gra
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 
 .seg{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;background:rgba(20,24,51,.07);border-radius:14px;padding:3px;gap:2px}
-.seg button{min-height:40px;border-radius:11px;font-weight:700;font-size:14px;color:var(--hint);white-space:nowrap;padding:0 8px;position:relative}
+.seg button{min-height:40px;border-radius:11px;font-weight:700;font-size:14px;color:var(--hint);white-space:nowrap;padding:0 8px;position:relative;text-align:center}
 .seg button.on{background:var(--card);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.1)}
 .seg .n{display:inline-grid;place-items:center;min-width:19px;height:19px;padding:0 5px;border-radius:10px;background:var(--danger);color:#fff;font-size:11px;font-weight:800;margin-left:5px;vertical-align:1px}
 .chips{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;margin:0 -16px;padding:2px 16px 4px}
@@ -394,6 +393,77 @@ button.row:active,a.row:active{background:var(--card-2)}
 .done-hero p{margin:6px 0 0;color:var(--hint)}
 .code-big{display:inline-block;margin-top:8px;font-size:26px;font-weight:850;letter-spacing:.12em;padding:8px 16px;border-radius:14px;background:var(--accent-soft);color:var(--accent)}
 
+/* ---------- chek chiqarish: hammasi bitta oynada ---------- */
+.co-form .co-sec{background:var(--card);border-radius:20px;box-shadow:var(--shadow);padding:14px 16px 16px;margin-top:12px;scroll-margin-top:84px}
+.co-form .co-sec:first-child{margin-top:4px}
+.co-h{display:flex;align-items:center;gap:10px;margin-bottom:12px;min-width:0}
+.co-h i{font-style:normal;width:26px;height:26px;border-radius:50%;background:#16a34a;color:#fff;display:grid;place-items:center;font-size:13px;font-weight:800;flex:none}
+.co-h i.todo{background:var(--accent-soft);color:var(--accent)}
+.co-h b{font-size:16px;letter-spacing:-.2px;flex:none}
+.co-h span{margin-left:auto;font-size:13px;color:var(--hint);font-weight:650;text-align:right;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cchips{display:flex;flex-wrap:wrap;gap:8px}
+.cch{display:flex;flex-direction:column;align-items:flex-start;justify-content:center;min-height:54px;padding:8px 14px;border-radius:14px;background:var(--card-2);text-align:left;transition:background .12s,box-shadow .12s}
+.cch b{display:flex;align-items:center;gap:6px;font-size:15.5px;letter-spacing:-.2px;line-height:1.2}
+.cch small{font-size:12px;color:var(--hint);font-weight:600;margin-top:3px}
+.cch.on{background:var(--accent-soft);box-shadow:inset 0 0 0 2px var(--accent)}
+.cch.on b,.cch.on small{color:var(--accent)}
+.cch:disabled{opacity:.45}
+.cch.cat{min-width:110px}
+.cch.pkg{background:#dcfce7}.cch.pkg b,.cch.pkg small{color:#15803d}
+.cch.pkg.on{background:#16a34a;box-shadow:none}.cch.pkg.on b,.cch.pkg.on small{color:#fff}
+.cch.pkg s{opacity:.7}
+.cch.now{background:var(--ok-soft)}.cch.now b{color:var(--ok)}
+.cch.now.on{background:#16a34a;box-shadow:none}.cch.now.on b,.cch.now.on small{color:#fff}
+.cch.pay-ch{min-width:110px;align-items:center}
+.co-sec .day,.co-sec .time{background:var(--card-2);box-shadow:none}
+.co-sec .day.on,.co-sec .time.on{background:var(--accent);color:#fff}
+.co-sec .time:disabled{background:transparent;box-shadow:inset 0 0 0 1px var(--line)}
+.co-sec .sess-tab{background:var(--card-2);box-shadow:none}
+.co-sec .sess-tab.on{background:var(--accent)}
+.insg{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px}
+.insc{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:14px;background:var(--card-2);text-align:left;min-width:0;transition:background .12s,box-shadow .12s}
+.insc .ava{width:40px;height:40px;font-size:14px;background:var(--card)}
+.insc .tx{min-width:0}
+.insc b{display:block;font-size:14.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.insc small{display:block;font-size:12px;color:var(--hint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.insc.on{background:var(--accent-soft);box-shadow:inset 0 0 0 2px var(--accent)}
+.insc.on b{color:var(--accent)}
+.co-booked{display:flex;gap:12px;align-items:flex-start;padding:12px 14px;border-radius:16px;background:var(--accent-soft)}
+.co-total{display:flex;align-items:flex-end;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-top:14px;padding-top:12px;border-top:1.5px dashed var(--line)}
+.co-total .big{font-size:28px;font-weight:850;letter-spacing:-.8px}
+.co-form .co-sel{padding:0;overflow:hidden}
+.co-selh{display:flex;align-items:center;gap:10px;width:100%;min-height:62px;padding:12px 16px;text-align:left}
+.co-selh i{font-style:normal;width:26px;height:26px;border-radius:50%;background:#16a34a;color:#fff;display:grid;place-items:center;font-size:13px;font-weight:800;flex:none}
+.co-selh i.todo{background:var(--accent-soft);color:var(--accent)}
+.co-selh .lb{font-size:16px;font-weight:750;letter-spacing:-.2px;flex:none}
+.co-selh .vl{margin-left:auto;font-size:15px;font-weight:750;text-align:right;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.co-selh .vl.ph{color:var(--accent)}
+.co-selh .cv{color:var(--hint);transition:transform .2s;flex:none;display:grid}
+.co-sel.open .co-selh .cv{transform:rotate(90deg);color:var(--accent)}
+.co-sel.open .co-selh{background:var(--card-2)}
+@media (hover:hover){.co-selh:hover .vl{color:var(--accent)}}
+.co-body{padding:12px 16px 16px;border-top:1px solid var(--line)}
+.co-opts{display:grid;gap:8px;grid-template-columns:minmax(0,1fr)}
+.co-opt{min-width:0}
+.co-opt{display:flex;align-items:center;gap:12px;width:100%;padding:9px 12px;border-radius:14px;background:var(--card-2);text-align:left;min-height:58px;transition:background .12s,box-shadow .12s}
+.co-opt .lt{width:42px;height:42px;border-radius:12px;background:var(--card);color:var(--accent);display:grid;place-items:center;font-weight:850;font-size:17px;flex:none}
+.co-opt .tx{flex:1;min-width:0}
+.co-opt .tx b{display:block;font-size:15.5px;letter-spacing:-.2px}
+.co-opt .tx small{display:block;font-size:12.5px;color:var(--hint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.co-opt .rt{text-align:right;font-weight:800;font-size:14.5px;flex:none}
+.co-opt .rt small{display:block;font-size:11.5px;color:var(--hint);font-weight:600}
+.co-opt .rt s{color:var(--hint);font-weight:600;font-size:12.5px}
+.co-opt .ok{width:20px;flex:none;color:var(--accent);display:grid}
+.co-opt.on{background:var(--accent-soft);box-shadow:inset 0 0 0 2px var(--accent)}
+.co-opt.on .lt{background:var(--accent);color:#fff}
+.co-opt:disabled{opacity:.5}
+.co-opt.pkg .lt{background:#dcfce7;color:#15803d}.co-opt.pkg.on .lt{background:#16a34a;color:#fff}
+.co-opt.krug .lt{background:#fff4d6;color:#8a5d00}.co-opt.krug.on .lt{background:#e0a100;color:#fff}
+.co-opt.ins .lt{border-radius:50%;font-size:14px}
+@media (min-width:1100px){.co-sel .co-opts{grid-template-columns:repeat(auto-fill,minmax(250px,1fr))}}
+@media (max-width:420px){.co-opt .lt{width:38px;height:38px}.co-selh .vl{font-size:14px}}
+@media (max-width:420px){.cch{padding:8px 11px}.cch.cat,.cch.pay-ch{min-width:0;flex:1}.co-total .big{font-size:24px}}
+
 /* ---------- ro'yxat kartalari ---------- */
 .bk{background:var(--card);border-radius:18px;box-shadow:var(--shadow);padding:14px 16px}
 .bk + .bk{margin-top:10px}
@@ -435,6 +505,99 @@ button.row:active,a.row:active{background:var(--card-2)}
 .rank .tx i u{display:block;height:100%;background:var(--accent);border-radius:3px}
 .rank .rt{text-align:right;font-weight:750;font-size:14px;flex:none}
 .rank .rt small{display:block;color:var(--hint);font-size:12px;font-weight:600}
+
+/* ---------- davr tanlash (barcha hisobotlar) ---------- */
+.per{display:flex;flex-direction:column;gap:10px}
+.per-nav{display:flex;align-items:center;gap:8px}
+.per-arr{width:46px;height:46px;border-radius:14px;background:var(--card);box-shadow:var(--shadow);display:grid;place-items:center;flex:none}
+.per-arr:disabled{opacity:.35;cursor:default}
+.per-cur{position:relative;flex:1;min-width:0;min-height:46px;border-radius:14px;background:var(--card);box-shadow:var(--shadow);display:flex;align-items:center;justify-content:center;gap:8px;padding:0 12px;cursor:pointer}
+.per-cur svg{color:var(--accent)}
+.per-cur b{font-size:15.5px;font-weight:750;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.per-cur input{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;border:0;padding:0;margin:0}
+.per-box{display:flex;flex-direction:column;gap:8px;min-width:0}
+.per-rng{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.per-d{display:flex;flex-direction:column;gap:1px;background:var(--card);box-shadow:var(--shadow);border-radius:14px;padding:7px 12px 8px;cursor:pointer;min-width:0}
+.per-d span{font-size:11px;font-weight:800;color:var(--hint);text-transform:uppercase;letter-spacing:.4px}
+.per-d input{border:0;background:transparent;font-weight:750;font-size:16px;outline:0;padding:0;margin:0;min-width:0;width:100%;color:var(--text);min-height:24px}
+.per-info{display:flex;align-items:center;gap:6px;font-size:13.5px;color:var(--hint);font-weight:650;margin:0 2px}
+.per-info svg{color:var(--accent)}
+.per-info b{color:var(--text)}
+.per-q .chip{min-height:34px;font-size:13px}
+@media (min-width:960px){
+  .per{flex-direction:row;align-items:flex-start;flex-wrap:wrap;gap:10px 12px}
+  .per .per-seg{flex:0 0 400px;max-width:400px}
+  .per-nav{flex:1 1 320px;max-width:460px}
+  .per-box{flex:1 1 420px;max-width:640px}
+  .per-q{margin:0;padding:0;overflow:visible;flex-wrap:wrap}
+}
+.bars.stk i{display:flex;flex-direction:column;justify-content:flex-end;overflow:hidden}
+.bars.stk i.z{display:block}
+.bars.stk i u{display:block;width:100%;background:#16a34a;flex:none}
+.lgd{display:flex;gap:16px;margin-top:10px;font-size:12.5px;font-weight:650;color:var(--hint)}
+.lgd span{display:inline-flex;align-items:center;gap:6px}
+.lgd i{width:10px;height:10px;border-radius:3px;display:inline-block}
+.list .grp{display:flex;justify-content:space-between;align-items:baseline;gap:10px;padding:9px 16px;background:var(--card-2);font-size:12.5px;color:var(--hint);font-weight:650}
+.list .grp b{color:var(--text);font-size:13px;font-weight:750;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.list .grp span{white-space:nowrap}
+.list .grp + .row{border-top:0}
+.link-row{background:var(--card);border-radius:18px;box-shadow:var(--shadow)}
+.chip-l{flex:none;align-self:center;font-size:13px;font-weight:700;color:var(--hint);padding-right:2px}
+.xl-btn{display:inline-flex;align-items:center;gap:6px;font-weight:750;white-space:nowrap}
+.ir-who{display:flex;align-items:center;gap:12px}
+.ir-who .tx{flex:1;min-width:0}
+.ir-who .tx b{display:block;font-size:16.5px;font-weight:750;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ir-who .tx small{display:block;color:var(--hint);font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ir-who .icon-btn{box-shadow:none;background:var(--accent-soft);color:var(--accent)}
+
+/* ---------- hisobot jadvali: telefonda kartochka, kompyuterda ustunlar ---------- */
+.tbl{background:var(--card);border-radius:18px;box-shadow:var(--shadow);overflow:hidden}
+.tr{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:12px 14px;width:100%;text-align:left}
+.tr + .tr{border-top:1px solid var(--line)}
+button.tr:active{background:var(--card-2)}
+.tr.th{display:none}
+.tr .t-n{width:26px;height:26px;border-radius:8px;background:var(--card-2);display:grid;place-items:center;font-weight:800;font-size:12.5px;flex:none}
+.tr .t-main{flex:1;min-width:0}
+.tr .t-main b{display:block;font-weight:700;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tr .t-main small{display:block;color:var(--hint);font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tr .t-big{flex:none;text-align:right;font-weight:800;font-size:20px;line-height:1.05;letter-spacing:-.3px}
+.tr .t-big::after{content:attr(data-u);display:block;font-size:11px;font-weight:700;color:var(--hint);letter-spacing:0}
+.tr .brk{flex-basis:100%;height:0}
+.tr .t-v{flex:1 1 0;min-width:0;display:flex;flex-direction:column;gap:1px;padding:7px 9px;border-radius:10px;background:var(--card-2);font-size:13.5px;line-height:1.25}
+.tr .t-v::before{content:attr(data-l);font-size:10px;font-weight:800;color:var(--hint);text-transform:uppercase;letter-spacing:.3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tr .t-v .v{white-space:nowrap}
+.tr .t-v b{font-weight:800;white-space:nowrap}
+.tr .t-v small{font-size:11.5px;font-weight:600;opacity:.85;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tr .t-v.sch{background:var(--ok-soft);color:var(--ok)}
+.tr .t-v.pd{background:var(--accent-soft);color:var(--accent)}
+.tr .t-v.sch::before,.tr .t-v.pd::before{color:inherit;opacity:.8}
+.tr .t-d{display:none}
+/* instruktor qatori telefonda: 2×2 — avtoshkola | pullik, soat | tushum */
+.tr.q2 .t-v{flex:1 1 calc(50% - 4px);flex-direction:row;flex-wrap:wrap;align-items:baseline;column-gap:5px}
+.tr.q2 .t-v::before{flex-basis:100%}
+.tr.q2 .t-v small::before{content:"· "}
+.tr.zero{opacity:.55}
+.tr.tot{background:var(--card-2)}
+.tr.tot .t-n{background:var(--card)}
+.tr.tot .t-v:not(.sch):not(.pd){background:var(--card)}
+@media (min-width:960px){
+  .tr{display:grid;gap:12px;padding:12px 16px}
+  .tr.th{display:grid;padding:10px 16px;font-size:11px;font-weight:800;color:var(--hint);text-transform:uppercase;letter-spacing:.4px;background:var(--card-2)}
+  .tr.th span{text-align:right}
+  .tr.th span.l,.tr.th span:first-child{text-align:left}
+  .tr .brk{display:none}
+  .tr .t-big{font-size:17px}
+  .tr .t-big::after{content:none}
+  .tr .t-v,.tr .t-v.sch,.tr .t-v.pd,.tr.tot .t-v:not(.sch):not(.pd){display:block;background:none;padding:0;text-align:right;font-size:15px;border-radius:0}
+  .tr .t-v::before{content:none}
+  .tr.q2 .t-v small::before{content:none}
+  .tr .t-v .v{display:block}
+  .tr .t-v small{display:block;opacity:1;color:var(--hint);font-size:12px}
+  .tr .t-d{display:block;text-align:right;font-size:15px}
+  .ir-cols{grid-template-columns:30px minmax(0,2.4fr) repeat(5,minmax(0,1fr)) minmax(0,1.3fr) 18px}
+  .dy-cols{grid-template-columns:minmax(0,2.2fr) repeat(4,minmax(0,1fr)) minmax(0,1.3fr)}
+  .st-cols{grid-template-columns:minmax(0,2.4fr) repeat(4,minmax(0,1fr)) minmax(0,1.3fr)}
+}
 .sw{position:relative;width:52px;height:32px;border-radius:16px;background:var(--line);flex:none;transition:background .15s}
 .sw::after{content:'';position:absolute;left:3px;top:3px;width:26px;height:26px;border-radius:50%;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.2);transition:transform .18s}
 .sw.on{background:#16a34a}
@@ -652,6 +815,7 @@ const IC = {
   key: '<circle cx="8" cy="15" r="4"/><path d="M11 12l9-9M17 6l3 3"/>',
   edit: '<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/>',
   wait: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5h4"/>',
+  steer: '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="2.4"/><path d="M12 14.4V21M9.7 11.2L3.4 9.6M14.3 11.2l6.3-1.6"/>',
   grid: '<rect x="4" y="4" width="6.5" height="6.5" rx="1.6"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.6"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.6"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.6"/>',
 };
 const I = (n, s = 22, w = 1.9) => `<svg viewBox="0 0 24 24" width="${s}" height="${s}" fill="none" stroke="currentColor" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${IC[n] || ''}</svg>`;
@@ -780,6 +944,9 @@ function pkgPrice(cat){
   if (v === null || v === undefined || v === '') return 1100000;
   const n = Number(v); return n > 0 ? Math.round(n) : 0;
 }
+/** 1 krug (avtodrom bo'ylab bir aylana): sozlamadan narx (standart 80 000; 0 — o'chiq) va vaqt (15 daq) */
+function krugPrice(){ const v = sv('krug_price'); if (v === null || v === undefined || v === '') return 80000; const n = Number(v); return n > 0 ? Math.round(n) : 0; }
+function krugMin(){ const n = Number(sv('krug_min')); return n >= 15 && n <= 60 ? Math.round(n) : 15; }
 function listPrice(cat, min){ const t = tariffFor(cat), m = Math.max(1, Math.round(Number(min) || 0)); return m === 30 ? Math.round(t.half) : Math.round(t.hour * m / 60); }
 function priceOf(cat, min){ if (Math.round(min) === PKG_MIN) { const p = pkgPrice(cat); if (p > 0) return p; } return listPrice(cat, min); }
 /** Paket ulushlari — server bilan bir xil (proporsional, qoldiq birinchisiga). */
@@ -887,7 +1054,7 @@ function receiptHtml(x){
     <div class="rrow"><span>Mashg‘ulot</span><span>${esc(x.course_name)}</span></div>
     ${x.package_text ? `<div class="rrow"><span>Paket</span><b>${esc(x.package_text)}</b></div>` : ''}
     ${x.category ? `<div class="rrow"><span>Kategoriya</span><b>${esc(x.category)}</b></div>` : ''}
-    ${x.duration_minutes ? `<div class="rrow"><span>Davomiylik</span><b>${esc(fmtDur(x.duration_minutes))}</b></div>` : ''}
+    ${x.krug_text ? `<div class="rrow"><span>Xizmat</span><b>1 krug (${esc(fmtDur(x.duration_minutes))})</b></div>` : x.duration_minutes ? `<div class="rrow"><span>Davomiylik</span><b>${esc(fmtDur(x.duration_minutes))}</b></div>` : ''}
     ${x.instructor_name ? `<div class="rrow"><span>Instruktor</span><span>${esc(x.instructor_name)}</span></div>` : ''}
     <div class="rrow"><span>Vaqt</span><b>${esc(x.starts_at_text)}</b></div>
     <div class="hr"></div>
@@ -931,14 +1098,15 @@ const ALL = ['cashier', 'operator', 'admin'];
 const ROUTES = {
   home:        { t: 'Bosh sahifa', roles: ALL, render: () => { vHome(); if (isAdmin() && S.stamp) refreshCounts(); }, live: () => paintHomeCounts() },
   issue:       { t: 'Chek chiqarish', roles: ['cashier', 'admin'], focus: true, render: () => vIssue(), live: () => wzLive(CO) },
-  receipts:    { t: 'Cheklar', roles: ['cashier', 'admin'], render: () => vReceipts(), live: () => loadReceipts(true) },
+  receipts:    { t: 'Cheklar', roles: ['cashier', 'admin'], render: () => vReceipts(), live: () => { if (perLive(RC)) loadReceipts(true); } },
   live:        { t: 'Jarayonda', roles: ['cashier', 'admin'], render: () => vLive(), live: () => loadLive(true) },
-  report:      { t: 'Kassa hisoboti', roles: ['cashier', 'admin'], render: () => vReport(), live: () => loadReport(true) },
+  report:      { t: 'Kassa hisoboti', roles: ['cashier', 'admin'], render: () => vReport(), live: () => { if (perLive(RP, 400)) loadReport(true); } },
+  insrep:      { t: 'Instruktorlar hisoboti', roles: ['cashier', 'admin'], render: a => vInsRep(a), live: a => { if (perLive(IR)) { if (a) loadIrDetail(true); else loadInsRep(true); } }, parent: a => a ? 'insrep' : 'home' },
   schedule:    { t: 'Instruktorlar jadvali', roles: ALL, wide: true, render: () => vSchedule(), live: () => loadSchedule(true) },
   bookings:    { t: 'Bronlar', roles: ['operator', 'admin'], render: a => vBookings(a), live: () => loadBookings(true) },
   manual:      { t: 'Qo‘lda bron', roles: ['operator', 'admin'], focus: true, render: () => vManual(), live: () => wzLive(MB) },
   chat:        { t: 'Mijozlar chati', roles: ['operator', 'admin'], render: a => vChat(a), live: a => chatLive(a), parent: a => a ? 'chat' : 'home' },
-  analytics:   { t: 'Hisobot', roles: ['admin'], render: () => vAnalytics(), live: () => loadAnalytics(true) },
+  analytics:   { t: 'Hisobot', roles: ['admin'], render: () => vAnalytics(), live: () => { if (perLive(AN, 400)) loadAnalytics(true); } },
   instructors: { t: 'Instruktorlar', roles: ['admin'], render: a => vInstructors(a), live: () => loadInstructors(true) },
   prices:      { t: 'Narxlar va ish vaqti', roles: ['admin'], render: () => vPrices() },
   staff:       { t: 'Xodimlar', roles: ['admin'], render: () => vStaff(), live: () => loadStaff(true) },
@@ -1025,12 +1193,12 @@ function sideDef(){
   const G = [{ items: [['home', 'Bosh sahifa', 'home']] }];
   if (canKassa()) G.push({ title: isCashier() ? `Kassa ${S.reg?.r?.code || ''}` : 'Kassa', reg: isAdmin(), items: [
     ['issue', 'Chek chiqarish', 'receipt'], ['receipts', 'Cheklar', 'list', 'receipts'], ['live', 'Jarayonda', 'play', 'live'], ['report', 'Kassa hisoboti', 'chart'],
-    ...(isCashier() ? [['schedule', 'Instruktorlar jadvali', 'cal']] : [])] });
+    ...(isCashier() ? [['insrep', 'Instruktorlar hisoboti', 'steer'], ['schedule', 'Instruktorlar jadvali', 'cal']] : [])] });
   if (canDesk()) G.push({ title: 'Bronlar', items: [
     ['bookings/new', 'Yangi bronlar', 'bell', 'pending'], ['bookings/cancels', 'Bekor so‘rovlari', 'ban', 'cancels'], ['bookings/all', 'Barcha bronlar', 'list'],
     ['manual', 'Qo‘lda bron', 'phone'], ['schedule', 'Instruktorlar jadvali', 'cal'], ['chat', 'Mijozlar chati', 'chat', 'chat']] });
   if (isAdmin()) G.push({ title: 'Boshqaruv', items: [
-    ['analytics', 'Hisobot va tahlil', 'chart'], ['instructors', 'Instruktorlar', 'users', 'apps'], ['prices', 'Narxlar va ish vaqti', 'tag'],
+    ['analytics', 'Hisobot va tahlil', 'chart'], ['insrep', 'Instruktorlar hisoboti', 'steer'], ['instructors', 'Instruktorlar', 'users', 'apps'], ['prices', 'Narxlar va ish vaqti', 'tag'],
     ['staff', 'Xodimlar', 'key'], ['!/admin/full', 'Kengaytirilgan panel', 'ext']] });
   return G;
 }
@@ -1095,7 +1263,7 @@ ACT.setreg = async el => {
     const r = S.registers.find(x => x.code === code);
     if (!r) return toast(`${code} kassasi topilmadi`, true);
     await pickReg(r.id);
-    RC.d = null; RP.d = null;
+    RC.d = null; RC.big = false; RP.d = null;
     refreshCounts();
     if (el.dataset.then) go(el.dataset.then); else render();
   } catch (e) { fail(e); }
@@ -1124,7 +1292,7 @@ ACT.newsheet = () => openSheet(`<h3>Nima qilamiz?</h3><p class="lead">Tanlang �
   </div>`);
 ACT.pickreg = async el => {
   busyBtn(el, true);
-  try { await pickReg(el.dataset.id); closeSheet(); refreshCounts(); render(); }
+  try { await pickReg(el.dataset.id); RC.d = null; RC.big = false; RP.d = null; closeSheet(); refreshCounts(); render(); }
   catch (e) { fail(e); busyBtn(el, false); }
 };
 ACT.switchreg = async () => {
@@ -1282,10 +1450,11 @@ function vHome(){
     stats = `<div><b id="h-rc">—</b><span>Bugungi cheklar</span></div><div><b id="h-sum">—</b><span>Tushum</span></div><div><b id="h-live">—</b><span>Jarayonda</span></div>`;
     acts = `<button class="btn-light" data-act="fab" data-r="issue">${I('plus', 22, 2.3)} Chek chiqarish</button>`;
     tiles = `<div class="tiles">
-      ${tile('receipts', 'receipt', 'Bugungi cheklar', 'qayta chop etish', { id: 'receipts' })}
+      ${tile('receipts', 'receipt', 'Bugungi cheklar', 'qayta chop etish', { id: 'receipts', act: 'rctoday' })}
       ${tile('live', 'play', 'Jarayonda', 'hozir haydayotganlar', { id: 'live', cls: 'b' })}
       ${tile('schedule', 'cal', 'Jadval', 'kim bo‘sh, kim band', { cls: 'g' })}
       ${tile('report', 'chart', 'Hisobot', 'naqd, karta, jami', { cls: 'o' })}
+      ${tile('insrep', 'steer', 'Instruktorlar hisoboti', 'kim nechta o‘quvchi haydadi')}
     </div>`;
   } else if (isOp()) {
     stats = `<div><b id="h-pend">—</b><span>Yangi bronlar</span></div><div><b id="h-cx">—</b><span>Bekor so‘rov</span></div><div><b id="h-chat">—</b><span>Xabarlar</span></div>`;
@@ -1310,11 +1479,11 @@ function vHome(){
       ${tile('receipts', 'receipt', 'Cheklar', 'kassa cheklari', { id: 'receipts' })}
     </div>
     <div class="sec-h" style="margin-top:22px"><h2>Boshqaruv</h2></div><div class="tiles">
-      ${tile('analytics', 'chart', 'Hisobot', 'tushum, bronlar, instruktorlar', { cls: 'o' })}
+      ${tile('analytics', 'chart', 'Hisobot', 'tushum, bronlar, istalgan davr', { cls: 'o' })}
+      ${tile('insrep', 'steer', 'Instruktorlar hisoboti', 'o‘quvchilar, avtoshkola, pullik')}
       ${tile('instructors', 'users', 'Instruktorlar', 'faol / o‘chirilgan, arizalar', { id: 'apps' })}
       ${tile('prices', 'tag', 'Narxlar', 'tarif, 5 soatlik paket, ish vaqti', { cls: 'g' })}
       ${tile('staff', 'key', 'Xodimlar', 'kassir, operator, parollar', { cls: 'b' })}
-      ${tile('bookings/all', 'list', 'Barcha bronlar', 'qidirish va tahrirlash')}
       ${tile('', 'ext', 'Kengaytirilgan panel', 'hamma bo‘limlar (eski)', { cls: 'dark', href: '/admin/full' })}
     </div>`;
   }
@@ -1373,7 +1542,7 @@ function paintHomeSide(){
   }
   if (canKassa() && (regOk() || isCashier())) {
     const rows = (S.rcRows || []).filter(r => r.state !== 'cancelled');
-    h += `<div class="side-card"><div class="sec-h"><h2>Bugungi cheklar${S.reg ? ` · ${esc(S.reg.r.code)}` : ''}</h2>${rows.length ? '<button class="link" data-go="receipts">Hammasi</button>' : ''}</div>
+    h += `<div class="side-card"><div class="sec-h"><h2>Bugungi cheklar${S.reg ? ` · ${esc(S.reg.r.code)}` : ''}</h2>${rows.length ? '<button class="link" data-act="rctoday">Hammasi</button>' : ''}</div>
       ${rows.length ? `<div class="mini-list">${rows.slice(0, 7).map(r => `<button class="mini-row" style="width:100%;text-align:left" data-act="homerc" data-code="${esc(r.code)}"><span class="tm">${esc(hm(r.paid_at))}</span>
         <span class="tx"><b>${esc(r.customer?.full_name || 'Mijoz')}</b><small>${esc(r.code)}${r.instructor_name ? ' · ' + esc(r.instructor_name) : ''}</small></span>
         <span class="rt">${nf(r.amount)}</span></button>`).join('')}</div>
@@ -1409,6 +1578,8 @@ let CO = newWiz('co'), MB = newWiz('mb');
 function CO_reset(){ CO = newWiz('co'); }
 function MB_reset(){ MB = newWiz('mb'); }
 const curW = () => S.routeName === 'manual' ? MB : CO;
+/** «Chek chiqarish» — hamma tanlov bitta oynada (bosqichsiz) */
+const ONE = W => W && W.kind === 'co';
 const isPkg = W => W.min === PKG_MIN && !!W.split && pkgPrice(W.cat) > 0;
 function wzSteps(W){
   if (W.kind === 'co' && W.booking) return ['cust', 'pay'];
@@ -1437,6 +1608,7 @@ function wzCrumbs(W){
   return out.length ? `<div class="crumbs">${out.join('')}</div>` : '';
 }
 function wzRender(W){
+  if (ONE(W)) return coRender();
   if (W.kind === 'co' && isAdmin() && !regOk()) {
     $('view').innerHTML = `<div class="view"><div class="sk"></div></div>`;
     regGateHtml().then(h => { if (S.routeName === 'issue' && !regOk()) $('view').innerHTML = `<div class="view">${h}</div>`; });
@@ -1495,6 +1667,7 @@ function wzNext(W){
 }
 ACT.wzback = () => {
   const W = curW();
+  if (ONE(W)) { if (W.booking) return ACT.conobook(); if (W.q) return ACT.wzclr(); return; }
   if (W.done) { W.kind === 'mb' ? MB_reset() : CO_reset(); return render(); }
   const st = wzSteps(W), i = st.indexOf(W.step);
   if (i <= 0) return go(parentOf());
@@ -1589,8 +1762,11 @@ async function wzSearch(W){
   W.searching = false; W.custs = custs; W.found = found; paintFound(W);
 }
 const wzSearchD = debounce(W => wzSearch(W), 320);
-function paintFound(W){ const el = $('wzFound'); if (el && curW() === W && W.step === 'cust') el.innerHTML = foundHtml(W); }
-ACT.wzclr = () => { const W = curW(); W.q = ''; W.found = null; W.custs = null; wzRender(W); $('wzQ')?.focus(); };
+function paintFound(W){
+  if (ONE(W)) { const el = $('coFound'); if (el && S.routeName === 'issue') el.innerHTML = coFoundHtml(W); return; }
+  const el = $('wzFound'); if (el && curW() === W && W.step === 'cust') el.innerHTML = foundHtml(W);
+}
+ACT.wzclr = () => { const W = curW(); W.q = ''; W.found = null; W.custs = null; W.seq++; wzRender(W); $('wzQ')?.focus(); };
 ACT.wzcust = el => {
   const W = curW(), c = W.custs?.[Number(el.dataset.i)]; if (!c) return;
   W.customer = c; W.name = c.full_name || ''; W.phone = c.phone || ''; W.booking = null;
@@ -1758,9 +1934,14 @@ function timesHtml(W, day){
 }
 function ensureTimes(W, day){
   if (SCHC.get(day)?.d) return;
-  schedLoad(day).then(() => paintTimes(W)).catch(e => { const el = $('wzTimes'); if (el) el.innerHTML = `<div class="note err">${esc(e.message)}</div>`; });
+  schedLoad(day).then(() => paintTimes(W)).catch(e => { const el = $('wzTimes') || $('coTimes'); if (el) el.innerHTML = `<div class="note err">${esc(e.message)}</div>`; });
 }
 function paintTimes(W){
+  if (ONE(W)) {
+    const el = $('coTimes'); if (!el || S.routeName !== 'issue') return;
+    if (!SCHC.get(W.day)?.d) return ensureTimes(W, W.day);
+    el.innerHTML = coTimesHtml(W); return;
+  }
   const el = $('wzTimes');
   if (!el || curW() !== W || W.step !== 'time') return;
   if (!SCHC.get(W.day)?.d) return ensureTimes(W, W.day);
@@ -1784,7 +1965,8 @@ const sessAt = x => x.now ? new Date() : atTk(x.day, x.t);
 /* ---------- 5. Instruktor ---------- */
 async function loadIns(W){
   const seq = ++W.insSeq;
-  W.insRes = null; W.insErr = '';
+  if (!ONE(W)) W.insRes = null;
+  W.insErr = '';
   try{
     const res = await Promise.all(W.sess.map(x => api(`/api/admin/cashier/free-instructors?at=${encodeURIComponent(sessAt(x).toISOString())}&minutes=${x.m}&category=${encodeURIComponent(W.cat)}`)));
     if (seq !== W.insSeq) return;
@@ -1796,6 +1978,11 @@ async function loadIns(W){
     if (W.ins && !ids.has(String(W.ins.id))) { W.ins = null; }
     if (!W.ins && W.pref?.ins && ids.has(String(W.pref.ins))) W.ins = free.find(i => String(i.id) === String(W.pref.ins));
   }catch(e){ if (seq !== W.insSeq) return; W.insErr = e.message; W.insRes = { free: [], busy: [] }; }
+  if (ONE(W)) {
+    if (!W.ins && W.insRes?.free?.length) { W.ins = W.insRes.free[0]; W.insAuto = true; }
+    if (S.routeName === 'issue' && CO === W) coPaintIns();
+    return;
+  }
   if (curW() === W && W.step === 'ins') wzRender(W);
 }
 function stepIns(W){
@@ -1840,6 +2027,7 @@ function autoPrice(W){
     if (W.payPkg && pkgUnpaid(W).length > 1) return pkgUnpaid(W).reduce((a, x) => a + (Number(x.price) || 0), 0);
     return Math.round(Number(W.booking.price) || 0);
   }
+  if (W.krug) return krugPrice();
   return priceOf(W.cat, W.min);
 }
 const totalOf = W => W.manual != null ? W.manual : autoPrice(W);
@@ -1924,6 +2112,14 @@ ACT.wzpaypkg = () => { const W = curW(); W.payPkg = !W.payPkg; W.manual = null; 
 ACT.wzissue = async el => {
   const W = CO;
   if (!regOk()) { toast('Kassa ochilmagan — qayta kiring', true); return render(); }
+  if (!W.booking) {
+    const q = W.q.trim();
+    if (!W.name.trim() && q && !/\d{4,}/.test(q)) W.name = q;
+    if (!W.phone.trim() && /^\+?[\d\s()-]{7,}$/.test(q)) W.phone = q;
+    W.name = W.name.trim(); W.phone = W.phone.trim();
+    const miss = coMissing(W)[0];
+    if (miss) { toast(miss[1], true); coScrollTo(miss[0]); if (miss[0] === 'cust') setTimeout(() => $('wzName')?.focus(), 350); return; }
+  }
   const total = totalOf(W);
   if (!(total > 0)) return toast('Summani kiriting', true);
   const { cash, card } = payParts(W);
@@ -1942,6 +2138,7 @@ ACT.wzissue = async el => {
     Object.assign(body, { full_name: W.name, phone: W.phone, customer_id: W.customer?.id || null, instructor_id: W.ins.id,
       course_id: course.id, start_at: at[0].toISOString() });
     if (isPkg(W)) { body.duration_minutes = PKG_MIN; body.sessions = W.sess.map((x, i) => ({ start_at: at[i].toISOString(), minutes: x.m })); }
+    if (W.krug) { body.krug = true; body.duration_minutes = W.min; }
   }
   busyBtn(el, true, 'Chiqarilmoqda');
   try{
@@ -1995,11 +2192,354 @@ function mbDone(W){
 }
 ACT.mbagain = () => { MB_reset(); render(); };
 function wzLive(W){
+  if (ONE(W)) return coLive();
   if (W.done) return;
   if (W.step === 'time') { paintTimes(W); }
   else if (W.step === 'ins') loadIns(W);
   else if (W.step === 'cust' && W.q.trim().length >= 2) wzSearch(W);
 }
+
+/* =========================================================================
+   CHEK CHIQARISH — HAMMASI BITTA OYNADA, TANLOVLAR «OCHILADIGAN»
+   Har qator — tanlov maydoni: ustiga bosilsa variantlar chiqadi,
+   tanlansa yopiladi va keyingisi ochiladi.
+     Toifa        → A · B · C
+     Davomiylik   → 1 krug · 30 daq · 1 soat · 1,5 soat · 2 soat · 5 soatlik paket
+     Vaqt         → Hozir yoki kun va soat
+     Instruktor   → faqat shu vaqtda BO'SH bo'lganlar (bittasi avtomatik tanlanadi)
+   Oldindan tanlangan: B toifa, 1 soat, Hozir, Naqd. Kassir ismni yozadi
+   va «Chek chiqarish»ni bosadi.
+   ========================================================================= */
+function coInit(W){
+  if (W.inited || !S.coursesOk) return;
+  W.inited = true; W.step = 'one'; W.open = null;
+  const pref = W.pref;
+  const ok = c => !!courseFor(c) && (!pref?.cats || pref.cats.includes(c));
+  W.cat = ['B', 'A', 'C'].find(ok) || '';
+  W.min = 60; W.krug = false; W.split = null; W.si = 0; W.pay = 'cash';
+  if (pref?.day && pref?.t) { W.sess = [{ m: 60, day: pref.day, t: pref.t, now: false }]; W.day = pref.day; }
+  else { W.sess = [{ m: 60, day: kToday(), t: nowHM(), now: true }]; W.day = kToday(); }
+}
+const coReady = W => !!W.cat && W.sess.length > 0 && W.sess.every(x => x.t);
+/** Chek chiqishi uchun nima yetishmayapti: [bo'lim, xabar] */
+function coMissing(W){
+  if (W.booking) return [];
+  const out = [];
+  const q = W.q.trim(), nm = W.name.trim() || (q && !/\d{4,}/.test(q) ? q : '');
+  if (nm.length < 2) out.push(['cust', 'Mijozning ismini yozing']);
+  if (!W.cat) out.push(['cat', 'Toifani tanlang']);
+  W.sess.forEach((x, i) => { if (!x.t) out.push(['time', W.sess.length > 1 ? `${i + 1}-mashg‘ulot vaqtini tanlang` : 'Vaqtni tanlang']); });
+  if (coReady(W) && !W.insRes) out.push(['ins', 'Bo‘sh instruktorlar tekshirilmoqda…']);
+  else if (coReady(W) && W.insRes && !W.insRes.free.length && !W.ins) out.push(['time', 'Bu vaqtda bo‘sh instruktor yo‘q — vaqtni o‘zgartiring']);
+  else if (!W.ins) out.push(['ins', 'Instruktorni tanlang']);
+  return out;
+}
+function coScrollTo(s){ const el = $('co-' + s); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+const coHead = (n, title, value, done) => `<div class="co-h"><i class="${done ? '' : 'todo'}">${done ? I('check', 14, 3) : n}</i><b>${esc(title)}</b><span>${value ? esc(value) : ''}</span></div>`;
+function coFoundHtml(W){ return foundHtml(W).replace(/data-act="wzbook"/g, 'data-act="cobook"').replace(/data-act="wzcust"/g, 'data-act="cocust"'); }
+function coTimesHtml(W){ return timesHtml(W, W.day).replace(/data-act="wztime"/g, 'data-act="cotime"'); }
+
+/* ---------- davomiylik variantlari ---------- */
+function coDurs(W){
+  const c = W.cat || 'B', out = [];
+  if (krugPrice() > 0) out.push({ k: 'krug', lt: I('refresh', 22, 2.2), t: '1 krug', s: `avtodrom bo‘ylab bir aylana · ${krugMin()} daq`, p: krugPrice() });
+  [[30, '½', '30 daqiqa'], [60, '1', '1 soat'], [90, '1½', '1,5 soat'], [120, '2', '2 soat']].forEach(([m, lt, t]) =>
+    out.push({ k: String(m), lt, t, s: m === 30 ? 'yarim soat' : `${nf(tariffFor(c).hour)} so‘m / soat`, p: priceOf(c, m) }));
+  if (pkgPrice(c) > 0) out.push({ k: 'pkg', lt: '5', t: '5 soatlik paket', s: 'bir kunda yoki bir necha kunga bo‘lib', p: pkgPrice(c), lp: listPrice(c, PKG_MIN), pkg: true });
+  return out;
+}
+const coDurKey = W => W.krug ? 'krug' : isPkg(W) ? 'pkg' : String(W.min);
+const coDurLabel = W => W.krug ? '1 krug' : isPkg(W) ? `5 soatlik paket · ${W.split.k}` : W.min === 90 ? '1,5 soat' : fmtDur(W.min);
+
+/* ---------- ochiladigan tanlov qatori ---------- */
+function coSel(id, n, label, value, done, bodyFn){
+  const open = CO.open === id;
+  return `<section class="co-sec co-sel ${open ? 'open' : ''}" id="co-${id}">
+    <button class="co-selh" data-act="coopen" data-s="${id}" aria-expanded="${open}">
+      <i class="${done ? '' : 'todo'}">${done ? I('check', 14, 3) : n}</i><span class="lb">${esc(label)}</span>
+      <b class="vl ${value ? '' : 'ph'}">${value ? esc(value) : 'tanlang'}</b><span class="cv">${I('chev', 18, 2.2)}</span></button>
+    ${open ? `<div class="co-body">${bodyFn()}</div>` : ''}</section>`;
+}
+const coOpt = ({ act, v, lt, t, s, rt, rs, on, dis, cls = '' }) => `<button class="co-opt ${cls} ${on ? 'on' : ''}" data-act="${act}" data-v="${esc(v)}" ${dis ? 'disabled' : ''}>
+  <span class="lt">${lt}</span><span class="tx"><b>${t}</b>${s ? `<small>${s}</small>` : ''}</span>${rt ? `<span class="rt">${rt}${rs ? `<small>${rs}</small>` : ''}</span>` : ''}<span class="ok">${on ? I('check', 18, 2.8) : ''}</span></button>`;
+
+/* ---------- bo'limlar ---------- */
+function coCustSec(W){
+  const b = W.booking;
+  if (b) {
+    const pk = b.package;
+    return `<section class="co-sec" id="co-cust">${coHead(1, 'Mijoz', b.pickup_code || '', true)}
+      <div class="co-booked"><span class="ava lg">${esc(ini(W.name))}</span><div style="flex:1;min-width:0">
+        <b style="display:block;font-size:17px">${esc(W.name)} ${pk ? `<span class="pill pkg">paket ${esc(pk.n)}/${esc(pk.of)}</span>` : ''}</b>
+        <div class="muted" style="font-size:13.5px;margin-top:2px">${W.phone ? `<a class="tel" href="${telHref(W.phone)}">${esc(W.phone)}</a> · ` : ''}${esc(b.pickup_code || '')}</div>
+        <div style="font-size:14px;margin-top:6px"><b>${esc(whenText(b.start_at))}</b> · ${esc(fmtDur(b.duration_minutes))} · ${esc(W.cat)} toifa · ${esc(b.instructor?.profile?.full_name || '—')}</div></div></div>
+      <button class="link" data-act="conobook" style="margin-top:10px">${I('x', 14, 2.4)} Boshqa mijoz</button></section>`;
+  }
+  return `<section class="co-sec" id="co-cust">${coHead(1, 'Mijoz', W.name.trim(), W.name.trim().length >= 2)}
+    <div class="search">${I('search', 20)}<input class="input" id="wzQ" value="${esc(W.q)}" autocomplete="off" inputmode="search" enterkeyhint="search" placeholder="Bron kodi (AVD-1234), ism yoki telefon — bronni topish"><button class="clr ${W.q ? '' : 'hidden'}" data-act="wzclr" aria-label="Tozalash">${I('x', 18)}</button></div>
+    <div id="coFound">${coFoundHtml(W)}</div>
+    <div class="grid2" style="margin-top:12px">
+      <label class="field" style="margin:0"><span>Ism familiya</span><input class="input" id="wzName" value="${esc(W.name)}" placeholder="Aliyev Vali" autocomplete="off" autocapitalize="words"></label>
+      <label class="field" style="margin:0"><span>Telefon (ixtiyoriy)</span><input class="input" id="wzPhone" value="${esc(W.phone)}" inputmode="tel" placeholder="+998 90 123 45 67" autocomplete="off"></label></div>
+    ${W.customer ? `<div class="muted" style="font-size:13px;margin-top:8px">${I('check', 14, 2.6)} Bazadagi mijoz tanlandi</div>` : ''}</section>`;
+}
+function coCatSec(W){
+  return coSel('cat', 2, 'Toifa', W.cat ? `${W.cat} toifa · ${CAT_NAME[W.cat]}` : '', !!W.cat, () => `<div class="co-opts">${['A', 'B', 'C'].map(c => {
+    const has = !!courseFor(c), okIns = !W.pref?.cats || W.pref.cats.includes(c);
+    return coOpt({ act: 'cocat', v: c, lt: c, t: `${c} toifa`, s: esc(CAT_NAME[c]) + (!has ? ' · mashg‘ulot qo‘shilmagan' : !okIns ? ' · bu instruktor o‘rgatmaydi' : ''),
+      rt: nf(tariffFor(c).hour), rs: 'so‘m / soat', on: W.cat === c, dis: !(has && okIns) });
+  }).join('')}</div>`);
+}
+function coDurSec(W){
+  const key = coDurKey(W), c = W.cat || 'B';
+  const val = W.min ? `${coDurLabel(W)} · ${nf(W.krug ? krugPrice() : priceOf(c, W.min))} so‘m` : '';
+  return coSel('dur', 3, 'Davomiylik', val, !!W.min, () => `<div class="co-opts">${coDurs(W).map(d => coOpt({
+      act: 'codur', v: d.k, lt: d.lt, t: d.t, s: esc(d.s), cls: d.pkg ? 'pkg' : d.k === 'krug' ? 'krug' : '',
+      rt: d.lp ? `<s>${nf(d.lp)}</s> ${nf(d.p)}` : nf(d.p), rs: 'so‘m', on: key === d.k })).join('')}</div>
+    ${isPkg(W) ? `<div class="muted" style="font-size:13px;margin:12px 2px 8px">5 soatni qanday bo‘lamiz? Har mashg‘ulot — alohida kunda, alohida chek.</div>
+      <div class="cchips">${SPLITS.map(s => `<button class="cch ${W.split.k === s.k ? 'on' : ''}" data-act="cosplit" data-k="${esc(s.k)}">
+        <b>${s.k === '5' ? '1 kunda 5 soat' : s.k === '1x5' ? '5 kun × 1 soat' : s.m.map(m => m / 60).join(' + ') + ' soat'}</b><small>${s.m.length} ta mashg‘ulot</small></button>`).join('')}</div>` : ''}`);
+}
+function coTimeSec(W){
+  const s = W.sess[W.si], multi = W.sess.length > 1, t0 = kToday();
+  const val = W.sess.every(x => x.t) ? W.sess.map(sessText).join(' · ') : W.sess.some(x => x.t) ? `${W.sess.filter(x => x.t).length}/${W.sess.length} tanlandi` : '';
+  return coSel('time', 4, 'Vaqt', val, W.sess.every(x => x.t), () => {
+    const used = new Set(W.sess.filter((x, j) => j !== W.si && x.day).map(x => x.day));
+    const days = Array.from({ length: 14 }, (_, k) => dayAdd(t0, k)).map((d, k) => {
+      const [, m, dd] = ymdParts(d), u = used.has(d);
+      return `<button class="day ${d === W.day ? 'on' : ''}" data-act="coday" data-v="${d}" ${u ? 'disabled' : ''}>
+        <span class="w">${k === 0 ? 'Bugun' : k === 1 ? 'Ertaga' : WDS[wdOf(d)]}</span><span class="d">${dd}</span><span class="m">${u ? 'band' : MONS[m - 1]}</span></button>`;
+    }).join('');
+    return `${multi ? `<div class="sess-tabs">${W.sess.map((x, i) => `<button class="sess-tab ${i === W.si ? 'on' : ''} ${x.t ? 'set' : ''}" data-act="cosess" data-i="${i}">
+        <b>${i + 1}-mashg‘ulot · ${esc(fmtDur(x.m))}</b>${x.t ? esc(sessText(x)) : 'vaqt tanlanmagan'}</button>`).join('')}</div>` : ''}
+      ${W.si === 0 ? `<div class="cchips" style="margin-bottom:12px"><button class="cch now ${s.now ? 'on' : ''}" data-act="conow"><b>${I('play', 16, 2.2)} Hozir</b><small>${esc(nowHM())} — darhol boshlaydi</small></button></div>` : ''}
+      <div class="scroller" id="coDays">${days}</div>
+      <div id="coTimes" style="margin-top:12px">${coTimesHtml(W)}</div>`;
+  });
+}
+function coInsBody(W){
+  if (!coReady(W)) return `<div class="note info" style="font-size:13.5px">Avval vaqtni tanlang — shu vaqtda bo‘sh instruktorlar chiqadi.</div>`;
+  const r = W.insRes;
+  if (!r) return `<div class="co-opts">${Array.from({ length: 3 }, () => '<div class="sk" style="min-height:58px;margin:0"></div>').join('')}</div>`;
+  if (W.insErr) return `<div class="note err">${esc(W.insErr)}</div>`;
+  const when = W.sess.length > 1 ? `${W.sess.length} ta mashg‘ulotning hammasida` : sessText(W.sess[0]);
+  let h = `<div class="muted" style="font-size:12.5px;margin:0 2px 8px">${esc(when)} · ${r.free.length} ta bo‘sh${W.insAuto && W.ins ? ' · bittasi avtomatik tanlandi, boshqasini bosib almashtiring' : ''}</div>`;
+  h += r.free.length ? `<div class="co-opts">${r.free.map(i => coOpt({ act: 'coins', v: i.id, lt: esc(ini(i.name)), cls: 'ins', t: esc(i.name),
+      s: `${i.rating ? `★ ${Number(i.rating).toFixed(1)} · ` : ''}${esc((i.categories || []).join(', '))} toifa`, rt: '<span class="pill ok">bo‘sh</span>', on: String(W.ins?.id) === String(i.id) })).join('')}</div>`
+    : `<div class="note warn">Bu vaqtda ${esc(W.cat)} toifa bo‘yicha bo‘sh instruktor yo‘q — vaqtni o‘zgartiring.</div>`;
+  if (r.busy.length) h += `<div class="co-opts" style="margin-top:8px">${r.busy.map(i => coOpt({ act: 'coins', v: i.id, lt: esc(ini(i.name)), cls: 'ins', t: esc(i.name),
+      s: i.other ? 'boshqa mashg‘ulot vaqtida band' : i.blocked ? 'bu vaqtni yopgan' : i.free_at ? `${esc(hm(i.free_at))} da bo‘shaydi` : 'band', rt: '<span class="pill bad">band</span>', dis: true })).join('')}</div>`;
+  return h;
+}
+function coInsSec(W){
+  const val = W.ins ? W.ins.name : (W.insRes && coReady(W) ? `${W.insRes.free.length} ta bo‘sh` : '');
+  return coSel('ins', 5, 'Instruktor', val, !!W.ins, () => `<div id="coInsBody">${coInsBody(W)}</div>`);
+}
+function coPaySec(W){
+  const b = W.booking, auto = autoPrice(W), total = totalOf(W), un = pkgUnpaid(W);
+  const pkOn = !b && isPkg(W), lp = listPrice(W.cat, PKG_MIN);
+  const n = b ? (W.payPkg && un.length > 1 ? un.length : 1) : pkOn ? W.sess.length : 1;
+  return `<section class="co-sec" id="co-pay">${coHead(b ? 2 : 6, 'To‘lov', { cash: 'Naqd', card: 'Karta', mixed: 'Naqd + karta' }[W.pay], true)}
+    ${b && b.package && un.length > 1 ? `<button class="co-booked" data-act="wzpaypkg" style="width:100%;align-items:center;margin-bottom:12px;text-align:left;background:var(--card-2)">
+      <span style="flex:1;min-width:0"><b style="display:block;font-size:15px">Butun paketni to‘lash</b><small class="muted">${un.length} ta to‘lanmagan mashg‘ulot · har biriga alohida chek</small></span><span class="sw ${W.payPkg ? 'on' : ''}"></span></button>` : ''}
+    <div class="cchips">${[['cash', 'Naqd', 'cash'], ['card', 'Karta', 'card'], ['mixed', 'Aralash', 'mix']].map(([k, l, ic]) => `
+      <button class="cch pay-ch ${W.pay === k ? 'on' : ''}" data-act="wzpay" data-v="${k}"><b>${I(ic, 18)} ${l}</b></button>`).join('')}</div>
+    ${W.pay === 'mixed' ? `<div class="grid2" style="margin-top:12px">
+      <label class="field" style="margin:0"><span>Naqd</span><input class="input" id="wzCash" inputmode="numeric" value="${payParts(W).cash || ''}" placeholder="0"></label>
+      <label class="field" style="margin:0"><span>Karta (terminal)</span><input class="input" id="wzCard" inputmode="numeric" value="${payParts(W).card || ''}" placeholder="0"></label></div>
+      <div id="wzMix" class="muted" style="font-size:13px;margin-top:8px"></div>` : ''}
+    <div class="co-total"><div><div class="muted" style="font-size:12.5px;font-weight:800;letter-spacing:.3px;text-transform:uppercase">To‘lanadi${n > 1 ? ` · ${n} ta chek` : ''}</div>
+        ${pkOn && W.manual == null ? `<div style="margin-top:4px"><s class="muted">${nf(lp)}</s> <span style="display:inline-block;padding:2px 8px;border-radius:99px;background:#dcfce7;color:#15803d;font-weight:800;font-size:12.5px">${nf(lp - auto)} tejaldi</span></div>` : ''}
+        ${W.manual != null ? `<div class="muted" style="font-size:12.5px">avtomatik: ${nf(auto)}</div>` : ''}
+        ${pkOn && W.sess.length > 1 ? `<div class="muted" style="font-size:12.5px;margin-top:2px" id="wzShares">${W.sess.length} ta chek: ${shares(total, W.sess.map(x => x.m)).map(nf).join(' + ')}</div>` : ''}</div>
+      <b class="big" id="wzTotal">${nf(total)} so‘m</b></div>
+    <div id="wzPriceBox" class="${W.priceEdit ? '' : 'hidden'}" style="margin-top:10px"><input class="input" id="wzPrice" inputmode="numeric" value="${W.manual ?? ''}" placeholder="Yangi summa, so‘m"></div>
+    <button class="link" data-act="wzprice" style="margin-top:8px">${W.manual != null ? 'Avtomatik narxga qaytarish' : W.priceEdit ? 'Yopish' : 'Narxni qo‘lda o‘zgartirish'}</button></section>`;
+}
+function coSide(W){
+  const b = W.booking, miss = coMissing(W);
+  const row = (k, v, s) => `<button class="side-row ${v ? '' : 'todo'}" data-act="${s === 'cust' || s === 'pay' ? 'coscroll' : 'coopen'}" data-s="${s}"><span>${k}</span><b>${v || '—'}</b></button>`;
+  const rows = b
+    ? [row('Mijoz', esc(W.name), 'cust'), row('Bron', esc(b.pickup_code || '—'), 'cust'), row('Vaqt', esc(whenText(b.start_at)), 'cust'), row('Instruktor', esc(b.instructor?.profile?.full_name || '—'), 'cust')]
+    : [row('Mijoz', esc(W.name.trim()), 'cust'), row('Toifa', W.cat ? esc(W.cat + ' toifa') : '', 'cat'),
+      row('Davomiylik', W.min ? esc(coDurLabel(W)) : '', 'dur'),
+      row('Vaqt', W.sess.every(x => x.t) ? W.sess.map(x => esc(sessText(x))).join('<br>') : '', 'time'), row('Instruktor', esc(W.ins?.name || ''), 'ins')];
+  return `<aside class="wz-side" id="coSide"><div class="side-card"><h3>${b ? 'Bron bo‘yicha to‘lov' : 'Chek'}</h3>
+    <div class="side-rows">${rows.join('')}${row('To‘lov', { cash: 'Naqd', card: 'Karta', mixed: 'Naqd + karta' }[W.pay], 'pay')}</div>
+    <div class="side-total"><span>To‘lanadi</span><b id="sideTotal">${nf(totalOf(W))} so‘m</b></div>
+    <button class="btn btn-green" data-act="wzissue">${I('receipt', 20)} Chek chiqarish</button>
+    ${miss.length ? `<div class="side-hint" style="color:var(--warn)">${esc(miss[0][1])}</div>` : ''}</div>
+    <div class="side-hint"><span class="kbd">Enter</span> bron kodi bilan topish &nbsp;·&nbsp; <span class="kbd">F2</span> yangi chek</div></aside>`;
+}
+function coBar(W){
+  const miss = coMissing(W);
+  return `<div class="bar" id="coBar"><div class="bar-in"><div class="sum"><b id="barTotal">${nf(totalOf(W))} so‘m</b>
+    <span>${miss.length ? esc(miss[0][1]) : esc({ cash: 'Naqd', card: 'Karta', mixed: 'Naqd + karta' }[W.pay])}</span></div>
+    <button class="btn btn-green" data-act="wzissue">${I('receipt', 20)} Chek chiqarish</button></div></div>`;
+}
+
+/* ---------- chizish ---------- */
+function coRender(){
+  const W = CO;
+  if (isAdmin() && !regOk()) {
+    $('view').classList.remove('has-bar');
+    $('view').innerHTML = `<div class="view"><div class="sk"></div></div>`;
+    regGateHtml().then(h => { if (S.routeName === 'issue' && !regOk()) $('view').innerHTML = `<div class="view">${h}</div>`; });
+    return;
+  }
+  document.body.classList.remove('focus');
+  if (!S.coursesOk) {
+    $('view').innerHTML = `<div class="view">${skel(5)}</div>`;
+    loadBase().then(() => { if (S.routeName === 'issue' && S.coursesOk) coRender(); });
+    return;
+  }
+  coInit(W);
+  if (W.sess[0]?.now) W.sess[0].t = nowHM();
+  const keepDays = $('coDays')?.scrollLeft;
+  const b = W.booking;
+  const secs = [coCustSec(W)];
+  if (!b) secs.push(coCatSec(W), coDurSec(W), coTimeSec(W), coInsSec(W));
+  secs.push(coPaySec(W));
+  const v = $('view');
+  v.classList.add('has-bar');
+  v.innerHTML = `<div class="view"><div class="wz-grid"><div class="wz-main co-form">${secs.join('')}</div>${coSide(W)}</div></div>${coBar(W)}`;
+  const days = $('coDays');
+  if (days) {
+    if (keepDays != null) days.scrollLeft = keepDays;
+    else { const on = days.querySelector('.day.on'); if (on) days.scrollLeft = Math.max(0, on.offsetLeft - 40); }
+  }
+  /* yozish — sahifani qayta chizmaydi (fokus yo'qolmasin) */
+  const q = $('wzQ');
+  if (q) {
+    q.addEventListener('input', () => {
+      W.q = q.value; W.customer = null;
+      document.querySelector('[data-act="wzclr"]')?.classList.toggle('hidden', !W.q);
+      wzSearchD(W);
+    });
+    q.addEventListener('keydown', e => {
+      if (e.key !== 'Enter') return;
+      e.preventDefault();
+      if (W.found?.length === 1) ACT.cobook({ dataset: { i: '0' } });
+      else if (W.found?.length) toast('Ro‘yxatdan kerakli bronni tanlang');
+    });
+  }
+  $('wzName')?.addEventListener('input', e => {
+    W.name = e.target.value;
+    if (W.customer && W.customer.full_name !== W.name) W.customer = null;
+    const h = document.querySelector('#co-cust .co-h'); if (h) h.outerHTML = coHead(1, 'Mijoz', W.name.trim(), W.name.trim().length >= 2);
+    coPaintSideBar();
+  });
+  $('wzPhone')?.addEventListener('input', e => { W.phone = e.target.value; });
+  payBind(W);
+  if (!b) {
+    if (W.open === 'time') ensureTimes(W, W.day);
+    if (coReady(W) && !W.insRes && !W.insLoading) coLoadIns(W);
+  }
+}
+function coLoadIns(W){
+  W.insLoading = true;
+  loadIns(W).finally(() => { W.insLoading = false; });
+}
+function coPaintSideBar(){
+  const W = CO;
+  const s = $('coSide'); if (s) s.outerHTML = coSide(W);
+  const b = $('coBar'); if (b) b.outerHTML = coBar(W);
+}
+function coPaintIns(){
+  const W = CO;
+  const sec = $('co-ins'); if (sec) sec.outerHTML = coInsSec(W);
+  coPaintSideBar();
+}
+function coLive(){
+  const W = CO;
+  if (W.booking) return;
+  if (W.open === 'time') ensureTimes(W, W.day);
+  if (coReady(W)) coLoadIns(W);
+  if (W.q.trim().length >= 2) wzSearch(W);
+}
+/** Vaqt/toifa/davomiylik o'zgarsa — instruktorlar qayta tekshiriladi (tanlangani bo'sh bo'lsa qoladi) */
+function coTouch(W){ W.insRes = null; W.insLoading = false; W.insSeq++; W.manual = null; }
+/** Tanlangach — keyingi bo'lim ochiladi */
+function coGo(W, next){ W.open = next; coRender(); const el = next && $('co-' + next); if (el && window.matchMedia('(max-width: 959px)').matches) setTimeout(() => el.scrollIntoView({ behavior: 'smooth', block: 'start' }), 30); }
+
+/* ---------- bosishlar ---------- */
+ACT.coopen = el => {
+  const W = CO, s = el.dataset.s;
+  W.open = W.open === s ? null : s;
+  coRender();
+  if (W.open) { const sec = $('co-' + s); if (sec) { const r = sec.getBoundingClientRect(); if (r.top < 70 || r.top > window.innerHeight * .6) sec.scrollIntoView({ behavior: 'smooth', block: 'start' }); } }
+};
+ACT.cobook = el => {
+  const W = CO, b = W.found?.[Number(el?.dataset.i)]; if (!b) return;
+  W.booking = b; W.name = b.customer?.full_name || 'Mijoz'; W.phone = b.customer?.phone || '';
+  W.cat = String(b.category || 'B').toUpperCase(); W.min = Number(b.duration_minutes) || 60; W.krug = false;
+  W.payPkg = (b.package?.sessions || []).filter(s => !s.paid).length > 1;
+  W.manual = null; W.priceEdit = false; W.pay = 'cash'; W.cash = null; W.card = null; W.open = null;
+  coRender(); window.scrollTo(0, 0);
+};
+ACT.conobook = () => {
+  const pref = CO.pref;
+  CO_reset(); CO.pref = pref;
+  coRender(); window.scrollTo(0, 0);
+  setTimeout(() => $('wzQ')?.focus(), 50);
+};
+ACT.cocust = el => {
+  const W = CO, c = W.custs?.[Number(el.dataset.i)]; if (!c) return;
+  W.customer = c; W.name = c.full_name || ''; W.phone = c.phone || '';
+  W.q = ''; W.found = null; W.custs = null; W.seq++;
+  coRender();
+};
+ACT.cocat = el => {
+  const W = CO, c = el.dataset.v;
+  if (W.cat !== c) {
+    W.cat = c;
+    if (isPkg(W) || (W.min === PKG_MIN && !(pkgPrice(c) > 0))) { W.min = 60; W.split = null; W.sess = [{ ...W.sess[0], m: 60 }]; W.si = 0; W.day = W.sess[0].day || kToday(); }
+    if (W.ins && !(W.ins.categories || ['B']).includes(c)) W.ins = null;
+    coTouch(W);
+  }
+  coGo(W, 'dur');
+};
+function coSetSplit(W, s){
+  const first = W.sess[0] || { day: kToday(), t: nowHM(), now: true };
+  W.min = PKG_MIN; W.krug = false; W.split = s;
+  W.sess = s.m.map((m, i) => i === 0 ? { ...first, m } : { m, day: '', t: '', now: false });
+  W.si = 0; W.day = first.day || kToday();
+  coTouch(W);
+}
+ACT.codur = el => {
+  const W = CO, k = el.dataset.v;
+  if (k === 'pkg') { if (!isPkg(W)) coSetSplit(W, SPLITS[0]); return coGo(W, 'dur'); }
+  const first = W.sess[0] || { day: kToday(), t: nowHM(), now: true };
+  const m = k === 'krug' ? krugMin() : Number(k);
+  if (!(coDurKey(W) === k)) {
+    W.krug = k === 'krug'; W.min = m; W.split = null;
+    W.sess = [{ ...first, m }]; W.si = 0; W.day = first.day || kToday();
+    coTouch(W);
+  }
+  coGo(W, 'time');
+};
+ACT.cosplit = el => { const W = CO, s = SPLITS.find(x => x.k === el.dataset.k); if (!s) return; if (W.split?.k !== s.k) coSetSplit(W, s); coGo(W, 'time'); };
+ACT.cosess = el => { const W = CO; W.si = Number(el.dataset.i); W.day = defaultDay(W, W.si); coRender(); };
+ACT.coday = el => { const W = CO; W.day = el.dataset.v; coRender(); };
+function coAfterTime(W){
+  const next = W.sess.findIndex(x => !x.t);
+  coTouch(W);
+  if (next >= 0) { W.si = next; W.day = defaultDay(W, next); toast(`${next + 1}-mashg‘ulot vaqtini tanlang`); return coGo(W, 'time'); }
+  coGo(W, 'ins');
+}
+ACT.conow = () => {
+  const W = CO;
+  Object.assign(W.sess[0], { day: kToday(), t: nowHM(), now: true });
+  W.si = 0; W.day = kToday();
+  coAfterTime(W);
+};
+ACT.cotime = el => { const W = CO; Object.assign(W.sess[W.si], { day: W.day, t: el.dataset.v, now: false }); coAfterTime(W); };
+ACT.coins = el => {
+  const W = CO, i = W.insRes?.free.find(x => String(x.id) === el.dataset.v); if (!i) return;
+  W.ins = i; W.insAuto = false; W.open = null;
+  coRender();
+};
+ACT.coscroll = el => coScrollTo(el.dataset.s);
 
 /* =========================================================================
    UMUMIY: kun tanlash chiplari
@@ -2016,53 +2556,220 @@ const emptyHtml = (ic, title, text, btn = '') => `<div class="empty"><div class=
 const skel = (n = 3) => Array.from({ length: n }, () => '<div class="sk"></div>').join('');
 
 /* =========================================================================
-   CHEKLAR — shu kassaning cheklari, qayta chop etish
+   DAVR TANLASH — BARCHA hisobotlar uchun bitta: Kun · Hafta · Oy · Yil · Oraliq
+   «12 dan 28 gacha» — Oraliq: «Dan» va «Gacha» sanalari. Kun/hafta/oy/yil
+   strelkalar bilan oldinga-orqaga suriladi, o'rtadagi sanani bosib
+   istalgan kunni tanlash mumkin. Serverga doim from/to (ikkala kun kiradi).
    ========================================================================= */
-const RC = { date: kToday(), filter: '', q: '', d: null, seq: 0 };
+const PER_L = [['day', 'Kun'], ['week', 'Hafta'], ['month', 'Oy'], ['year', 'Yil'], ['range', 'Oraliq']];
+const PERS = {};
+const perReg = (k, st, load) => { PERS[k] = { st, load }; };
+const cap = s => s ? s[0].toUpperCase() + s.slice(1) : s;
+const curYear = () => Number(kToday().slice(0, 4));
+function monthStart(d, n = 0){ let [y, m] = ymdParts(d); m += n; while (m < 1) { m += 12; y--; } while (m > 12) { m -= 12; y++; } return `${y}-${pad(m)}-01`; }
+function perBounds(st){
+  const d = st.date || kToday();
+  const [y] = ymdParts(d);
+  switch (st.per) {
+    case 'week': { const a = dayAdd(d, -((wdOf(d) + 6) % 7)); return [a, dayAdd(a, 6)]; }
+    case 'month': return [monthStart(d), dayAdd(monthStart(d, 1), -1)];
+    case 'year': return [`${y}-01-01`, `${y}-12-31`];
+    case 'range': { const a = st.from || d, b = st.to || d; return a <= b ? [a, b] : [b, a]; }
+    default: return [d, d];
+  }
+}
+const perQS = st => { const [a, b] = perBounds(st); return `from=${a}&to=${b}`; };
+const perDays = st => { const [a, b] = perBounds(st); return Math.round((Date.parse(b + 'T12:00:00Z') - Date.parse(a + 'T12:00:00Z')) / 864e5) + 1; };
+function dayText(d, withWd){
+  const t = kToday(), [y, m, dd] = ymdParts(d);
+  const base = `${dd}-${MONF[m - 1]}${y !== curYear() ? ' ' + y : ''}`;
+  if (d === t) return `Bugun, ${base}`;
+  if (d === dayAdd(t, -1)) return `Kecha, ${base}`;
+  return withWd ? `${base}, ${WDF[wdOf(d)]}` : base;
+}
+function rngText(a, b){
+  if (a === b) return dayText(a);
+  const [y1, m1, d1] = ymdParts(a), [y2, m2, d2] = ymdParts(b), yy = y1 !== curYear() ? ' ' + y1 : '';
+  if (y1 === y2 && m1 === m2) return `${d1}–${d2}-${MONF[m1 - 1]}${yy}`;
+  if (y1 === y2) return `${d1}-${MONF[m1 - 1]} – ${d2}-${MONF[m2 - 1]}${yy}`;
+  return `${d1}.${pad(m1)}.${y1} – ${d2}.${pad(m2)}.${y2}`;
+}
+function perTitle(st){
+  const [a, b] = perBounds(st), [y, m] = ymdParts(a);
+  if (st.per === 'month') return `${cap(MONF[m - 1])} ${y}`;
+  if (st.per === 'year') return `${y}-yil`;
+  if (st.per === 'day') return dayText(a, true);
+  return rngText(a, b);
+}
+function perStep(st, n){
+  const d = st.date || kToday();
+  if (st.per === 'week') return dayAdd(d, 7 * n);
+  if (st.per === 'month') return monthStart(d, n);
+  if (st.per === 'year') return `${ymdParts(d)[0] + n}-01-01`;
+  return dayAdd(d, n);
+}
+function perHtml(k){
+  const st = PERS[k].st, t = kToday();
+  const seg = `<div class="seg per-seg">${PER_L.map(([v, l]) => `<button class="${st.per === v ? 'on' : ''}" data-act="perset" data-k="${k}" data-v="${v}">${l}</button>`).join('')}</div>`;
+  let nav;
+  if (st.per === 'range') {
+    const [a, b] = perBounds(st), n = perDays(st);
+    const q = [['7', 'Oxirgi 7 kun'], ['30', 'Oxirgi 30 kun'], ['pm', 'O‘tgan oy'], ['ytd', 'Yil boshidan']];
+    nav = `<div class="per-box"><div class="per-rng">
+        <label class="per-d"><span>Dan</span><input type="date" data-perin="${k}" data-f="from" value="${esc(a)}" aria-label="Boshlanish sanasi"></label>
+        <label class="per-d"><span>Gacha</span><input type="date" data-perin="${k}" data-f="to" value="${esc(b)}" aria-label="Tugash sanasi"></label></div>
+      <div class="per-info">${I('cal', 15)} ${esc(rngText(a, b))} · <b>${n} kun</b></div>
+      <div class="chips per-q">${q.map(([v, l]) => `<button class="chip" data-act="perq" data-k="${k}" data-v="${v}">${l}</button>`).join('')}</div></div>`;
+  } else {
+    const nextStart = perBounds({ ...st, date: perStep(st, 1) })[0];
+    nav = `<div class="per-nav"><button class="per-arr" data-act="perstep" data-k="${k}" data-v="-1" aria-label="Oldingi">${I('back', 20, 2.3)}</button>
+      <label class="per-cur">${I('cal', 18)}<b>${esc(perTitle(st))}</b><input type="date" data-perin="${k}" data-f="date" value="${esc(st.date || t)}" aria-label="Sanani tanlang"></label>
+      <button class="per-arr" data-act="perstep" data-k="${k}" data-v="1" ${nextStart > t ? 'disabled' : ''} aria-label="Keyingi">${I('chev', 20, 2.3)}</button></div>`;
+  }
+  return `<div class="per" id="per-${k}">${seg}${nav}</div>`;
+}
+function perChanged(k){
+  const p = PERS[k]; if (!p) return;
+  const el = $('per-' + k); if (el) el.outerHTML = perHtml(k);
+  p.load();
+}
+ACT.perset = el => {
+  const p = PERS[el.dataset.k], v = el.dataset.v; if (!p || p.st.per === v) return;
+  /* Oraliqqa o'tganda — hozirgi davr chegaralari bilan boshlanadi (kundan
+     o'tilsa — oy boshidan shu kungacha), keyin «Dan»/«Gacha» ni o'zgartirish kifoya. */
+  if (v === 'range') {
+    const [a, b] = p.st.per === 'day' ? [monthStart(p.st.date || kToday()), p.st.date || kToday()] : perBounds(p.st);
+    p.st.from = a; p.st.to = b > kToday() && a <= kToday() ? kToday() : b;
+  }
+  else if (p.st.per === 'range' && p.st.to) p.st.date = p.st.to > kToday() ? kToday() : p.st.to;
+  p.st.per = v; perChanged(el.dataset.k);
+};
+ACT.perstep = el => { const p = PERS[el.dataset.k]; if (!p) return; p.st.date = perStep(p.st, Number(el.dataset.v)); perChanged(el.dataset.k); };
+ACT.perq = el => {
+  const p = PERS[el.dataset.k]; if (!p) return;
+  const t = kToday(), v = el.dataset.v;
+  if (v === '7' || v === '30') { p.st.from = dayAdd(t, -(Number(v) - 1)); p.st.to = t; }
+  else if (v === 'pm') { p.st.from = monthStart(t, -1); p.st.to = dayAdd(monthStart(t), -1); }
+  else if (v === 'ytd') { p.st.from = `${t.slice(0, 4)}-01-01`; p.st.to = t; }
+  perChanged(el.dataset.k);
+};
+document.addEventListener('change', e => {
+  const inp = e.target.closest?.('[data-perin]'); if (!inp || !inp.value) return;
+  const p = PERS[inp.dataset.perin]; if (!p) return;
+  p.st[inp.dataset.f] = inp.value; perChanged(inp.dataset.perin);
+});
+/* Sana ustiga bosilganda kalendar darhol ochilsin (kompyuterda ham) */
+document.addEventListener('click', e => {
+  const inp = e.target.closest?.('.per-cur input, .per-d input'); if (!inp) return;
+  try { inp.showPicker?.(); } catch (_) { /* eski brauzer — oddiy maydon */ }
+});
+/* Davr bo'yicha ustunlar kalitlari: har kun (bo'sh kunlar ham — 0 bilan),
+   62 kundan uzun bo'lsa — har oy. Bugundan keyingi kunlar chizilmaydi. */
+function spanKeys(st){
+  const [a, b] = perBounds(st), end = b > kToday() ? kToday() : b;
+  if (end < a) return [];
+  const n = Math.round((Date.parse(end + 'T12:00:00Z') - Date.parse(a + 'T12:00:00Z')) / 864e5) + 1;
+  const out = [];
+  if (n > 62) { for (let m = a.slice(0, 7); m <= end.slice(0, 7); m = monthStart(m + '-01', 1).slice(0, 7)) out.push(m); }
+  else for (let i = 0; i < n; i++) out.push(dayAdd(a, i));
+  return out;
+}
+const keyLabel = k => k.length === 7 ? MONS[Number(k.slice(5, 7)) - 1] : String(Number(k.slice(8)));
+const keyTitle = k => k.length === 7 ? `${cap(MONF[Number(k.slice(5, 7)) - 1])} ${k.slice(0, 4)}` : dayText(k);
+/* Kunlar/oylar bo'yicha ustunli diagramma */
+function dayBars(days, key, st, fmt = nf){
+  const keys = spanKeys(st); if (!keys.length) return '';
+  const monthly = keys[0].length === 7, m = new Map();
+  for (const d of days) { const k = monthly ? d.day.slice(0, 7) : d.day; m.set(k, (m.get(k) || 0) + (Number(d[key]) || 0)); }
+  const max = Math.max(...keys.map(k => m.get(k) || 0), 1), step = Math.ceil(keys.length / 16);
+  return `<div class="bars">${keys.map((k, i) => {
+    const v = m.get(k) || 0;
+    return `<div title="${esc(keyTitle(k))} — ${esc(fmt(v))}"><i class="${v ? '' : 'z'}" style="height:${Math.max(3, Math.round(v / max * 100))}%"></i><span>${i % step ? '' : esc(keyLabel(k))}</span></div>`;
+  }).join('')}</div>`;
+}
+/* Excel faylni yuklab berish */
+function xlSave(sheets, name){
+  const blob = XL.book(sheets);
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = name;
+  document.body.appendChild(a); a.click();
+  setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1500);
+  toast('Excel fayl yuklab olindi');
+}
+const hrsTxt = m => { const h = (Number(m) || 0) / 60; return (Math.round(h * 10) / 10).toString().replace('.', ','); };
+
+/* =========================================================================
+   CHEKLAR — shu kassaning cheklari, qayta chop etish. Istalgan davr.
+   ========================================================================= */
+const RC = { per: 'day', date: kToday(), from: '', to: '', filter: '', q: '', d: null, seq: 0, limit: 200, big: false };
 const RC_ST = { active: ['Faol', 'ok'], used: ['Ishlatilgan', 'info'], no_show: ['Kelmadi', 'warn'], cancelled: ['Bekor', 'bad'] };
+perReg('rc', RC, () => { RC.d = null; RC.limit = 200; RC.big = false; if ($('rcTop')) $('rcTop').innerHTML = ''; if ($('rcList')) $('rcList').innerHTML = skel(); loadReceipts(); });
 async function vReceipts(){
   if (isAdmin() && !regOk()) { $('view').innerHTML = `<div class="view">${await regGateHtml()}</div>`; return; }
-  const t = kToday();
-  $('view').innerHTML = `<div class="view">
-    <div class="chips">${dayChips(RC.date, 'rcday', [[t, 'Bugun'], [dayAdd(t, -1), 'Kecha'], [dayAdd(t, -2), dayLabel(dayAdd(t, -2))]])}${regChip()}</div>
-    <div class="search" style="margin-top:12px">${I('search', 20)}<input class="input" id="rcQ" placeholder="Kod, ism yoki telefon" value="${esc(RC.q)}" autocomplete="off"></div>
+  $('view').innerHTML = `<div class="view">${perHtml('rc')}
+    ${isAdmin() ? `<div class="chips" style="margin-top:10px">${regChip()}</div>` : ''}
+    <div class="search" style="margin-top:12px">${I('search', 20)}<input class="input" id="rcQ" placeholder="Kod, ism, telefon yoki instruktor" value="${esc(RC.q)}" autocomplete="off"></div>
     <div id="rcTop" style="margin-top:12px"></div>
     <div class="sec" id="rcList" style="margin-top:12px">${skel()}</div></div>`;
-  bindDatePick();
-  $('rcQ').addEventListener('input', e => { RC.q = e.target.value; paintReceipts(); });
+  $('rcQ').addEventListener('input', e => { RC.q = e.target.value; RC.limit = 200; if (RC.big) rcSrvSearch(); else paintReceipts(); });
   loadReceipts();
 }
+/* Uzun davrda ro'yxat qisqartiriladi — qidiruv va filtr serverda, butun davr bo'yicha */
+const rcSrvSearch = debounce(() => loadReceipts(), 450);
 async function loadReceipts(quiet, retried){
   if (!$('rcList') || !regOk()) return;
-  const seq = ++RC.seq, date = RC.date;
+  const seq = ++RC.seq;
+  const extra = RC.big ? `${RC.q.trim() ? '&q=' + encodeURIComponent(RC.q.trim()) : ''}${RC.filter ? '&state=' + RC.filter : ''}` : '';
   try{
-    const d = await api(`/api/admin/cashier/receipts?token=${encodeURIComponent(S.reg.t)}&date=${date}`);
+    const d = await api(`/api/admin/cashier/receipts?token=${encodeURIComponent(S.reg.t)}&${perQS(RC)}${extra}`);
     if (seq !== RC.seq) return;
+    if (!extra) RC.big = !!d.truncated;
+    d.srv = !!extra;
     RC.d = d; paintReceipts();
   }catch(e){
     if (e.status === 401 && !retried && isCashier()) { await regRefresh(); return loadReceipts(quiet, true); }
-    if (seq === RC.seq && !quiet) $('rcList').innerHTML = `<div class="note err">${esc(e.message)}</div>`;
+    if (seq === RC.seq && !quiet && $('rcList')) $('rcList').innerHTML = `<div class="note err">${esc(e.message)}</div>`;
   }
 }
 function paintReceipts(){
   const d = RC.d; if (!d || !$('rcList')) return;
-  const s = d.summary || {};
+  const s = d.summary || {}, days = d.days || [], multi = perDays(RC) > 1;
   const segs = [['', 'Hammasi', s.total], ['active', 'Faol', s.active], ['used', 'Ishlatilgan', s.used], ['no_show', 'Kelmadi', s.no_show], ['cancelled', 'Bekor', s.cancelled]];
-  $('rcTop').innerHTML = `<div class="kpis"><div class="kpi main"><span>${esc(dayLabel(RC.date))} · ${esc(S.reg?.r?.code || '')} kassa</span><b>${nf(s.amount)} so‘m</b><small>${nf((s.total || 0) - (s.cancelled || 0))} ta chek · bekor qilinganlar hisobga olinmagan</small></div></div>
-    <div class="chips" style="margin-top:12px">${segs.map(([k, l, n]) => `<button class="chip ${RC.filter === k ? 'on' : ''}" data-act="rcf" data-v="${k}">${l} <span class="n">${n || 0}</span></button>`).join('')}</div>`;
+  const cnt = (s.total || 0) - (s.cancelled || 0);
+  $('rcTop').innerHTML = `<div class="kpis"><div class="kpi main"><span>${esc(perTitle(RC))} · ${esc(S.reg?.r?.code || '')} kassa</span><b>${nf(s.amount)} so‘m</b><small>${nf(cnt)} ta chek${s.cash != null ? ` · naqd ${nf(s.cash)} · karta ${nf(s.card)}` : ''} · bekor qilinganlar hisobga olinmagan</small></div></div>
+    ${multi && days.length ? `<div class="card" style="margin-top:12px"><div class="sec-h"><h2>${perDays(RC) > 62 ? 'Oylar' : 'Kunlar'} bo‘yicha tushum</h2><span class="muted" style="font-size:13px">${nf(days.length)} kun chek bor</span></div>${dayBars(days.map(x => ({ day: x.day, v: x.amount })), 'v', RC)}</div>` : ''}
+    <div class="chips" style="margin-top:12px">${segs.map(([k, l, n]) => `<button class="chip ${RC.filter === k ? 'on' : ''}" data-act="rcf" data-v="${k}">${l} <span class="n">${n || 0}</span></button>`).join('')}</div>
+    ${RC.big ? `<div class="note" style="margin-top:10px">Davr uzun — ro‘yxatda eng yangi ${nf((d.receipts || []).length)} ta chek. Qidiruv va filtr butun davr bo‘yicha ishlaydi.</div>` : ''}`;
   const q = RC.q.trim().toLowerCase();
-  let rows = (d.receipts || []).filter(r => !RC.filter || r.state === RC.filter);
-  if (q) rows = rows.filter(r => [r.code, r.customer?.full_name, r.customer?.phone, r.instructor_name].some(v => String(v || '').toLowerCase().includes(q)));
-  if (!rows.length) { $('rcList').innerHTML = emptyHtml('receipt', (d.receipts || []).length ? 'Mos chek yo‘q' : 'Chek chiqarilmagan', (d.receipts || []).length ? 'Qidiruv yoki filtrni o‘zgartiring.' : `${dayLabel(RC.date)} bu kassada chek chiqarilmagan.`); return; }
-  $('rcList').innerHTML = `<div class="list">${rows.map(r => {
+  let rows = d.receipts || [];
+  if (!d.srv) {
+    rows = rows.filter(r => !RC.filter || r.state === RC.filter);
+    if (q) rows = rows.filter(r => [r.code, r.customer?.full_name, r.customer?.phone, r.instructor_name].some(v => String(v || '').toLowerCase().includes(q)));
+  }
+  if (!rows.length) { $('rcList').innerHTML = emptyHtml('receipt', s.total ? 'Mos chek yo‘q' : 'Chek chiqarilmagan', s.total ? 'Qidiruv yoki filtrni o‘zgartiring.' : `${perTitle(RC)} bu kassada chek chiqarilmagan.`); return; }
+  const dm = new Map(days.map(x => [x.day, x]));
+  const shown = rows.slice(0, RC.limit);
+  let last = '', html = '';
+  for (const r of shown) {
+    if (multi) {
+      const k = ymdOf(new Date(r.paid_at));
+      if (k !== last) {
+        last = k; const x = dm.get(k);
+        html += `<div class="grp"><b>${esc(dayText(k, true))}</b>${x ? `<span>${nf(x.count)} chek · ${nf(x.amount)} so‘m</span>` : ''}</div>`;
+      }
+    }
     const st = RC_ST[r.state] || [r.state, ''];
-    return `<button class="row" data-act="rcopen" data-code="${esc(r.code)}"><span class="ic" style="width:52px;font-size:13.5px">${esc(hm(r.paid_at))}</span>
-      <span class="tx"><b>${esc(r.customer?.full_name || 'Mijoz')}</b><small>${esc(r.code)}${r.instructor_name ? ' · ' + esc(r.instructor_name) : ''}${r.duration_minutes ? ' · ' + esc(fmtDur(r.duration_minutes)) : ''}</small></span>
+    html += `<button class="row" data-act="rcopen" data-code="${esc(r.code)}"><span class="ic" style="width:52px;font-size:13.5px">${esc(hm(r.paid_at))}</span>
+      <span class="tx"><b>${esc(r.customer?.full_name || 'Mijoz')}</b><small>${esc(r.code)}${r.instructor_name ? ' · ' + esc(r.instructor_name) : ''}${r.krug ? ' · 1 krug' : r.duration_minutes ? ' · ' + esc(fmtDur(r.duration_minutes)) : ''}</small></span>
       <span class="rt">${nf(r.amount)}<small><span class="pill ${st[1]}">${esc(st[0])}</span></small></span></button>`;
-  }).join('')}</div>`;
+  }
+  const more = rows.length - shown.length;
+  $('rcList').innerHTML = `<div class="list">${html}</div>${more > 0 ? `<button class="btn btn-white" style="margin-top:12px" data-act="rcmore">Yana ko‘rsatish · ${nf(more)} ta qoldi</button>` : ''}`;
 }
-ACT.rcday = el => { RC.date = el.dataset.v; RC.d = null; vReceipts(); };
-ACT.rcf = el => { RC.filter = el.dataset.v; paintReceipts(); };
+/* «Bugungi cheklar» — oldin qaysi davr tanlangan bo'lmasin, bugunga qaytadi */
+ACT.rctoday = () => { RC.per = 'day'; RC.date = kToday(); RC.d = null; RC.big = false; RC.limit = 200; go('receipts'); };
+ACT.rcmore = () => { RC.limit += 300; paintReceipts(); };
+ACT.rcf = el => { RC.filter = el.dataset.v; RC.limit = 200; if (RC.big) { document.querySelectorAll('[data-act="rcf"]').forEach(b => b.classList.toggle('on', b === el)); $('rcList').innerHTML = skel(); loadReceipts(); } else paintReceipts(); };
 ACT.rcopen = el => {
   const r = (RC.d?.receipts || []).find(x => x.code === el.dataset.code); if (!r) return;
   const st = RC_ST[r.state] || [r.state, ''];
@@ -2072,7 +2779,7 @@ ACT.rcopen = el => {
       <div class="sum-row"><span>Chek kodi</span><b>${esc(r.code)}</b></div>
       ${r.customer?.phone ? `<div class="sum-row"><span>Telefon</span><b><a class="tel" href="${telHref(r.customer.phone)}">${esc(r.customer.phone)}</a></b></div>` : ''}
       <div class="sum-row"><span>Instruktor</span><b>${esc(r.instructor_name || '—')}</b></div>
-      <div class="sum-row"><span>Dars</span><b>${esc(whenText(r.start_at))}${r.duration_minutes ? ' · ' + esc(fmtDur(r.duration_minutes)) : ''}${r.category ? ' · ' + esc(r.category) : ''}</b></div>
+      <div class="sum-row"><span>Dars</span><b>${esc(whenText(r.start_at))}${r.krug ? ' · 1 krug' : r.duration_minutes ? ' · ' + esc(fmtDur(r.duration_minutes)) : ''}${r.category ? ' · ' + esc(r.category) : ''}</b></div>
       <div class="sum-row"><span>Summa</span><b>${esc(money(r.amount))}</b></div>
       <div class="sum-row"><span>To‘lov</span><b>${r.method === 'mixed' ? `Naqd ${nf(r.cash_amount)} + karta ${nf(r.card_amount)}` : r.method === 'card' ? 'Karta' : 'Naqd'}</b></div>
       <div class="sum-row"><span>Chiqarilgan</span><b>${esc(whenText(r.paid_at))}</b></div></div>
@@ -2126,12 +2833,13 @@ ACT.lvfin = async el => {
 setInterval(() => { if (S.routeName === 'live' && !document.hidden) paintLive(); }, 30000);
 
 /* =========================================================================
-   KASSA HISOBOTI — faqat shu kassa
+   KASSA HISOBOTI — faqat shu kassa. Istalgan davr.
    ========================================================================= */
-const RP = { period: 'day', d: null, seq: 0 };
+const RP = { per: 'day', date: kToday(), from: '', to: '', d: null, seq: 0 };
+perReg('rp', RP, () => { RP.d = null; if ($('rpBody')) $('rpBody').innerHTML = skel(4); loadReport(); });
 async function vReport(){
   if (isAdmin() && !regOk()) { $('view').innerHTML = `<div class="view">${await regGateHtml()}</div>`; return; }
-  $('view').innerHTML = `<div class="view"><div class="seg" id="rpSeg">${[['day', 'Bugun'], ['week', 'Hafta'], ['month', 'Oy']].map(([k, l]) => `<button class="${RP.period === k ? 'on' : ''}" data-act="rpper" data-v="${k}">${l}</button>`).join('')}</div>
+  $('view').innerHTML = `<div class="view">${perHtml('rp')}
     ${isAdmin() ? `<div class="chips" style="margin-top:10px">${regChip()}</div>` : ''}<div id="rpBody" class="sec" style="margin-top:14px">${skel(4)}</div></div>`;
   loadReport();
 }
@@ -2139,7 +2847,7 @@ async function loadReport(_q, retried){
   if (!$('rpBody') || !regOk()) return;
   const seq = ++RP.seq;
   try{
-    const d = await api(`/api/admin/my-dashboard?token=${encodeURIComponent(S.reg.t)}&period=${RP.period}&date=${kToday()}`);
+    const d = await api(`/api/admin/my-dashboard?token=${encodeURIComponent(S.reg.t)}&${perQS(RP)}`);
     if (seq !== RP.seq) return;
     RP.d = d; paintReport();
   }catch(e){
@@ -2154,25 +2862,315 @@ function hourBars(hrs, key = 'total'){
   const max = Math.max(...cells.map(x => x.v), 1);
   return `<div class="bars">${cells.map(x => `<div title="${x.h}:00 — ${nf(x.v)}"><i class="${x.v ? '' : 'z'}" style="height:${Math.max(3, Math.round(x.v / max * 100))}%"></i><span>${pad(x.h)}</span></div>`).join('')}</div>`;
 }
+/* Boshqa hisobotga o'tganda davr o'zi bilan ko'chadi */
+const perCopy = (a, b) => { b.per = a.per; b.date = a.date; b.from = a.from; b.to = a.to; };
 function paintReport(){
   const d = RP.d, t = d.totals || {}, c = d.change || {};
   const rec = d.recent || [];
   $('rpBody').innerHTML = `<div class="kpis">
-      <div class="kpi main"><span>${esc(d.register?.code || '')} · ${esc(d.label || '')} tushum</span><b>${nf(t.total)} so‘m</b><small>${arrow(c.total) || 'oldingi davr bilan bir xil'}</small></div>
+      <div class="kpi main"><span>${esc(d.register?.code || '')} · ${esc(perTitle(RP))} · tushum</span><b>${nf(t.total)} so‘m</b><small>${arrow(c.total) || 'oldingi davr bilan bir xil'}</small></div>
       <div class="kpi"><span>Naqd</span><b>${nf(t.cash)}</b></div><div class="kpi"><span>Karta</span><b>${nf(t.card)}</b></div>
-      <div class="kpi"><span>Cheklar</span><b>${nf(t.receipts)}</b><small>${arrow(c.receipts)}</small></div><div class="kpi"><span>Soatlar</span><b>${((Number(t.minutes) || 0) / 60).toFixed(1).replace('.', ',')}</b><small>${nf(t.customers)} mijoz</small></div></div>
+      <div class="kpi"><span>Cheklar</span><b>${nf(t.receipts)}</b><small>${arrow(c.receipts)}</small></div><div class="kpi"><span>Soatlar</span><b>${hrsTxt(t.minutes)}</b><small>${nf(t.customers)} mijoz</small></div></div>
+    <button class="row link-row" style="margin-top:12px" data-act="rp2ir"><span class="ic">${I('users')}</span><span class="tx"><b>Instruktorlar hisoboti</b><small>Shu davr: kim nechta o‘quvchi haydadi, avtoshkola va pullik darslar</small></span>${I('chev')}</button>
     <div class="card" style="margin-top:12px"><div class="sec-h"><h2>Soatlar bo‘yicha tushum</h2></div>${(d.hours || []).length ? hourBars(d.hours) : '<div class="muted">Bu davrda chek yo‘q.</div>'}</div>
     ${(d.categories || []).length ? `<div class="card" style="margin-top:12px"><div class="sec-h"><h2>Toifalar</h2></div>${rankHtml(d.categories.map(x => ({ name: x.name, v: Number(x.total) || 0, sub: nf(x.receipts) + ' chek' })))}</div>` : ''}
-    ${rec.length ? `<div class="sec"><div class="sec-h"><h2>Oxirgi cheklar</h2></div><div class="list">${rec.slice(0, 15).map(r => `<div class="row"><span class="ic" style="width:52px;font-size:13.5px">${esc(hm(r.paid_at))}</span>
-      <span class="tx"><b>${esc(r.customer_name || '—')}</b><small>${esc(r.receipt_code || '')} · ${esc(r.instructor_name || '—')}${r.mins ? ' · ' + esc(fmtDur(r.mins)) : ''}</small></span>
+    ${rec.length ? `<div class="sec"><div class="sec-h"><h2>Oxirgi cheklar</h2><button class="link" data-act="rp2rc">Hammasi</button></div><div class="list">${rec.slice(0, 15).map(r => `<div class="row"><span class="ic" style="width:52px;font-size:13.5px">${esc(hm(r.paid_at))}</span>
+      <span class="tx"><b>${esc(r.customer_name || '—')}</b><small>${perDays(RP) > 1 ? esc(dayLabel(ymdOf(new Date(r.paid_at)))) + ' · ' : ''}${esc(r.receipt_code || '')} · ${esc(r.instructor_name || '—')}${r.mins ? ' · ' + esc(fmtDur(r.mins)) : ''}</small></span>
       <span class="rt">${nf(r.amount)}<small>${r.method === 'mixed' ? 'aralash' : r.method === 'card' ? 'karta' : 'naqd'}</small></span></div>`).join('')}</div></div>` : ''}`;
 }
+ACT.rp2ir = () => { perCopy(RP, IR); IR.d = null; go('insrep'); };
+ACT.rp2rc = () => { perCopy(RP, RC); RC.d = null; RC.big = false; RC.limit = 200; go('receipts'); };
 function rankHtml(items){
   const max = Math.max(...items.map(x => x.v), 1);
   return items.map((x, i) => `<div class="rank"><span class="n">${i + 1}</span><span class="tx"><b>${esc(x.name || '—')}</b><i><u style="width:${Math.round(x.v / max * 100)}%"></u></i></span>
     <span class="rt">${nf(x.v)}<small>${esc(x.sub || '')}</small></span></div>`).join('');
 }
-ACT.rpper = el => { RP.period = el.dataset.v; document.querySelectorAll('#rpSeg button').forEach(b => b.classList.toggle('on', b === el)); $('rpBody').innerHTML = skel(4); loadReport(); };
+
+/* =========================================================================
+   INSTRUKTORLAR HISOBOTI — istalgan davr: kun, hafta, oy, yil yoki
+   «12 dan 28 gacha» oraliq.
+   Har instruktor: nechta O'QUVCHI haydadi, nechta AVTOSHKOLA va nechta
+   PULLIK dars, soat, tushum. Bosilsa — kunlar, o'quvchilar, darslar.
+   Kassir: faqat o'z kassasida sotilgan darslar + avtoshkola darslari
+   (P1 kassiri P2 sotgan darsni ko'rmaydi — server ham shunday beradi).
+   ========================================================================= */
+const IR = { per: 'month', date: kToday(), from: '', to: '', d: null, seq: 0, sort: 'students', q: '',
+  did: '', det: null, dseq: 0, dtab: 'days', dlimit: 150, names: new Map() };
+/* Uzun davr hisobi og'ir — jonli yangilanish faqat bugunni o'z ichiga olgan qisqa davrda */
+const perLive = (st, max = 31) => perBounds(st)[1] >= kToday() && perDays(st) <= max;
+perReg('ir', IR, () => {
+  IR.d = null; IR.det = null; IR.dlimit = 150;
+  if (S.routeName !== 'insrep' || !$('irBody')) return;
+  $('irBody').innerHTML = skel(4);
+  if (S.routeArg) loadIrDetail(); else loadInsRep();
+});
+const IR_SORT = [['students', 'O‘quvchi'], ['school', 'Avtoshkola'], ['paid', 'Pullik'], ['minutes', 'Soat'], ['revenue', 'Tushum'], ['name', 'Ism']];
+const irScopeNote = () => isCashier()
+  ? `<div class="note info" style="margin-top:10px;display:flex;gap:8px;align-items:flex-start">${I('cash', 18)}<span>Kassa ${esc(S.reg?.r?.code || '')}: faqat shu kassada sotilgan darslar va avtoshkola darslari. Boshqa kassa ko‘rinmaydi.</span></div>` : '';
+
+function vInsRep(arg){
+  if (arg) return vIrDetail(arg);
+  $('view').innerHTML = `<div class="view">${perHtml('ir')}${irScopeNote()}<div id="irBody" class="sec" style="margin-top:14px">${skel(4)}</div></div>`;
+  if (IR.d) paintInsRep();
+  loadInsRep();
+}
+async function loadInsRep(quiet){
+  if (!$('irBody')) return;
+  const seq = ++IR.seq;
+  try{
+    const d = await api(`/api/admin/instructor-report?${perQS(IR)}`);
+    if (seq !== IR.seq) return;
+    IR.d = d;
+    for (const i of d.instructors || []) IR.names.set(String(i.id), { name: i.name, phone: i.phone, plate: i.vehicle_plate });
+    if (S.routeName === 'insrep' && !S.routeArg) paintInsRep();
+  }catch(e){ if (seq === IR.seq && !quiet && $('irBody')) $('irBody').innerHTML = `<div class="note err">${esc(e.message)}</div>`; }
+}
+function irSorted(){
+  const k = IR.sort, q = IR.q.trim().toLowerCase();
+  let list = [...(IR.d?.instructors || [])];
+  if (q) list = list.filter(i => [i.name, i.vehicle_plate, i.phone].some(v => String(v || '').toLowerCase().includes(q)));
+  const val = i => k === 'school' ? i.school.lessons : k === 'paid' ? i.paid.lessons : k === 'minutes' ? i.minutes : k === 'revenue' ? i.revenue : i.students;
+  list.sort((a, b) => {
+    if (k === 'name') return String(a.name).localeCompare(String(b.name), 'uz');
+    if (!a.lessons !== !b.lessons) return a.lessons ? -1 : 1;          // dars o'tmaganlar pastda
+    return val(b) - val(a) || b.lessons - a.lessons || String(a.name).localeCompare(String(b.name), 'uz');
+  });
+  return list;
+}
+/* Kunlar/oylar bo'yicha: yashil — avtoshkola, ko'k — pullik */
+function stackBars(days, st){
+  const keys = spanKeys(st); if (!keys.length) return '';
+  const monthly = keys[0].length === 7, m = new Map();
+  for (const d of days) {
+    const k = monthly ? d.day.slice(0, 7) : d.day;
+    const x = m.get(k) || { s: 0, p: 0 }; x.s += Number(d.school) || 0; x.p += Number(d.paid) || 0; m.set(k, x);
+  }
+  const val = k => m.get(k) || { s: 0, p: 0 };
+  const max = Math.max(...keys.map(k => val(k).s + val(k).p), 1), step = Math.ceil(keys.length / 16);
+  return `<div class="bars stk">${keys.map((k, i) => {
+    const v = val(k), tot = v.s + v.p;
+    return `<div title="${esc(keyTitle(k))} — avtoshkola ${v.s}, pullik ${v.p}"><i class="${tot ? '' : 'z'}" style="height:${Math.max(3, Math.round(tot / max * 100))}%"><u style="height:${tot ? Math.round(v.s / tot * 100) : 0}%"></u></i><span>${i % step ? '' : esc(keyLabel(k))}</span></div>`;
+  }).join('')}</div>
+  <div class="lgd"><span><i style="background:#16a34a"></i>Avtoshkola</span><span><i style="background:var(--accent)"></i>Pullik</span></div>`;
+}
+function paintInsRep(){
+  const d = IR.d; if (!d || !$('irBody')) return;
+  const t = d.totals || {}, sc = t.school || {}, pd = t.paid || {};
+  const head = `<div class="tr th ir-cols"><span>#</span><span class="l">Instruktor</span><span>O‘quvchi</span><span>Avtoshkola</span><span>Pullik</span><span>Jami dars</span><span>Soat</span><span>Tushum</span><span></span></div>`;
+  const row = (i, n) => `<button class="tr ir-cols q2 ${i.lessons ? '' : 'zero'}" data-go="insrep/${esc(i.id)}">
+      <span class="t-n">${n}</span>
+      <span class="t-main"><b>${esc(i.name)}</b><small>${esc([i.vehicle_plate, i.lessons ? `${i.work_days} kun ishladi` : 'shu davrda dars yo‘q', i.no_show ? `${i.no_show} kelmadi` : ''].filter(Boolean).join(' · '))}</small></span>
+      <span class="t-big" data-u="o‘quvchi">${nf(i.students)}</span><i class="brk"></i>
+      <span class="t-v sch" data-l="Avtoshkola"><span class="v"><b>${nf(i.school.lessons)}</b> dars</span><small>${nf(i.school.students)} o‘quvchi</small></span>
+      <span class="t-v pd" data-l="Pullik"><span class="v"><b>${nf(i.paid.lessons)}</b> dars</span><small>${nf(i.paid.students)} o‘quvchi</small></span>
+      <span class="t-d"><b>${nf(i.lessons)}</b></span>
+      <span class="t-v" data-l="Soat"><b>${hrsTxt(i.minutes)}</b></span>
+      <span class="t-v" data-l="Tushum"><b>${nf(i.revenue)}</b></span>
+      <span class="t-d muted">${I('chev', 18)}</span></button>`;
+  const tot = `<div class="tr ir-cols q2 tot"><span class="t-n">∑</span><span class="t-main"><b>Jami</b><small>${nf(t.working)} instruktor ishladi</small></span>
+      <span class="t-big" data-u="o‘quvchi">${nf(t.students)}</span><i class="brk"></i>
+      <span class="t-v sch" data-l="Avtoshkola"><span class="v"><b>${nf(sc.lessons)}</b> dars</span><small>${nf(sc.students)} o‘quvchi</small></span>
+      <span class="t-v pd" data-l="Pullik"><span class="v"><b>${nf(pd.lessons)}</b> dars</span><small>${nf(pd.students)} o‘quvchi</small></span>
+      <span class="t-d"><b>${nf(t.lessons)}</b></span>
+      <span class="t-v" data-l="Soat"><b>${hrsTxt(t.minutes)}</b></span>
+      <span class="t-v" data-l="Tushum"><b>${nf(t.revenue)}</b></span><span class="t-d"></span></div>`;
+  $('irBody').innerHTML = `<div class="kpis">
+      <div class="kpi main"><span>${esc(perTitle(IR))} · haydalgan o‘quvchilar</span><b>${nf(t.students)} o‘quvchi</b><small>${nf(t.lessons)} dars o‘tildi · ${hrsTxt(t.minutes)} soat · ${nf(t.working)} instruktor ishladi</small></div>
+      <div class="kpi"><span>Avtoshkola</span><b class="ok-t">${nf(sc.lessons)} dars</b><small>${nf(sc.students)} o‘quvchi · ${hrsTxt(sc.minutes)} soat</small></div>
+      <div class="kpi"><span>Pullik</span><b style="color:var(--accent)">${nf(pd.lessons)} dars</b><small>${nf(pd.students)} o‘quvchi · ${hrsTxt(pd.minutes)} soat</small></div>
+      <div class="kpi"><span>Tushum</span><b>${nf(t.revenue)}</b><small>naqd ${nf(t.cash)} · karta ${nf(t.card)}</small></div>
+      <div class="kpi"><span>Kelmadi</span><b>${nf(t.no_show)}</b><small>${nf(t.cancelled)} bekor qilingan</small></div></div>
+    ${perDays(IR) > 1 && (d.days || []).some(x => x.lessons) ? `<div class="card" style="margin-top:12px"><div class="sec-h"><h2>${perDays(IR) > 62 ? 'Oylar' : 'Kunlar'} bo‘yicha darslar</h2></div>${stackBars(d.days, IR)}</div>` : ''}
+    <div class="sec"><div class="sec-h"><h2>Instruktorlar · ${nf((d.instructors || []).length)}</h2><button class="link xl-btn" data-act="irxl">${I('dl', 17)} Excel</button></div>
+      <div class="search">${I('search', 20)}<input class="input" id="irQ" placeholder="Ism yoki mashina raqami" value="${esc(IR.q)}" autocomplete="off"></div>
+      <div class="chips" style="margin-top:10px"><span class="chip-l">Saralash:</span>${IR_SORT.map(([k, l]) => `<button class="chip ${IR.sort === k ? 'on' : ''}" data-act="irsort" data-v="${k}">${l}</button>`).join('')}</div>
+      <div class="tbl" id="irTbl" style="margin-top:10px"></div></div>`;
+  $('irQ').addEventListener('input', e => { IR.q = e.target.value; paintIrTable(); });
+  IR._row = row; IR._head = head; IR._tot = tot;
+  paintIrTable();
+}
+function paintIrTable(){
+  const el = $('irTbl'); if (!el || !IR._row) return;
+  const list = irSorted();
+  el.innerHTML = list.length ? IR._head + list.map((i, n) => IR._row(i, n + 1)).join('') + (IR.q.trim() ? '' : IR._tot)
+    : `<div style="padding:18px">${emptyHtml('users', 'Topilmadi', 'Qidiruvni o‘zgartiring.')}</div>`;
+}
+ACT.irsort = el => { IR.sort = el.dataset.v; document.querySelectorAll('[data-act="irsort"]').forEach(b => b.classList.toggle('on', b === el)); paintIrTable(); };
+
+/* ---------- bitta instruktor: kunlar, o'quvchilar, darslar ---------- */
+function vIrDetail(id){
+  if (IR.did !== id) { IR.det = null; IR.dlimit = 150; }
+  IR.did = id;
+  $('view').innerHTML = `<div class="view">${perHtml('ir')}${irScopeNote()}<div id="irBody" class="sec" style="margin-top:14px">${skel(4)}</div></div>`;
+  const nm = IR.names.get(id); if (nm) $('tbTitle').textContent = nm.name;
+  if (IR.det && IR.det._id === id) paintIrDetail();
+  loadIrDetail();
+}
+async function loadIrDetail(quiet){
+  const id = IR.did; if (!$('irBody') || !id) return;
+  const seq = ++IR.dseq;
+  try{
+    const [d] = await Promise.all([
+      api(`/api/admin/instructor-control/${encodeURIComponent(id)}?${perQS(IR)}${isCashier() ? '&own=1' : ''}`),
+      IR.names.has(id) ? null : api('/api/admin/cashier/instructors').then(r => {
+        for (const i of r.instructors || []) IR.names.set(String(i.id), { name: i.full_name, phone: i.profile?.phone || null, plate: i.vehicle_plate });
+      }).catch(() => {}),
+    ]);
+    if (seq !== IR.dseq) return;
+    d._id = id; IR.det = d;
+    if (S.routeName === 'insrep' && S.routeArg === id) paintIrDetail();
+  }catch(e){ if (seq === IR.dseq && !quiet && $('irBody')) $('irBody').innerHTML = `<div class="note err">${esc(e.message)}</div>`; }
+}
+const irAtt = r => r.status === 'in_progress' || r.status === 'completed';
+function irDays(rows){
+  const m = new Map();
+  for (const r of rows) {
+    const k = ymdOf(new Date(r.start_at));
+    if (!m.has(k)) m.set(k, { day: k, school: 0, paid: 0, st: new Set(), min: 0, sum: 0, noshow: 0 });
+    const x = m.get(k);
+    x.sum += Number(r.amount) || 0;
+    if (r.status === 'no_show') x.noshow++;
+    if (irAtt(r)) { if (r.school) x.school++; else x.paid++; x.st.add(r.customer_id || 'x' + r.id); if (r.status === 'completed') x.min += Number(r.duration_minutes) || 0; }
+  }
+  return [...m.values()].filter(x => x.school || x.paid || x.sum || x.noshow).sort((a, b) => a.day.localeCompare(b.day));
+}
+function paintIrDetail(){
+  const d = IR.det; if (!d || !$('irBody')) return;
+  const nm = IR.names.get(IR.did) || {};
+  $('tbTitle').textContent = nm.name || 'Instruktor';
+  const s = d.summary || {}, sc = s.school || {}, pd = s.paid || {};
+  const rows = d.rows || [], days = irDays(rows), studs = d.students || [];
+  const tabs = [['days', 'Kunlar', days.length], ['students', 'O‘quvchilar', studs.length], ['lessons', 'Darslar', rows.length]];
+  $('irBody').innerHTML = `<div class="card ir-who"><span class="ava">${esc(ini(nm.name))}</span><span class="tx"><b>${esc(nm.name || 'Instruktor')}</b><small>${esc([nm.plate, nm.phone].filter(Boolean).join(' · ') || perTitle(IR))}</small></span>
+      ${nm.phone ? `<a class="icon-btn" href="${telHref(nm.phone)}" aria-label="Qo‘ng‘iroq">${I('phone', 20)}</a>` : ''}</div>
+    <div class="kpis" style="margin-top:12px">
+      <div class="kpi main"><span>${esc(perTitle(IR))} · haydagan o‘quvchilari</span><b>${nf(s.students)} o‘quvchi</b><small>${nf((sc.lessons || 0) + (pd.lessons || 0))} dars o‘tdi · ${hrsTxt(s.minutes)} soat · ${nf(days.filter(x => x.school || x.paid).length)} kun ishladi</small></div>
+      <div class="kpi"><span>Avtoshkola</span><b class="ok-t">${nf(sc.lessons)} dars</b><small>${nf(sc.students)} o‘quvchi · ${hrsTxt(sc.minutes)} soat</small></div>
+      <div class="kpi"><span>Pullik</span><b style="color:var(--accent)">${nf(pd.lessons)} dars</b><small>${nf(pd.students)} o‘quvchi · ${hrsTxt(pd.minutes)} soat</small></div>
+      <div class="kpi"><span>Tushum</span><b>${nf(s.revenue)}</b><small>naqd ${nf(s.cash)} · karta ${nf(s.card)}</small></div>
+      <div class="kpi"><span>Kelmadi</span><b>${nf(s.no_show)}</b><small>${nf(s.cancelled)} bekor qilingan</small></div></div>
+    <div class="sec"><div class="sec-h"><div class="seg" style="flex:1;max-width:520px">${tabs.map(([k, l, n]) => `<button class="${IR.dtab === k ? 'on' : ''}" data-act="irtab" data-v="${k}">${l} <span class="muted">${n}</span></button>`).join('')}</div>
+      <button class="link xl-btn" data-act="irdxl">${I('dl', 17)} Excel</button></div>
+      <div id="irDet"></div></div>`;
+  paintIrTab();
+}
+function paintIrTab(){
+  const d = IR.det, el = $('irDet'); if (!d || !el) return;
+  const rows = d.rows || [];
+  if (IR.dtab === 'students') {
+    const st = d.students || [];
+    if (!st.length) { el.innerHTML = emptyHtml('users', 'O‘quvchi yo‘q', `${perTitle(IR)} bu instruktor bilan dars o‘tilmagan.`); return; }
+    el.innerHTML = `<div class="tbl"><div class="tr th st-cols"><span class="l">O‘quvchi</span><span>Darslar</span><span>Avtoshkola</span><span>Pullik</span><span>Soat</span><span>Summa</span></div>
+      ${st.map(x => `<div class="tr st-cols"><span class="t-main"><b>${esc(x.name)}</b><small>${x.phone ? `<a class="tel" href="${telHref(x.phone)}">${esc(x.phone)}</a> · ` : ''}oxirgi: ${esc(x.last_at ? dayText(ymdOf(new Date(x.last_at))) : '—')}</small></span>
+        <span class="t-big" data-u="dars">${nf(x.lessons)}</span><i class="brk"></i>
+        <span class="t-v sch" data-l="Shkola"><b>${nf(x.school)}</b></span><span class="t-v pd" data-l="Pullik"><b>${nf(x.paid)}</b></span>
+        <span class="t-v" data-l="Soat"><b>${hrsTxt(x.minutes)}</b></span><span class="t-v" data-l="Summa"><b>${nf(x.amount)}</b></span></div>`).join('')}</div>`;
+    return;
+  }
+  if (IR.dtab === 'lessons') {
+    if (!rows.length) { el.innerHTML = emptyHtml('car', 'Dars yo‘q', `${perTitle(IR)} bu instruktorda dars bo‘lmagan.`); return; }
+    const list = [...rows].sort((a, b) => String(b.start_at).localeCompare(String(a.start_at)));
+    const shown = list.slice(0, IR.dlimit), multi = perDays(IR) > 1;
+    let last = '', html = '';
+    for (const r of shown) {
+      const k = ymdOf(new Date(r.start_at));
+      if (multi && k !== last) { last = k; html += `<div class="grp"><b>${esc(dayText(k, true))}</b></div>`; }
+      html += `<div class="row"><span class="ic" style="width:52px;font-size:13.5px">${esc(hm(r.start_at))}</span>
+        <span class="tx"><b>${esc(r.customer?.full_name || 'Mijoz')}</b><small>${r.school ? '<span class="pill ok">Avtoshkola</span>' : '<span class="pill acc">Pullik</span>'} ${stPill(r.status)} ${esc(fmtDur(r.duration_minutes))}</small></span>
+        <span class="rt">${r.amount ? nf(r.amount) : '—'}<small>${esc(r.receipt_code || r.school_receipt_code || '')}</small></span></div>`;
+    }
+    const more = list.length - shown.length;
+    el.innerHTML = `<div class="list">${html}</div>${more > 0 ? `<button class="btn btn-white" style="margin-top:12px" data-act="irmore">Yana ko‘rsatish · ${nf(more)} ta qoldi</button>` : ''}`;
+    return;
+  }
+  const days = irDays(rows);
+  if (!days.length) { el.innerHTML = emptyHtml('cal', 'Ish kuni yo‘q', `${perTitle(IR)} bu instruktorda dars bo‘lmagan.`); return; }
+  const T = days.reduce((a, x) => ({ s: a.s + x.school, p: a.p + x.paid, m: a.m + x.min, sum: a.sum + x.sum, n: a.n + x.noshow }), { s: 0, p: 0, m: 0, sum: 0, n: 0 });
+  const dayRow = (x, tot) => `<div class="tr dy-cols ${tot ? 'tot' : ''}"><span class="t-main"><b>${tot ? 'Jami' : esc(dayText(x.day, true))}</b><small>${tot ? `${nf(days.length)} kun · ${nf(d.summary?.students)} o‘quvchi` : `${nf(x.st.size)} o‘quvchi${x.noshow ? ` · ${x.noshow} kelmadi` : ''}`}</small></span>
+      <span class="t-big" data-u="dars">${nf(tot ? T.s + T.p : x.school + x.paid)}</span><i class="brk"></i>
+      <span class="t-v sch" data-l="Shkola"><b>${nf(tot ? T.s : x.school)}</b></span><span class="t-v pd" data-l="Pullik"><b>${nf(tot ? T.p : x.paid)}</b></span>
+      <span class="t-v" data-l="Soat"><b>${hrsTxt(tot ? T.m : x.min)}</b></span><span class="t-v" data-l="Summa"><b>${nf(tot ? T.sum : x.sum)}</b></span></div>`;
+  el.innerHTML = `<div class="tbl"><div class="tr th dy-cols"><span class="l">Kun</span><span>Darslar</span><span>Avtoshkola</span><span>Pullik</span><span>Soat</span><span>Summa</span></div>
+    ${days.map(x => dayRow(x)).join('')}${days.length > 1 ? dayRow(null, true) : ''}</div>`;
+}
+ACT.irtab = el => { IR.dtab = el.dataset.v; document.querySelectorAll('[data-act="irtab"]').forEach(b => b.classList.toggle('on', b === el)); paintIrTab(); };
+ACT.irmore = () => { IR.dlimit += 300; paintIrTab(); };
+
+/* ---------- Excel ---------- */
+/* Faylda «Bugun/Kecha» emas — aniq sana (fayl keyin ham ochiladi) */
+const absDay = (d, wd) => { const [y, m, dd] = ymdParts(d); return `${dd}-${MONF[m - 1]} ${y}${wd ? ', ' + WDF[wdOf(d)] : ''}`; };
+function xlHead(title, cols){
+  const [a, b] = perBounds(IR);
+  const scope = isCashier() ? `Kassa ${S.reg?.r?.code || ''}: shu kassada sotilgan darslar + avtoshkola` : 'Barcha kassalar';
+  return {
+    rows: [
+      { h: 24, cells: [{ v: title, s: 1 }] },
+      { cells: [{ v: `${rngText(a, b)} · ${scope} · yuklab olindi: ${new Date().toLocaleString('uz-UZ', { timeZone: TZ })}`, s: 14 }] },
+      { h: 30, cells: cols.map(v => ({ v, s: 2 })) },
+    ],
+    merges: [`A1:${XL.col(cols.length - 1)}1`, `A2:${XL.col(cols.length - 1)}2`],
+    file: `${a}_${b}`,
+  };
+}
+const hr1 = m => Math.round((Number(m) || 0) / 6) / 10;
+ACT.irxl = () => {
+  const d = IR.d; if (!d) return toast('Hisobot hali yuklanmadi', true);
+  const cols = ['№', 'Instruktor', 'Mashina', 'O‘quvchilar', 'Avtoshkola: dars', 'Avtoshkola: o‘quvchi', 'Pullik: dars', 'Pullik: o‘quvchi', 'Jami dars', 'Kelmadi', 'Ish kunlari', 'Soat', 'Tushum', 'Naqd', 'Karta'];
+  const H = xlHead(`Instruktorlar hisoboti — ${perTitle(IR)}`, cols);
+  const list = irSorted();
+  list.forEach((i, n) => H.rows.push({ cells: [
+    { v: n + 1, s: 13 }, { v: i.name, s: 3 }, { v: i.vehicle_plate || '', s: 12 }, { v: i.students, s: 15 },
+    { v: i.school.lessons, s: 15 }, { v: i.school.students, s: 15 }, { v: i.paid.lessons, s: 15 }, { v: i.paid.students, s: 15 },
+    { v: i.lessons, s: 15 }, { v: i.no_show, s: 15 }, { v: i.work_days, s: 15 }, { v: hr1(i.minutes), s: 12 },
+    { v: i.revenue, s: 15 }, { v: i.cash, s: 15 }, { v: i.card, s: 15 },
+  ] }));
+  const t = d.totals || {};
+  H.rows.push({ h: 20, cells: [
+    { v: '', s: 17 }, { v: 'JAMI', s: 17 }, { v: `${t.working} instruktor ishladi`, s: 17 }, { v: t.students, s: 16 },
+    { v: t.school?.lessons, s: 16 }, { v: t.school?.students, s: 16 }, { v: t.paid?.lessons, s: 16 }, { v: t.paid?.students, s: 16 },
+    { v: t.lessons, s: 16 }, { v: t.no_show, s: 16 }, { v: '', s: 17 }, { v: hr1(t.minutes), s: 17 },
+    { v: t.revenue, s: 16 }, { v: t.cash, s: 16 }, { v: t.card, s: 16 },
+  ] });
+  const sheet1 = { name: 'Instruktorlar', rows: H.rows, merges: H.merges, cols: [5, 26, 12, 11, 11, 11, 10, 10, 9, 9, 9, 8, 13, 13, 13], freeze: { x: 2, y: 3 } };
+  const D = xlHead(`Kunlar bo‘yicha — ${perTitle(IR)}`, ['Kun', 'Darslar', 'Avtoshkola', 'Pullik', 'O‘quvchilar', 'Soat', 'Tushum']);
+  for (const x of d.days || []) D.rows.push({ cells: [
+    { v: absDay(x.day, true), s: 12 }, { v: x.lessons, s: 15 }, { v: x.school, s: 15 }, { v: x.paid, s: 15 },
+    { v: x.students, s: 15 }, { v: hr1(x.minutes), s: 12 }, { v: x.revenue, s: 15 },
+  ] });
+  const sheet2 = { name: 'Kunlar', rows: D.rows, merges: D.merges, cols: [28, 10, 11, 10, 12, 9, 14], freeze: { x: 0, y: 3 } };
+  xlSave([sheet1, sheet2], `instruktorlar-hisoboti-${H.file}.xlsx`);
+};
+ACT.irdxl = () => {
+  const d = IR.det; if (!d) return toast('Hisobot hali yuklanmadi', true);
+  const nm = IR.names.get(IR.did) || {}, name = nm.name || 'Instruktor';
+  const rows = d.rows || [], days = irDays(rows);
+  const A = xlHead(`${name} — ${perTitle(IR)} · kunlar`, ['Kun', 'Darslar', 'Avtoshkola', 'Pullik', 'O‘quvchilar', 'Kelmadi', 'Soat', 'Summa']);
+  for (const x of days) A.rows.push({ cells: [
+    { v: absDay(x.day, true), s: 12 }, { v: x.school + x.paid, s: 15 }, { v: x.school, s: 15 }, { v: x.paid, s: 15 },
+    { v: x.st.size, s: 15 }, { v: x.noshow, s: 15 }, { v: hr1(x.min), s: 12 }, { v: x.sum, s: 15 },
+  ] });
+  const s = d.summary || {};
+  A.rows.push({ h: 20, cells: [
+    { v: 'JAMI', s: 17 }, { v: (s.school?.lessons || 0) + (s.paid?.lessons || 0), s: 16 }, { v: s.school?.lessons, s: 16 }, { v: s.paid?.lessons, s: 16 },
+    { v: s.students, s: 16 }, { v: s.no_show, s: 16 }, { v: hr1(s.minutes), s: 17 }, { v: s.revenue, s: 16 },
+  ] });
+  const B = xlHead(`${name} — ${perTitle(IR)} · o‘quvchilar`, ['O‘quvchi', 'Telefon', 'Darslar', 'Avtoshkola', 'Pullik', 'Soat', 'Summa', 'Oxirgi dars']);
+  for (const x of d.students || []) B.rows.push({ cells: [
+    { v: x.name, s: 3 }, { v: x.phone || '', s: 12 }, { v: x.lessons, s: 15 }, { v: x.school, s: 15 }, { v: x.paid, s: 15 },
+    { v: hr1(x.minutes), s: 12 }, { v: x.amount, s: 15 }, { v: x.last_at ? `${absDay(ymdOf(new Date(x.last_at)))} ${hm(x.last_at)}` : '', s: 12 },
+  ] });
+  const C = xlHead(`${name} — ${perTitle(IR)} · darslar`, ['Sana', 'Vaqt', 'O‘quvchi', 'Telefon', 'Turi', 'Holat', 'Davomiylik, daq', 'Summa', 'Chek kodi']);
+  for (const r of [...rows].sort((a, b) => String(a.start_at).localeCompare(String(b.start_at)))) C.rows.push({ cells: [
+    { v: absDay(ymdOf(new Date(r.start_at))), s: 12 }, { v: hm(r.start_at), s: 13 }, { v: r.customer?.full_name || 'Mijoz', s: 12 },
+    { v: r.customer?.phone || '', s: 12 }, { v: r.school ? 'Avtoshkola' : 'Pullik', s: 12 }, { v: (ST[r.status] || [r.status])[0], s: 12 },
+    { v: Number(r.duration_minutes) || 0, s: 15 }, { v: Number(r.amount) || 0, s: 15 }, { v: r.receipt_code || r.school_receipt_code || '', s: 12 },
+  ] });
+  xlSave([
+    { name: 'Kunlar', rows: A.rows, merges: A.merges, cols: [28, 10, 11, 10, 12, 10, 9, 14], freeze: { x: 0, y: 3 } },
+    { name: 'O‘quvchilar', rows: B.rows, merges: B.merges, cols: [26, 16, 10, 11, 10, 9, 14, 22], freeze: { x: 0, y: 3 } },
+    { name: 'Darslar', rows: C.rows, merges: C.merges, cols: [18, 8, 24, 16, 12, 14, 12, 13, 18], freeze: { x: 0, y: 3 } },
+  ], `instruktor-${String(name).toLowerCase().replace(/[^a-z0-9Ѐ-ӿ]+/gi, '-').replace(/^-|-$/g, '') || 'hisobot'}-${A.file}.xlsx`);
+};
 
 /* =========================================================================
    INSTRUKTORLAR JADVALI — kim qachon bo'sh, kim band
@@ -2380,7 +3378,8 @@ const XL = (() => {
 <worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheetPr><pageSetUpPr fitToPage="1"/></sheetPr>${pane}${colsXml}<sheetData>${data}</sheetData>${merges.length ? `<mergeCells count="${merges.length}">${merges.map(m => `<mergeCell ref="${m}"/>`).join('')}</mergeCells>` : ''}<pageMargins left="0.3" right="0.3" top="0.4" bottom="0.4" header="0.2" footer="0.2"/><pageSetup orientation="landscape" fitToWidth="1" fitToHeight="0"/></worksheet>`;
   }
   /* Uslublar (s=…): 1 sarlavha, 2 ustun boshi, 3 instruktor, 4 bo'sh, 5 tasdiqlangan,
-     6 kutilmoqda, 7 jarayonda, 8 tugagan, 9 yopiq, 10 o'tgan, 11 kelmagan, 12 oddiy, 13 qalin, 14 izoh */
+     6 kutilmoqda, 7 jarayonda, 8 tugagan, 9 yopiq, 10 o'tgan, 11 kelmagan, 12 oddiy, 13 qalin, 14 izoh,
+     15 son (1 234 567), 16 JAMI son (qalin, kulrang), 17 JAMI matn (qalin, kulrang) */
   const STYLES = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
 <fonts count="6"><font><sz val="10"/><name val="Calibri"/><family val="2"/></font><font><b/><sz val="10"/><name val="Calibri"/><family val="2"/></font><font><b/><sz val="10"/><color rgb="FFFFFFFF"/><name val="Calibri"/><family val="2"/></font><font><b/><sz val="15"/><color rgb="FF1B1E66"/><name val="Calibri"/><family val="2"/></font><font><sz val="9"/><color rgb="FF5A6478"/><name val="Calibri"/><family val="2"/></font><font><b/><sz val="9"/><color rgb="FF1F2433"/><name val="Calibri"/><family val="2"/></font></fonts>
@@ -2396,7 +3395,7 @@ const XL = (() => {
 <fill><patternFill patternType="solid"><fgColor rgb="FFFFC999"/><bgColor indexed="64"/></patternFill></fill></fills>
 <borders count="2"><border><left/><right/><top/><bottom/><diagonal/></border><border><left style="thin"><color rgb="FFC9CEDA"/></left><right style="thin"><color rgb="FFC9CEDA"/></right><top style="thin"><color rgb="FFC9CEDA"/></top><bottom style="thin"><color rgb="FFC9CEDA"/></bottom><diagonal/></border></borders>
 <cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>
-<cellXfs count="15">
+<cellXfs count="18">
 <xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>
 <xf numFmtId="0" fontId="3" fillId="0" borderId="0" xfId="0" applyFont="1"/>
 <xf numFmtId="0" fontId="2" fillId="2" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf>
@@ -2412,6 +3411,9 @@ const XL = (() => {
 <xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1" applyAlignment="1"><alignment vertical="center" wrapText="1"/></xf>
 <xf numFmtId="0" fontId="1" fillId="0" borderId="1" xfId="0" applyFont="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>
 <xf numFmtId="0" fontId="4" fillId="0" borderId="0" xfId="0" applyFont="1"/>
+<xf numFmtId="3" fontId="0" fillId="0" borderId="1" xfId="0" applyNumberFormat="1" applyBorder="1" applyAlignment="1"><alignment vertical="center"/></xf>
+<xf numFmtId="3" fontId="1" fillId="9" borderId="1" xfId="0" applyNumberFormat="1" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment vertical="center"/></xf>
+<xf numFmtId="0" fontId="1" fillId="9" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment vertical="center"/></xf>
 </cellXfs>
 <cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles>
 </styleSheet>`;
@@ -2736,9 +3738,10 @@ ACT.chsend = async () => {
 /* =========================================================================
    ADMINISTRATOR: HISOBOT
    ========================================================================= */
-const AN = { period: 'day', d: null, seq: 0 };
+const AN = { per: 'day', date: kToday(), from: '', to: '', d: null, seq: 0 };
+perReg('an', AN, () => { AN.d = null; if ($('anBody')) $('anBody').innerHTML = skel(4); loadAnalytics(); });
 function vAnalytics(){
-  $('view').innerHTML = `<div class="view"><div class="seg">${[['day', 'Bugun'], ['week', 'Hafta'], ['month', 'Oy'], ['year', 'Yil']].map(([k, l]) => `<button class="${AN.period === k ? 'on' : ''}" data-act="anper" data-v="${k}">${l}</button>`).join('')}</div>
+  $('view').innerHTML = `<div class="view">${perHtml('an')}
     <div id="anBody" class="sec" style="margin-top:14px">${skel(4)}</div>
     <a class="btn btn-white" href="/admin/full" style="margin-top:16px">${I('ext', 18)} Batafsil hisobot — kengaytirilgan panelda</a></div>`;
   loadAnalytics();
@@ -2747,7 +3750,7 @@ async function loadAnalytics(){
   if (!$('anBody')) return;
   const seq = ++AN.seq;
   try{
-    const d = await api(`/api/admin/analytics?period=${AN.period}&date=${kToday()}`);
+    const d = await api(`/api/admin/analytics?${perQS(AN)}`);
     if (seq !== AN.seq) return;
     AN.d = d; paintAnalytics();
   }catch(e){ if (seq === AN.seq && $('anBody')) $('anBody').innerHTML = `<div class="note err">${esc(e.message)}</div>`; }
@@ -2759,22 +3762,23 @@ function paintAnalytics(){
   const short = l => { const x = String(l || ''); return /^\d{4}-\d{2}-\d{2}/.test(x) ? x.slice(8, 10) : /^\d{4}-\d{2}$/.test(x) ? MONS[Number(x.slice(5)) - 1] : x.length > 5 ? x.slice(-5) : x; };
   const cash = Number(t.revenue_cash) || 0, card = Number(t.revenue_card) || 0;
   $('anBody').innerHTML = `<div class="kpis">
-      <div class="kpi main"><span>${esc(d.label || '')} tushum</span><b>${nf(t.revenue)} so‘m</b><small>${arrow(c.revenue) || 'oldingi davr bilan bir xil'}${p.revenue ? ` · oldingi: ${nf(p.revenue)}` : ''}</small></div>
+      <div class="kpi main"><span>${esc(perTitle(AN))} · tushum</span><b>${nf(t.revenue)} so‘m</b><small>${arrow(c.revenue) || 'oldingi davr bilan bir xil'}${p.revenue ? ` · oldingi: ${nf(p.revenue)}` : ''}</small></div>
       <div class="kpi"><span>Bronlar</span><b>${nf(t.bookings)}</b><small>${arrow(c.bookings)}</small></div>
       <div class="kpi"><span>Tugagan</span><b>${nf(t.completed)}</b><small>${arrow(c.completed)}</small></div>
       <div class="kpi"><span>Kelmagan</span><b>${nf(t.no_show)}</b></div>
-      <div class="kpi"><span>Mijozlar</span><b>${nf(t.customers)}</b><small>${((Number(t.minutes) || 0) / 60).toFixed(1).replace('.', ',')} soat haydaldi</small></div></div>
+      <div class="kpi"><span>Mijozlar</span><b>${nf(t.customers)}</b><small>${hrsTxt(t.minutes)} soat haydaldi</small></div></div>
     ${cash || card ? `<div class="card" style="margin-top:12px"><div class="sec-h"><h2>Naqd va karta</h2></div>
       <div style="display:flex;height:14px;border-radius:7px;overflow:hidden;background:var(--card-2)"><i style="flex:${cash};background:#16a34a"></i><i style="flex:${card};background:var(--accent)"></i></div>
       <div style="display:flex;justify-content:space-between;margin-top:8px;font-size:13.5px"><span><b class="ok-t">●</b> Naqd ${nf(cash)}</span><span><b style="color:var(--accent)">●</b> Karta ${nf(card)}</span></div></div>` : ''}
     ${series.length > 1 ? `<div class="card" style="margin-top:12px"><div class="sec-h"><h2>Tushum dinamikasi</h2></div>
-      <div class="bars">${series.map(s => `<div title="${esc(s.label)} — ${nf(s.revenue)} so‘m · ${nf(s.bookings)} bron"><i class="${Number(s.revenue) ? '' : 'z'}" style="height:${Math.max(3, Math.round((Number(s.revenue) || 0) / max * 100))}%"></i><span>${esc(short(s.label))}</span></div>`).join('')}</div></div>` : ''}
-    ${(d.instructors || []).length ? `<div class="card" style="margin-top:12px"><div class="sec-h"><h2>Instruktorlar</h2></div>
-      ${rankHtml(d.instructors.slice(0, 10).map(i => ({ name: i.name, v: Number(i.revenue) || 0, sub: `${nf(i.completed)} dars · ${((Number(i.minutes) || 0) / 60).toFixed(1).replace('.', ',')} soat` })))}</div>` : ''}
+      <div class="bars">${series.map((s, i) => `<div title="${esc(s.label)} — ${nf(s.revenue)} so‘m · ${nf(s.bookings)} bron"><i class="${Number(s.revenue) ? '' : 'z'}" style="height:${Math.max(3, Math.round((Number(s.revenue) || 0) / max * 100))}%"></i><span>${i % Math.ceil(series.length / 16) ? '' : esc(short(s.label))}</span></div>`).join('')}</div></div>` : ''}
+    <button class="row link-row" style="margin-top:12px" data-act="an2ir"><span class="ic">${I('users')}</span><span class="tx"><b>Instruktorlar hisoboti</b><small>Har instruktor: nechta o‘quvchi, avtoshkola va pullik darslar, soat</small></span>${I('chev')}</button>
+    ${(d.instructors || []).length ? `<div class="card" style="margin-top:12px"><div class="sec-h"><h2>Instruktorlar · tushum</h2><button class="link" data-act="an2ir">Batafsil</button></div>
+      ${rankHtml(d.instructors.slice(0, 10).map(i => ({ name: i.name, v: Number(i.revenue) || 0, sub: `${nf(i.completed)} dars · ${hrsTxt(i.minutes)} soat` })))}</div>` : ''}
     ${(d.categories || []).length ? `<div class="card" style="margin-top:12px"><div class="sec-h"><h2>Toifalar</h2></div>
       ${rankHtml(d.categories.map(x => ({ name: `${x.category || x.name || '—'} toifa`, v: Number(x.revenue ?? x.total) || 0, sub: `${nf(x.bookings ?? x.receipts ?? 0)} bron` })))}</div>` : ''}`;
 }
-ACT.anper = el => { AN.period = el.dataset.v; document.querySelectorAll('[data-act="anper"]').forEach(b => b.classList.toggle('on', b === el)); $('anBody').innerHTML = skel(4); loadAnalytics(); };
+ACT.an2ir = () => { perCopy(AN, IR); IR.d = null; go('insrep'); };
 
 /* =========================================================================
    INSTRUKTORLAR — faol / o'chirilgan, arizalar
@@ -2863,6 +3867,10 @@ function vPrices(){
     <div class="card" style="margin-top:12px;background:linear-gradient(135deg,#f0fdf4,#fff)"><div class="sec-h"><h2>5 soatlik paket — B toifa</h2></div>
       <label class="field" style="margin-top:0"><span>Paket narxi (0 — paket o‘chiq)</span><input class="input" inputmode="numeric" id="pr-pkg" value="${pk}"></label>
       <p class="muted" style="font-size:12.5px;margin:8px 2px 0" id="pr-pkg-hint"></p></div>
+    <div class="card" style="margin-top:12px;background:linear-gradient(135deg,#fffbeb,#fff)"><div class="sec-h"><h2>1 krug (avtodrom bo‘ylab aylana)</h2></div>
+      <div class="grid2"><label class="field" style="margin-top:0"><span>Narxi, so‘m (0 — o‘chiq)</span><input class="input" inputmode="numeric" id="pr-krug" value="${krugPrice()}"></label>
+      <label class="field" style="margin-top:0"><span>Davomiyligi, daqiqa (15–60)</span><input class="input" inputmode="numeric" id="pr-krug-min" value="${krugMin()}"></label></div>
+      <p class="muted" style="font-size:12.5px;margin:8px 2px 0">Kassada «Davomiylik» ro‘yxatida chiqadi. Instruktor shuncha daqiqa band hisoblanadi.</p></div>
     <div class="card" style="margin-top:12px"><div class="sec-h"><h2>Ish vaqti</h2></div>
       <div class="grid2"><label class="field" style="margin-top:0"><span>Boshlanishi</span><input class="input" type="time" id="pr-ws" value="${esc(String(sv('work_start') || '07:00').slice(0, 5))}"></label>
       <label class="field" style="margin-top:0"><span>Tugashi</span><input class="input" type="time" id="pr-we" value="${esc(String(sv('work_end') || '19:00').slice(0, 5))}"></label></div>
@@ -2880,6 +3888,9 @@ ACT.prsave = async el => {
     if (!(vals['half_' + c.toLowerCase()] > 0) || !(vals['rate_' + c.toLowerCase()] > 0)) return toast(`${c} toifa narxlari musbat son bo‘lsin`, true);
   }
   vals.paket5_b = num('pr-pkg');
+  vals.krug_price = num('pr-krug');
+  vals.krug_min = num('pr-krug-min');
+  if (vals.krug_min < 15 || vals.krug_min > 60) return toast('1 krug davomiyligi 15 dan 60 daqiqagacha bo‘lsin', true);
   const ws = $('pr-ws').value || '07:00', we = $('pr-we').value || '19:00';
   if (ws >= we) return toast('Ish boshlanishi tugashidan oldin bo‘lsin', true);
   vals.work_start = ws; vals.work_end = we;
