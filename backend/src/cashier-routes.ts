@@ -1095,11 +1095,15 @@ export async function registerCashierRoutes(
         const phone = String(b.phone || '').trim();
         const instructorId = String(b.instructor_id || '').trim();
         const courseId = String(b.course_id || '').trim();
-        const start = new Date(String(b.start_at || ''));
+        /* BRONSIZ CHEK — mijoz HOZIR keldi, bron qilmayapti. Shuning uchun
+           dars doim serverdagi REAL hozirgi vaqt bilan boshlanadi: brauzer
+           yuborgan start_at hisobga olinmaydi (soati noto'g'ri kompyuter
+           yoki eski oynadan kelgan vaqt chekka tushmasin). Kelajakdagi vaqt
+           kerak bo'lsa — bu bron: operator «Qo'lda bron» qiladi. */
+        const start = new Date();
         if (fullName.length < 2) return reply.code(400).send({ ok: false, error: 'Ism familiyani kiriting' });
         if (!instructorId) return reply.code(400).send({ ok: false, error: 'Instruktor tanlanmagan' });
         if (!courseId) return reply.code(400).send({ ok: false, error: 'Mashg‘ulot tanlanmagan' });
-        if (Number.isNaN(start.getTime())) return reply.code(400).send({ ok: false, error: 'Vaqt noto‘g‘ri' });
 
         /* 5 soat — paket (faqat B toifa): bir kunda yoki bir necha kunga bo'lingan.
            A va C da 5 soat — oddiy bron, soatlik tarif bilan. */
@@ -1108,8 +1112,12 @@ export async function registerCashierRoutes(
         if (isPackage && !pkgOn) return reply.code(400).send({ ok: false, error: '5 soatlik paket faqat B toifa uchun' });
         let sessions: Session[] = [{ start, end: new Date(start.getTime() + minutes * 60000), minutes }];
         if (isPackage) {
-          const raw = Array.isArray(b.sessions) && b.sessions.length ? b.sessions : [{ start_at: start.toISOString(), minutes: PACKAGE_MINUTES }];
-          const parsed = parseSessions(raw);
+          /* Paketda ham 1-mashg'ulot — HOZIR; keyingilari (boshqa kunlar)
+             kassir tanlagan vaqtda, lekin o'tmishda bo'lolmaydi. */
+          const raw = Array.isArray(b.sessions) && b.sessions.length
+            ? b.sessions.map((x: any, i: number) => (i === 0 ? { ...x, start_at: start.toISOString() } : x))
+            : [{ start_at: start.toISOString(), minutes: PACKAGE_MINUTES }];
+          const parsed = parseSessions(raw, { rejectPast: true, graceMs: 120000 });
           if ('error' in parsed) return reply.code(400).send({ ok: false, error: parsed.error });
           sessions = parsed.sessions;
         }
