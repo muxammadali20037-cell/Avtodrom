@@ -132,12 +132,17 @@ describe('Mijoz: yangi davomiyliklar', () => {
       full_name: 'Boshqa Mijoz', phone: '+998907770000', instructor_id: 'ip-1', category: 'B', duration_minutes: 60, start_at: at(D2, '11:00') } });
     expect(m.status).toBe(409);
     expect(m.body.error).toMatch(/band/);
-    // kassa ham 11:00 ga chek chiqarmaydi
+    // kassa ham band instruktorga chek chiqarmaydi: bronsiz chek HOZIR boshlanadi,
+    // instruktorning 2 soatlik darsi esa hozir ikkinchi soatida
+    const nowMs = Date.now();
+    h.db.bookings.push({ id: 'b-now', customer_id: 'u-ali', instructor_id: 'ip-1', course_id: 'c-b', status: 'in_progress',
+      start_at: new Date(nowMs - 70 * 60000).toISOString(), booking_date: new Date(nowMs - 70 * 60000).toISOString(),
+      end_at: new Date(nowMs + 50 * 60000).toISOString(), duration_minutes: 120 });
     const k = await h.call('POST', '/api/admin/cashier/issue', { cookie: kassa1, payload: {
       register_token: makeRegisterToken('reg-p1'), full_name: 'Uchinchi', instructor_id: 'ip-1', course_id: 'c-b',
       category: 'B', duration_minutes: 60, start_at: at(D2, '11:00'), amount: 250000, cash_amount: 250000, card_amount: 0 } });
     expect(k.status).toBe(409);
-    expect(h.db.bookings).toHaveLength(1);
+    expect(h.db.bookings).toHaveLength(2);
     expect(h.db.payments).toHaveLength(0);
   });
 });
@@ -331,7 +336,9 @@ describe('Kassa: 1 krug', () => {
     expect(r.status).toBe(201);
     const b = h.db.bookings[0];
     expect(b.duration_minutes).toBe(15);
-    expect(b.end_at).toBe(at(D2, '10:15'));
+    // bronsiz chek — yuborilgan vaqt emas, HOZIR; 15 daqiqa
+    expect(Math.abs(Date.parse(b.start_at) - Date.now())).toBeLessThan(10_000);
+    expect(Date.parse(b.end_at) - Date.parse(b.start_at)).toBe(15 * 60000);
     expect(b.customer_note).toBe('1 krug');
     expect(h.db.payments[0].note).toBe('1 krug');
     expect(r.body.receipt.krug_text).toBe('1 krug');
@@ -343,7 +350,7 @@ describe('Kassa: 1 krug', () => {
     const st = await h.call('GET', '/api/admin/settings', { cookie: kassa1 });
     expect(st.body.settings.map((x: any) => x.key)).toEqual(expect.arrayContaining(['krug_min', 'krug_price']));
     const r2 = await h.call('POST', '/api/admin/cashier/issue', { cookie: kassa1, payload: {
-      register_token: tok(), full_name: 'Krug Ikki', instructor_id: 'ip-1', course_id: 'c-b', category: 'B',
+      register_token: tok(), full_name: 'Krug Ikki', instructor_id: 'ip-2', course_id: 'c-b', category: 'B',
       krug: true, duration_minutes: 60, start_at: at(D2, '11:00'), amount: 90_000, cash_amount: 90_000, card_amount: 0 } });
     expect(r2.status).toBe(201);
     expect(h.db.bookings[1].duration_minutes).toBe(20);   // server sozlamadagi vaqtni oladi
@@ -355,6 +362,39 @@ describe('Kassa: 1 krug', () => {
       krug: true, start_at: at(D2, '12:00'), amount: 80_000, cash_amount: 80_000, card_amount: 0 } });
     expect(r.status).toBe(400);
     expect(h.db.bookings).toHaveLength(0);
+  });
+});
+
+describe('Bronsiz chek — doim HOZIRGI vaqt', () => {
+  const tok = () => makeRegisterToken('reg-p1');
+  it('kelajakdagi yoki o‘tgan start_at yuborilsa ham dars hozir boshlanadi', async () => {
+    for (const [i, when] of [at(D3, '15:00'), '2020-01-01T08:00:00.000Z', ''].entries()) {
+      const r = await h.call('POST', '/api/admin/cashier/issue', { cookie: kassa1, payload: {
+        register_token: tok(), full_name: `Keldi ${i}`, instructor_id: i % 2 ? 'ip-2' : 'ip-1', course_id: 'c-b', category: 'B',
+        duration_minutes: 30, start_at: when, amount: 150000, cash_amount: 150000, card_amount: 0 } });
+      if (i === 2) { expect(r.status).toBe(409); continue; }       // ip-1 hozir band (0-chek)
+      expect(r.status).toBe(201);
+      const b = h.db.bookings.find((x) => x.id === r.body.booking.id);
+      expect(Math.abs(Date.parse(b.start_at) - Date.now())).toBeLessThan(10_000);
+      expect(Date.parse(b.end_at) - Date.parse(b.start_at)).toBe(30 * 60000);
+    }
+  });
+  it('paket: 1-mashg‘ulot hozir, keyingilari tanlangan kunda; o‘tgan kun rad etiladi', async () => {
+    const ok = await h.call('POST', '/api/admin/cashier/issue', { cookie: kassa1, payload: {
+      register_token: tok(), full_name: 'Paket Keldi', instructor_id: 'ip-1', course_id: 'c-b', category: 'B', duration_minutes: 300,
+      start_at: at(D3, '08:00'), sessions: [{ start_at: at(D3, '08:00'), minutes: 180 }, { start_at: at(D4, '09:00'), minutes: 120 }],
+      amount: 1_100_000, cash_amount: 1_100_000, card_amount: 0 } });
+    expect(ok.status).toBe(201);
+    const bs = [...h.db.bookings].sort((a, b) => String(a.start_at).localeCompare(String(b.start_at)));
+    expect(bs).toHaveLength(2);
+    expect(Math.abs(Date.parse(bs[0].start_at) - Date.now())).toBeLessThan(10_000);
+    expect(bs[1].start_at).toBe(at(D4, '09:00'));
+    const bad = await h.call('POST', '/api/admin/cashier/issue', { cookie: kassa1, payload: {
+      register_token: tok(), full_name: 'Paket Eski', instructor_id: 'ip-2', course_id: 'c-b', category: 'B', duration_minutes: 300,
+      sessions: [{ start_at: at(D3, '08:00'), minutes: 180 }, { start_at: '2020-01-02T08:00:00.000Z', minutes: 120 }],
+      amount: 1_100_000, cash_amount: 1_100_000, card_amount: 0 } });
+    expect(bad.status).toBe(400);
+    expect(bad.body.error).toMatch(/o‘tib ketgan/);
   });
 });
 
