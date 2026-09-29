@@ -396,7 +396,7 @@ button.row:active,a.row:active{background:var(--card-2)}
 /* ---------- chek chiqarish: hammasi bitta oynada ---------- */
 .co-form .co-sec{background:var(--card);border-radius:20px;box-shadow:var(--shadow);padding:14px 16px 16px;margin-top:12px;scroll-margin-top:84px}
 .co-form .co-sec:first-child{margin-top:4px}
-.co-h{display:flex;align-items:center;gap:10px;margin-bottom:12px;min-width:0}
+.co-h{display:flex;align-items:center;gap:10px;margin-bottom:12px;min-width:0;min-height:26px}
 .co-h i{font-style:normal;width:26px;height:26px;border-radius:50%;background:#16a34a;color:#fff;display:grid;place-items:center;font-size:13px;font-weight:800;flex:none}
 .co-h i.todo{background:var(--accent-soft);color:var(--accent)}
 .co-h b{font-size:16px;letter-spacing:-.2px;flex:none}
@@ -438,12 +438,13 @@ button.row:active,a.row:active{background:var(--card-2)}
 .co-selh .lb{font-size:16px;font-weight:750;letter-spacing:-.2px;flex:none}
 .co-selh .vl{margin-left:auto;font-size:15px;font-weight:750;text-align:right;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .co-selh .vl.ph{color:var(--accent)}
+.co-selh .vl.warn{color:var(--warn)}
 .co-selh .cv{color:var(--hint);transition:transform .2s;flex:none;display:grid}
 .co-sel.open .co-selh .cv{transform:rotate(90deg);color:var(--accent)}
 .co-fixed .co-selh{cursor:default;min-height:58px;padding-bottom:6px}
 .co-fixed .vl{display:inline-flex;align-items:center;gap:8px;color:var(--ok)}
 .co-fixed .co-now-t{font-variant-numeric:tabular-nums}
-.co-fixed-note{padding:0 16px 13px 52px;font-size:12.5px;color:var(--hint);line-height:1.4}
+.co-fixed-note{padding:0 16px 13px;font-size:12.5px;color:var(--hint);line-height:1.4}
 .live-dot{width:9px;height:9px;border-radius:50%;background:#16a34a;flex:none;animation:livep 1.8s infinite}
 @keyframes livep{0%{box-shadow:0 0 0 0 rgba(22,163,74,.45)}70%{box-shadow:0 0 0 8px rgba(22,163,74,0)}100%{box-shadow:0 0 0 0 rgba(22,163,74,0)}}
 @media (prefers-reduced-motion:reduce){.live-dot{animation:none}}
@@ -462,13 +463,26 @@ button.row:active,a.row:active{background:var(--card-2)}
 .co-opt .rt small{display:block;font-size:11.5px;color:var(--hint);font-weight:600}
 .co-opt .rt s{color:var(--hint);font-weight:600;font-size:12.5px}
 .co-opt .ok{width:20px;flex:none;color:var(--accent);display:grid}
-.co-opt.on{background:var(--accent-soft);box-shadow:inset 0 0 0 2px var(--accent)}
-.co-opt.on .lt{background:var(--accent);color:#fff}
+.co-opt .ok{display:none}
+/* tanlangani — to'liq bo'yalgan (belgisiz): bir qarashda ko'rinadi */
+.co-opt.on{background:var(--accent);color:#fff;box-shadow:0 6px 16px rgba(43,47,143,.28)}
+.co-opt.on .lt,.co-opt.pkg.on .lt,.co-opt.krug.on .lt{background:rgba(255,255,255,.18);color:#fff}
+.co-opt.on .tx small,.co-opt.on .rt small,.co-opt.on .rt s{color:rgba(255,255,255,.78)}
 .co-opt:disabled{opacity:.5}
 .co-opt.pkg .lt{background:#dcfce7;color:#15803d}.co-opt.pkg.on .lt{background:#16a34a;color:#fff}
 .co-opt.krug .lt{background:#fff4d6;color:#8a5d00}.co-opt.krug.on .lt{background:#e0a100;color:#fff}
 .co-opt.ins .lt{border-radius:50%;font-size:14px}
 @media (min-width:1100px){.co-sel .co-opts{grid-template-columns:repeat(auto-fill,minmax(250px,1fr))}}
+/* Toifa va davomiylik — BITTA QATORDA yonma-yon (telefonda 3 tadan) */
+.co-opts.one-row{grid-template-columns:repeat(3,minmax(0,1fr));align-items:stretch}
+.co-opts.one-row .co-opt{flex-direction:column;align-items:flex-start;justify-content:flex-start;gap:6px;padding:12px 12px 11px;min-height:0;align-self:stretch;height:100%}
+.co-opts.one-row .co-opt .lt{width:34px;height:34px;border-radius:10px;font-size:15px}
+.co-opts.one-row .co-opt .tx{flex:none;width:100%}
+.co-opts.one-row .co-opt .tx b{font-size:15px;line-height:1.2}
+.co-opts.one-row .co-opt .tx small{white-space:normal;line-height:1.3;margin-top:1px}
+.co-opts.one-row .co-opt .rt{text-align:left;margin-top:auto;font-size:15px;line-height:1.2}
+.co-opts.one-row .co-opt .rt s{display:block}
+@media (min-width:960px){.co-sel .co-opts.one-row{grid-template-columns:repeat(var(--n),minmax(0,1fr))}.co-opts.one-row .co-opt{padding:14px 14px 13px}}
 @media (max-width:420px){.co-opt .lt{width:38px;height:38px}.co-selh .vl{font-size:14px}}
 @media (max-width:420px){.cch{padding:8px 11px}.cch.cat,.cch.pay-ch{min-width:0;flex:1}.co-total .big{font-size:24px}}
 
@@ -1105,7 +1119,7 @@ async function reprint(code, btn){
 const ALL = ['cashier', 'operator', 'admin'];
 const ROUTES = {
   home:        { t: 'Bosh sahifa', roles: ALL, render: () => { vHome(); if (isAdmin() && S.stamp) refreshCounts(); }, live: () => paintHomeCounts() },
-  issue:       { t: 'Chek chiqarish', roles: ['cashier', 'admin'], focus: true, render: () => vIssue(), live: () => wzLive(CO) },
+  issue:       { t: 'Chek chiqarish', roles: ['cashier', 'admin'], focus: true, wide: true, render: () => vIssue(), live: () => wzLive(CO) },
   receipts:    { t: 'Cheklar', roles: ['cashier', 'admin'], render: () => vReceipts(), live: () => { if (perLive(RC)) loadReceipts(true); } },
   live:        { t: 'Jarayonda', roles: ['cashier', 'admin'], render: () => vLive(), live: () => loadLive(true) },
   report:      { t: 'Kassa hisoboti', roles: ['cashier', 'admin'], render: () => vReport(), live: () => { if (perLive(RP, 400)) loadReport(true); } },
@@ -1988,9 +2002,6 @@ async function loadIns(W){
   }catch(e){ if (seq !== W.insSeq) return; W.insErr = e.message; W.insRes = { free: [], busy: [] }; }
   if (ONE(W)) {
     if (!W.ins && W.insRes?.free?.length) { W.ins = W.insRes.free[0]; W.insAuto = true; }
-    /* Hozir hech kim bo'sh bo'lmasa — instruktorlar BIR MARTA ochiladi: kim qachon
-       bo'shashi ko'rinsin. Kassir yopsa, qayta-qayta o'zi ochilmaydi. */
-    if (!W.ins && W.insRes && !W.insRes.free.length && !W.open && !W.booking && !W.insShown) { W.open = 'ins'; W.insShown = true; }
     if (S.routeName === 'issue' && CO === W) coPaintIns();
     return;
   }
@@ -2252,29 +2263,29 @@ function coMissing(W){
   return out;
 }
 function coScrollTo(s){ const el = $('co-' + s); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
-const coHead = (n, title, value, done) => `<div class="co-h"><i class="${done ? '' : 'todo'}">${done ? I('check', 14, 3) : n}</i><b>${esc(title)}</b><span>${value ? esc(value) : ''}</span></div>`;
+const coHead = (n, title, value) => `<div class="co-h"><b>${esc(title)}</b><span>${value ? esc(value) : ''}</span></div>`;
 function coFoundHtml(W){ return foundHtml(W).replace(/data-act="wzbook"/g, 'data-act="cobook"').replace(/data-act="wzcust"/g, 'data-act="cocust"'); }
 function coTimesHtml(W){ return timesHtml(W, W.day).replace(/data-act="wztime"/g, 'data-act="cotime"'); }
 
 /* ---------- davomiylik variantlari ---------- */
 function coDurs(W){
   const c = W.cat || 'B', out = [];
-  if (krugPrice() > 0) out.push({ k: 'krug', lt: I('refresh', 22, 2.2), t: '1 krug', s: `avtodrom bo‘ylab bir aylana · ${krugMin()} daq`, p: krugPrice() });
+  if (krugPrice() > 0) out.push({ k: 'krug', lt: I('refresh', 20, 2.2), t: '1 krug', s: `bir aylana · ${krugMin()} daq`, p: krugPrice() });
   [[30, '½', '30 daqiqa'], [60, '1', '1 soat'], [90, '1½', '1,5 soat'], [120, '2', '2 soat']].forEach(([m, lt, t]) =>
-    out.push({ k: String(m), lt, t, s: m === 30 ? 'yarim soat' : `${nf(tariffFor(c).hour)} so‘m / soat`, p: priceOf(c, m) }));
-  if (pkgPrice(c) > 0) out.push({ k: 'pkg', lt: '5', t: '5 soatlik paket', s: 'bir kunda yoki bir necha kunga bo‘lib', p: pkgPrice(c), lp: listPrice(c, PKG_MIN), pkg: true });
+    out.push({ k: String(m), lt, t, s: '', p: priceOf(c, m) }));
+  if (pkgPrice(c) > 0) out.push({ k: 'pkg', lt: '5', t: '5 soatlik paket', s: 'kunlarga bo‘lish mumkin', p: pkgPrice(c), lp: listPrice(c, PKG_MIN), pkg: true });
   return out;
 }
 const coDurKey = W => W.krug ? 'krug' : isPkg(W) ? 'pkg' : String(W.min);
 const coDurLabel = W => W.krug ? '1 krug' : isPkg(W) ? `5 soatlik paket · ${W.split.k}` : W.min === 90 ? '1,5 soat' : fmtDur(W.min);
 
 /* ---------- ochiladigan tanlov qatori ---------- */
-function coSel(id, n, label, value, done, bodyFn){
+function coSel(id, n, label, value, done, bodyFn, warn = false){
   const open = CO.open === id;
   return `<section class="co-sec co-sel ${open ? 'open' : ''}" id="co-${id}">
     <button class="co-selh" data-act="coopen" data-s="${id}" aria-expanded="${open}">
-      <i class="${done ? '' : 'todo'}">${done ? I('check', 14, 3) : n}</i><span class="lb">${esc(label)}</span>
-      <b class="vl ${value ? '' : 'ph'}">${value ? esc(value) : 'tanlang'}</b><span class="cv">${I('chev', 18, 2.2)}</span></button>
+      <span class="lb">${esc(label)}</span>
+      <b class="vl ${value ? '' : 'ph'} ${warn ? 'warn' : ''}">${value ? esc(value) : 'tanlang'}</b><span class="cv">${I('chev', 18, 2.2)}</span></button>
     ${open ? `<div class="co-body">${bodyFn()}</div>` : ''}</section>`;
 }
 const coOpt = ({ act, v, lt, t, s, rt, rs, on, dis, cls = '' }) => `<button class="co-opt ${cls} ${on ? 'on' : ''}" data-act="${act}" data-v="${esc(v)}" ${dis ? 'disabled' : ''}>
@@ -2301,7 +2312,7 @@ function coCustSec(W){
     ${W.customer ? `<div class="muted" style="font-size:13px;margin-top:8px">${I('check', 14, 2.6)} Bazadagi mijoz tanlandi</div>` : ''}</section>`;
 }
 function coCatSec(W){
-  return coSel('cat', 2, 'Toifa', W.cat ? `${W.cat} toifa · ${CAT_NAME[W.cat]}` : '', !!W.cat, () => `<div class="co-opts">${['A', 'B', 'C'].map(c => {
+  return coSel('cat', 2, 'Toifa', W.cat ? `${W.cat} toifa · ${CAT_NAME[W.cat]}` : '', !!W.cat, () => `<div class="co-opts one-row" style="--n:3">${['A', 'B', 'C'].map(c => {
     const has = !!courseFor(c), okIns = !W.pref?.cats || W.pref.cats.includes(c);
     return coOpt({ act: 'cocat', v: c, lt: c, t: `${c} toifa`, s: esc(CAT_NAME[c]) + (!has ? ' · mashg‘ulot qo‘shilmagan' : !okIns ? ' · bu instruktor o‘rgatmaydi' : ''),
       rt: nf(tariffFor(c).hour), rs: 'so‘m / soat', on: W.cat === c, dis: !(has && okIns) });
@@ -2310,7 +2321,8 @@ function coCatSec(W){
 function coDurSec(W){
   const key = coDurKey(W), c = W.cat || 'B';
   const val = W.min ? `${coDurLabel(W)} · ${nf(W.krug ? krugPrice() : priceOf(c, W.min))} so‘m` : '';
-  return coSel('dur', 3, 'Davomiylik', val, !!W.min, () => `<div class="co-opts">${coDurs(W).map(d => coOpt({
+  const ds = coDurs(W);
+  return coSel('dur', 3, 'Davomiylik', val, !!W.min, () => `<div class="co-opts one-row" style="--n:${ds.length}">${ds.map(d => coOpt({
       act: 'codur', v: d.k, lt: d.lt, t: d.t, s: esc(d.s), cls: d.pkg ? 'pkg' : d.k === 'krug' ? 'krug' : '',
       rt: d.lp ? `<s>${nf(d.lp)}</s> ${nf(d.p)}` : nf(d.p), rs: 'so‘m', on: key === d.k })).join('')}</div>
     ${isPkg(W) ? `<div class="muted" style="font-size:13px;margin:12px 2px 8px">5 soatni qanday bo‘lamiz? Har mashg‘ulot — alohida kunda, alohida chek.</div>
@@ -2321,7 +2333,7 @@ function coDurSec(W){
 function coNowSec(W){
   const pk = W.sess.length > 1;
   return `<section class="co-sec co-sel co-fixed" id="co-now"><div class="co-selh">
-      <i>${I('check', 14, 3)}</i><span class="lb">Vaqt</span>
+      <span class="lb">Vaqt</span>
       <b class="vl"><span class="live-dot"></span><span>Hozir · <span class="co-now-t">${esc(nowHM())}</span></span></b></div>
     <div class="co-fixed-note">${pk ? '1-mashg‘ulot hozir boshlanadi. ' : ''}Bronsiz chek — real vaqt bilan chiqadi, sana va soat tanlanmaydi.</div></section>`;
 }
@@ -2361,8 +2373,10 @@ function coInsBody(W){
   return h;
 }
 function coInsSec(W){
-  const val = W.ins ? W.ins.name : (W.insRes && coReady(W) ? `${W.insRes.free.length} ta bo‘sh` : '');
-  return coSel('ins', 5, 'Instruktor', val, !!W.ins, () => `<div id="coInsBody">${coInsBody(W)}</div>`);
+  /* Hech kim bo'sh bo'lmasa ro'yxat o'zi OCHILMAYDI — qatorda sariq yozuv; bosilsa kim qachon bo'shashi ko'rinadi */
+  const none = !W.ins && W.insRes && coReady(W) && !W.insRes.free.length;
+  const val = W.ins ? W.ins.name : none ? (W.sess.length > 1 ? 'hammasida bo‘sh yo‘q' : 'hozir bo‘sh yo‘q — bosing') : '';
+  return coSel('ins', 5, 'Instruktor', val, !!W.ins, () => `<div id="coInsBody">${coInsBody(W)}</div>`, none);
 }
 function coPaySec(W){
   const b = W.booking, auto = autoPrice(W), total = totalOf(W), un = pkgUnpaid(W);
