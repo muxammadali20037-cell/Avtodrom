@@ -143,6 +143,7 @@ http.createServer(async (req, res) => {
   }
   let p = decodeURIComponent(url.split('?')[0]);
   if (p === '/admin' || p === '/admin/') p = '/admin/index.html';
+  if (p === '/admin/full' || p === '/admin/full/') p = '/admin/full.html';
   if (p === '/instructor' || p === '/instructor/') p = '/instructor/index.html';
   const file = path.join(ROOT, p);
   if (!file.startsWith(ROOT) || !fs.existsSync(file) || fs.statSync(file).isDirectory()) { res.writeHead(404); res.end('404'); return; }
