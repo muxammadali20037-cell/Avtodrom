@@ -114,6 +114,31 @@ pay(b7, 'u-7', `AVD-${d}-Z9Y4P`, '09:10', 'reg-p2');
 const b8 = bk('u-8', 'ip-2', '12:00', 'completed', { arrived_at: at('12:01') });
 pay(b8, 'u-8', `AVD-${d}-W2L6S`, '11:05', 'reg-p2');
 
+// O'tgan 45 kunlik tarix — davrli hisobotlar (instruktorlar, cheklar) uchun.
+// Avtoshkola darslari (avtodrom12 cheki) va pullik darslar P1/P2 da.
+for (let off = 1; off <= 45; off++) {
+  const day = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Tashkent' }).format(new Date(Date.now() - off * 864e5));
+  ['ip-1', 'ip-2'].forEach((ins, ii) => {
+    const n = (off * 7 + ii * 3) % 4;
+    for (let k = 0; k < n; k++) {
+      const cust = people[(off + k * 3 + ii) % people.length][0];
+      const hm = `${String(9 + k * 2 + ii).padStart(2, '0')}:00`;
+      const school = (off + k + ii) % 3 === 0;
+      const status = (off + k) % 11 === 0 ? 'no_show' : 'completed';
+      const id = bk(cust, ins, hm, status, { start: at(hm, day), source: school ? 'avtodrom12' : 'cashier',
+        ...(school ? { school_receipt_code: `SCH-${day.replace(/-/g, '')}-${ins}-${k}`, customer_note: 'Avtoshkola' } : {}),
+        ...(status === 'completed' ? { arrived_at: at(hm, day), departed_at: new Date(new Date(at(hm, day)).getTime() + 3600e3).toISOString() } : {}) });
+      if (!school) {
+        const code = `AVD-${day.slice(2).replace(/-/g, '')}-H${ii}${k}${String(off).padStart(2, '0')}`;
+        db.payments.push({ id: `pay-${code}`, booking_id: id, customer_id: cust, amount: 250000, cash_amount: (off + k) % 4 ? 250000 : 0,
+          card_amount: (off + k) % 4 ? 0 : 250000, method: (off + k) % 4 ? 'cash' : 'card', status: 'paid',
+          paid_at: new Date(new Date(at(hm, day)).getTime() - 10 * 60000).toISOString(), receipt_code: code,
+          register_id: (off + k) % 2 ? 'reg-p1' : 'reg-p2', created_at: at(hm, day) });
+      }
+    }
+  });
+}
+
 // Operator uchun: yangi (tasdiq kutayotgan) bronlar va bekor so'rovi
 const tomorrow = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Tashkent' }).format(new Date(Date.now() + 864e5));
 bk('u-6', 'ip-1', '17:00', 'pending', { start: at('10:00', tomorrow) });

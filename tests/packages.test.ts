@@ -322,6 +322,42 @@ describe('Kassa: paket', () => {
   });
 });
 
+describe('Kassa: 1 krug', () => {
+  const tok = () => makeRegisterToken('reg-p1');
+  it('1 krug — 15 daqiqa, 80 000, chekda «1 krug»; sozlamadan narx va vaqt', async () => {
+    const r = await h.call('POST', '/api/admin/cashier/issue', { cookie: kassa1, payload: {
+      register_token: tok(), full_name: 'Krug Mijoz', instructor_id: 'ip-1', course_id: 'c-b', category: 'B',
+      krug: true, duration_minutes: 15, start_at: at(D2, '10:00'), amount: 80_000, cash_amount: 80_000, card_amount: 0 } });
+    expect(r.status).toBe(201);
+    const b = h.db.bookings[0];
+    expect(b.duration_minutes).toBe(15);
+    expect(b.end_at).toBe(at(D2, '10:15'));
+    expect(b.customer_note).toBe('1 krug');
+    expect(h.db.payments[0].note).toBe('1 krug');
+    expect(r.body.receipt.krug_text).toBe('1 krug');
+    expect(r.body.receipt.amount).toBe(80_000);
+    const list = await h.call('GET', `/api/admin/cashier/receipts?token=${tok()}&date=${new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Tashkent' }).format(new Date())}`, { cookie: kassa1 });
+    expect(list.body.receipts[0].krug).toBe(true);
+    // Sozlama: 20 daqiqa, 90 000 — kassir ham o'qiy oladi
+    h.db.admin_settings.push({ key: 'krug_min', value: { value: 20 } }, { key: 'krug_price', value: { value: 90000 } });
+    const st = await h.call('GET', '/api/admin/settings', { cookie: kassa1 });
+    expect(st.body.settings.map((x: any) => x.key)).toEqual(expect.arrayContaining(['krug_min', 'krug_price']));
+    const r2 = await h.call('POST', '/api/admin/cashier/issue', { cookie: kassa1, payload: {
+      register_token: tok(), full_name: 'Krug Ikki', instructor_id: 'ip-1', course_id: 'c-b', category: 'B',
+      krug: true, duration_minutes: 60, start_at: at(D2, '11:00'), amount: 90_000, cash_amount: 90_000, card_amount: 0 } });
+    expect(r2.status).toBe(201);
+    expect(h.db.bookings[1].duration_minutes).toBe(20);   // server sozlamadagi vaqtni oladi
+  });
+  it('krug o‘chirilgan bo‘lsa (narx 0) — chek chiqmaydi', async () => {
+    h.db.admin_settings.push({ key: 'krug_price', value: { value: 0 } });
+    const r = await h.call('POST', '/api/admin/cashier/issue', { cookie: kassa1, payload: {
+      register_token: tok(), full_name: 'Krug Yoq', instructor_id: 'ip-1', course_id: 'c-b', category: 'B',
+      krug: true, start_at: at(D2, '12:00'), amount: 80_000, cash_amount: 80_000, card_amount: 0 } });
+    expect(r.status).toBe(400);
+    expect(h.db.bookings).toHaveLength(0);
+  });
+});
+
 describe('Instruktorlar kunlik jadvali', () => {
   it('bron butun davomiyligi bilan, yopiq soatlar bilan qaytadi; operator ham ko‘radi', async () => {
     h.db.bookings.push({ id: 'b-2h', customer_id: 'u-ali', instructor_id: 'ip-1', course_id: 'c-b', status: 'confirmed',
