@@ -439,6 +439,14 @@ button.row:active,a.row:active{background:var(--card-2)}
 .co-selh .vl{margin-left:auto;font-size:15px;font-weight:750;text-align:right;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .co-selh .vl.ph{color:var(--accent)}
 .co-selh .vl.warn{color:var(--warn)}
+.rem-checks{display:grid;gap:6px;margin-top:10px}
+@media (min-width:960px){.rem-checks{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.rem-c{display:flex;gap:9px;align-items:flex-start;padding:8px 10px;border-radius:12px;background:var(--card-2);min-width:0}
+.rem-c i{font-style:normal;width:20px;height:20px;border-radius:50%;display:grid;place-items:center;flex:none;font-weight:800;font-size:12px;margin-top:1px}
+.rem-c i.ok{background:var(--ok-soft);color:var(--ok)}.rem-c i.bad{background:var(--warn-soft);color:var(--warn)}
+.tg-add{display:flex;gap:8px;margin-top:10px}.tg-add .input{flex:1;min-width:0}.tg-add .btn{flex:none}
+.tg-row{min-height:60px}.tg-row .sw{margin-left:4px}.tg-del{width:38px;height:38px;border-radius:11px;box-shadow:none;background:var(--card-2);color:var(--hint)}
+.rem-c span{min-width:0}.rem-c b{display:block;font-size:13px}.rem-c small{display:block;font-size:12px;color:var(--hint);line-height:1.35}
 .co-selh .cv{color:var(--hint);transition:transform .2s;flex:none;display:grid}
 .co-sel.open .co-selh .cv{transform:rotate(90deg);color:var(--accent)}
 .co-fixed .co-selh{cursor:default;min-height:58px;padding-bottom:6px}
@@ -1353,6 +1361,7 @@ function showLogin(){
   $('app').classList.add('hidden'); $('login').classList.remove('hidden');
   setTimeout(() => { try { ($('loginUser').value ? $('loginPass') : $('loginUser')).focus(); } catch {} }, 60);
 }
+let OPEN_AFTER = (() => { try { const o = new URLSearchParams(location.search).get('open') || ''; return /^[a-z]+(\/[a-z0-9-]+)?$/.test(o) ? o : ''; } catch { return ''; } })();
 const NO_REG = 'Bu kassir hisobiga kassa biriktirilmagan. Administrator «Xodimlar» bo‘limida kassani belgilasin.';
 async function enter(me){
   S.me = me;
@@ -1367,6 +1376,9 @@ async function enter(me){
   $('login').classList.add('hidden'); $('app').classList.remove('hidden');
   $('meIni').textContent = ini(me.full_name || me.login);
   await loadBase();
+  /* Admin botidagi tugma: /admin?open=bookings/new — kirgandan keyin
+     to'g'ri shu bo'lim ochiladi (rol ruxsat bermasa — bosh sahifa). */
+  if (OPEN_AFTER) { const o = OPEN_AFTER; OPEN_AFTER = ''; history.replaceState(null, '', location.pathname + '#/' + o); }
   render();
   refreshCounts();
   pulse();
@@ -1415,6 +1427,17 @@ function onDataChange(){
   if (R?.live && !sheetOpen() && !typing()) { try { R.live(S.routeArg); } catch (e) { console.warn(e); } }
 }
 setInterval(() => { if (!document.hidden) pulse(); }, 5000);
+/* ESLATMALAR VA KECHIKISH: ochiq turgan har qanday panel (kassa, operator,
+   admin) daqiqada bir marta serverni «turtadi» — mijozlarga eslatma ketadi,
+   15 daqiqa kechikkan bronlar yopiladi. Server takror ishlashdan himoyalangan. */
+let remTickAt = 0;
+function remTick(){
+  if (!S.me || document.hidden || Date.now() - remTickAt < 60000) return;
+  remTickAt = Date.now();
+  fetch('/api/admin/reminders/tick', { method: 'POST', credentials: 'include', cache: 'no-store', headers: { Accept: 'application/json' } })
+    .then(r => r.json()).then(d => { if (d?.late_closed) onDataChange(); }).catch(() => {});
+}
+setInterval(remTick, 15000);
 setInterval(() => { if (!document.hidden && S.me) refreshCounts(); }, 60000);
 document.addEventListener('visibilitychange', () => { if (!document.hidden) pulse(true); });
 
@@ -3961,6 +3984,8 @@ function vPrices(){
   const t = c => tariffFor(c);
   const pk = (() => { const v = sv('paket5_b'); return v === null || v === undefined || v === '' ? 1100000 : Number(v) || 0; })();
   const on = ![false, 'false', 0, '0', 'off', 'no'].includes(sv('booking_enabled'));
+  const rem = (() => { const v = sv('reminder_minutes'); const a = Array.isArray(v) ? v : String(v || '').split(/[^\d]+/).filter(Boolean); return a.length ? a.join(', ') : '60, 30, 20'; })();
+  const late = (() => { const v = sv('late_cancel_min'); return v === null || v === '' ? 15 : Number(v); })();
   $('view').innerHTML = `<div class="view">
     <div class="card"><div class="sec-h"><h2>Tariflar</h2><span class="muted" style="font-size:12.5px">so‘m</span></div>
       ${['A', 'B', 'C'].map(c => `<div class="price-row"><span class="lt">${c}</span>
@@ -3974,6 +3999,16 @@ function vPrices(){
       <div class="grid2"><label class="field" style="margin-top:0"><span>Narxi, so‘m (0 — o‘chiq)</span><input class="input" inputmode="numeric" id="pr-krug" value="${krugPrice()}"></label>
       <label class="field" style="margin-top:0"><span>Davomiyligi, daqiqa (15–60)</span><input class="input" inputmode="numeric" id="pr-krug-min" value="${krugMin()}"></label></div>
       <p class="muted" style="font-size:12.5px;margin:8px 2px 0">Kassada «Davomiylik» ro‘yxatida chiqadi. Instruktor shuncha daqiqa band hisoblanadi.</p></div>
+    <div class="card" style="margin-top:12px;background:linear-gradient(135deg,#eef2ff,#fff)"><div class="sec-h"><h2>Eslatmalar va kechikish</h2><button class="link" data-act="remcheck">Tekshirish</button></div>
+      <div class="grid2"><label class="field" style="margin-top:0"><span>Eslatma — dars boshlanishiga necha daqiqa qolganda</span><input class="input" id="pr-rem" value="${esc(rem)}" placeholder="60, 30, 20" inputmode="numeric"></label>
+      <label class="field" style="margin-top:0"><span>Kechikish, daqiqa (0 — o‘chiq)</span><input class="input" inputmode="numeric" id="pr-late" value="${esc(late)}"></label></div>
+      <p class="muted" style="font-size:12.5px;margin:8px 2px 0">Bron qilgan mijozga Telegram bot shu vaqtlarda eslatma yuboradi. Dars vaqtidan shuncha daqiqa o‘tib mijoz kelmasa — bron avtomatik yopiladi (tasdiqlangan → «Kelmagan», tasdiqlanmagan → «Bekor»), mijoz va instruktorga xabar boradi. Kassada «hozir» chiqarilgan chekka bu qoida tegmaydi.</p>
+      <div id="remStat" style="margin-top:12px"></div></div>
+    <div class="card" style="margin-top:12px;background:linear-gradient(135deg,#ecfdf5,#fff)"><div class="sec-h"><h2>Admin bot — yangi bron xabarlari</h2><button class="link" data-act="tgtest" style="white-space:nowrap">Sinov</button></div>
+      <p class="muted" style="font-size:12.5px;margin:0 2px 10px">Mijoz Mini App orqali bron qilsa, shu chatlarga darhol xabar boradi: mijoz, telefon, instruktor, mashina, sana va vaqt, narx, bron kodi — va «Admin panelda ochish» tugmasi. Bekor qilish so‘rovlari va mijoz savollari ham shu yerga keladi.</p>
+      <div id="tgBox"><div class="sk" style="min-height:62px"></div></div>
+      <div class="tg-add"><input class="input" id="tg-new" inputmode="numeric" autocomplete="off" placeholder="Chat ID (raqam)"><button class="btn btn-soft btn-sm" data-act="tgadd">${I('plus', 18, 2.4)} Qo‘shish</button></div>
+      <p class="muted" style="font-size:12.5px;margin:8px 2px 0">Chat ID ni bilish uchun admin botga <b>/start</b> yozing — bot raqamni yuboradi. Guruhga ulash uchun botni guruhga qo‘shib, <b>/id</b> yozing.</p></div>
     <div class="card" style="margin-top:12px"><div class="sec-h"><h2>Ish vaqti</h2></div>
       <div class="grid2"><label class="field" style="margin-top:0"><span>Boshlanishi</span><input class="input" type="time" id="pr-ws" value="${esc(String(sv('work_start') || '07:00').slice(0, 5))}"></label>
       <label class="field" style="margin-top:0"><span>Tugashi</span><input class="input" type="time" id="pr-we" value="${esc(String(sv('work_end') || '19:00').slice(0, 5))}"></label></div>
@@ -3981,7 +4016,75 @@ function vPrices(){
     <button class="btn btn-primary" data-act="prsave" style="margin-top:16px">${I('check', 20, 2.4)} Saqlash</button></div>`;
   const hint = () => { const v = Number($('pr-pkg').value.replace(/\D/g, '')) || 0, lp = Math.round((Number($('pr-hour-B').value.replace(/\D/g, '')) || 0) * 5); $('pr-pkg-hint').textContent = v > 0 ? `Oddiy narx ${nf(lp)} so‘m — mijoz ${nf(Math.max(0, lp - v))} so‘m tejaydi.` : 'Paket o‘chiq — 5 soat oddiy tarif bilan.'; };
   $('pr-pkg').addEventListener('input', hint); $('pr-hour-B').addEventListener('input', hint); hint();
+  loadRemStat();
+  loadTg();
 }
+/* =========================================================================
+   ADMIN BOT — qaysi Telegram chatlar yangi bron xabarini oladi
+   ========================================================================= */
+async function loadTg(){
+  if (!$('tgBox')) return;
+  try{
+    const d = await api('/api/admin/telegram-admins');
+    const box = $('tgBox'); if (!box) return;
+    const warn = d.bot && !d.bot.configured ? '<div class="note warn" style="font-size:13.5px;margin-bottom:10px">ADMIN_BOT_TOKEN Vercel sozlamalarida yo‘q — xabarlar ketmaydi.</div>' : '';
+    const bot = d.bot?.username ? `<div class="muted" style="font-size:12.5px;margin:0 2px 8px">Bot: <b>@${esc(d.bot.username)}</b> · faol chatlar: <b>${nf((d.chats || []).filter(c => c.is_active).length)}</b></div>` : '';
+    const rows = d.chats || [];
+    box.innerHTML = warn + bot + (rows.length ? `<div class="list">${rows.map(c => `<div class="row tg-row">
+        <span class="ava" style="${c.is_active ? '' : 'opacity:.45'}">${c.group ? '👥' : esc(ini(c.title || 'T'))}</span>
+        <span class="tx"><b>${esc(c.title || (c.group ? 'Guruh' : 'Telegram chat'))}</b><small>ID ${esc(c.chat_id)}${c.is_active ? '' : ' · xabar olmaydi'}</small></span>
+        <button class="sw ${c.is_active ? 'on' : ''}" data-act="tgtoggle" data-id="${esc(c.id)}" data-on="${c.is_active ? 1 : 0}" aria-label="${c.is_active ? 'O‘chirish' : 'Yoqish'}"></button>
+        <button class="icon-btn tg-del" data-act="tgdel" data-id="${esc(c.id)}" aria-label="Ro‘yxatdan olib tashlash">${I('x', 18, 2.4)}</button></div>`).join('')}</div>`
+      : '<div class="note warn" style="font-size:13.5px">Hali chat qo‘shilmagan — yangi bron xabarlari hech kimga bormaydi.</div>');
+  }catch(e){ if ($('tgBox')) $('tgBox').innerHTML = `<div class="note err">${esc(e.message)}</div>`; }
+}
+ACT.tgadd = async el => {
+  const inp = $('tg-new'), v = String(inp.value || '').replace(/\s+/g, '');
+  if (!/^-?\d{5,16}$/.test(v)) { toast('Chat ID raqam bo‘lsin. Uni bilish uchun admin botga /start yozing.', true); inp.focus(); return; }
+  busyBtn(el, true, 'Tekshirilmoqda');
+  try { await post('/api/admin/telegram-admins', { chat_id: v }); inp.value = ''; toast('Qo‘shildi — o‘sha chatga tasdiq xabari yuborildi'); loadTg(); }
+  catch (e) { fail(e); }
+  finally { busyBtn(el, false); }
+};
+ACT.tgtoggle = async el => {
+  const on = el.dataset.on !== '1';
+  el.classList.toggle('on', on);
+  try { await post(`/api/admin/telegram-admins/${encodeURIComponent(el.dataset.id)}`, { is_active: on }, 'PATCH'); toast(on ? 'Yoqildi — xabarlar keladi' : 'O‘chirildi — xabar kelmaydi'); loadTg(); }
+  catch (e) { el.classList.toggle('on', !on); fail(e); }
+};
+ACT.tgdel = async el => {
+  const ok = await ask({ title: 'Chat ro‘yxatdan olinsinmi?', text: 'Bu chatga yangi bron xabarlari bormaydi. Keyin qayta qo‘shish mumkin.', ok: 'Olib tashlash', danger: true });
+  if (!ok) return;
+  try { await api(`/api/admin/telegram-admins/${encodeURIComponent(el.dataset.id)}`, { method: 'DELETE' }); toast('Olib tashlandi'); loadTg(); }
+  catch (e) { fail(e); }
+};
+ACT.tgtest = async el => {
+  busyBtn(el, true, 'Yuborilmoqda');
+  try { const r = await post('/api/admin/telegram-admins/test', {}); toast(`Sinov xabari ${nf(r.sent)} ta chatga yuborildi`); }
+  catch (e) { fail(e); }
+  finally { busyBtn(el, false); }
+};
+/* Eslatma tizimi holati: bot, jadval, oxirgi tekshiruv, vaqti o'tgan ochiq bronlar */
+async function loadRemStat(){
+  const el = $('remStat'); if (!el) return;
+  el.innerHTML = '<div class="sk" style="min-height:44px"></div>';
+  try{
+    const d = await api('/api/admin/reminder-check');
+    if (!$('remStat')) return;
+    $('remStat').innerHTML = `<div class="note ${d.ready ? 'ok' : 'warn'}" style="font-size:13.5px">${esc(d.summary || '')}</div>
+      <div class="rem-checks">${(d.checks || []).map(c => `<div class="rem-c"><i class="${c.ok ? 'ok' : 'bad'}">${c.ok ? I('check', 12, 3) : '!'}</i><span><b>${esc(c.name)}</b><small>${esc(c.detail || '')}</small></span></div>`).join('')}</div>`;
+  }catch(e){ if ($('remStat')) $('remStat').innerHTML = `<div class="note err">${esc(e.message)}</div>`; }
+}
+ACT.remcheck = async el => {
+  busyBtn(el, true, 'Tekshirilmoqda');
+  try{
+    const r = await post('/api/admin/reminder-test', {});
+    const x = r.result || {};
+    toast(`Tekshirildi: ${nf(x.sent)} ta eslatma yuborildi, ${nf(x.late_closed)} ta kechikkan bron yopildi`);
+    loadRemStat(); refreshCounts();
+  }catch(e){ fail(e); }
+  finally{ busyBtn(el, false); }
+};
 ACT.prbook = () => $('pr-on').classList.toggle('on');
 ACT.prsave = async el => {
   const num = id => Math.round(Number(String($(id).value).replace(/\D/g, '')) || 0);
@@ -3998,11 +4101,17 @@ ACT.prsave = async el => {
   if (ws >= we) return toast('Ish boshlanishi tugashidan oldin bo‘lsin', true);
   vals.work_start = ws; vals.work_end = we;
   vals.booking_enabled = $('pr-on').classList.contains('on');
+  const remList = [...new Set(String($('pr-rem').value).split(/[^\d]+/).filter(Boolean).map(Number))].sort((a, b) => b - a);
+  if (!remList.length || remList.length > 5 || remList.some(n => n < 5 || n > 720)) return toast('Eslatma vaqtlari: 1–5 ta son, har biri 5 dan 720 daqiqagacha (masalan: 60, 30, 20)', true);
+  vals.reminder_minutes = remList;
+  vals.late_cancel_min = num('pr-late');
+  if (vals.late_cancel_min > 180) return toast('Kechikish 0 dan 180 daqiqagacha bo‘lsin', true);
   busyBtn(el, true, 'Saqlanmoqda');
   let saved = 0;
   const OFF = [false, 'false', 0, '0', 'off', 'no'];
   const same = (k, v) => {
     const cur = sv(k);
+    if (Array.isArray(v)) { const c = Array.isArray(cur) ? cur : String(cur || '').split(/[^\d]+/).filter(Boolean); return c.map(Number).join(',') === v.join(','); }
     if (typeof v === 'boolean') return (cur === null ? true : !OFF.includes(cur)) === v;
     if (typeof v === 'number') return cur !== null && cur !== '' && Number(cur) === v;
     return String(cur || '').slice(0, 5) === v;
@@ -4015,6 +4124,7 @@ ACT.prsave = async el => {
     }
     toast(saved ? 'Saqlandi — ilova va kassada darhol yangilandi' : 'O‘zgarish yo‘q');
     SCHC.clear();
+    if (saved) loadRemStat();
   }catch(e){ fail(e); }
   finally{ busyBtn(el, false); }
 };
