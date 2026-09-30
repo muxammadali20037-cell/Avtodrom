@@ -819,6 +819,7 @@ const IC = {
   user: '<circle cx="12" cy="8" r="4"/><path d="M4 21c1-4 4-6 8-6s7 2 8 6"/>',
   car: '<path d="M5 11l1.6-4.4A2 2 0 018.5 5h7a2 2 0 011.9 1.6L19 11"/><rect x="3" y="11" width="18" height="6" rx="2"/><circle cx="7.5" cy="17.5" r="1.5"/><circle cx="16.5" cy="17.5" r="1.5"/>',
   clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+  lock: '<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>',
   list: '<path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>',
   cash: '<rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/><path d="M6 12h.01M18 12h.01"/>',
   card: '<rect x="2" y="5" width="20" height="14" rx="2.5"/><path d="M2 10h20M6 15h4"/>',
@@ -1045,7 +1046,6 @@ async function regGateHtml(){
     <div class="opt-list">${S.registers.map(r => `<button class="opt" data-act="pickreg" data-id="${esc(r.id)}">
       <span class="lt">${esc(String(r.code).replace(/\D/g, '') || '•')}</span><span class="tx"><b>${esc(r.code)}</b><small>${esc(r.name || 'Kassa')}</small></span>${I('chev')}</button>`).join('')}</div>`;
 }
-const regChip = () => isAdmin() && S.reg ? `<button class="chip" data-act="switchreg">${I('cash', 16)} ${esc(S.reg.r.code)} · almashtirish</button>` : '';
 
 /* =========================================================================
    HISOBOT KO'LAMI (faqat administrator): Hammasi · P1 · P2
@@ -2190,13 +2190,46 @@ function paintMix(W){
   const { cash, card } = payParts(W), d = totalOf(W) - cash - card;
   el.innerHTML = d === 0 ? `<span class="ok-t">Naqd ${nf(cash)} + karta ${nf(card)} = ${nf(cash + card)} ✓</span>` : `<span class="bad-t">${d > 0 ? 'Yetishmayapti' : 'Ortiqcha'}: ${nf(Math.abs(d))} so‘m</span>`;
 }
+/* NARXNI O'ZGARTIRISH — faqat maxsus parol bilan. Parol to'g'ri bo'lsa
+   server 15 daqiqalik token beradi (shu xodim uchun); chek chiqarishda
+   token yuboriladi, server narx farqini faqat token bilan qabul qiladi. */
+const priceTokOk = () => !!(S.priceTok && S.priceTok.exp > Date.now() + 30000);
+function priceEditOpen(W){
+  W.priceEdit = true;
+  if (ONE(W)) coPatch('pay', ['pay']); else wzRender(W);
+  setTimeout(() => $('wzPrice')?.focus(), 60);
+}
 ACT.wzprice = () => {
   const W = curW();
-  if (W.manual != null) { W.manual = null; W.priceEdit = false; }
-  else W.priceEdit = !W.priceEdit;
-  if (ONE(W)) return coPatch('pay', ['pay']);
-  wzRender(W);
-  if (W.priceEdit) setTimeout(() => $('wzPrice')?.focus(), 50);
+  if (W.manual != null || W.priceEdit) {
+    W.manual = null; W.priceEdit = false;
+    if (ONE(W)) return coPatch('pay', ['pay']);
+    return wzRender(W);
+  }
+  if (priceTokOk()) return priceEditOpen(W);
+  openSheet(`<h3 style="display:flex;align-items:center;gap:8px">${I('lock', 20, 2.2)}<span>Narxni o‘zgartirish</span></h3>
+    <p class="lead">Maxsus parolni kiriting. Parol 15 daqiqa amal qiladi, o‘zgartirilgan narx kim tomonidan kiritilgani yozib qo‘yiladi.</p>
+    <input class="input" id="ppIn" type="password" inputmode="numeric" autocomplete="off" maxlength="8" placeholder="••••" style="text-align:center;font-size:24px;letter-spacing:8px">
+    <div id="ppErr" class="note err hidden" style="margin-top:10px;font-size:13.5px"></div>
+    <div class="btn-row" style="margin-top:14px"><button class="btn btn-soft" data-act="sheetx">Bekor</button><button class="btn btn-primary" id="ppOk" data-act="ppok">Ochish</button></div>`);
+  const inp = $('ppIn');
+  inp.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); ACT.ppok($('ppOk')); } });
+  setTimeout(() => inp.focus(), 80);
+};
+ACT.ppok = async el => {
+  const W = curW(), pin = String($('ppIn')?.value || '').trim(), err = $('ppErr');
+  if (!/^\d{4,8}$/.test(pin)) { err.textContent = 'Parol 4–8 ta raqam'; err.classList.remove('hidden'); return; }
+  busyBtn(el, true, 'Tekshirilmoqda');
+  try{
+    const d = await post('/api/admin/price-unlock', { pin });
+    S.priceTok = { t: d.token, exp: Date.parse(d.expires_at) || Date.now() + 14 * 60000 };
+    closeSheet(); toast('Narxni o‘zgartirish ochildi (15 daqiqa)');
+    priceEditOpen(W);
+  }catch(e){
+    busyBtn(el, false);
+    if (err) { err.textContent = e.message; err.classList.remove('hidden'); }
+    const i = $('ppIn'); if (i) { i.value = ''; i.focus(); }
+  }
 };
 ACT.wzpay = el => { const W = curW(); W.pay = el.dataset.v; if (W.pay === 'mixed') { W.cash = null; W.card = null; } if (ONE(W)) return coPatch('pay', ['pay']); wzRender(W); };
 ACT.wzpaypkg = () => { const W = curW(); W.payPkg = !W.payPkg; W.manual = null; if (ONE(W)) return coPatch('pay', ['pay']); wzRender(W); };
@@ -2215,7 +2248,9 @@ ACT.wzissue = async el => {
   if (!(total > 0)) return toast('Summani kiriting', true);
   const { cash, card } = payParts(W);
   if (cash + card !== total) return toast(`Naqd + karta = ${nf(cash + card)}, jami esa ${nf(total)}`, true);
+  if (W.manual != null && !priceTokOk()) { W.manual = null; W.priceEdit = false; coPatch('pay', ['pay']); return toast('Narx paroli muddati tugadi — narx avtomatikka qaytdi. Qayta o‘zgartirish uchun parolni kiriting.', true); }
   const body = { register_token: S.reg.t, amount: total, cash_amount: cash, card_amount: card, category: W.cat, duration_minutes: W.min };
+  if (priceTokOk()) body.price_token = S.priceTok.t;
   if (W.booking) {
     body.booking_id = W.booking.id;
     body.duration_minutes = Number(W.booking.duration_minutes) || W.min;
@@ -2239,7 +2274,10 @@ ACT.wzissue = async el => {
     toast(list.length > 1 ? `${list.length} ta chek chiqarildi` : 'Chek chiqarildi');
     showReceipts(list, { autoPrint: true, onNew: () => { if (S.routeName === 'issue') render(); } });
     SCHC.clear(); refreshCounts();
-  }catch(e){ fail(e); busyBtn(el, false); }
+  }catch(e){
+    if (e.status === 403 && /maxsus parol/.test(e.message)) { S.priceTok = null; W.priceEdit = false; W.manual = null; coPatch('pay', ['pay']); }
+    fail(e); busyBtn(el, false);
+  }
 };
 
 /* ---------- 6b. Tasdiqlash va saqlash (qo'lda bron) ---------- */
@@ -2476,7 +2514,8 @@ function coPaySec(W){
         ${pkOn && W.sess.length > 1 ? `<div class="muted" style="font-size:12.5px;margin-top:2px" id="wzShares">${W.sess.length} ta chek: ${shares(total, W.sess.map(x => x.m)).map(nf).join(' + ')}</div>` : ''}</div>
       <b class="big" id="wzTotal">${nf(total)} so‘m</b></div>
     <div id="wzPriceBox" class="${W.priceEdit ? '' : 'hidden'}" style="margin-top:10px"><input class="input" id="wzPrice" inputmode="numeric" value="${W.manual ?? ''}" placeholder="Yangi summa, so‘m"></div>
-    <button class="link" data-act="wzprice" style="margin-top:8px">${W.manual != null ? 'Avtomatik narxga qaytarish' : W.priceEdit ? 'Yopish' : 'Narxni qo‘lda o‘zgartirish'}</button></section>`;
+    <button class="link" data-act="wzprice" style="margin-top:8px;display:inline-flex;align-items:center;gap:6px">${W.manual != null ? 'Avtomatik narxga qaytarish' : W.priceEdit ? 'Yopish' : `${I('lock', 15, 2.2)}<span>Narxni o‘zgartirish (maxsus parol)</span>`}</button>
+    ${W.manual != null ? `<div class="muted" style="font-size:12.5px;margin-top:6px;display:flex;align-items:center;gap:6px">${I('lock', 13, 2.2)}<span>Narx parol bilan o‘zgartirildi — kim o‘zgartirgani qayd etiladi</span></div>` : ''}</section>`;
 }
 function coSide(W){
   const b = W.booking, miss = coMissing(W);
@@ -4350,6 +4389,9 @@ function vPrices(){
         <label><span>30 daqiqa</span><input class="input" inputmode="numeric" id="pr-half-${c}" value="${t(c).half}"></label>
         <label><span>1 soat</span><input class="input" inputmode="numeric" id="pr-hour-${c}" value="${t(c).hour}"></label></div>`).join('')}
       <p class="muted" style="font-size:12.5px;margin:10px 2px 0">2 soat va boshqalar soatlik narxdan hisoblanadi.</p></div>
+    <div class="card" style="margin-top:12px;background:linear-gradient(135deg,#fef2f2,#fff)"><div class="sec-h"><h2 style="display:flex;align-items:center;gap:8px">${I('lock', 18, 2.2)}<span>Narxni o‘zgartirish paroli</span></h2><span class="muted" style="font-size:12.5px" id="ppStat"></span></div>
+      <p class="muted" style="font-size:12.5px;margin:0 2px 10px">Kassada chek summasini avtomatik narxdan boshqa qilish (chegirma, qo‘shimcha) faqat shu parol bilan. Kim, qachon, qancha o‘zgartirgani auditga yoziladi. Parolni faqat ishonchli xodimga bering.</p>
+      <div class="tg-add"><input class="input" id="pp-new" type="password" inputmode="numeric" autocomplete="new-password" maxlength="8" placeholder="Yangi parol, 4–8 raqam"><button class="btn btn-soft btn-sm" data-act="ppset">${I('check', 18, 2.4)} Saqlash</button></div></div>
     <div class="card" style="margin-top:12px;background:linear-gradient(135deg,#f0fdf4,#fff)"><div class="sec-h"><h2>5 soatlik paket — B toifa</h2></div>
       <label class="field" style="margin-top:0"><span>Paket narxi (0 — paket o‘chiq)</span><input class="input" inputmode="numeric" id="pr-pkg" value="${pk}"></label>
       <p class="muted" style="font-size:12.5px;margin:8px 2px 0" id="pr-pkg-hint"></p></div>
@@ -4376,7 +4418,24 @@ function vPrices(){
   $('pr-pkg').addEventListener('input', hint); $('pr-hour-B').addEventListener('input', hint); hint();
   loadRemStat();
   loadTg();
+  loadPp();
 }
+async function loadPp(){
+  try{
+    const d = await api('/api/admin/price-pin');
+    if ($('ppStat')) $('ppStat').innerHTML = d.is_set ? '<span class="pill ok">o‘rnatilgan</span>' : d.uses_mgmt ? '<span class="pill">hozircha Boshqaruv PIN</span>' : '<span class="pill bad">o‘rnatilmagan</span>';
+  }catch{}
+}
+ACT.ppset = async el => {
+  const v = String($('pp-new').value || '').trim();
+  if (!/^\d{4,8}$/.test(v)) { toast('Parol 4 dan 8 tagacha raqam bo‘lsin', true); $('pp-new').focus(); return; }
+  const ok = await ask({ title: 'Narx paroli o‘zgartirilsinmi?', text: 'Eski parol ishlamay qoladi. Yangi parolni kerakli xodimlarga ayting.', ok: 'Saqlash' });
+  if (!ok) return;
+  busyBtn(el, true, 'Saqlanmoqda');
+  try { await api('/api/admin/price-pin', { method: 'PUT', body: JSON.stringify({ pin: v }) }); $('pp-new').value = ''; S.priceTok = null; toast('Narx paroli saqlandi'); loadPp(); }
+  catch (e) { fail(e); }
+  finally { busyBtn(el, false); }
+};
 /* =========================================================================
    ADMIN BOT — qaysi Telegram chatlar yangi bron xabarini oladi
    ========================================================================= */
