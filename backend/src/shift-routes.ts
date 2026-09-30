@@ -735,6 +735,23 @@ export async function registerShiftRoutes(
           : `${ageMin} daqiqa oldin (${lr.source || '?'})${ageMin > 10 ? ' \u2014 cron ishlamayapti, panel ochiq bo\u2018lganda ishlaydi' : ''}`,
       });
 
+      // 7) Qoidalar: qachon eslatiladi, necha daqiqa kechiksa yopiladi
+      const { loadReminderConfig } = await import('./reminders.js');
+      const cfg = await loadReminderConfig();
+      checks.push({
+        name: 'Qoidalar',
+        ok: true,
+        detail: `eslatma: ${cfg.kinds.join(', ')} daqiqa oldin · ${cfg.lateMin > 0 ? `${cfg.lateMin} daqiqa kechiksa bron avtomatik yopiladi` : 'kechikish qoidasi o‘chirilgan'}`,
+      });
+      const stale = await supabaseRest<any[]>('bookings', {
+        query: `?status=in.(pending,confirmed)&start_at=lt.${q(new Date(now - Math.max(cfg.lateMin, 1) * 60000).toISOString())}&select=id&limit=100`,
+      }).catch(() => []);
+      checks.push({
+        name: 'Vaqti o‘tgan ochiq bronlar',
+        ok: stale.length === 0,
+        detail: stale.length ? `${stale.length} ta — keyingi tekshiruvda avtomatik yopiladi` : 'yo‘q',
+      });
+
       const ready = !!botToken && tableOk;
       return {
         ok: true,
@@ -743,7 +760,8 @@ export async function registerShiftRoutes(
           ? 'Bot tokeni yo\u2018q \u2014 eslatma yuborilmaydi.'
           : !tableOk
             ? 'Eslatmalar jadvali mos emas \u2014 SQL\u2019ni ishga tushiring.'
-            : 'Eslatma tizimi tayyor: har bir bron egasiga 60, 30 va 10 daqiqa qolganda xabar ketadi.',
+            : `Eslatma tizimi tayyor: har bir bron egasiga ${cfg.kinds.join(', ')} daqiqa qolganda xabar ketadi${cfg.lateMin > 0 ? `; ${cfg.lateMin} daqiqa kechiksa bron avtomatik yopiladi` : ''}.`,
+        config: cfg,
         checks,
         last_run: lr,
         note: 'Admin yoki kassa paneli ochiq turganda eslatmalar har 2 daqiqada tekshiriladi. Panel yopiq bo\u2018lganda ham ishlashi uchun Supabase pg_cron SQL\u2019ni bir marta ishga tushiring.',

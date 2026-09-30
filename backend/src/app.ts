@@ -17,6 +17,7 @@ import { registerCashierRoutes } from './cashier-routes.js';
 import { registerAnalyticsRoutes } from './analytics-routes.js';
 import { registerShiftRoutes } from './shift-routes.js';
 import { registerMediaRoutes } from './media-routes.js';
+import { registerAdminBotRoutes, sendAdminChatInfo } from './admin-bot-routes.js';
 
 const app = Fastify({ logger: true });
 
@@ -123,6 +124,7 @@ await registerCashierRoutes(app, requireAdmin, adminUser, audit, authenticateIns
    (har qanday kirgan xodim) beriladi. */
 await registerAnalyticsRoutes(app, guardAdmin, requireAdmin);
 await registerShiftRoutes(app, requireAdmin, adminUser, audit);
+await registerAdminBotRoutes(app);
 
 // IMPORTANT: admin-password-routes.ts is the single owner of the canonical
 // /api/admin/* endpoints. Do not register admin-routes.ts or
@@ -150,7 +152,13 @@ async function handleTelegramWebhook(request: any, reply: any, token: string, mi
   const message = (request.body as any)?.message;
   const text = typeof message?.text === 'string' ? message.text.trim() : '';
   const chatId = Number(message?.chat?.id);
-  if (Number.isSafeInteger(chatId) && chatId > 0 && /^\/start(?:@\w+)?(?:\s.*)?$/i.test(text)) await sendMiniAppStart(token, chatId, miniAppUrl, role);
+  const isStart = /^\/start(?:@\w+)?(?:\s.*)?$/i.test(text);
+  if (Number.isSafeInteger(chatId) && chatId > 0 && isStart) await sendMiniAppStart(token, chatId, miniAppUrl, role);
+  /* Admin bot: /start yoki /id — chat ID ni aytadi, uni panelda
+     «Admin bot — yangi bron xabarlari» ga qo'shish mumkin (guruh ham). */
+  if (role === 'admin' && Number.isSafeInteger(chatId) && chatId !== 0 && (isStart || /^\/id(?:@\w+)?$/i.test(text))) {
+    await sendAdminChatInfo(token, chatId);
+  }
   return { ok: true };
 }
 

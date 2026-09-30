@@ -1,6 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import { supabaseRest } from './supabase.js';
 import { sendBookingNotification } from './telegram.js';
+import { notifyAdmins } from './admin-notify.js';
 import type { TelegramWebAppUser } from './telegram.js';
 import { q, findUserByTelegram } from './identity.js';
 
@@ -13,17 +14,7 @@ function clean(v: unknown) {
 /** Adminga Telegram orqali xabar beradi. Yiqilsa asosiy oqim to'xtamaydi. */
 async function pingAdmins(fromName: string, body: string) {
   try {
-    const token = String(process.env.ADMIN_BOT_TOKEN || process.env.TELEGRAM_ADMIN_BOT_TOKEN || '');
-    if (!token) return;
-    const admins = await supabaseRest<any[]>('telegram_admins', { query: '?select=telegram_chat_id' });
-    const url = String(process.env.ADMIN_MINI_APP_URL || '');
-    const text = `💬 AVTODROM — yangi savol\n\n${fromName}:\n${body.slice(0, 500)}`;
-    for (const a of admins) {
-      const chatId = Number(a.telegram_chat_id);
-      if (Number.isSafeInteger(chatId) && chatId > 0) {
-        await sendBookingNotification(token, chatId, text, url, '⚙️ Admin panel');
-      }
-    }
+    await notifyAdmins(`💬 AVTODROM — yangi savol\n\n${fromName}:\n${body.slice(0, 500)}`, { open: 'chat', button: '💬 Chatni ochish' });
   } catch (e) {
     console.error('Support: admin ping failed', e);
   }

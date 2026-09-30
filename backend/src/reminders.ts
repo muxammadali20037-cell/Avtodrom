@@ -1,11 +1,13 @@
 import { supabaseRest } from './supabase.js';
 import { telegramApi } from './telegram.js';
 import { loadBookingDetails, fmtWhen, fmtMoney, shortCode } from './notify.js';
+import { notifyAdmins } from './admin-notify.js';
 
 /**
- * DARS OLDIDAN ESLATMA
+ * DARS OLDIDAN ESLATMA VA KECHIKISH QOIDASI
  *
- * 60 / 30 / 10 daqiqa qolganda mijozga Telegram xabari va ikkita tugma:
+ * 60 / 30 / 20 daqiqa qolganda (sozlamadan o'zgartiriladi) mijozga
+ * Telegram xabari va ikkita tugma:
  *   «✅ Kelaman»            → attendance_confirmed_at yoziladi
  *   «🚫 Bekor qilmoqchiman» → admin uchun bekor so'rovi ochiladi
  *
@@ -15,10 +17,40 @@ import { loadBookingDetails, fmtWhen, fmtMoney, shortCode } from './notify.js';
  * ikkinchisi UNIQUE'ga urilib to'xtaydi va xabar takrorlanmaydi.
  */
 
-const KINDS = [60, 30, 10] as const;
+/** Standart: 1 soat, 30 daqiqa va 20 daqiqa qolganda. */
+export const DEFAULT_KINDS = [60, 30, 20];
+/** Mijoz shuncha daqiqa kechiksa bron avtomatik yopiladi (0 — o'chirilgan). */
+export const DEFAULT_LATE_MIN = 15;
 /** Eslatma yuboriladigan bron holatlari. */
 export const REMIND_STATUSES = ['pending', 'confirmed'] as const;
-export type ReminderKind = (typeof KINDS)[number];
+export type ReminderConfig = { kinds: number[]; lateMin: number };
+
+/** admin_settings: reminder_minutes ([60,30,20] yoki "60,30,20"), late_cancel_min (15). */
+export async function loadReminderConfig(): Promise<ReminderConfig> {
+  const rows = await supabaseRest<any[]>('admin_settings', {
+    query: '?key=in.(reminder_minutes,late_cancel_min)&select=key,value',
+  }).catch(() => [] as any[]);
+  const val = (k: string) => {
+    const v = rows.find((r) => r.key === k)?.value;
+    return v && typeof v === 'object' && !Array.isArray(v) && 'value' in v ? (v as any).value : v;
+  };
+  let raw: any = val('reminder_minutes');
+  if (typeof raw === 'string') raw = raw.split(/[^\d]+/).filter(Boolean);
+  let kinds = Array.isArray(raw)
+    ? [...new Set(raw.map(Number).filter((n: number) => Number.isInteger(n) && n >= 5 && n <= 720))] as number[]
+    : [];
+  kinds = kinds.sort((a, b) => b - a).slice(0, 5);
+  if (!kinds.length) kinds = [...DEFAULT_KINDS];
+  const lr = val('late_cancel_min');
+  const ln = lr === undefined || lr === null || lr === '' ? DEFAULT_LATE_MIN : Number(lr);
+  const lateMin = Number.isInteger(ln) && ln >= 0 && ln <= 180 ? ln : DEFAULT_LATE_MIN;
+  return { kinds, lateMin };
+}
+
+/** Ogohlantirish qatori — eslatma va tasdiq xabarlarida. */
+export function lateRuleText(lateMin = DEFAULT_LATE_MIN) {
+  return lateMin > 0 ? `⚠️ Dars vaqtidan ${lateMin} daqiqa kechiksangiz, bron avtomatik bekor qilinadi.` : '';
+}
 
 const q = (v: string) => encodeURIComponent(v);
 const token = () => String(process.env.CUSTOMER_BOT_TOKEN || process.env.TELEGRAM_CUSTOMER_BOT_TOKEN || '');
@@ -38,7 +70,7 @@ export function leftText(minutesLeft: number) {
 }
 
 /** Eslatma matni. `from` berilsa — instruktor qo'lda yuborgan eslatma. */
-export function reminderText(minutesLeft: number, booking: any, d: any, from?: string) {
+export function reminderText(minutesLeft: number, booking: any, d: any, from?: string, lateMin = DEFAULT_LATE_MIN) {
   const lines: string[] = [];
   if (from) lines.push(`🔔 ${from} eslatmoqda`);
   lines.push(leftText(minutesLeft), '');
@@ -51,6 +83,8 @@ export function reminderText(minutesLeft: number, booking: any, d: any, from?: s
   const code = String(booking.pickup_code || '').trim();
   if (code) lines.push(`🔑 Kassa kodi: ${code}`);
   if (String(booking.status) === 'pending') lines.push('', 'ℹ️ Broningiz qabul qilingan — kassada tasdiqlanadi.');
+  const rule = lateRuleText(lateMin);
+  if (rule) lines.push('', rule);
   lines.push('', 'Iltimos, javob bering:');
   return lines.join('\n');
 }
@@ -70,18 +104,20 @@ export function reminderKeyboard(bookingId: string) {
  * Rejalashtiruvchi buni bir necha daqiqada bir marta chaqiradi.
  * Bir necha marta chaqirilishi xavfsiz (idempotent).
  */
-export async function sendDueReminders(nowMs = Date.now()) {
+export async function sendDueReminders(nowMs = Date.now(), cfg?: ReminderConfig) {
   const bot = token();
   const result = { checked: 0, sent: 0, skipped: 0, failed: 0, no_telegram: 0, details: [] as string[] };
   if (!bot) { result.details.push('CUSTOMER_BOT_TOKEN sozlanmagan'); return result; }
+  const { kinds, lateMin } = cfg || await loadReminderConfig();
+  const maxKind = Math.max(...kinds);
 
-  // Keyingi 65 daqiqada boshlanadigan HAR BIR faol bron — tasdiqlangan
+  // Eng katta eslatma oralig'ida boshlanadigan HAR BIR faol bron — tasdiqlangan
   // ham, hali kutilayotgan (pending) ham. Ilgari faqat `confirmed`
   // olinardi: admin tasdiqlamagan bronlar egasiga eslatma umuman
   // bormasdi. `select=*` — pickup_code kabi ixtiyoriy ustunlar
   // bazada bo'lmasa ham so'rov yiqilmasin.
   const from = new Date(nowMs).toISOString();
-  const to = new Date(nowMs + 65 * 60 * 1000).toISOString();
+  const to = new Date(nowMs + (maxKind + 5) * 60 * 1000).toISOString();
   const bookings = await supabaseRest<any[]>('bookings', {
     query:
       `?status=in.(${REMIND_STATUSES.join(',')})&start_at=gte.${q(from)}&start_at=lte.${q(to)}` +
@@ -104,8 +140,9 @@ export async function sendDueReminders(nowMs = Date.now()) {
     const startMs = new Date(b.start_at || b.booking_date).getTime();
     const minutesLeft = Math.floor((startMs - nowMs) / 60000);
 
-    // Mos keladigan eng kichik oraliq: 10 daq qolganda 10-eslatma ketadi
-    const kind = KINDS.filter((k) => minutesLeft <= k).sort((a, x) => a - x)[0];
+    // Mos keladigan eng kichik oraliq: 20 daq qolganda 20-eslatma ketadi.
+    // Bron dars oldidan kech qilingan bo'lsa (25 daq qoldi) — faqat bittasi (30).
+    const kind = kinds.filter((k) => minutesLeft <= k).sort((a, x) => a - x)[0];
     if (!kind) { result.skipped++; continue; }
     if (minutesLeft < 0) { result.skipped++; continue; }
     if (already.has(`${b.id}:${kind}`)) { result.skipped++; continue; }
@@ -142,7 +179,7 @@ export async function sendDueReminders(nowMs = Date.now()) {
       const d = await loadBookingDetails(b);
       await telegramApi(bot, 'sendMessage', {
         chat_id: chatId,
-        text: reminderText(minutesLeft, b, d),
+        text: reminderText(minutesLeft, b, d, undefined, lateMin),
         reply_markup: reminderKeyboard(String(b.id)),
       });
       result.sent++;
@@ -174,11 +211,133 @@ export async function sendDueReminders(nowMs = Date.now()) {
 
 export const LAST_RUN_KEY = 'reminders_last_run';
 
-async function recordRun(source: string, r: Awaited<ReturnType<typeof sendDueReminders>>) {
+/* =====================================================================
+   KECHIKKAN BRONLAR — AVTOMATIK YOPISH
+   Dars vaqtidan `lateMin` (15) daqiqa o'tdi, mijoz kelmadi (dars
+   boshlanmadi) — bron o'z-o'zidan yopiladi, instruktor soati bo'shaydi:
+     tasdiqlangan → «Kelmagan» (no_show; to'langan pul hisobotda qoladi)
+     tasdiqlanmagan (pending) → «Bekor qilingan»
+   Mijozga (va instruktorga) Telegram orqali xabar ketadi. Eski, unutilib
+   qolgan bronlar (3 soatdan oldingilar) jimgina yopiladi — kechagi
+   bron uchun bugun xabar yuborilmaydi.
+   ISTISNO: kassada «hozir» chiqarilgan chek (bron emas) — mijoz joyida,
+   instruktor skanerlashini kutadi. U faqat ertasigacha ochiq qolib
+   ketsa yopiladi.
+   Takrorlanishdan himoya: PATCH faqat holat hali o'zgarmagan bo'lsa
+   (`status=eq.<eski>`) ishlaydi — ikki jarayon bir vaqtda ishlasa ham
+   xabar bir marta ketadi.
+   ===================================================================== */
+export async function closeLateBookings(nowMs = Date.now(), cfg?: ReminderConfig) {
+  const { lateMin } = cfg || await loadReminderConfig();
+  const out = { checked: 0, closed: 0, no_show: 0, cancelled: 0, notified: 0, skipped: 0, details: [] as string[] };
+  if (!(lateMin > 0)) return out;
+  const cutoff = new Date(nowMs - lateMin * 60000).toISOString();
+  const rows = await supabaseRest<any[]>('bookings', {
+    query: `?status=in.(pending,confirmed)&start_at=lt.${q(cutoff)}&select=*&order=start_at.asc&limit=300`,
+  });
+  out.checked = rows.length;
+  for (const b of rows) {
+    const startMs = new Date(b.start_at || b.booking_date).getTime();
+    if (!Number.isFinite(startMs)) { out.skipped++; continue; }
+    // Mijoz kelgan deb belgilangan, lekin dars boshlanmagan — xodim hal qiladi
+    if (b.arrived_at) { out.skipped++; continue; }
+    const createdMs = new Date(b.created_at || '').getTime();
+    const walkNow = String(b.source || '') === 'walk_in' && Number.isFinite(createdMs) && startMs - createdMs < 10 * 60000;
+    if (walkNow) {
+      const endMs = new Date(b.end_at || '').getTime() || startMs + 3600e3;
+      if (nowMs < endMs + 12 * 3600e3) { out.skipped++; continue; }
+    }
+    const next = String(b.status) === 'pending' ? 'cancelled' : 'no_show';
+    const at = new Date(nowMs).toISOString();
+    const reason = walkNow
+      ? 'Avtomatik yopildi: chek skanerlanmadi'
+      : `Avtomatik: mijoz dars vaqtidan ${lateMin} daqiqa o‘tguncha kelmadi`;
+    const patch: any = { status: next, updated_at: at };
+    if (next === 'cancelled') { patch.cancelled_at = at; patch.cancellation_reason = reason; }
+    let upd: any[] = [];
+    try {
+      upd = await supabaseRest<any[]>('bookings', {
+        method: 'PATCH', headers: { Prefer: 'return=representation' },
+        query: `?id=eq.${q(String(b.id))}&status=eq.${q(String(b.status))}`,
+        body: JSON.stringify(patch),
+      });
+    } catch (e) {
+      out.details.push(`${shortCode(b.id)} yopilmadi: ${e instanceof Error ? e.message : e}`);
+      continue;
+    }
+    if (!upd?.length) { out.skipped++; continue; }          // boshqa jarayon allaqachon o'zgartirgan
+    out.closed++; if (next === 'no_show') out.no_show++; else out.cancelled++;
+    out.details.push(`${shortCode(b.id)} → ${next === 'no_show' ? 'kelmagan' : 'bekor'}`);
+    await supabaseRest('admin_audit_logs', {
+      method: 'POST', headers: { Prefer: 'return=minimal' },
+      body: JSON.stringify({
+        admin_id: null, action: 'BOOKING_AUTO_LATE', entity_type: 'bookings', entity_id: b.id,
+        old_data: { status: b.status, start_at: b.start_at }, new_data: { status: next, reason },
+      }),
+    }).catch(() => {});
+    if (!walkNow && nowMs - startMs < 3 * 3600e3) {
+      if (await notifyLateClosed({ ...b, ...upd[0] }, lateMin)) out.notified++;
+    }
+  }
+  return out;
+}
+
+async function notifyLateClosed(b: any, lateMin: number): Promise<boolean> {
+  let sent = false;
+  try {
+    const d = await loadBookingDetails(b);
+    const when = fmtWhen(b.start_at || b.booking_date);
+    const code = String(b.pickup_code || '').trim();
+    const info = [when && `📅 ${when}`, d.instructorName && `👨‍🏫 ${d.instructorName}`, code && `🔑 ${code}`].filter(Boolean);
+    const cText = ['🚫 Broningiz bekor qilindi', '', ...info, '',
+      `Dars vaqtidan ${lateMin} daqiqa o‘tdi, siz kelmadingiz — bron avtomatik bekor qilindi.`,
+      'Yangi vaqtga bron qilish uchun Mini Appni oching.'].join('\n');
+    await supabaseRest('notifications', {
+      method: 'POST', headers: { Prefer: 'return=minimal' },
+      body: JSON.stringify({ user_id: b.customer_id, type: 'booking', title: '🚫 Bron bekor qilindi',
+        message: `${when}. Dars vaqtidan ${lateMin} daqiqa o‘tdi — bron avtomatik bekor qilindi.` }),
+    }).catch(() => {});
+    const bot = token();
+    const u = (await supabaseRest<any[]>('users', {
+      query: `?id=eq.${q(String(b.customer_id))}&select=telegram_id&limit=1`,
+    }))[0];
+    const chatId = Number(u?.telegram_id);
+    if (bot && Number.isSafeInteger(chatId) && chatId > 0) {
+      await telegramApi(bot, 'sendMessage', {
+        chat_id: chatId, text: cText,
+        ...(miniApp() ? { reply_markup: { inline_keyboard: [[{ text: '🚗 Mini Appni ochish', web_app: { url: miniApp() } }]] } } : {}),
+      });
+      sent = true;
+    }
+    // Instruktorga: soat bo'shadi
+    const iBot = String(process.env.INSTRUCTOR_BOT_TOKEN || process.env.TELEGRAM_INSTRUCTOR_BOT_TOKEN || '');
+    if (iBot && b.instructor_id) {
+      const ip = (await supabaseRest<any[]>('instructor_profiles', {
+        query: `?id=eq.${q(String(b.instructor_id))}&select=user_id&limit=1`,
+      }))[0];
+      const iu = ip?.user_id ? (await supabaseRest<any[]>('users', {
+        query: `?id=eq.${q(String(ip.user_id))}&select=telegram_id&limit=1`,
+      }))[0] : null;
+      const iChat = Number(iu?.telegram_id);
+      if (Number.isSafeInteger(iChat) && iChat > 0) {
+        await telegramApi(iBot, 'sendMessage', {
+          chat_id: iChat,
+          text: `ℹ️ Mijoz kelmadi — bron avtomatik yopildi\n\n${d.customerName ? `👤 ${d.customerName}\n` : ''}${when ? `📅 ${when}\n` : ''}\nBu vaqt endi bo‘sh.`,
+        }).catch(() => {});
+      }
+    }
+  } catch (e) {
+    console.error('late notify failed:', e);
+  }
+  return sent;
+}
+
+async function recordRun(source: string, r: Awaited<ReturnType<typeof sendDueReminders>>, late?: Awaited<ReturnType<typeof closeLateBookings>>) {
   const value = {
     at: new Date().toISOString(), source,
     checked: r.checked, sent: r.sent, failed: r.failed, no_telegram: r.no_telegram,
-    error: r.details.find((x) => /xato|sozlanmagan/i.test(x)) || null,
+    late_closed: late?.closed ?? 0,
+    error: r.details.find((x) => /xato|sozlanmagan/i.test(x)) || late?.details.find((x) => /yopilmadi|xato/i.test(x)) || null,
   };
   try {
     const rows = await supabaseRest<any[]>('admin_settings', {
@@ -197,11 +356,17 @@ async function recordRun(source: string, r: Awaited<ReturnType<typeof sendDueRem
   }
 }
 
-/** Har qanday manbadan chaqirish + natijani yozib qo'yish. */
+/** Har qanday manbadan chaqirish + natijani yozib qo'yish.
+ *  Avval kechikkanlar yopiladi, keyin eslatmalar yuboriladi. */
 export async function runRemindersNow(source: string, nowMs = Date.now()) {
-  const r = await sendDueReminders(nowMs);
-  await recordRun(source, r);
-  return r;
+  const cfg = await loadReminderConfig();
+  const late = await closeLateBookings(nowMs, cfg).catch((e) => ({
+    checked: 0, closed: 0, no_show: 0, cancelled: 0, notified: 0, skipped: 0,
+    details: [`kechikkanlarni yopish xatosi: ${e instanceof Error ? e.message : e}`],
+  }));
+  const r = await sendDueReminders(nowMs, cfg);
+  await recordRun(source, r, late);
+  return { ...r, late_closed: late.closed, late };
 }
 
 let lastTickAt = 0;
@@ -219,7 +384,7 @@ export async function tickReminders(source: string, minGapMs = 60_000) {
   tickRunning = runRemindersNow(source, now);
   try {
     const r = await tickRunning;
-    return { ran: true, sent: r.sent, checked: r.checked, failed: r.failed };
+    return { ran: true, sent: r.sent, checked: r.checked, failed: r.failed, late_closed: r.late_closed };
   } finally {
     tickRunning = null;
   }
@@ -267,9 +432,10 @@ export async function sendManualReminder(booking: any, fromName: string, nowMs =
 
   const d = await loadBookingDetails(booking);
   const minutesLeft = Math.max(0, Math.round((startMs - nowMs) / 60000));
+  const { lateMin } = await loadReminderConfig();
   await telegramApi(bot, 'sendMessage', {
     chat_id: chatId,
-    text: reminderText(minutesLeft, booking, d, fromName ? `Instruktor ${fromName}` : 'Instruktoringiz'),
+    text: reminderText(minutesLeft, booking, d, fromName ? `Instruktor ${fromName}` : 'Instruktoringiz', lateMin),
     reply_markup: reminderKeyboard(String(booking.id)),
   });
   await supabaseRest('notifications', {
@@ -349,19 +515,8 @@ export async function handleReminderCallback(cb: any): Promise<boolean> {
 
     // Adminlarga xabar
     try {
-      const adminToken = String(process.env.ADMIN_BOT_TOKEN || process.env.TELEGRAM_ADMIN_BOT_TOKEN || '');
-      if (adminToken) {
-        const admins = await supabaseRest<any[]>('telegram_admins', { query: '?select=telegram_chat_id' });
-        for (const a of admins) {
-          const chatId = Number(a.telegram_chat_id);
-          if (Number.isSafeInteger(chatId) && chatId > 0) {
-            await telegramApi(adminToken, 'sendMessage', {
-              chat_id: chatId,
-              text: `🚫 Bekor qilish so‘rovi (eslatma orqali)\n\n👤 ${owner.full_name || 'Mijoz'}\nBron: ${shortCode(bookingId)}\n\nAdmin panelda ko‘rib chiqing.`,
-            }).catch(() => {});
-          }
-        }
-      }
+      await notifyAdmins(`🚫 Bekor qilish so‘rovi (eslatma orqali)\n\n👤 ${owner.full_name || 'Mijoz'}\nBron: ${shortCode(bookingId)}\n\nAdmin panelda ko‘rib chiqing.`,
+        { open: 'bookings/cancels', button: '🛡️ So‘rovni ochish' });
     } catch { /* xabar ketmasa ham so'rov saqlangan */ }
 
     return true;

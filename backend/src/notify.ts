@@ -74,12 +74,27 @@ export interface BookingDetails {
   customerName?: string | null;
   customerPhone?: string | null;
   reason?: string | null;
+  /** Kechikish qoidasi (daqiqa): shuncha kechiksa bron avtomatik bekor bo'ladi. 0 — o'chirilgan. */
+  lateMin?: number;
 }
+
+/** admin_settings.late_cancel_min — standart 15. (reminders.ts bilan bir xil qoida) */
+export async function loadLateMin(): Promise<number> {
+  try {
+    const r = (await supabaseRest<any[]>('admin_settings', { query: '?key=eq.late_cancel_min&select=value&limit=1' }))[0];
+    const v = r?.value && typeof r.value === 'object' && 'value' in r.value ? r.value.value : r?.value;
+    if (v === undefined || v === null || v === '') return 15;
+    const n = Number(v);
+    return Number.isInteger(n) && n >= 0 && n <= 180 ? n : 15;
+  } catch { return 15; }
+}
+export const lateRuleLine = (m: number) => (m > 0 ? `⚠️ Dars vaqtidan ${m} daqiqa kechiksangiz, bron avtomatik bekor qilinadi.` : '');
 
 /** Bron ma'lumotini bazadan to'ldiradi (kurs nomi, instruktor ismi, narx). */
 export async function loadBookingDetails(booking: any): Promise<BookingDetails> {
   const out: BookingDetails = { reason: booking?.cancellation_reason ?? null };
   try {
+    out.lateMin = await loadLateMin();
     if (booking?.course_id) {
       const c = (await supabaseRest<any[]>('courses', {
         query: `?id=eq.${encodeURIComponent(String(booking.course_id))}&select=name,duration_minutes,price&limit=1`,
@@ -154,9 +169,14 @@ export function bookingMessage(
     ? `\n🎫 Kassa uchun kod: ${pickup}\nKassaga shu kodni ayting.`
     : (pickup ? `\nBron kodi: ${pickup}` : '');
 
+  /* Bron qabul qilinganda / tasdiqlanganda mijoz qoidani oldindan bilsin */
+  const rule = audience === 'customer' && (event === 'created' || event === 'confirmed')
+    ? lateRuleLine(d.lateMin ?? 15) : '';
+
   const body = [
     lines.join('\n'),
     tail ? `\n${tail}` : '',
+    rule ? `\n${rule}` : '',
     codeLine,
   ].filter(Boolean).join('\n');
 

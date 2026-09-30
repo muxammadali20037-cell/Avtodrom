@@ -7,12 +7,13 @@ import crypto from 'node:crypto';
 import type { FastifyInstance } from 'fastify';
 import { supabaseRest } from './supabase.js';
 import { loadTariffs, computePrice } from './pricing.js';
-import { loadBookingDetails, bookingMessage, inAppMessage, fmtWhen, fmtMoney, type BookingEvent } from './notify.js';
+import { loadBookingDetails, bookingMessage, inAppMessage, fmtWhen, fmtMoney, lateRuleLine, type BookingEvent } from './notify.js';
 import {
   PACKAGE_MINUTES, loadPackagePrices, packagePriceOf, parseSessions, createPackage, packagesFor, durText,
   type PackageRecord,
 } from './packages.js';
 import { sendBookingNotification } from './telegram.js';
+import { notifyAdmins, notifyAdminsNewBooking, escHtml } from './admin-notify.js';
 import type { TelegramWebAppUser } from './telegram.js';
 import {
   q, joinName, splitName, toProfile, toInstructorCard,
@@ -191,7 +192,8 @@ async function notifyPackageParties(bookings: any[], rec: PackageRecord) {
       `📝 5 soatlik paketingiz qabul qilindi\n\n` +
       (d.instructorName ? `👨‍🏫 ${d.instructorName}\n` : '') +
       `💵 ${fmtMoney(rec.price)}${rec.list_price > rec.price ? ` (odatda ${fmtMoney(rec.list_price)})` : ''}\n\n` +
-      `${lines.join('\n')}\n\nAdmin tasdiqlashini kuting. Kassaga kelganda mashg‘ulot kodini ayting.`;
+      `${lines.join('\n')}\n\nAdmin tasdiqlashini kuting. Kassaga kelganda mashg‘ulot kodini ayting.` +
+      (lateRuleLine(d.lateMin ?? 15) ? `\n\n${lateRuleLine(d.lateMin ?? 15)}` : '');
     await notifyUser(first.customer_id, 'booking', '📝 5 soatlik paket qabul qilindi',
       `${bookings.length} ta mashg‘ulot · ${fmtWhen(first.start_at)} dan boshlab`);
     const customer = await telegramOf(first.customer_id);
@@ -545,7 +547,8 @@ export async function registerBookingRoutes(
 
       const booking = rows[0];
       if (booking) {
-        await notifyBookingParties(booking, 'created');
+        /* Mijoz, instruktor va ADMIN BOTI — bir vaqtda */
+        await Promise.all([notifyBookingParties(booking, 'created'), notifyAdminsNewBooking([booking])]);
       }
       return reply.code(201).send({ ok: true, booking: shapeBooking(booking) });
     } catch (e) {
@@ -595,7 +598,10 @@ export async function registerBookingRoutes(
         sessions: parsed.sessions, status: 'pending', source: 'app',
         note: body.customer_note?.trim() || null, tariffs, prices, newCode: newPickupCode,
       });
-      await notifyPackageParties(bookings, record);
+      await Promise.all([
+        notifyPackageParties(bookings, record),
+        notifyAdminsNewBooking(bookings, { packagePrice: record.price, listPrice: record.list_price }),
+      ]);
       const pkg = { id: record.id, price: record.price, list_price: record.list_price, of: bookings.length };
       return reply.code(201).send({
         ok: true, package: pkg,
@@ -676,26 +682,19 @@ export async function registerBookingRoutes(
       });
       const updated = rows[0] ?? booking;
 
-      // Adminga xabar
+      // Adminga xabar (admin boti, «Bekor so‘rovlari» bo'limiga tugma bilan)
       try {
         const d = await loadBookingDetails(updated);
         const when = fmtWhen(updated.start_at || updated.booking_date);
         const text =
-          `🚫 Bekor qilish so‘rovi\n\n` +
-          `👤 ${user.full_name || 'Mijoz'}\n` +
-          (d.courseName ? `📚 ${d.courseName}\n` : '') +
-          (when ? `📅 ${when}\n` : '') +
-          `\n💬 Sabab: ${reason}\n\nAdmin panelda tasdiqlang yoki rad eting.`;
-        const token = String(process.env.ADMIN_BOT_TOKEN || process.env.TELEGRAM_ADMIN_BOT_TOKEN || '');
-        if (token) {
-          const admins = await supabaseRest<any[]>('telegram_admins', { query: '?select=telegram_chat_id' });
-          for (const a of admins) {
-            const chatId = Number(a.telegram_chat_id);
-            if (Number.isSafeInteger(chatId) && chatId > 0) {
-              await sendBookingNotification(token, chatId, text, String(process.env.ADMIN_MINI_APP_URL || ''), '⚙️ Admin panel');
-            }
-          }
-        }
+          `🚫 <b>Bekor qilish so‘rovi</b>\n\n` +
+          `👤 ${escHtml(user.full_name || 'Mijoz')}${d.customerPhone ? ` · ${escHtml(d.customerPhone)}` : ''}\n` +
+          (d.instructorName ? `👨‍🏫 ${escHtml(d.instructorName)}\n` : '') +
+          (d.courseName ? `📚 ${escHtml(d.courseName)}\n` : '') +
+          (when ? `📅 ${escHtml(when)}\n` : '') +
+          (updated.pickup_code ? `🎫 <code>${escHtml(updated.pickup_code)}</code>\n` : '') +
+          `\n💬 Sabab: ${escHtml(reason)}\n\nAdmin panelda tasdiqlang yoki rad eting.`;
+        await notifyAdmins(text, { html: true, open: 'bookings/cancels', button: '🛡️ So‘rovni ochish' });
       } catch (e) { console.error('Cancel-request admin notify failed:', e); }
 
       return {

@@ -1568,7 +1568,15 @@ export async function registerCashierRoutes(
       if (!booking) return reply.code(404).send({ ok: false, error: 'Bron topilmadi' });
       if (String(booking.instructor_id) !== String(ip.id)) return reply.code(403).send({ ok: false, error: 'Bu bron sizga tegishli emas' });
       if (String(booking.status) !== 'confirmed') {
-        return reply.code(409).send({ ok: false, error: `Bron holati "${booking.status}" — boshlab bo‘lmaydi` });
+        const st = String(booking.status);
+        /* Mijoz kech qoldi — bron avtomatik yopilgan. Instruktor nima
+           qilishni bilsin: kassadan yangi chek. */
+        const why = st === 'no_show' || st === 'cancelled'
+          ? 'Bron yopilgan: mijoz dars vaqtidan kech qoldi yoki bron bekor qilingan. Kassadan yangi chek oling.'
+          : st === 'in_progress' ? 'Bu chek bilan dars allaqachon boshlangan'
+          : st === 'completed' ? 'Bu chek bilan dars allaqachon o‘tgan'
+          : `Bron holati "${st}" — boshlab bo‘lmaydi`;
+        return reply.code(409).send({ ok: false, error: why, status: st });
       }
 
       /* Oldingi dars yakunlanmagan bo'lsa yangisini boshlab bo'lmaydi.
