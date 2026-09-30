@@ -1654,6 +1654,7 @@ function wzCrumbs(W){
 }
 function wzRender(W){
   if (ONE(W)) return coRender();
+  if (MB1(W)) return mbRender();
   if (W.kind === 'co' && isAdmin() && !regOk()) {
     $('view').innerHTML = `<div class="view"><div class="sk"></div></div>`;
     regGateHtml().then(h => { if (S.routeName === 'issue' && !regOk()) $('view').innerHTML = `<div class="view">${h}</div>`; });
@@ -1713,6 +1714,7 @@ function wzNext(W){
 ACT.wzback = () => {
   const W = curW();
   if (ONE(W)) { if (W.booking) return ACT.conobook(); if (W.q) return ACT.wzclr(); return; }
+  if (MB1(W)) { if (W.done) { MB_reset(); return render(); } if (W.q) return ACT.wzclr(); return; }
   if (W.done) { W.kind === 'mb' ? MB_reset() : CO_reset(); return render(); }
   const st = wzSteps(W), i = st.indexOf(W.step);
   if (i <= 0) return go(parentOf());
@@ -1809,6 +1811,7 @@ async function wzSearch(W){
 const wzSearchD = debounce(W => wzSearch(W), 320);
 function paintFound(W){
   if (ONE(W)) { const el = $('coFound'); if (el && S.routeName === 'issue') el.innerHTML = coFoundHtml(W); return; }
+  if (MB1(W)) { const el = $('mbFound'); if (el && S.routeName === 'manual') el.innerHTML = mbFoundHtml(W); return; }
   const el = $('wzFound'); if (el && curW() === W && W.step === 'cust') el.innerHTML = foundHtml(W);
 }
 ACT.wzclr = () => { const W = curW(); W.q = ''; W.found = null; W.custs = null; W.seq++; wzRender(W); $('wzQ')?.focus(); };
@@ -1979,13 +1982,19 @@ function timesHtml(W, day){
 }
 function ensureTimes(W, day){
   if (SCHC.get(day)?.d) return;
-  schedLoad(day).then(() => paintTimes(W)).catch(e => { const el = $('wzTimes') || $('coTimes'); if (el) el.innerHTML = `<div class="note err">${esc(e.message)}</div>`; });
+  schedLoad(day).then(() => paintTimes(W)).catch(e => { const el = $('wzTimes') || $('coTimes') || $('mbTimes'); if (el) el.innerHTML = `<div class="note err">${esc(e.message)}</div>`; });
 }
 function paintTimes(W){
   if (ONE(W)) {
     const el = $('coTimes'); if (!el || S.routeName !== 'issue') return;
     if (!SCHC.get(W.day)?.d) return ensureTimes(W, W.day);
     el.innerHTML = coTimesHtml(W); return;
+  }
+  if (MB1(W)) {
+    const el = $('mbTimes'); if (!el || S.routeName !== 'manual' || MB !== W) return;
+    if (!SCHC.get(W.day)?.d) return ensureTimes(W, W.day);
+    const h = mbTimesHtml(W); if (el._h !== h) { el.innerHTML = h; el._h = h; }
+    return;
   }
   const el = $('wzTimes');
   if (!el || curW() !== W || W.step !== 'time') return;
@@ -2010,7 +2019,7 @@ const sessAt = x => x.now ? new Date() : atTk(x.day, x.t);
 /* ---------- 5. Instruktor ---------- */
 async function loadIns(W){
   const seq = ++W.insSeq;
-  if (!ONE(W)) W.insRes = null;
+  if (!ONE(W) && !MB1(W)) W.insRes = null;
   W.insErr = '';
   try{
     const res = await Promise.all(W.sess.map(x => api(`/api/admin/cashier/free-instructors?at=${encodeURIComponent(sessAt(x).toISOString())}&minutes=${x.m}&category=${encodeURIComponent(W.cat)}`)));
@@ -2026,6 +2035,11 @@ async function loadIns(W){
   if (ONE(W)) {
     if (!W.ins && W.insRes?.free?.length) { W.ins = W.insRes.free[0]; W.insAuto = true; }
     if (S.routeName === 'issue' && CO === W) coPaintIns();
+    return;
+  }
+  if (MB1(W)) {
+    if (!W.ins && W.insRes?.free?.length) { W.ins = W.insRes.free[0]; W.insAuto = true; }
+    if (MB === W) mbPaintIns();
     return;
   }
   if (curW() === W && W.step === 'ins') wzRender(W);
@@ -2212,7 +2226,17 @@ function stepOk(W){
 }
 ACT.wzsave = async el => {
   const W = MB;
-  if (!W.ins || W.sess.some(x => !x.t)) return toast('Vaqt va instruktorni tanlang', true);
+  const q = W.q.trim();
+  if (!W.name.trim() && q && !/\d{4,}/.test(q)) W.name = q;
+  if (!W.phone.trim() && /^\+?[\d\s()-]{7,}$/.test(q)) W.phone = q;
+  W.name = W.name.trim(); W.phone = W.phone.trim();
+  const miss = mbMissing(W)[0];
+  if (miss) {
+    toast(miss[1], true);
+    $('mb-' + miss[0])?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    if (miss[0] === 'cust') setTimeout(() => (W.name.length < 2 ? $('wzName') : $('wzPhone'))?.focus(), 350);
+    return;
+  }
   const at = W.sess.map(sessAt);
   const body = { full_name: W.name, phone: W.phone, instructor_id: W.ins.id, category: W.cat, duration_minutes: W.min,
     start_at: at[0].toISOString(), note: W.note.trim() };
@@ -2223,7 +2247,7 @@ ACT.wzsave = async el => {
     W.done = { codes: d.pickup_codes?.length ? d.pickup_codes : [d.pickup_code].filter(Boolean), sess: W.sess.map(x => ({ ...x })), name: W.name, ins: W.ins.name, pkg: isPkg(W) };
     SCHC.clear(); refreshCounts();
     wzRender(W); window.scrollTo(0, 0);
-  }catch(e){ fail(e); busyBtn(el, false); if (e.status === 409) { W.insRes = null; } }
+  }catch(e){ fail(e); busyBtn(el, false); if (e.status === 409) { SCHC.clear(); mbTouch(W); mbPatch(null, ['time', 'ins']); } }
 };
 function mbDone(W){
   const d = W.done;
@@ -2239,6 +2263,7 @@ function mbDone(W){
 ACT.mbagain = () => { MB_reset(); render(); };
 function wzLive(W){
   if (ONE(W)) return coLive();
+  if (MB1(W)) return mbLive();
   if (W.done) return;
   if (W.step === 'time') { paintTimes(W); }
   else if (W.step === 'ins') loadIns(W);
@@ -2662,6 +2687,292 @@ ACT.coins = el => {
   coDone(W, 'ins', []);
 };
 ACT.coscroll = el => coScrollTo(el.dataset.s);
+/* =========================================================================
+   QO'LDA BRON — HAMMASI BITTA OYNADA (operator va administrator)
+     Mijoz · Toifa va davomiylik · Sana va soat · Instruktor · Narx va izoh
+   Hamma bo'lim doim ochiq. Bosilganda FAQAT o'zgargan bo'limlar joyida
+   yangilanadi — sahifa sakramaydi, keyingi bo'lim o'zi ochilmaydi.
+   Kompyuterda o'ngda xulosa va «Bronni saqlash», telefonda — pastki panel.
+   ========================================================================= */
+const MB1 = W => W && W.kind === 'mb';
+const MB_DURS = [[30, '30 daq'], [60, '1 soat'], [90, '1,5 soat'], [120, '2 soat']];
+
+function mbInit(W){
+  if (W.inited || !S.coursesOk) return;
+  W.inited = true; W.step = 'one';
+  const pref = W.pref;
+  const ok = c => !!courseFor(c) && (!pref?.cats || pref.cats.includes(c));
+  W.cat = ['B', 'A', 'C'].find(ok) || '';
+  W.min = 60; W.split = null; W.si = 0;
+  /* Ish vaqti tugagan bo'lsa — ertangi kundan boshlaymiz */
+  const we = String(sv('work_end') || '19:00').slice(0, 5);
+  W.day = pref?.day || (nowHM() >= we ? dayAdd(kToday(), 1) : kToday());
+  W.sess = [{ m: 60, day: pref?.day || '', t: pref?.t || '', now: false }];
+}
+const mbPrice = W => (W.cat && W.min ? priceOf(W.cat, W.min) : 0);
+const mbDurLabel = W => isPkg(W) ? `5 soatlik paket · ${W.split.k}` : W.min === 90 ? '1,5 soat' : W.min ? fmtDur(W.min) : '';
+const mbTimesSet = W => W.sess.length > 0 && W.sess.every(x => x.t);
+/** Saqlash uchun nima yetishmayapti: [bo'lim, xabar] */
+function mbMissing(W){
+  const out = [];
+  const q = W.q.trim(), nm = W.name.trim() || (q && !/\d{4,}/.test(q) ? q : '');
+  if (nm.length < 2) out.push(['cust', 'Mijozning ismini yozing']);
+  else if (W.phone.trim() && !/^\+?[\d\s()-]{7,}$/.test(W.phone.trim())) out.push(['cust', 'Telefon raqami noto‘g‘ri']);
+  if (!W.cat) out.push(['cat', 'Toifani tanlang']);
+  W.sess.forEach((x, i) => { if (!x.t) out.push(['time', W.sess.length > 1 ? `${i + 1}-mashg‘ulot kuni va soatini tanlang` : 'Sana va soatni tanlang']); });
+  if (mbTimesSet(W)) {
+    if (!W.insRes) out.push(['ins', 'Bo‘sh instruktorlar tekshirilmoqda…']);
+    else if (!W.ins) out.push(['ins', W.insRes.free.length ? 'Instruktorni tanlang' : 'Bu vaqtda bo‘sh instruktor yo‘q — boshqa soatni tanlang']);
+  }
+  return out;
+}
+function mbFoundHtml(W){ return foundHtml(W).replace(/data-act="wzcust"/g, 'data-act="mbcust"'); }
+function mbTimesHtml(W){ return timesHtml(W, W.day).replace(/data-act="wztime"/g, 'data-act="mbtime"'); }
+
+/* ---------- bo'limlar ---------- */
+function mbCustSec(W){
+  const nm = W.name.trim();
+  return `<section class="co-sec" id="mb-cust">${coHead(1, 'Mijoz', nm ? nm + (W.phone.trim() ? ' · ' + W.phone.trim() : '') : '')}
+    <div class="search">${I('search', 20)}<input class="input" id="wzQ" value="${esc(W.q)}" autocomplete="off" inputmode="search" enterkeyhint="search" placeholder="Oldin kelganmi? Ism yoki telefon bilan qidiring"><button class="clr ${W.q ? '' : 'hidden'}" data-act="wzclr" aria-label="Tozalash">${I('x', 18)}</button></div>
+    <div id="mbFound">${mbFoundHtml(W)}</div>
+    <div class="grid2" style="margin-top:12px">
+      <label class="field" style="margin:0"><span>Ism familiya</span><input class="input" id="wzName" value="${esc(W.name)}" placeholder="Aliyev Vali" autocomplete="off" autocapitalize="words"></label>
+      <label class="field" style="margin:0"><span>Telefon</span><input class="input" id="wzPhone" value="${esc(W.phone)}" inputmode="tel" placeholder="+998 90 123 45 67" autocomplete="off"></label></div>
+    ${W.customer ? `<div class="muted" style="font-size:13px;margin-top:8px">${I('check', 14, 2.6)} Bazadagi mijoz tanlandi</div>` : ''}</section>`;
+}
+function mbCatSec(W){
+  const c = W.cat || 'B', pk = pkgPrice(c);
+  const cats = ['A', 'B', 'C'].map(x => {
+    const has = !!courseFor(x), okIns = !W.pref?.cats || W.pref.cats.includes(x);
+    const why = !has ? 'mashg‘ulot yo‘q' : !okIns ? 'instruktor o‘rgatmaydi' : `${nf(tariffFor(x).hour)} so‘m / soat`;
+    return `<button class="cch cat ${W.cat === x ? 'on' : ''}" data-act="mbcat" data-v="${x}" ${has && okIns ? '' : 'disabled'}><b>${x} toifa</b><small>${esc(why)}</small></button>`;
+  }).join('');
+  const durs = MB_DURS.map(([m, t]) => `<button class="cch ${W.min === m && !isPkg(W) ? 'on' : ''}" data-act="mbdur" data-v="${m}" ${W.cat ? '' : 'disabled'}><b>${t}</b><small>${nf(priceOf(c, m))} so‘m</small></button>`).join('')
+    + (pk > 0 ? `<button class="cch pkg ${isPkg(W) ? 'on' : ''}" data-act="mbdur" data-v="pkg"><b>5 soatlik paket</b><small><s>${nf(listPrice(c, PKG_MIN))}</s> ${nf(pk)} so‘m</small></button>` : '');
+  const split = isPkg(W) ? `<div class="muted" style="font-size:13px;margin:12px 2px 8px">5 soatni qanday bo‘lamiz? Har mashg‘ulot alohida kunda, alohida bron kodi bilan.</div>
+    <div class="cchips">${SPLITS.map(s => `<button class="cch ${W.split.k === s.k ? 'on' : ''}" data-act="mbsplit" data-k="${esc(s.k)}">
+      <b>${s.k === '5' ? '1 kunda 5 soat' : s.k === '1x5' ? '5 kun × 1 soat' : s.m.map(m => m / 60).join(' + ') + ' soat'}</b><small>${s.m.length} ta mashg‘ulot</small></button>`).join('')}</div>` : '';
+  return `<section class="co-sec" id="mb-cat">${coHead(2, 'Toifa va davomiylik', W.cat ? `${W.cat} toifa · ${mbDurLabel(W)}` : '')}
+    <div class="cchips">${cats}</div>
+    <div class="cchips" style="margin-top:8px">${durs}</div>${split}</section>`;
+}
+function mbTimeSec(W){
+  const multi = W.sess.length > 1, t0 = kToday();
+  if (W.si >= W.sess.length) W.si = 0;
+  const used = new Set(W.sess.filter((x, j) => j !== W.si && x.day).map(x => x.day));
+  const days = Array.from({ length: 21 }, (_, k) => dayAdd(t0, k)).map((d, k) => {
+    const [, m, dd] = ymdParts(d), u = used.has(d);
+    return `<button class="day ${d === W.day ? 'on' : ''}" data-act="mbday" data-v="${d}" ${u ? 'disabled' : ''}>
+      <span class="w">${k === 0 ? 'Bugun' : k === 1 ? 'Ertaga' : WDS[wdOf(d)]}</span><span class="d">${dd}</span><span class="m">${u ? 'band' : MONS[m - 1]}</span></button>`;
+  }).join('');
+  const val = mbTimesSet(W) ? W.sess.map(x => sessText(x)).join(' · ') : multi ? `${W.sess.filter(x => x.t).length}/${W.sess.length} tanlandi` : '';
+  const tabs = multi ? `<div class="sess-tabs">${W.sess.map((x, i) => `<button class="sess-tab ${i === W.si ? 'on' : ''} ${x.t ? 'set' : ''}" data-act="mbsess" data-i="${i}">
+      <b>${i + 1}-mashg‘ulot · ${esc(fmtDur(x.m))}</b>${x.t ? esc(sessText(x)) : 'kun va soatni tanlang'}</button>`).join('')}</div>` : '';
+  return `<section class="co-sec" id="mb-time">${coHead(3, multi ? 'Sana va soat — har mashg‘ulot' : 'Sana va soat', val)}
+    ${tabs}<div class="scroller" id="mbDays">${days}</div>
+    <div class="muted" style="font-size:12.5px;margin:10px 2px 8px">Yashil yozuv — shu soatda nechta instruktor bo‘sh (${esc(W.cat || 'B')} toifa, ${esc(fmtDur(W.sess[W.si]?.m || W.min || 60))}).</div>
+    <div id="mbTimes">${mbTimesHtml(W)}</div></section>`;
+}
+function mbInsBody(W){
+  if (!mbTimesSet(W)) return `<div class="note info" style="font-size:13.5px">Avval sana va soatni tanlang — shu vaqtda bo‘sh instruktorlar shu yerda chiqadi.</div>`;
+  const r = W.insRes;
+  if (!r) return `<div class="insg">${Array.from({ length: 3 }, () => '<div class="sk" style="min-height:60px;margin:0"></div>').join('')}</div>`;
+  if (W.insErr) return `<div class="note err">${esc(W.insErr)}</div>`;
+  const when = W.sess.length > 1 ? `${W.sess.length} ta mashg‘ulotning hammasida` : sessText(W.sess[0]);
+  let h = `<div class="muted" style="font-size:12.5px;margin:0 2px 8px">${esc(when)} · ${r.free.length} ta bo‘sh${W.insAuto && W.ins ? ' · bittasi avtomatik tanlandi, boshqasini bosib almashtiring' : ''}</div>`;
+  h += r.free.length ? `<div class="insg">${r.free.map(i => `<button class="insc ${String(W.ins?.id) === String(i.id) ? 'on' : ''}" data-act="mbins" data-v="${esc(i.id)}">
+      <span class="ava">${esc(ini(i.name))}</span><span class="tx"><b>${esc(i.name)}</b><small>${i.rating ? `★ ${Number(i.rating).toFixed(1)} · ` : ''}${esc((i.categories || []).join(', '))} toifa</small></span></button>`).join('')}</div>`
+    : `<div class="note warn">${W.sess.length > 1 ? 'Hamma mashg‘ulot vaqtida' : 'Bu vaqtda'} ${esc(W.cat)} toifa bo‘yicha bo‘sh instruktor yo‘q — boshqa soat yoki kunni tanlang.</div>`;
+  if (r.busy.length) h += `<div class="insg" style="margin-top:8px">${r.busy.map(i => `<div class="insc" style="opacity:.55">
+      <span class="ava">${esc(ini(i.name))}</span><span class="tx"><b>${esc(i.name)}</b><small>${i.other ? 'boshqa mashg‘ulot vaqtida band' : i.blocked ? 'bu vaqtni yopgan' : i.free_at ? `${esc(hm(i.free_at))} da bo‘shaydi` : 'band'}</small></span></div>`).join('')}</div>`;
+  return h;
+}
+function mbInsSec(W){
+  return `<section class="co-sec" id="mb-ins">${coHead(4, 'Instruktor', W.ins?.name || '')}${mbInsBody(W)}</section>`;
+}
+function mbPaySec(W){
+  const total = mbPrice(W), pk = isPkg(W), lp = listPrice(W.cat || 'B', PKG_MIN);
+  return `<section class="co-sec" id="mb-pay">${coHead(5, 'Narx va izoh', '')}
+    <div class="co-total" style="margin-top:0;padding-top:0;border-top:0"><div><div class="muted" style="font-size:12.5px;font-weight:800;letter-spacing:.3px;text-transform:uppercase">Narxi${pk && W.sess.length > 1 ? ` · ${W.sess.length} ta mashg‘ulot` : ''}</div>
+      ${pk ? `<div style="margin-top:4px"><s class="muted">${nf(lp)}</s> <span style="display:inline-block;padding:2px 8px;border-radius:99px;background:#dcfce7;color:#15803d;font-weight:800;font-size:12.5px">${nf(lp - total)} tejaldi</span></div>` : ''}
+      <div class="muted" style="font-size:12.5px;margin-top:4px">To‘lov kassada — mijoz bron kodini aytadi.</div></div>
+      <b class="big">${total ? nf(total) + ' so‘m' : '—'}</b></div>
+    <label class="field"><span>Izoh (ixtiyoriy)</span><textarea class="input" id="wzNote" rows="2" placeholder="Masalan: telefon orqali, bir kun oldin qo‘ng‘iroq qilish">${esc(W.note)}</textarea></label></section>`;
+}
+function mbSide(W){
+  const miss = mbMissing(W);
+  const row = (k, v, s) => `<button class="side-row ${v ? '' : 'todo'}" data-act="mbscroll" data-s="${s}"><span>${k}</span><b>${v || '—'}</b></button>`;
+  const vaqt = W.sess.some(x => x.t) ? W.sess.map((x, i) => esc((W.sess.length > 1 ? `${i + 1}) ` : '') + (x.t ? sessText(x) : '…'))).join('<br>') : '';
+  const total = mbPrice(W);
+  return `<aside class="wz-side" id="mbSide"><div class="side-card"><h3>Yangi bron</h3>
+    <div class="side-rows">${row('Mijoz', esc(W.name.trim() + (W.phone.trim() ? ` · ${W.phone.trim()}` : '')), 'cust')}${row('Toifa', W.cat ? esc(W.cat + ' toifa') : '', 'cat')}
+      ${row('Davomiylik', esc(mbDurLabel(W)), 'cat')}${row('Vaqt', vaqt, 'time')}${row('Instruktor', esc(W.ins?.name || ''), 'ins')}</div>
+    <div class="side-total"><span>Narxi</span><b>${total ? nf(total) + ' so‘m' : '—'}</b></div>
+    <button class="btn btn-primary" data-act="wzsave">${I('check', 20, 2.4)} Bronni saqlash</button>
+    ${miss.length ? `<div class="side-hint" style="color:var(--warn)">${esc(miss[0][1])}</div>` : ''}</div>
+    <div class="side-hint"><span class="kbd">F2</span> yangi bron</div></aside>`;
+}
+function mbBar(W){
+  const miss = mbMissing(W), total = mbPrice(W);
+  return `<div class="bar" id="mbBar"><div class="bar-in"><div class="sum"><b>${total ? nf(total) + ' so‘m' : '—'}</b>
+    <span>${miss.length ? esc(miss[0][1]) : esc(`${W.name.trim()} · ${W.cat} · ${mbDurLabel(W)}`)}</span></div>
+    <button class="btn btn-primary" data-act="wzsave">${I('check', 20, 2.4)} Saqlash</button></div></div>`;
+}
+
+/* ---------- chizish ---------- */
+function mbRender(){
+  const W = MB, v = $('view');
+  document.body.classList.remove('focus');
+  if (W.done) return mbDone(W);
+  if (!S.coursesOk) {
+    v.innerHTML = `<div class="view">${skel(5)}</div>`;
+    loadBase().then(() => { if (S.routeName === 'manual' && S.coursesOk) mbRender(); });
+    return;
+  }
+  mbInit(W);
+  const keepDays = $('mbDays')?.scrollLeft;
+  v.classList.add('has-bar');
+  v.innerHTML = `<div class="view"><div class="wz-grid"><div class="wz-main co-form mb-form">${[mbCustSec(W), mbCatSec(W), mbTimeSec(W), mbInsSec(W), mbPaySec(W)].join('')}</div>${mbSide(W)}</div></div>${mbBar(W)}`;
+  for (const k of Object.keys(mbHtml)) delete mbHtml[k];
+  mbKeepDays(keepDays);
+  const q = $('wzQ');
+  q.addEventListener('input', () => {
+    W.q = q.value;
+    document.querySelector('[data-act="wzclr"]')?.classList.toggle('hidden', !W.q);
+    wzSearchD(W);
+  });
+  q.addEventListener('keydown', e => {
+    if (e.key !== 'Enter') return;
+    e.preventDefault();
+    if (W.custs?.length === 1) ACT.mbcust({ dataset: { i: '0' } });
+  });
+  const custHead = () => { const h = document.querySelector('#mb-cust .co-h'); const nm = W.name.trim(); if (h) h.outerHTML = coHead(1, 'Mijoz', nm ? nm + (W.phone.trim() ? ' · ' + W.phone.trim() : '') : ''); mbPaintSideBar(); };
+  $('wzName').addEventListener('input', e => { W.name = e.target.value; if (W.customer && W.customer.full_name !== W.name) W.customer = null; custHead(); });
+  $('wzPhone').addEventListener('input', e => { W.phone = e.target.value; custHead(); });
+  $('wzNote').addEventListener('input', e => { W.note = e.target.value; });
+  if (window.matchMedia('(min-width: 960px)').matches && !W.name && !W.q) setTimeout(() => $('wzName')?.focus(), 60);
+  mbAfter(W);
+}
+function mbKeepDays(keep){
+  const days = $('mbDays'); if (!days) return;
+  if (keep != null) days.scrollLeft = keep;
+  else { const on = days.querySelector('.day.on'); if (on) days.scrollLeft = Math.max(0, on.offsetLeft - 40); }
+}
+function mbAfter(W){
+  ensureTimes(W, W.day);
+  if (mbTimesSet(W) && !W.insRes && !W.insLoading) mbLoadIns(W);
+}
+function mbLoadIns(W){
+  W.insLoading = true;
+  loadIns(W).finally(() => { W.insLoading = false; });
+}
+/* Bir xil HTML qayta qo'yilmaydi — tugma bosilayotganda almashib ketmasin, ekran miltillamasin */
+const mbHtml = {};
+function mbSwap(el, key, html){
+  if (!el) return false;
+  if (mbHtml[key] === html && el.isConnected && el.dataset.v0 === '1') return false;
+  const t = document.createElement('template'); t.innerHTML = html.trim();
+  const n = t.content.firstElementChild; if (!n) { el.remove(); return true; }
+  n.dataset.v0 = '1'; el.replaceWith(n); mbHtml[key] = html; return true;
+}
+function mbPaintSideBar(){
+  mbSwap($('mbSide'), 'side', mbSide(MB));
+  mbSwap($('mbBar'), 'bar', mbBar(MB));
+}
+function mbPaintIns(){
+  if (S.routeName !== 'manual' || !document.querySelector('.mb-form')) return;
+  mbSwap($('mb-ins'), 'ins', mbInsSec(MB));
+  mbPaintSideBar();
+}
+/* Faqat berilgan bo'limlar almashtiriladi; bosilgan bo'lim ekranda o'z joyida qoladi */
+const MB_SECS = { cat: mbCatSec, time: mbTimeSec, ins: mbInsSec, pay: mbPaySec };
+function mbPatch(anchor, keys){
+  const W = MB;
+  if (!document.querySelector('.mb-form') || S.routeName !== 'manual') return mbRender();
+  const a0 = anchor ? $('mb-' + anchor)?.getBoundingClientRect().top : null;
+  const keep = $('mbDays')?.scrollLeft;
+  let timeNew = false;
+  for (const k of new Set(keys)) {
+    const fn = MB_SECS[k]; if (!fn) continue;
+    if (mbSwap($('mb-' + k), k, fn(W)) && k === 'time') timeNew = true;
+  }
+  if (timeNew) mbKeepDays(keep);
+  if (keys.includes('pay')) $('wzNote')?.addEventListener('input', e => { W.note = e.target.value; });
+  mbPaintSideBar();
+  const a1 = anchor ? $('mb-' + anchor)?.getBoundingClientRect().top : null;
+  if (a0 != null && a1 != null && a1 !== a0) window.scrollTo({ top: window.scrollY + (a1 - a0), behavior: 'instant' });
+  mbAfter(W);
+}
+/** Vaqt/toifa/davomiylik o'zgarsa — instruktorlar qayta tekshiriladi (tanlangani bo'sh bo'lsa qoladi) */
+function mbTouch(W){ W.insRes = null; W.insLoading = false; W.insSeq++; }
+function mbLive(){
+  const W = MB;
+  if (W.done || !W.inited) return;
+  SCHC.delete(W.day);
+  ensureTimes(W, W.day);
+  if (mbTimesSet(W)) mbLoadIns(W);
+  if (W.q.trim().length >= 2) wzSearch(W);
+}
+
+/* ---------- bosishlar ---------- */
+ACT.mbcust = el => {
+  const W = MB, c = W.custs?.[Number(el.dataset.i)]; if (!c) return;
+  W.customer = c; W.name = c.full_name || ''; W.phone = c.phone || '';
+  W.q = ''; W.found = null; W.custs = null; W.seq++;
+  mbRender();
+};
+ACT.mbcat = el => {
+  const W = MB, c = el.dataset.v;
+  if (W.cat === c) return;
+  W.cat = c;
+  if (isPkg(W) && !(pkgPrice(c) > 0)) { W.min = 60; W.split = null; W.sess = [{ ...W.sess[0], m: 60 }]; W.si = 0; }
+  if (W.ins && !(W.ins.categories || ['B']).includes(c)) W.ins = null;
+  mbTouch(W);
+  mbPatch('cat', ['cat', 'time', 'ins', 'pay']);
+};
+ACT.mbdur = el => {
+  const W = MB, k = el.dataset.v, s0 = W.sess[0] || { day: '', t: '' };
+  if (k === 'pkg') {
+    if (isPkg(W)) return;
+    W.min = PKG_MIN; W.split = SPLITS[0];
+    W.sess = [{ m: PKG_MIN, day: s0.day, t: s0.t, now: false }]; W.si = 0;
+  } else {
+    const m = Number(k);
+    if (W.min === m && !W.split) return;
+    W.min = m; W.split = null;
+    /* Tanlangan kun va soat saqlanadi — faqat bo'sh instruktorlar qayta tekshiriladi */
+    W.sess = [{ m, day: s0.day, t: s0.t, now: false }]; W.si = 0;
+  }
+  if (W.sess[0].day) W.day = W.sess[0].day;
+  mbTouch(W);
+  mbPatch('cat', ['cat', 'time', 'ins', 'pay']);
+};
+ACT.mbsplit = el => {
+  const W = MB, s = SPLITS.find(x => x.k === el.dataset.k); if (!s || W.split?.k === s.k) return;
+  const s0 = W.sess[0] || { day: '', t: '' };
+  W.min = PKG_MIN; W.split = s;
+  W.sess = s.m.map((m, i) => i === 0 ? { m, day: s0.day, t: s0.t, now: false } : { m, day: '', t: '', now: false });
+  const open = W.sess.findIndex(x => !x.t);
+  W.si = open >= 0 ? open : 0; W.day = defaultDay(W, W.si);
+  mbTouch(W);
+  mbPatch('cat', ['cat', 'time', 'ins', 'pay']);
+};
+ACT.mbsess = el => { const W = MB; W.si = Number(el.dataset.i) || 0; W.day = defaultDay(W, W.si); mbPatch('time', ['time']); };
+ACT.mbday = el => { const W = MB; if (W.day === el.dataset.v) return; W.day = el.dataset.v; mbPatch('time', ['time']); };
+ACT.mbtime = el => {
+  const W = MB, s = W.sess[W.si]; if (!s) return;
+  Object.assign(s, { day: W.day, t: el.dataset.v, now: false });
+  mbTouch(W);
+  const next = W.sess.findIndex(x => !x.t);
+  if (next >= 0) { W.si = next; W.day = defaultDay(W, next); toast(`${next + 1}-mashg‘ulot kuni va soatini tanlang`); }
+  mbPatch('time', ['time', 'ins']);
+};
+ACT.mbins = el => {
+  const W = MB, i = W.insRes?.free.find(x => String(x.id) === el.dataset.v); if (!i) return;
+  W.ins = i; W.insAuto = false;
+  mbPatch('ins', ['ins']);
+};
+ACT.mbscroll = el => { const sec = $('mb-' + el.dataset.s); if (sec) sec.scrollIntoView({ behavior: 'smooth', block: 'start' }); };
 
 /* =========================================================================
    UMUMIY: kun tanlash chiplari
