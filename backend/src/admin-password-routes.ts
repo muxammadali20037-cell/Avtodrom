@@ -222,13 +222,20 @@ export async function adminUser() {
 }
 
 /** Audit log: har bir muhim admin amali yoziladi (talab 22-bo'lim). Yozib bo'lmasa oqim to'xtamaydi. */
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 export async function audit(adminId: string | null, action: string, entityType: string, entityId: string | null, oldData: unknown, newData: unknown) {
   try {
+    /* entity_id ustuni UUID. Sozlama kaliti («rate_b») yoki raqamli ID
+       («1») kelsa Supabase 400 qaytarar va yozuv YO'QOLARDI — endi
+       bunday ID new_data ichida saqlanadi, yozuv baribir yoziladi. */
+    const uuid = entityId && UUID_RE.test(String(entityId)) ? String(entityId) : null;
+    const extra = entityId && !uuid ? { entity_key: String(entityId) } : null;
+    const nd = newData && typeof newData === 'object' && !Array.isArray(newData) ? { ...(newData as any), ...(extra || {}) } : (extra ? { value: newData ?? null, ...extra } : newData ?? null);
     await supabaseRest('admin_audit_logs', {
       method: 'POST',
       body: JSON.stringify({
-        admin_id: adminId, action, entity_type: entityType, entity_id: entityId,
-        old_data: oldData ?? null, new_data: newData ?? null,
+        admin_id: adminId && UUID_RE.test(String(adminId)) ? adminId : null, action, entity_type: entityType, entity_id: uuid,
+        old_data: oldData ?? null, new_data: nd,
       }),
     });
   } catch (e) { console.error('Audit log yozilmadi:', action, e); }
@@ -1191,6 +1198,26 @@ export async function registerAdminPasswordRoutes(app: FastifyInstance) {
         rejected:    [],
         no_show:     [],
       };
+      /* QAYTA OCHISH — faqat administrator (operator emas): noto'g'ri
+         «Kelmagan» / «Bekor» belgilangan bronni yana «Tasdiqlangan» qiladi
+         (masalan, avtomatik yopilgan, lekin mijoz kelgan). Instruktorning
+         shu vaqti boshqa faol bron bilan band bo'lsa — rad etiladi. */
+      const me = peekStaff(req);
+      if (me?.role === 'admin' && ['no_show', 'cancelled'].includes(String(old.status)) && status === 'confirmed') {
+        const busy = old.instructor_id && old.start_at && old.end_at
+          ? await safe<any>('bookings', `?instructor_id=eq.${q(String(old.instructor_id))}&status=in.(pending,confirmed,in_progress)`
+              + `&start_at=lt.${q(String(old.end_at))}&end_at=gt.${q(String(old.start_at))}&id=neq.${q(id)}&select=id&limit=1`)
+          : [];
+        if (busy[0]) return reply.code(409).send({ ok: false, error: 'Bu vaqtda instruktorga boshqa bron yozilgan — avval uni ko‘rib chiqing' });
+        const at = new Date().toISOString();
+        const rows = await supabaseRest<any[]>('bookings', {
+          method: 'PATCH', headers: { Prefer: 'return=representation' }, query: `?id=eq.${q(id)}`,
+          body: JSON.stringify({ status: 'confirmed', confirmed_at: at, confirmed_by: admin.id, cancelled_at: null, cancelled_by: null, cancellation_reason: null, updated_at: at }),
+        });
+        await audit(admin.id, 'BOOKING_REOPENED', 'bookings', id, { status: old.status, reason: old.cancellation_reason },
+          { status: 'confirmed', note: String(req.body?.reason || '').trim() || null });
+        return { ok: true, booking: rows[0], reopened: true };
+      }
       const from = String(old.status);
       if (from !== status && !(ADMIN_TRANSITIONS[from] || []).includes(status)) {
         const L: Record<string, string> = {
@@ -1221,11 +1248,20 @@ export async function registerAdminPasswordRoutes(app: FastifyInstance) {
         try {
           const existingPay = await safe<any>('payments', `?booking_id=eq.${q(id)}&select=id&limit=1`);
           if (!existingPay[0]) {
-            const course = (await safe<any>('courses', `?id=eq.${q(String(old.course_id))}&select=price&limit=1`))[0];
-            if (course) {
+            /* Kutilayotgan to'lov summasi — BRONNING narxi (30 daq / 2 soat / paket),
+               kurs narxi emas: ilgari 2 soatlik bronga 1 soatlik summa yozilardi. */
+            let amount = Number(old.price) > 0 ? Math.round(Number(old.price)) : 0;
+            if (!amount) {
+              const course = (await safe<any>('courses', `?id=eq.${q(String(old.course_id))}&select=price,duration_minutes&limit=1`))[0];
+              if (course) {
+                const mins = Number(old.duration_minutes) > 0 ? Number(old.duration_minutes) : Number(course.duration_minutes || 60) * (Number(old.hours) || 1);
+                amount = Math.round(Number(course.price || 0) * mins / (Number(course.duration_minutes || 60) || 60));
+              }
+            }
+            if (amount > 0) {
               await supabaseRest('payments', {
                 method: 'POST',
-                body: JSON.stringify({ booking_id: id, customer_id: old.customer_id, amount: course.price, currency: 'UZS', status: 'pending' }),
+                body: JSON.stringify({ booking_id: id, customer_id: old.customer_id, amount, currency: 'UZS', status: 'pending' }),
               });
             }
           }
@@ -1595,8 +1631,13 @@ async function notifyInstructorDecision(
         return reply.code(403).send({ ok: false, error: 'Bu to‘lov boshqa kassaga tegishli' });
       }
 
+      /* «To'landi» faqat KASSA orqali (chek chiqarish): shunda to'lov
+         kassaga, smenaga va chek kodiga bog'lanadi. Qo'lda «paid» qilib
+         qo'yilgan to'lov hech bir kassa hisobotida ko'rinmasdi. */
+      if (status === 'paid' && String(old.status) !== 'paid') {
+        return reply.code(400).send({ ok: false, error: 'To‘lovni faqat kassa orqali qabul qiling: Kassa → Chek chiqarish (bron kodi bilan).' });
+      }
       const patch: any = { status };
-      if (status === 'paid') patch.paid_at = new Date().toISOString();
       const rows = await supabaseRest<any[]>('payments', { method: 'PATCH', headers: { Prefer: 'return=representation' }, query: `?id=eq.${q(id)}`, body: JSON.stringify(patch) });
       await audit(admin.id, 'PAYMENT_UPDATED', 'payments', id, { status: old.status }, { status });
       return { ok: true, payment: rows[0] };

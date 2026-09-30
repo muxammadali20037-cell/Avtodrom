@@ -82,6 +82,39 @@ export async function ownRegisterFromToken(req: any, token: string): Promise<str
   return registerId;
 }
 
+export interface ReportScope { all: boolean; ids: string[]; regs: { id: string; code: string; name: string }[]; label: string }
+/**
+ * HISOBOT KO'LAMI: qaysi kassalar.
+ *  · Administrator: `?register=all` — HAMMA faol kassa (P1 + P2 …),
+ *    `?register_id=<id>` — bitta kassa (tokensiz).
+ *  · Aks holda — kassa tokeni (kassir faqat o'z kassasini ko'radi).
+ * Qaytaradi null — token ham, ruxsat ham yo'q.
+ */
+export async function reportScope(req: any, query: any): Promise<ReportScope | null> {
+  const me: any = await currentStaffSafe(req);
+  const want = String(query?.register || '').trim().toLowerCase();
+  const wantId = String(query?.register_id || '').trim();
+  if (me && me.role === 'admin' && (want === 'all' || wantId)) {
+    const regs = await supabaseRest<any[]>('cash_registers', { query: '?is_active=eq.true&select=id,code,name&order=code.asc' });
+    const pick = want === 'all' ? regs : regs.filter((r) => String(r.id) === wantId);
+    if (!pick.length) return null;
+    return { all: want === 'all', ids: pick.map((r) => String(r.id)), regs: pick, label: want === 'all' ? 'Hamma kassa' : String(pick[0].code) };
+  }
+  const id = await ownRegisterFromToken(req, String(query?.token || ''));
+  if (!id) return null;
+  const reg = (await supabaseRest<any[]>('cash_registers', { query: `?id=eq.${q(id)}&select=id,code,name&limit=1` }))[0];
+  if (!reg) return null;
+  return { all: false, ids: [String(reg.id)], regs: [reg], label: String(reg.code) };
+}
+
+/** Kassaning hozir OCHIQ smenasi (bo'lsa) — to'lov unga bog'lanadi, smena hisobi to'g'ri chiqadi */
+export async function openShiftId(registerId: string): Promise<string | null> {
+  try {
+    const r = (await supabaseRest<any[]>('cashier_shifts', { query: `?register_id=eq.${q(registerId)}&closed_at=is.null&select=id&order=opened_at.desc&limit=1` }))[0];
+    return r?.id ? String(r.id) : null;
+  } catch { return null; }
+}
+
 export function makeRegisterToken(registerId: string) {
   const exp = Date.now() + TOKEN_TTL_MS;
   const body = `${registerId}.${exp}`;
@@ -249,10 +282,9 @@ export async function registerShiftRoutes(
 
       // Har bir smena uchun tushum — bitta so'rovda
       const ids = shifts.map((s) => String(s.id));
+      const { selectIn } = await import('./rest-chunks.js');
       const pays = ids.length
-        ? await supabaseRest<any[]>('payments', {
-            query: `?shift_id=in.(${ids.map(q).join(',')})&status=eq.paid&select=shift_id,amount,method,cash_amount,card_amount`,
-          })
+        ? await selectIn<any>('payments', 'shift_id', ids, 'shift_id,amount,method,cash_amount,card_amount', '&status=eq.paid')
         : [];
       const agg = new Map<string, { n: number; cash: number; card: number; total: number }>();
       for (const p of pays) {
@@ -525,43 +557,61 @@ export async function registerShiftRoutes(
   app.get('/api/admin/my-dashboard', async (req: any, reply: any) => {
     try {
       await requireAdmin(req);
-      const registerId = await ownRegisterFromToken(req, String(req.query?.token || ''));
-      if (!registerId) {
+      const scope = await reportScope(req, req.query);
+      if (!scope) {
         return reply.code(401).send({ ok: false, error: 'Kassa ochilmagan yoki muddati tugagan. PIN bilan qayta oching.' });
       }
-      const reg = (await supabaseRest<any[]>('cash_registers', {
-        query: `?id=eq.${q(registerId)}&select=id,code,name&limit=1`,
-      }))[0];
-      if (!reg) return reply.code(404).send({ ok: false, error: 'Kassa topilmadi' });
-
       const { rangeFromQuery } = await import('./analytics-routes.js');
       const { from, to, label, anchor, bucket, period } = rangeFromQuery(req.query);
 
       const span = to.getTime() - from.getTime();
       const prevFrom = new Date(from.getTime() - span);
-      const call = (f: Date, t: Date) => supabaseRest<any>('rpc/register_dashboard', {
+      const call = (regId: string, f: Date, t: Date) => supabaseRest<any>('rpc/register_dashboard', {
         method: 'POST',
-        body: JSON.stringify({ p_register: registerId, p_from: f.toISOString(), p_to: t.toISOString() }),
-      });
-      const [cur, prev] = await Promise.all([call(from, to), call(prevFrom, from)]);
+        body: JSON.stringify({ p_register: regId, p_from: f.toISOString(), p_to: t.toISOString() }),
+      }).catch((e: any) => { console.error('register_dashboard', regId, e?.message || e); return null; });
+      const per = await Promise.all(scope.regs.map(async (r) => ({
+        reg: r, cur: await call(String(r.id), from, to), prev: await call(String(r.id), prevFrom, from),
+      })));
 
-      const t0 = cur?.totals || {}, p0 = prev?.totals || {};
+      /* Bir nechta kassa — jamlanadi: soatlar, toifalar, instruktorlar birlashtiriladi */
+      const num = (v: any) => Number(v || 0);
+      const sumTotals = (list: any[]) => list.reduce((a, t) => ({
+        receipts: a.receipts + num(t?.receipts), cash: a.cash + num(t?.cash), card: a.card + num(t?.card),
+        total: a.total + num(t?.total), minutes: a.minutes + num(t?.minutes), customers: a.customers + num(t?.customers),
+      }), { receipts: 0, cash: 0, card: 0, total: 0, minutes: 0, customers: 0 });
+      const mergeBy = (lists: any[][], key: string) => {
+        const m = new Map<string, any>();
+        for (const list of lists) for (const x of list || []) {
+          const k = String(x?.[key]);
+          const cur = m.get(k) || { ...x, receipts: 0, total: 0 };
+          cur.receipts += num(x?.receipts); cur.total += num(x?.total); m.set(k, cur);
+        }
+        return [...m.values()];
+      };
+      const t0 = sumTotals(per.map((x) => x.cur?.totals)), p0 = sumTotals(per.map((x) => x.prev?.totals));
       const delta = (a: any, b: any) => {
         const x = Number(a || 0), y = Number(b || 0);
         if (!y) return x ? 100 : 0;
         return Math.round(((x - y) / y) * 100);
       };
+      const hours = mergeBy(per.map((x) => x.cur?.hours), 'hour').sort((a, b) => a.hour - b.hour);
+      const categories = mergeBy(per.map((x) => x.cur?.categories), 'name').sort((a, b) => b.total - a.total);
+      const instructors = mergeBy(per.map((x) => x.cur?.instructors), 'name').sort((a, b) => b.total - a.total);
+      const recent = per.flatMap((x) => (x.cur?.recent || []).map((r: any) => ({ ...r, register: x.reg.code })))
+        .sort((a, b) => String(b.paid_at || '').localeCompare(String(a.paid_at || ''))).slice(0, 50);
+      const registers = per.map((x) => ({ id: x.reg.id, code: x.reg.code, name: x.reg.name, ...sumTotals([x.cur?.totals]),
+        change: delta(x.cur?.totals?.total, x.prev?.totals?.total) }));
 
       return {
         ok: true,
-        register: reg, period, label, anchor, bucket,
+        register: scope.all ? { id: 'all', code: 'Hammasi', name: 'Barcha kassalar' } : scope.regs[0],
+        scope: scope.all ? 'all' : 'one', registers,
+        period, label, anchor, bucket,
         from: from.toISOString(), to: to.toISOString(),
         totals: t0,
         change: { total: delta(t0.total, p0.total), receipts: delta(t0.receipts, p0.receipts) },
-        hours: cur?.hours || [],
-        categories: cur?.categories || [],
-        instructors: cur?.instructors || [],
-        recent: cur?.recent || [],
+        hours, categories, instructors, recent,
       };
     } catch (e: any) {
       return reply.code(e?.statusCode ?? 500).send({ ok: false, error: e?.message || 'Hisobot yuklanmadi' });
@@ -751,6 +801,29 @@ export async function registerShiftRoutes(
         ok: stale.length === 0,
         detail: stale.length ? `${stale.length} ta — keyingi tekshiruvda avtomatik yopiladi` : 'yo‘q',
       });
+
+      /* 8) Mijoz botining webhook'i qayerga ulangan. Vercel bo'lmasa —
+         eslatma matni baribir ketadi, faqat «Kelaman / Bekor» callback
+         tugmalari ishlamaydi (shuning uchun ular standartda o'chiq). */
+      if (botToken) {
+        try {
+          const { telegramApi } = await import('./telegram.js');
+          const info = await telegramApi<any>(botToken, 'getWebhookInfo', {});
+          const url = String(info?.url || '');
+          const vercel = /avtodrom\.vercel\.app\/api\/telegram\/customer\/webhook/.test(url);
+          const { reminderCallbacksOn } = await import('./reminders.js');
+          checks.push({
+            name: 'Mijoz bot webhook',
+            ok: !!url && (!reminderCallbacksOn() || vercel),
+            detail: !url ? 'ulanmagan — bot /start ga javob bermaydi'
+              : vercel ? 'Vercel API (eslatma tugmalari to‘liq ishlaydi)'
+              : `${url.replace(/^https?:\/\//, '').slice(0, 60)} — eslatmalar ketadi, tugma faqat Mini Appni ochadi${reminderCallbacksOn() ? '; REMINDER_CALLBACKS=1, lekin webhook Vercel emas — «Kelaman» tugmasi ishlamaydi' : ''}`
+              + (info?.last_error_message ? ` · oxirgi xato: ${String(info.last_error_message).slice(0, 80)}` : ''),
+          });
+        } catch (e: any) {
+          checks.push({ name: 'Mijoz bot webhook', ok: false, detail: `tekshirib bo‘lmadi: ${String(e?.message || e).slice(0, 80)}` });
+        }
+      }
 
       const ready = !!botToken && tableOk;
       return {

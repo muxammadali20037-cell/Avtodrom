@@ -370,7 +370,7 @@ export async function registerAnalyticsRoutes(
       const [users, courses, pays, scans] = await Promise.all([
         selectIn<any>('users', 'id', uids, 'id,full_name,phone'),
         selectIn<any>('courses', 'id', cids, 'id,name,duration_minutes,price'),
-        selectIn<any>('payments', 'booking_id', ids, 'booking_id,amount,method,status,receipt_code,paid_at', payFilter),
+        selectIn<any>('payments', 'booking_id', ids, 'booking_id,amount,method,status,receipt_code,paid_at,cash_amount,card_amount', payFilter),
         selectIn<any>('attendance_verifications', 'booking_id', ids, 'booking_id,method,receipt_code,created_at'),
       ]);
       const um = new Map(users.map((u) => [String(u.id), u]));
@@ -416,6 +416,8 @@ export async function registerAnalyticsRoutes(
           duration_minutes: minutesOf(b, c),
           amount: p?.status === 'paid' ? Number(p.amount || 0) : 0,
           method: p?.method || null,
+          cash_amount: p?.status === 'paid' ? Number(p.cash_amount || 0) : 0,
+          card_amount: p?.status === 'paid' ? Number(p.card_amount || 0) : 0,
           receipt_code: p?.receipt_code || null,
           scanned: !!s,
           scanned_at: s?.created_at || null,
@@ -472,8 +474,9 @@ export async function registerAnalyticsRoutes(
           receipts: rows.filter((r) => r.receipt_code).length,
           minutes: done.reduce((a, r) => a + Number(r.duration_minutes || 0), 0),
           revenue: rows.reduce((a, r) => a + r.amount, 0),
-          cash: rows.filter((r) => r.method === 'cash').reduce((a, r) => a + r.amount, 0),
-          card: rows.filter((r) => r.method === 'card').reduce((a, r) => a + r.amount, 0),
+          /* Aralash (naqd + karta) to'lov ham ikkiga bo'linadi — ilgari tushib qolardi */
+          cash: rows.reduce((a, r) => a + (r.method === 'mixed' ? r.cash_amount : r.method === 'card' ? 0 : r.amount), 0),
+          card: rows.reduce((a, r) => a + (r.method === 'mixed' ? r.card_amount : r.method === 'card' ? r.amount : 0), 0),
           /* Oy oxiridagi hisob-kitob uchun */
           students: uniq(attended),
           school: group(attended.filter((r) => r.school)),

@@ -4,7 +4,7 @@ import { selectIn } from './rest-chunks.js';
 import { loadTariffs, computePrice, loadKrug } from './pricing.js';
 import { q, findUserByTelegram, toProfile } from './identity.js';
 import { fmtWhen, fmtMoney } from './notify.js';
-import { readRegisterToken, ownRegisterFromToken } from './shift-routes.js';
+import { readRegisterToken, ownRegisterFromToken, reportScope, openShiftId } from './shift-routes.js';
 import { bookingSearchFilter } from './booking-search.js';
 import { loadBlocks, overlapping, instructorBlockedAt, blockedMessage } from './instructor-blocks.js';
 import {
@@ -702,6 +702,16 @@ export async function registerCashierRoutes(
 
       if (!bookingId) return reply.code(400).send({ ok: false, error: 'Bron tanlanmagan' });
       if (!['cash', 'card'].includes(method)) return reply.code(400).send({ ok: false, error: 'To‘lov turini tanlang: naqd yoki karta' });
+      /* To'lov QAYSI KASSAga tushgani majburiy — aks holda u P1/P2
+         hisobotlarining hech birida ko'rinmaydi. Token — kassa tanlanganda
+         beriladi; kassirda o'z kassasi. */
+      let registerId = await ownRegisterFromToken(req, String(req.body?.register_token || ''));
+      if (!registerId) {
+        const { peekStaff } = await import('./admin-password-routes.js');
+        const me = peekStaff(req);
+        if (me?.role === 'cashier' && me.register_id) registerId = String(me.register_id);
+      }
+      if (!registerId) return reply.code(400).send({ ok: false, error: 'Kassa tanlanmagan — avval kassani (P1 / P2) oching, keyin to‘lov qabul qiling.' });
 
       const booking = (await supabaseRest<any[]>('bookings', { query: `?id=eq.${q(bookingId)}&select=*&limit=1` }))[0];
       if (!booking) return reply.code(404).send({ ok: false, error: 'Bron topilmadi' });
@@ -731,6 +741,8 @@ export async function registerCashierRoutes(
       const payload = {
         booking_id: bookingId, customer_id: booking.customer_id, amount, currency: 'UZS',
         status: 'paid', method, paid_at: now, receipt_code: receiptCode, cashier_id: admin.id,
+        register_id: registerId, shift_id: await openShiftId(registerId),
+        cash_amount: method === 'cash' ? amount : 0, card_amount: method === 'card' ? amount : 0,
         note: String(req.body?.note || '').trim() || null,
       };
       const payment = existing
@@ -795,8 +807,14 @@ export async function registerCashierRoutes(
   app.get('/api/admin/cashier/receipts', async (req: any, reply: any) => {
     try {
       await requireAdmin(req);
-      const registerId = await ownRegisterFromToken(req, String(req.query?.token || ''));
-      if (!registerId) return reply.code(401).send({ ok: false, error: 'Kassa ochilmagan — qayta kiring' });
+      const scope = await reportScope(req, req.query);
+      if (!scope) return reply.code(401).send({ ok: false, error: 'Kassa ochilmagan — qayta kiring' });
+      const registerId = scope.ids[0];
+      const regCode = new Map(scope.regs.map((r) => [String(r.id), String(r.code)]));
+      /* Hamma kassa: kassaga bog'lanmagan eski to'lovlar ham kiradi (hech qayerda yo'qolmasin) */
+      const regFilter = scope.all
+        ? `&or=(register_id.in.(${scope.ids.map(q).join(',')}),register_id.is.null)`
+        : `&register_id=eq.${q(registerId)}`;
       /* DAVR: bitta kun (?date=), davr (?period=week|month|year&date=)
          yoki oraliq (?from=YYYY-MM-DD&to=YYYY-MM-DD, ikkala kun kiradi).
          Cheklar ro'yxati uchun eng uzog'i — 1 yil. */
@@ -814,7 +832,7 @@ export async function registerCashierRoutes(
       const pays: any[] = [];
       for (let offset = 0; offset < 30000; offset += 1000) {
         const chunk = await supabaseRest<any[]>('payments', {
-          query: `?register_id=eq.${q(registerId)}&paid_at=gte.${q(start)}&paid_at=lt.${q(end)}` +
+          query: `?paid_at=gte.${q(start)}&paid_at=lt.${q(end)}${regFilter}` +
                  `&select=*&order=paid_at.desc,id.desc&limit=1000&offset=${offset}`,
         });
         pays.push(...chunk);
@@ -835,12 +853,18 @@ export async function registerCashierRoutes(
         const scan = sm.get(String(p.booking_id)) || null;
         const bst = String(b?.status || '');
         const pst = String(p.status || '');
+        /* «Bekor» — faqat PUL qaytarilgan / to'lov bekor bo'lgan chek. Bron
+           bekor bo'lsa-yu pul qaytarilmagan bo'lsa — pul kassada, chek
+           hisobda qoladi (kassa hisoboti bilan bir xil). */
         let state: 'active' | 'used' | 'no_show' | 'cancelled' = 'active';
-        if (['refunded', 'cancelled', 'failed'].includes(pst) || ['cancelled', 'rejected'].includes(bst)) state = 'cancelled';
+        if (['refunded', 'cancelled', 'failed'].includes(pst)) state = 'cancelled';
+        else if (pst !== 'paid') state = 'cancelled';
         else if (bst === 'no_show') state = 'no_show';
         else if (['in_progress', 'completed'].includes(bst) || scan) state = 'used';
         return {
           code: p.receipt_code,
+          register: regCode.get(String(p.register_id)) || (p.register_id ? '?' : '—'),
+          booking_cancelled: ['cancelled', 'rejected'].includes(bst),
           paid_at: p.paid_at,
           amount: Number(p.amount || 0),
           method: p.method,
@@ -890,7 +914,7 @@ export async function registerCashierRoutes(
          qaytadi, jami raqamlar esa BUTUN davr bo'yicha hisoblanadi. */
       const LIMIT = 1500;
       return {
-        ok: true, date: day, register_id: registerId,
+        ok: true, date: day, register_id: scope.all ? 'all' : registerId, scope: scope.all ? 'all' : 'one', registers: scope.regs,
         from: rg.fromYmd || rg.anchor, to: rg.toYmd || tkYmd(new Date(rg.to.getTime() - 1).toISOString()),
         summary: {
           total: rows.length, active: count('active'), used: count('used'),
@@ -1180,6 +1204,7 @@ export async function registerCashierRoutes(
 
       /* Summani bronlarga bo'lamiz: har bronning o'z narxiga qarab
          (paket 3+2 → 660 000 + 440 000). Naqd/terminal ham shu nisbatda. */
+      const shiftId = await openShiftId(String(register.id));
       const base = targets.map((t) => Number(t.price) > 0 ? Number(t.price) : 1);
       const amounts = targets.length === 1 ? [total] : splitBy(total, base);
       const cashParts = splitCapped(cash, amounts);
@@ -1201,7 +1226,7 @@ export async function registerCashierRoutes(
         const payload = {
           booking_id: t.id, customer_id: t.customer_id, amount: amounts[i], currency: 'UZS',
           status: 'paid', method, cash_amount: c, card_amount: k,
-          paid_at: new Date().toISOString(), receipt_code: receiptCode, cashier_id: admin.id, register_id: register.id,
+          paid_at: new Date().toISOString(), receipt_code: receiptCode, cashier_id: admin.id, register_id: register.id, shift_id: shiftId,
           note: krug ? '1 krug' : (String(b.note || '').trim() || (packageInfo ? `5 soatlik paket · ${i + 1}/${targets.length}` : null)),
         };
         const existing = existingBy.get(String(t.id));
