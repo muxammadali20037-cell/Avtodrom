@@ -1048,6 +1048,36 @@ async function regGateHtml(){
 const regChip = () => isAdmin() && S.reg ? `<button class="chip" data-act="switchreg">${I('cash', 16)} ${esc(S.reg.r.code)} · almashtirish</button>` : '';
 
 /* =========================================================================
+   HISOBOT KO'LAMI (faqat administrator): Hammasi · P1 · P2
+   Chek chiqariladigan kassa (S.reg) bilan aralashmaydi — administrator
+   istalgan davr uchun IKKALA kassani birga yoki alohida ko'radi.
+   ========================================================================= */
+const RSCOPE_KEY = 'avtodrom_report_scope';
+const rscope = () => { const v = lsGet(RSCOPE_KEY); return v && v !== 'all' ? v : 'all'; };
+const setRscope = v => lsSet(RSCOPE_KEY, v === 'all' ? null : v);
+/** So'rov parametrlari: administrator — ko'lam bo'yicha (tokensiz), kassir — o'z tokeni */
+function scopeQS(){
+  if (isAdmin()) { const v = rscope(); return v === 'all' ? 'register=all' : 'register_id=' + encodeURIComponent(v); }
+  return 'token=' + encodeURIComponent(S.reg?.t || '');
+}
+const scopeOk = () => isAdmin() || regOk();
+async function ensureRegisters(){
+  if (!S.registers.length) { try { S.registers = (await api('/api/admin/registers')).registers || []; } catch {} }
+  return S.registers;
+}
+function scopeLabel(){
+  if (!isAdmin()) return S.reg?.r?.code || '';
+  const v = rscope(); if (v === 'all') return 'Hamma kassa';
+  return S.registers.find(r => String(r.id) === v)?.code || 'Kassa';
+}
+function scopeChips(act){
+  if (!isAdmin()) return '';
+  const v = rscope();
+  return `<div class="chips" style="margin-top:10px">${[['all', 'Hammasi'], ...S.registers.map(r => [String(r.id), r.code])]
+    .map(([k, l]) => `<button class="chip ${v === k ? 'on' : ''}" data-act="${act}" data-v="${esc(k)}">${I('cash', 15)} ${esc(l)}</button>`).join('')}</div>`;
+}
+
+/* =========================================================================
    CHEK — termal printer uchun
    ========================================================================= */
 let qrLib = null, qrLoading = null;
@@ -1461,7 +1491,8 @@ async function doRefreshCounts(){
     jobs.push(api('/api/admin/support').then(d => { c.chat = (d.threads || []).reduce((a, t) => a + (Number(t.unread) || 0), 0); }).catch(() => {}));
   }
   if (canKassa()) jobs.push(api('/api/admin/in-progress').then(d => { c.live = Number(d.counts?.active) || 0; c.liveRed = Number(d.counts?.red) || 0; }).catch(() => {}));
-  if (canKassa() && regOk()) jobs.push(api(`/api/admin/cashier/receipts?token=${encodeURIComponent(S.reg.t)}&date=${kToday()}`)
+  /* Administrator bosh sahifada HAMMA kassaning bugungi cheklarini ko'radi; kassir — o'zinikini */
+  if (isAdmin() || (canKassa() && regOk())) jobs.push(api(`/api/admin/cashier/receipts?${isAdmin() ? 'register=all' : 'token=' + encodeURIComponent(S.reg.t)}&date=${kToday()}`)
     .then(d => { const s = d.summary || {}; c.receipts = (Number(s.total) || 0) - (Number(s.cancelled) || 0); c.amount = Number(s.amount) || 0; S.rcRows = d.receipts || []; }).catch(() => {}));
   if (isAdmin() && (!S.appsAt || Date.now() - S.appsAt > 5 * 60000 || ['home', 'instructors'].includes(S.routeName))) {
     S.appsAt = Date.now();
@@ -1559,7 +1590,7 @@ function paintHomeCounts(){
   setTile('cancels', c.cancels, 'javob kutmoqda', 'so‘rov yo‘q');
   setTile('chat', c.chat, 'o‘qilmagan xabar', 'yangi xabar yo‘q');
   setTile('live', c.live, c.liveRed ? `${c.liveRed} tasi tugay deb qoldi` : 'hozir haydayotganlar', 'hozir hech kim yo‘q', false);
-  setTile('receipts', c.receipts, 'bugun chiqarilgan', regOk() || isCashier() ? 'bugun chek yo‘q' : 'kassani tanlang', false);
+  setTile('receipts', c.receipts, isAdmin() ? 'bugun · hamma kassa' : 'bugun chiqarilgan', regOk() || isCashier() || isAdmin() ? 'bugun chek yo‘q' : 'kassani tanlang', false);
   setTile('apps', c.apps, 'yangi ariza bor', 'faol / o‘chirilgan, arizalar');
   paintHomeSide();
   const rg = $('h-regs'); if (rg) rg.innerHTML = regCards();
@@ -3138,9 +3169,9 @@ const RC = { per: 'day', date: kToday(), from: '', to: '', filter: '', q: '', d:
 const RC_ST = { active: ['Faol', 'ok'], used: ['Ishlatilgan', 'info'], no_show: ['Kelmadi', 'warn'], cancelled: ['Bekor', 'bad'] };
 perReg('rc', RC, () => { RC.d = null; RC.limit = 200; RC.big = false; if ($('rcTop')) $('rcTop').innerHTML = ''; if ($('rcList')) $('rcList').innerHTML = skel(); loadReceipts(); });
 async function vReceipts(){
-  if (isAdmin() && !regOk()) { $('view').innerHTML = `<div class="view">${await regGateHtml()}</div>`; return; }
+  if (isAdmin()) await ensureRegisters();
   $('view').innerHTML = `<div class="view">${perHtml('rc')}
-    ${isAdmin() ? `<div class="chips" style="margin-top:10px">${regChip()}</div>` : ''}
+    ${scopeChips('rcscope')}
     <div class="search" style="margin-top:12px">${I('search', 20)}<input class="input" id="rcQ" placeholder="Kod, ism, telefon yoki instruktor" value="${esc(RC.q)}" autocomplete="off"></div>
     <div id="rcTop" style="margin-top:12px"></div>
     <div class="sec" id="rcList" style="margin-top:12px">${skel()}</div></div>`;
@@ -3149,12 +3180,13 @@ async function vReceipts(){
 }
 /* Uzun davrda ro'yxat qisqartiriladi — qidiruv va filtr serverda, butun davr bo'yicha */
 const rcSrvSearch = debounce(() => loadReceipts(), 450);
+ACT.rcscope = el => { setRscope(el.dataset.v); RC.d = null; RC.limit = 200; RC.big = false; vReceipts(); };
 async function loadReceipts(quiet, retried){
-  if (!$('rcList') || !regOk()) return;
+  if (!$('rcList') || !scopeOk()) return;
   const seq = ++RC.seq;
   const extra = RC.big ? `${RC.q.trim() ? '&q=' + encodeURIComponent(RC.q.trim()) : ''}${RC.filter ? '&state=' + RC.filter : ''}` : '';
   try{
-    const d = await api(`/api/admin/cashier/receipts?token=${encodeURIComponent(S.reg.t)}&${perQS(RC)}${extra}`);
+    const d = await api(`/api/admin/cashier/receipts?${scopeQS()}&${perQS(RC)}${extra}`);
     if (seq !== RC.seq) return;
     if (!extra) RC.big = !!d.truncated;
     d.srv = !!extra;
@@ -3169,7 +3201,8 @@ function paintReceipts(){
   const s = d.summary || {}, days = d.days || [], multi = perDays(RC) > 1;
   const segs = [['', 'Hammasi', s.total], ['active', 'Faol', s.active], ['used', 'Ishlatilgan', s.used], ['no_show', 'Kelmadi', s.no_show], ['cancelled', 'Bekor', s.cancelled]];
   const cnt = (s.total || 0) - (s.cancelled || 0);
-  $('rcTop').innerHTML = `<div class="kpis"><div class="kpi main"><span>${esc(perTitle(RC))} · ${esc(S.reg?.r?.code || '')} kassa</span><b>${nf(s.amount)} so‘m</b><small>${nf(cnt)} ta chek${s.cash != null ? ` · naqd ${nf(s.cash)} · karta ${nf(s.card)}` : ''} · bekor qilinganlar hisobga olinmagan</small></div></div>
+  const all = d.scope === 'all';
+  $('rcTop').innerHTML = `<div class="kpis"><div class="kpi main"><span>${esc(perTitle(RC))} · ${esc(all ? 'hamma kassa' : (scopeLabel() || '') + ' kassa')}</span><b>${nf(s.amount)} so‘m</b><small>${nf(cnt)} ta chek${s.cash != null ? ` · naqd ${nf(s.cash)} · karta ${nf(s.card)}` : ''} · pul qaytarilganlar hisobga olinmagan</small></div></div>
     ${multi && days.length ? `<div class="card" style="margin-top:12px"><div class="sec-h"><h2>${perDays(RC) > 62 ? 'Oylar' : 'Kunlar'} bo‘yicha tushum</h2><span class="muted" style="font-size:13px">${nf(days.length)} kun chek bor</span></div>${dayBars(days.map(x => ({ day: x.day, v: x.amount })), 'v', RC)}</div>` : ''}
     <div class="chips" style="margin-top:12px">${segs.map(([k, l, n]) => `<button class="chip ${RC.filter === k ? 'on' : ''}" data-act="rcf" data-v="${k}">${l} <span class="n">${n || 0}</span></button>`).join('')}</div>
     ${RC.big ? `<div class="note" style="margin-top:10px">Davr uzun — ro‘yxatda eng yangi ${nf((d.receipts || []).length)} ta chek. Qidiruv va filtr butun davr bo‘yicha ishlaydi.</div>` : ''}`;
@@ -3179,7 +3212,7 @@ function paintReceipts(){
     rows = rows.filter(r => !RC.filter || r.state === RC.filter);
     if (q) rows = rows.filter(r => [r.code, r.customer?.full_name, r.customer?.phone, r.instructor_name].some(v => String(v || '').toLowerCase().includes(q)));
   }
-  if (!rows.length) { $('rcList').innerHTML = emptyHtml('receipt', s.total ? 'Mos chek yo‘q' : 'Chek chiqarilmagan', s.total ? 'Qidiruv yoki filtrni o‘zgartiring.' : `${perTitle(RC)} bu kassada chek chiqarilmagan.`); return; }
+  if (!rows.length) { $('rcList').innerHTML = emptyHtml('receipt', s.total ? 'Mos chek yo‘q' : 'Chek chiqarilmagan', s.total ? 'Qidiruv yoki filtrni o‘zgartiring.' : `${perTitle(RC)} ${d.scope === 'all' ? 'hech bir kassada' : 'bu kassada'} chek chiqarilmagan.`); return; }
   const dm = new Map(days.map(x => [x.day, x]));
   const shown = rows.slice(0, RC.limit);
   let last = '', html = '';
@@ -3193,7 +3226,7 @@ function paintReceipts(){
     }
     const st = RC_ST[r.state] || [r.state, ''];
     html += `<button class="row" data-act="rcopen" data-code="${esc(r.code)}"><span class="ic" style="width:52px;font-size:13.5px">${esc(hm(r.paid_at))}</span>
-      <span class="tx"><b>${esc(r.customer?.full_name || 'Mijoz')}</b><small>${esc(r.code)}${r.instructor_name ? ' · ' + esc(r.instructor_name) : ''}${r.krug ? ' · 1 krug' : r.duration_minutes ? ' · ' + esc(fmtDur(r.duration_minutes)) : ''}</small></span>
+      <span class="tx"><b>${esc(r.customer?.full_name || 'Mijoz')}</b><small>${d.scope === 'all' && r.register ? esc(r.register) + ' · ' : ''}${esc(r.code)}${r.instructor_name ? ' · ' + esc(r.instructor_name) : ''}${r.krug ? ' · 1 krug' : r.duration_minutes ? ' · ' + esc(fmtDur(r.duration_minutes)) : ''}${r.booking_cancelled && r.state !== 'cancelled' ? ' · bron bekor, pul kassada' : ''}</small></span>
       <span class="rt">${nf(r.amount)}<small><span class="pill ${st[1]}">${esc(st[0])}</span></small></span></button>`;
   }
   const more = rows.length - shown.length;
@@ -3271,16 +3304,17 @@ setInterval(() => { if (S.routeName === 'live' && !document.hidden) paintLive();
 const RP = { per: 'day', date: kToday(), from: '', to: '', d: null, seq: 0 };
 perReg('rp', RP, () => { RP.d = null; if ($('rpBody')) $('rpBody').innerHTML = skel(4); loadReport(); });
 async function vReport(){
-  if (isAdmin() && !regOk()) { $('view').innerHTML = `<div class="view">${await regGateHtml()}</div>`; return; }
+  if (isAdmin()) await ensureRegisters();
   $('view').innerHTML = `<div class="view">${perHtml('rp')}
-    ${isAdmin() ? `<div class="chips" style="margin-top:10px">${regChip()}</div>` : ''}<div id="rpBody" class="sec" style="margin-top:14px">${skel(4)}</div></div>`;
+    ${scopeChips('rpscope')}<div id="rpBody" class="sec" style="margin-top:14px">${skel(4)}</div></div>`;
   loadReport();
 }
+ACT.rpscope = el => { setRscope(el.dataset.v); RP.d = null; vReport(); };
 async function loadReport(_q, retried){
-  if (!$('rpBody') || !regOk()) return;
+  if (!$('rpBody') || !scopeOk()) return;
   const seq = ++RP.seq;
   try{
-    const d = await api(`/api/admin/my-dashboard?token=${encodeURIComponent(S.reg.t)}&${perQS(RP)}`);
+    const d = await api(`/api/admin/my-dashboard?${scopeQS()}&${perQS(RP)}`);
     if (seq !== RP.seq) return;
     RP.d = d; paintReport();
   }catch(e){
@@ -3304,11 +3338,13 @@ function paintReport(){
       <div class="kpi main"><span>${esc(d.register?.code || '')} · ${esc(perTitle(RP))} · tushum</span><b>${nf(t.total)} so‘m</b><small>${arrow(c.total) || 'oldingi davr bilan bir xil'}</small></div>
       <div class="kpi"><span>Naqd</span><b>${nf(t.cash)}</b></div><div class="kpi"><span>Karta</span><b>${nf(t.card)}</b></div>
       <div class="kpi"><span>Cheklar</span><b>${nf(t.receipts)}</b><small>${arrow(c.receipts)}</small></div><div class="kpi"><span>Soatlar</span><b>${hrsTxt(t.minutes)}</b><small>${nf(t.customers)} mijoz</small></div></div>
+    ${d.scope === 'all' && (d.registers || []).length ? `<div class="card" style="margin-top:12px"><div class="sec-h"><h2>Kassalar bo‘yicha</h2><span class="muted" style="font-size:13px">${esc(perTitle(RP))}</span></div>
+      ${d.registers.map(r => `<div class="sum-row"><span>${esc(r.code)} <small class="muted">${esc(r.name || '')}</small></span><b>${nf(r.total)} so‘m<small class="muted" style="font-weight:600"> · ${nf(r.receipts)} chek · naqd ${nf(r.cash)} · karta ${nf(r.card)}</small></b></div>`).join('')}</div>` : ''}
     <button class="row link-row" style="margin-top:12px" data-act="rp2ir"><span class="ic">${I('users')}</span><span class="tx"><b>Instruktorlar hisoboti</b><small>Shu davr: kim nechta o‘quvchi haydadi, avtoshkola va pullik darslar</small></span>${I('chev')}</button>
     <div class="card" style="margin-top:12px"><div class="sec-h"><h2>Soatlar bo‘yicha tushum</h2></div>${(d.hours || []).length ? hourBars(d.hours) : '<div class="muted">Bu davrda chek yo‘q.</div>'}</div>
     ${(d.categories || []).length ? `<div class="card" style="margin-top:12px"><div class="sec-h"><h2>Toifalar</h2></div>${rankHtml(d.categories.map(x => ({ name: x.name, v: Number(x.total) || 0, sub: nf(x.receipts) + ' chek' })))}</div>` : ''}
     ${rec.length ? `<div class="sec"><div class="sec-h"><h2>Oxirgi cheklar</h2><button class="link" data-act="rp2rc">Hammasi</button></div><div class="list">${rec.slice(0, 15).map(r => `<div class="row"><span class="ic" style="width:52px;font-size:13.5px">${esc(hm(r.paid_at))}</span>
-      <span class="tx"><b>${esc(r.customer_name || '—')}</b><small>${perDays(RP) > 1 ? esc(dayLabel(ymdOf(new Date(r.paid_at)))) + ' · ' : ''}${esc(r.receipt_code || '')} · ${esc(r.instructor_name || '—')}${r.mins ? ' · ' + esc(fmtDur(r.mins)) : ''}</small></span>
+      <span class="tx"><b>${esc(r.customer_name || '—')}</b><small>${perDays(RP) > 1 ? esc(dayLabel(ymdOf(new Date(r.paid_at)))) + ' · ' : ''}${d.scope === 'all' && r.register ? esc(r.register) + ' · ' : ''}${esc(r.receipt_code || '')} · ${esc(r.instructor_name || '—')}${r.mins ? ' · ' + esc(fmtDur(r.mins)) : ''}</small></span>
       <span class="rt">${nf(r.amount)}<small>${r.method === 'mixed' ? 'aralash' : r.method === 'card' ? 'karta' : 'naqd'}</small></span></div>`).join('')}</div></div>` : ''}`;
 }
 ACT.rp2ir = () => { perCopy(RP, IR); IR.d = null; go('insrep'); };
@@ -4069,10 +4105,20 @@ ACT.bkst = async el => {
   catch (e) { fail(e); busyBtn(el, false); }
 };
 const NEXT = { pending: ['confirmed', 'rejected'], confirmed: ['completed', 'no_show', 'cancelled'], in_progress: ['completed', 'no_show', 'cancelled'] };
-const NEXT_L = { confirmed: ['Tasdiqlash', 'btn-green'], rejected: ['Rad etish', 'btn-danger'], completed: ['Tugadi', 'btn-soft'], no_show: ['Kelmadi', 'btn-soft'], cancelled: ['Bekor qilish', 'btn-danger'] };
+const NEXT_L = { confirmed: ['Tasdiqlash', 'btn-green'], rejected: ['Rad etish', 'btn-danger'], completed: ['Tugadi', 'btn-soft'], no_show: ['Kelmadi', 'btn-soft'], cancelled: ['Bekor qilish', 'btn-danger'], reopen: ['Qayta ochish', 'btn-soft'] };
+/* Administrator: noto'g'ri «Kelmagan» / «Bekor» belgilangan bronni yana «Tasdiqlangan» qiladi
+   (masalan, avtomatik yopilgan, lekin mijoz kelgan yoki to'lagan). */
+ACT.bkreopen = async el => {
+  const r = await ask({ title: 'Bron qayta ochilsinmi?', text: 'Bron yana «Tasdiqlangan» bo‘ladi — instruktor chekni skanerlab darsni boshlay oladi. Sababini yozing.', ok: 'Qayta ochish', input: { placeholder: 'Sabab: masalan, mijoz kelgan edi, chek kech skanerlandi' } });
+  if (r === false) return;
+  busyBtn(el, true);
+  try { await setStatus(el.dataset.id, 'confirmed', r === true ? '' : r); toast('Bron qayta ochildi'); closeSheet(); SCHC.clear(); refreshCounts(); if (S.routeName === 'bookings') loadBookings(); if (S.routeName === 'schedule') loadSchedule(); }
+  catch (e) { fail(e); busyBtn(el, false); }
+};
 ACT.bkopen = el => {
   const b = (BK.rows || []).find(x => String(x.id) === el.dataset.id); if (!b) return;
   const acts = NEXT[b.status] || [];
+  const reopen = isAdmin() && ['no_show', 'cancelled'].includes(b.status) ? `<button class="btn btn-soft" style="flex:1 1 30%" data-act="bkreopen" data-id="${esc(b.id)}">${I('refresh', 18, 2.2)} Qayta ochish</button>` : '';
   openSheet(`<h3>${esc(b.customer?.full_name || 'Mijoz')}</h3><p class="lead">${stPill(b.status)}${b.payment?.status === 'paid' ? ' <span class="pill ok">to‘langan</span>' : ''}${b.cancel_requested_at && !b.cancel_reviewed_at ? ' <span class="pill bad">bekor so‘rovi</span>' : ''}</p>
     <div class="card sum-card">
       ${b.customer?.phone ? `<div class="sum-row"><span>Telefon</span><b><a class="tel" href="${telHref(b.customer.phone)}">${esc(b.customer.phone)}</a></b></div>` : ''}
@@ -4083,7 +4129,8 @@ ACT.bkopen = el => {
       <div class="sum-row"><span>Narx</span><b>${esc(money(b.price))}</b></div>
       ${b.source ? `<div class="sum-row"><span>Qayerdan</span><b>${esc(SRC[b.source] || b.source)}</b></div>` : ''}
       ${b.customer_note ? `<div class="sum-row"><span>Izoh</span><b>${esc(b.customer_note)}</b></div>` : ''}</div>
-    ${acts.length ? `<div class="btn-row" style="flex-wrap:wrap">${acts.map(v => `<button class="btn ${NEXT_L[v][1]}" style="flex:1 1 30%" data-act="bkst" data-id="${esc(b.id)}" data-v="${v}">${NEXT_L[v][0]}</button>`).join('')}</div>` : ''}`);
+    ${b.cancellation_reason ? `<div class="note warn" style="margin-top:10px;font-size:13.5px">${esc(b.cancellation_reason)}</div>` : ''}
+    ${acts.length || reopen ? `<div class="btn-row" style="flex-wrap:wrap">${acts.map(v => `<button class="btn ${NEXT_L[v][1]}" style="flex:1 1 30%" data-act="bkst" data-id="${esc(b.id)}" data-v="${v}">${NEXT_L[v][0]}</button>`).join('')}${reopen}</div>` : ''}`);
 };
 
 /* ---------- bekor qilish so'rovlari ---------- */
@@ -4319,7 +4366,7 @@ function vPrices(){
       <p class="muted" style="font-size:12.5px;margin:0 2px 10px">Mijoz Mini App orqali bron qilsa, shu chatlarga darhol xabar boradi: mijoz, telefon, instruktor, mashina, sana va vaqt, narx, bron kodi — va «Admin panelda ochish» tugmasi. Bekor qilish so‘rovlari va mijoz savollari ham shu yerga keladi.</p>
       <div id="tgBox"><div class="sk" style="min-height:62px"></div></div>
       <div class="tg-add"><input class="input" id="tg-new" inputmode="numeric" autocomplete="off" placeholder="Chat ID (raqam)"><button class="btn btn-soft btn-sm" data-act="tgadd">${I('plus', 18, 2.4)} Qo‘shish</button></div>
-      <p class="muted" style="font-size:12.5px;margin:8px 2px 0">Chat ID ni bilish uchun admin botga <b>/start</b> yozing — bot raqamni yuboradi. Guruhga ulash uchun botni guruhga qo‘shib, <b>/id</b> yozing.</p></div>
+      <p class="muted" style="font-size:12.5px;margin:8px 2px 0">Chat ID — Telegramdagi raqamli ID. Uni bilish uchun Telegramda <b>@userinfobot</b> ga /start yozing (u ID raqamini ko‘rsatadi). Guruh uchun botni guruhga qo‘shing va guruh ID sini (minus bilan boshlanadi) yozing. Qo‘shishdan oldin o‘sha odam admin botga /start yozgan bo‘lishi kerak.</p></div>
     <div class="card" style="margin-top:12px"><div class="sec-h"><h2>Ish vaqti</h2></div>
       <div class="grid2"><label class="field" style="margin-top:0"><span>Boshlanishi</span><input class="input" type="time" id="pr-ws" value="${esc(String(sv('work_start') || '07:00').slice(0, 5))}"></label>
       <label class="field" style="margin-top:0"><span>Tugashi</span><input class="input" type="time" id="pr-we" value="${esc(String(sv('work_end') || '19:00').slice(0, 5))}"></label></div>

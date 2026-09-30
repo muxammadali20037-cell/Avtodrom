@@ -3286,7 +3286,7 @@ function payModal(bookingId){
     $('pySave').disabled = true; $('pySave').textContent = 'Saqlanmoqda…';
     try{
       const d = await api('/api/admin/cashier/pay', { method:'POST', body: JSON.stringify({
-        booking_id: bookingId, method, amount, note: $('pyNote').value.trim() }) });
+        booking_id: bookingId, method, amount, note: $('pyNote').value.trim(), register_token: REG_TOKEN || undefined }) });
       closeModal(); toast('To‘lov qabul qilindi');
       await loadCashier();
       receiptModal(d.receipt);
