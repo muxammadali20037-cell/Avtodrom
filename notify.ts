@@ -1,0 +1,211 @@
+import { supabaseRest } from './supabase.js';
+
+/**
+ * Bildirishnoma matnlari — bitta manba.
+ *
+ * Muammo: avval mijozga xom ma'lumot ketardi —
+ *   Bron #9cb6110c-7e32-4f27-a3da-f808e9c4ad28
+ *   Holati: confirmed
+ *   Sana: 2026-08-30T00:00+00:00
+ * To'liq UUID, inglizcha status va UTC vaqt. Endi hammasi odam o'qiydigan
+ * ko'rinishda, Asia/Tashkent vaqti bilan.
+ */
+
+const TZ = 'Asia/Tashkent';
+const MONTHS = ['yanvar','fevral','mart','aprel','may','iyun','iyul','avgust','sentabr','oktabr','noyabr','dekabr'];
+const WEEKDAYS = ['yakshanba','dushanba','seshanba','chorshanba','payshanba','juma','shanba'];
+
+/** "30-avgust, shanba · 10:00" — Toshkent vaqtida. */
+export function fmtWhen(value: unknown): string {
+  if (!value) return '';
+  const d = new Date(String(value));
+  if (Number.isNaN(d.getTime())) return '';
+  const p = new Intl.DateTimeFormat('en-CA', {
+    timeZone: TZ, year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', weekday: 'short', hour12: false,
+  }).formatToParts(d);
+  const get = (t: string) => p.find((x) => x.type === t)?.value ?? '';
+  const day = Number(get('day'));
+  const month = MONTHS[Number(get('month')) - 1] ?? '';
+  // Hafta kunini UTC emas, Toshkent sanasidan hisoblaymiz
+  const wd = WEEKDAYS[new Date(`${get('year')}-${get('month')}-${get('day')}T12:00:00+05:00`).getUTCDay()] ?? '';
+  return `${day}-${month}${wd ? ', ' + wd : ''} · ${get('hour')}:${get('minute')}`;
+}
+
+export function fmtMoney(v: unknown): string {
+  const n = Number(v);
+  if (!Number.isFinite(n) || n <= 0) return '';
+  return new Intl.NumberFormat('uz-UZ').format(n) + ' so‘m';
+}
+
+/** 30 → «30 daqiqa», 60 → «1 soat», 90 → «1 soat 30 daqiqa», 120 → «2 soat» */
+export function fmtMinutes(minutes: unknown): string {
+  const m = Math.round(Number(minutes) || 0), h = Math.floor(m / 60), r = m % 60;
+  if (m <= 0) return '';
+  return h ? (r ? `${h} soat ${r} daqiqa` : `${h} soat`) : `${r} daqiqa`;
+}
+
+/** UUID o'rniga qisqa, o'qish mumkin bo'lgan kod: #9CB6110C */
+export function shortCode(id: unknown): string {
+  const s = String(id ?? '').replace(/-/g, '');
+  return s ? '#' + s.slice(0, 8).toUpperCase() : '';
+}
+
+export type BookingEvent =
+  | 'created' | 'confirmed' | 'rejected' | 'cancelled'
+  | 'in_progress' | 'completed' | 'no_show';
+
+const HEAD: Record<BookingEvent, { customer: string; instructor: string }> = {
+  created:     { customer: '📝 Broningiz qabul qilindi',     instructor: '📝 Yangi bron keldi' },
+  confirmed:   { customer: '✅ Broningiz tasdiqlandi',        instructor: '✅ Bron tasdiqlandi' },
+  rejected:    { customer: '❌ Broningiz rad etildi',         instructor: '❌ Bron rad etildi' },
+  cancelled:   { customer: '🚫 Bron bekor qilindi',           instructor: '🚫 Bron bekor qilindi' },
+  in_progress: { customer: '🚗 Darsingiz boshlandi',          instructor: '🚗 Dars boshlandi' },
+  completed:   { customer: '🏁 Darsingiz yakunlandi',         instructor: '🏁 Dars yakunlandi' },
+  no_show:     { customer: 'ℹ️ Siz kelmagan deb belgilandingiz', instructor: 'ℹ️ Mijoz kelmadi' },
+};
+
+const TAIL: Partial<Record<BookingEvent, { customer?: string; instructor?: string }>> = {
+  created:     { customer: 'Admin tasdiqlashini kuting.' },
+  confirmed:   { customer: 'Belgilangan vaqtda avtodromga keling.' },
+  rejected:    { customer: 'Boshqa vaqt yoki instruktorni tanlashingiz mumkin.' },
+  completed:   { customer: 'Instruktorni baholashingiz mumkin — Mini Appni oching.' },
+  no_show:     { customer: 'Xatolik bo‘lsa, Chat orqali bizga yozing.' },
+};
+
+export interface BookingDetails {
+  courseName?: string | null;
+  durationMinutes?: number | null;
+  price?: number | null;
+  instructorName?: string | null;
+  customerName?: string | null;
+  customerPhone?: string | null;
+  reason?: string | null;
+  /** Kechikish qoidasi (daqiqa): shuncha kechiksa bron avtomatik bekor bo'ladi. 0 — o'chirilgan. */
+  lateMin?: number;
+}
+
+/** admin_settings.late_cancel_min — standart 15. (reminders.ts bilan bir xil qoida) */
+export async function loadLateMin(): Promise<number> {
+  try {
+    const r = (await supabaseRest<any[]>('admin_settings', { query: '?key=eq.late_cancel_min&select=value&limit=1' }))[0];
+    const v = r?.value && typeof r.value === 'object' && 'value' in r.value ? r.value.value : r?.value;
+    if (v === undefined || v === null || v === '') return 15;
+    const n = Number(v);
+    return Number.isInteger(n) && n >= 0 && n <= 180 ? n : 15;
+  } catch { return 15; }
+}
+export const lateRuleLine = (m: number) => (m > 0 ? `⚠️ Dars vaqtidan ${m} daqiqa kechiksangiz, bron avtomatik bekor qilinadi.` : '');
+
+/** Bron ma'lumotini bazadan to'ldiradi (kurs nomi, instruktor ismi, narx). */
+export async function loadBookingDetails(booking: any): Promise<BookingDetails> {
+  const out: BookingDetails = { reason: booking?.cancellation_reason ?? null };
+  try {
+    out.lateMin = await loadLateMin();
+    if (booking?.course_id) {
+      const c = (await supabaseRest<any[]>('courses', {
+        query: `?id=eq.${encodeURIComponent(String(booking.course_id))}&select=name,duration_minutes,price&limit=1`,
+      }))[0];
+      if (c) { out.courseName = c.name; out.durationMinutes = c.duration_minutes; out.price = c.price; }
+    }
+    /* DAVOMIYLIK VA NARX — BRONNING O'ZIDAN, kursdan emas. Ilgari 30
+       daqiqalik bron instruktorga «60 daqiqa · 250 000» bo'lib borardi
+       (kursning standart qiymatlari). */
+    const span = Date.parse(booking?.end_at) - Date.parse(booking?.start_at || booking?.booking_date);
+    const bMin = Number(booking?.duration_minutes) > 0 ? Math.round(Number(booking.duration_minutes))
+      : Number.isFinite(span) && span > 0 ? Math.round(span / 60000) : 0;
+    if (bMin > 0) {
+      const unit = Number(out.durationMinutes) > 0 ? Number(out.durationMinutes) : 60;
+      if (Number(out.price) > 0 && bMin !== unit) out.price = Math.round(Number(out.price) * bMin / unit);
+      out.durationMinutes = bMin;
+    }
+    if (Number(booking?.price) > 0) out.price = Math.round(Number(booking.price));
+    if (booking?.instructor_id) {
+      const ip = (await supabaseRest<any[]>('instructor_profiles', {
+        query: `?id=eq.${encodeURIComponent(String(booking.instructor_id))}&select=user_id&limit=1`,
+      }))[0];
+      if (ip?.user_id) {
+        const u = (await supabaseRest<any[]>('users', {
+          query: `?id=eq.${encodeURIComponent(String(ip.user_id))}&select=full_name&limit=1`,
+        }))[0];
+        out.instructorName = u?.full_name ?? null;
+      }
+    }
+    if (booking?.customer_id) {
+      const u = (await supabaseRest<any[]>('users', {
+        query: `?id=eq.${encodeURIComponent(String(booking.customer_id))}&select=full_name,phone&limit=1`,
+      }))[0];
+      out.customerName = u?.full_name ?? null;
+      out.customerPhone = u?.phone ?? null;
+    }
+  } catch (e) {
+    console.error('loadBookingDetails failed:', e);
+  }
+  return out;
+}
+
+/**
+ * Telegram uchun tayyor matn. `audience` — kimga yuborilayotgani:
+ * mijozga instruktor ismi, instruktorga mijoz ismi va telefoni ko'rsatiladi.
+ */
+export function bookingMessage(
+  booking: any,
+  event: BookingEvent,
+  audience: 'customer' | 'instructor',
+  d: BookingDetails = {},
+): { title: string; body: string; full: string } {
+  const title = HEAD[event][audience];
+  const lines: string[] = [];
+
+  const course = [d.courseName, d.durationMinutes ? fmtMinutes(d.durationMinutes) : '']
+    .filter(Boolean).join(' · ');
+  if (course) lines.push(`📚 ${course}`);
+
+  if (audience === 'customer') {
+    if (d.instructorName) lines.push(`👨‍🏫 ${d.instructorName}`);
+  } else {
+    if (d.customerName) lines.push(`👤 ${d.customerName}`);
+    if (d.customerPhone) lines.push(`📞 ${d.customerPhone}`);
+  }
+
+  const when = fmtWhen(booking?.start_at || booking?.booking_date);
+  if (when) lines.push(`📅 ${when}`);
+
+  const money = fmtMoney(d.price);
+  if (money) lines.push(`💵 ${money}`);
+
+  if (booking?.customer_note && audience === 'instructor') lines.push(`💬 ${booking.customer_note}`);
+  if (d.reason) lines.push(`ℹ️ Sabab: ${d.reason}`);
+
+  const tail = TAIL[event]?.[audience];
+
+  /* Kassaga aytiladigan KOD — pickup_code (AVD-4821). Mijoz panelidagi
+     kod bilan bir xil bo'lishi shart, aks holda kassir topa olmaydi.
+     shortCode(id) eski usul edi va mos kelmasdi. */
+  const pickup = booking?.pickup_code ? String(booking.pickup_code) : '';
+
+  const codeLine = (audience === 'customer' && pickup && (event === 'created' || event === 'confirmed'))
+    ? `\n🎫 Kassa uchun kod: ${pickup}\nKassaga shu kodni ayting.`
+    : (pickup ? `\nBron kodi: ${pickup}` : '');
+
+  /* Bron qabul qilinganda / tasdiqlanganda mijoz qoidani oldindan bilsin */
+  const rule = audience === 'customer' && (event === 'created' || event === 'confirmed')
+    ? lateRuleLine(d.lateMin ?? 15) : '';
+
+  const body = [
+    lines.join('\n'),
+    tail ? `\n${tail}` : '',
+    rule ? `\n${rule}` : '',
+    codeLine,
+  ].filter(Boolean).join('\n');
+
+  return { title, body, full: `${title}\n\n${body}` };
+}
+
+/** DB `notifications` jadvali uchun qisqaroq matn (Mini App ichida ko'rinadi). */
+export function inAppMessage(event: BookingEvent, d: BookingDetails, booking: any): string {
+  const when = fmtWhen(booking?.start_at || booking?.booking_date);
+  const parts = [d.courseName, when].filter(Boolean).join(' · ');
+  const tail = TAIL[event]?.customer;
+  return [parts, tail].filter(Boolean).join('. ');
+}
