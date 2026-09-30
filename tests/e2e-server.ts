@@ -36,6 +36,25 @@ globalThis.fetch = (async (u: any, o: any = {}) => {
       return { register_id: r.id, code: r.code, name: r.name, receipts: ps.length, cash: sum('cash'), card: sum('card'), total: ps.reduce((a: number, p: any) => a + Number(p.amount), 0) };
     }));
   }
+  if (url.includes('/rest/v1/rpc/register_dashboard')) {
+    const b = JSON.parse(String(o.body || '{}'));
+    const rows = db.payments.filter((p: any) => String(p.register_id) === String(b.p_register) && p.status === 'paid' && p.paid_at >= b.p_from && p.paid_at < b.p_to);
+    const num = (v: any) => Number(v || 0);
+    const cashOf = (p: any) => p.method === 'mixed' ? num(p.cash_amount) : p.method === 'card' ? 0 : num(p.amount);
+    const cardOf = (p: any) => p.method === 'mixed' ? num(p.card_amount) : p.method === 'card' ? num(p.amount) : 0;
+    const totals = { receipts: rows.length, total: rows.reduce((a: number, p: any) => a + num(p.amount), 0),
+      cash: rows.reduce((a: number, p: any) => a + cashOf(p), 0), card: rows.reduce((a: number, p: any) => a + cardOf(p), 0),
+      minutes: rows.length * 60, customers: new Set(rows.map((p: any) => p.customer_id)).size };
+    const hm = new Map<number, any>();
+    for (const p of rows) { const h = Number(new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Tashkent', hour: '2-digit', hour12: false }).format(new Date(p.paid_at))); const x = hm.get(h) || { hour: h, receipts: 0, total: 0 }; x.receipts++; x.total += num(p.amount); hm.set(h, x); }
+    const name = (id: any) => db.users.find((u: any) => u.id === id)?.full_name || '—';
+    const recent = rows.slice().sort((x: any, y: any) => String(y.paid_at).localeCompare(String(x.paid_at))).slice(0, 50).map((p: any) => {
+      const bk = db.bookings.find((x: any) => x.id === p.booking_id);
+      const ins = bk ? db.instructor_profiles.find((i: any) => i.id === bk.instructor_id) : null;
+      return { receipt_code: p.receipt_code, paid_at: p.paid_at, amount: num(p.amount), method: p.method, customer_name: name(p.customer_id), instructor_name: ins ? name(ins.user_id) : '—', category: bk?.category || 'B', mins: bk?.duration_minutes || 60 };
+    });
+    return ok({ totals, hours: [...hm.values()], categories: rows.length ? [{ name: 'B', receipts: rows.length, total: totals.total }] : [], instructors: [], recent });
+  }
   if (url.includes('/rest/v1/rpc/get_instructor_registration_status')) {
     // Bazadagi funksiya o'rniga: instruktor users'da bo'lsa — tasdiqlangan
     const tg = Number(JSON.parse(String(o.body || '{}')).p_telegram_user_id);
