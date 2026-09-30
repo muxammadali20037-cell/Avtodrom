@@ -30,7 +30,9 @@ export interface FakeDb {
 export interface Harness {
   app: any;
   db: FakeDb;
-  telegram: Array<{ chat: number; text: string }>;
+  telegram: Array<{ chat: number; text: string; markup?: any; parse?: string; method?: string }>;
+  /** Shu chat ID larga Telegram xato qaytaradi (masalan, 'Bad Request: chat not found'). */
+  telegramFail: Map<number, string>;
   login(login: string, password: string): Promise<{ status: number; body: any; cookie: string }>;
   call(method: string, url: string, opts?: { cookie?: string; payload?: any }): Promise<{ status: number; body: any }>;
   reset(): void;
@@ -42,7 +44,7 @@ function emptyDb(): FakeDb {
     instructor_profiles: [], instructor_applications: [], cash_registers: [],
     admin_media: [], admin_settings: [], admin_audit_logs: [],
     attendance_verifications: [], booking_reminders: [], notifications: [],
-    reviews: [], cashier_shifts: [],
+    reviews: [], cashier_shifts: [], telegram_admins: [],
   };
 }
 
@@ -136,7 +138,8 @@ function applyFilters(rows: any[], query: string): any[] {
 
 export async function makeHarness(): Promise<Harness> {
   const db = emptyDb();
-  const telegram: Array<{ chat: number; text: string }> = [];
+  const telegram: Array<{ chat: number; text: string; markup?: any; parse?: string; method?: string }> = [];
+  const telegramFail = new Map<number, string>();
 
   globalThis.fetch = (async (u: any, o: any = {}) => {
     const url = String(u);
@@ -147,8 +150,14 @@ export async function makeHarness(): Promise<Harness> {
     const H = new Map<string, string>();
 
     if (url.includes('api.telegram.org')) {
-      if (body?.chat_id) telegram.push({ chat: Number(body.chat_id), text: String(body.text || '') });
-      return { ok: true, status: 200, text: async () => '{"ok":true}', json: async () => ({ ok: true, result: {} }), headers: H } as any;
+      const tgMethod = url.split('/').pop() || '';
+      const bad = body?.chat_id !== undefined ? telegramFail.get(Number(body.chat_id)) : undefined;
+      if (bad) return { ok: false, status: 400, text: async () => JSON.stringify({ ok: false, description: bad }), json: async () => ({ ok: false, description: bad }), headers: H } as any;
+      if (body?.chat_id && !/^get/.test(tgMethod)) {
+        telegram.push({ chat: Number(body.chat_id), text: String(body.text || ''), markup: body.reply_markup, parse: body.parse_mode, method: tgMethod });
+      }
+      const result = tgMethod === 'getMe' ? { username: 'avtodrom_admin_bot' } : tgMethod === 'getChat' ? { first_name: 'Chat', last_name: String(body?.chat_id ?? '') } : {};
+      return { ok: true, status: 200, text: async () => JSON.stringify({ ok: true, result }), json: async () => ({ ok: true, result }), headers: H } as any;
     }
 
     if (url.includes('/storage/v1/')) {
@@ -255,10 +264,11 @@ export async function makeHarness(): Promise<Harness> {
   };
 
   return {
-    app, db, telegram, login, call,
+    app, db, telegram, telegramFail, login, call,
     reset() {
       for (const k of Object.keys(db)) db[k] = [];
       telegram.length = 0;
+      telegramFail.clear();
     },
   };
 }

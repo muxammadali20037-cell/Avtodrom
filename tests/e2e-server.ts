@@ -57,6 +57,7 @@ st('st-k1', 'kassa1', 'cashier', 'reg-p1', 'Kassir P1');
 st('st-k2', 'kassa2', 'cashier', 'reg-p2', 'Kassir P2');
 
 db.users.push({ id: 'u-admin', full_name: 'Admin', role: 'admin', is_active: true, is_blocked: false });
+db.telegram_admins.push({ id: 1, telegram_chat_id: 6140529649, is_active: true });
 const people = [
   ['u-1', 'Sardor Rahimov', '+998901234501', 5550001], ['u-2', 'Madina Karimova', '+998901234502', 5550002],
   ['u-3', 'Jasur Aliyev', '+998935550011', 5550003], ['u-4', 'Dilnoza Tursunova', '+998977770022', 5550004],
