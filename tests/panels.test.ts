@@ -75,8 +75,11 @@ describe('Operator paneli', () => {
     const keys = r.body.settings.map((x: any) => x.key);
     expect(keys).toContain('rate_b');
     expect(keys).not.toContain('mgmt_pin');
+    /* PIN xeshlari hech kimga (administratorga ham) sozlamalar ro'yxatida qaytmaydi —
+       holati alohida: /api/admin/mgmt-pin, /api/admin/price-pin */
     const full = await h.call('GET', '/api/admin/settings', { cookie: admin });
-    expect(full.body.settings.map((x: any) => x.key)).toContain('mgmt_pin');
+    expect(full.body.settings.map((x: any) => x.key)).toContain('rate_b');
+    expect(full.body.settings.map((x: any) => x.key)).not.toContain('mgmt_pin');
   });
 
   it('kassa, pul, hisobot, xodimlar, sozlash — YOPIQ', async () => {
