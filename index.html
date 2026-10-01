@@ -300,7 +300,7 @@ textarea.input{min-height:88px;resize:none;line-height:1.4}
 
 /* ---------- bronlarim ---------- */
 .seg{display:grid;grid-template-columns:1fr 1fr;background:var(--line);border-radius:13px;padding:3px;margin-bottom:14px}
-.seg button{min-height:38px;border-radius:10px;font-weight:700;font-size:14px;color:var(--hint)}
+.seg button{min-height:38px;border-radius:10px;font-weight:700;font-size:14px;color:var(--hint);text-align:center}
 .seg button.on{background:var(--card);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.08)}
 .bk{background:var(--card);border-radius:18px;padding:15px 16px;box-shadow:var(--shadow);margin-bottom:10px}
 .bk-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
@@ -466,6 +466,24 @@ body.onb-mode .wrap{padding-bottom:calc(120px + var(--sb))}
 @keyframes helloIn{from{opacity:0}to{opacity:1}}
 @keyframes helloOut{to{opacity:0;visibility:hidden}}
 @keyframes up{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+
+/* --- til tanlash --- */
+.lang-h span{display:block;color:var(--hint);font-size:.68em;font-weight:700;margin-top:6px;letter-spacing:0}
+.lang-pick{display:grid;gap:12px;margin-top:24px}
+.lang-pick button{display:flex;align-items:center;gap:14px;min-height:78px;padding:12px 16px 12px 18px;border-radius:20px;background:var(--card);
+  box-shadow:var(--shadow);border:2px solid transparent;text-align:left;transition:transform .12s,border-color .2s}
+.lang-pick button:active{transform:scale(.98)}
+.lang-pick button.sug{border-color:var(--accent)}
+.lang-pick .flag{font-size:34px;line-height:1;flex:none}
+.lang-pick .tx{flex:1;min-width:0}
+.lang-pick .tx b{display:block;font-size:19px;font-weight:800}
+.lang-pick .tx small{display:block;color:var(--hint);font-size:13px;margin-top:2px}
+.lang-pick .go{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;background:var(--accent-soft);color:var(--accent);flex:none}
+.lang-pick button.sug .go{background:var(--accent);color:var(--on-accent)}
+.lang-note{text-align:center;color:var(--hint);font-size:13px;margin:18px 0 0}
+.lang-list .row .flag{font-size:24px;width:36px;text-align:center;flex:none;line-height:1}
+.lang-list .row.on .tx b{color:var(--accent)}
+.lang-list .row .ok{color:var(--accent);display:grid}
 
 /* --- bosh sahifa --- */
 .top .who.brand h1{white-space:normal;font-size:16px;line-height:1.12;letter-spacing:.2px;font-weight:800;color:var(--accent)}
@@ -655,6 +673,408 @@ const $ = (s, r = document) => r.querySelector(s);
 const esc = v => String(v ?? '').replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
 const clamp = (n, a, b) => Math.min(b, Math.max(a, n));
 
+/* =========================================================================
+   TIL — o'zbekcha (asosiy) va ruscha.
+   Matnlar manbada o'zbekcha yoziladi: T('Bron qilish') ruscha tanlangan
+   bo'lsa RU lug'atidan oladi, topilmasa o'zbekchasi qoladi.
+   N(son, uz, [ru1, ru2, ru5]) — ruscha son bilan kelishadigan shakl.
+   Til: mijoz kirishda o'zi tanlaydi (shu qurilmada saqlanadi). Tanlovgacha
+   Telegram tili taxmin qilinadi va til ekranida belgilab turiladi.
+   ========================================================================= */
+const LANGS = { uz: 'O‘zbekcha', ru: 'Русский' };
+let LANG = (() => {
+  let s = '';
+  try { s = localStorage.getItem('avd_lang') || ''; } catch (e) {}
+  if (LANGS[s]) return s;
+  const u = tg && tg.initDataUnsafe && tg.initDataUnsafe.user;
+  const lc = String((u ? u.language_code : navigator.language) || '').toLowerCase();
+  return /^(ru|be|uk|kk|ky)\b/.test(lc) ? 'ru' : 'uz';
+})();
+document.documentElement.lang = LANG;
+const hasKey = (o, k) => Object.prototype.hasOwnProperty.call(o, k);
+const fill = (s, v) => v ? String(s).replace(/\{(\w+)\}/g, (m, k) => (v[k] === undefined || v[k] === null ? m : String(v[k]))) : String(s);
+function T(s, v) { return fill(LANG === 'ru' && hasKey(RU, s) ? RU[s] : s, v); }
+function N(n, uz, ru, v) {
+  const k = Math.abs(Math.round(Number(n) || 0)), a = k % 10, b = k % 100;
+  const f = LANG === 'ru' ? ru[a === 1 && b !== 11 ? 0 : a >= 2 && a <= 4 && (b < 12 || b > 14) ? 1 : 2] : uz;
+  return fill(f, Object.assign({ n }, v || {}));
+}
+/* Server xabarlari o'zbekcha keladi — ruschada shu yerda tarjima qilinadi */
+const ERR_RX = [
+  [/^(\d+)-mashg‘ulot vaqti noto‘g‘ri$/, 'Время {1}-го занятия указано неверно'],
+  [/^(\d+)-mashg‘ulot vaqti o‘tib ketgan\. Boshqa vaqtni tanlang\.?$/, 'Время {1}-го занятия уже прошло. Выберите другое время.'],
+  [/^Instruktor (.+?) da band\. Boshqa vaqt yoki instruktorni tanlang\.?$/, 'Инструктор занят {1}. Выберите другое время или инструктора.'],
+  [/^Mijozda (.+?) da boshqa bron bor\.?$/, 'У вас уже есть бронь на {1}.'],
+  [/^Instruktor bu vaqtni band qilgan \((.+)\)\. Boshqa vaqt yoki instruktorni tanlang\.?$/, 'Инструктор закрыл это время ({1}). Выберите другое время или инструктора.'],
+  [/^Bu instruktor (\w+) toifani o‘rgatmaydi$/, 'Этот инструктор не обучает категории {1}'],
+  [/^(\w+) toifada 5 soatlik paket hozir o‘chirilgan$/, 'Пакет 5 часов для категории {1} сейчас отключён'],
+  [/^Xabar (\d+) belgidan oshmasin$/, 'Сообщение не должно быть длиннее {1} символов'],
+  [/^Server xatosi \((\d+)\)$/, 'Ошибка сервера ({1})'],
+  [/^Topilmadi: /, 'Не найдено'],
+];
+function trErr(msg) {
+  const m0 = String(msg || '').trim();
+  if (/initData|^Telegram |^Unauthorized$/i.test(m0)) return T('Iltimos, ilovani yopib, bot orqali qayta oching.');
+  if (LANG !== 'ru' || !m0) return m0;
+  if (hasKey(RU, m0)) return RU[m0];
+  const m1 = m0.replace(/\.$/, '');
+  if (hasKey(RU, m1)) return RU[m1];
+  if (hasKey(RU, m1 + '.')) return RU[m1 + '.'];
+  for (const [rx, ru] of ERR_RX) { const m = m0.match(rx); if (m) return ru.replace(/\{(\d)\}/g, (_, i) => m[i] || ''); }
+  return m0;
+}
+const RU = /*RU*/{
+  "Bugun": "Сегодня",
+  "Ertaga": "Завтра",
+  "Kecha": "Вчера",
+  "{t} — nusxalandi": "{t} — скопировано",
+  "Server xatosi ({s})": "Ошибка сервера ({s})",
+  "Server javob bermadi. Internetni tekshiring.": "Сервер не ответил. Проверьте интернет.",
+  "Internet aloqasi yo‘q. Qayta urinib ko‘ring.": "Нет подключения к интернету. Попробуйте ещё раз.",
+  "Iltimos, ilovani yopib, bot orqali qayta oching.": "Пожалуйста, закройте приложение и откройте его снова через бота.",
+  "Mashg‘ulot": "Занятие",
+  "Mototsikl": "Мотоцикл",
+  "Yengil avto": "Легковой авто",
+  "Yuk avto": "Грузовой авто",
+  "Instruktor": "Инструктор",
+  "{n} — rasmni kattalashtirish": "{n} — увеличить фото",
+  "Menyu": "Меню",
+  "Bron qilish": "Забронировать",
+  "Asosiy": "Главная",
+  "Avtodrom": "Автодром",
+  "Bron": "Бронь",
+  "Bronlarim": "Мои брони",
+  "Yordam": "Помощь",
+  "Yuklanmoqda…": "Загрузка…",
+  "Telegram orqali oching": "Откройте через Telegram",
+  "Bu ilova TASH INDEX AVTODROM botidagi «Mini App» tugmasi orqali ishlaydi.": "Приложение работает через кнопку «Mini App» в боте TASH INDEX AVTODROM.",
+  "Kirish amalga oshmadi": "Не удалось войти",
+  "Qayta urinish": "Повторить",
+  "Xabar yozing…": "Напишите сообщение…",
+  "Xabar": "Сообщение",
+  "Yuborish": "Отправить",
+  "Telefon raqamingiz": "Ваш номер телефона",
+  "Bron holati va eslatmalar shu raqamga bog‘lanadi. Admin kerak bo‘lsa qo‘ng‘iroq qiladi.": "К этому номеру привязываются статус брони и напоминания. При необходимости администратор позвонит.",
+  "Telefon raqami": "Номер телефона",
+  "yoki": "или",
+  "Telegramdagi raqamimni yuborish": "Отправить мой номер из Telegram",
+  "Ismingiz nima?": "Как вас зовут?",
+  "Instruktor va admin sizga shunday murojaat qiladi.": "Так к вам будут обращаться инструктор и администратор.",
+  "Ism": "Имя",
+  "Familiya": "Фамилия",
+  "Hozircha raqamsiz davom etish": "Продолжить пока без номера",
+  "Davom etish": "Продолжить",
+  "Tayyor": "Готово",
+  "Raqamni to‘liq kiriting: 90 123 45 67": "Введите номер полностью: 90 123 45 67",
+  "Ismingizni yozing": "Введите имя",
+  "Raqam yuborildi. Iltimos, uni shu yerga ham yozing.": "Номер отправлен. Пожалуйста, введите его и здесь.",
+  "Raqamni qo‘lda kiriting": "Введите номер вручную",
+  "Xush kelibsiz, {n}!": "Добро пожаловать, {n}!",
+  "Ba’zi ma’lumotlar yuklanmadi. Ilovani yopib qayta oching.": "Часть данных не загрузилась. Закройте приложение и откройте снова.",
+  "Qo‘ng‘iroq qilish": "Позвонить",
+  "Qaysi raqamga qo‘ng‘iroq qilamiz?": "На какой номер позвонить?",
+  "Har kuni {a} – {b}": "Ежедневно {a} – {b}",
+  "Xayrli tun": "Доброй ночи",
+  "Xayrli tong": "Доброе утро",
+  "Xayrli kun": "Добрый день",
+  "Xayrli kech": "Добрый вечер",
+  "Til": "Язык",
+  "Bildirishnomalar": "Уведомления",
+  "Profil": "Профиль",
+  "Hisobingiz bloklangan. Savollar bo‘lsa «Yordam» bo‘limiga yozing.": "Ваш аккаунт заблокирован. Если есть вопросы, напишите в раздел «Помощь».",
+  "Xush kelibsiz": "Добро пожаловать",
+  "TASH INDEX AVTODROMga": "в TASH INDEX AVTODROM",
+  "Nima qilamiz?": "Что делаем?",
+  "Toifa → soat → vaqt. Bir daqiqada": "Категория → часы → время. За минуту",
+  "Avtodrom haqida": "Об автодроме",
+  "Rasmlar, videolar, narxlar, manzil": "Фото, видео, цены, адрес",
+  "Keyingi darsingiz": "Ваше следующее занятие",
+  "Katalog": "Каталог",
+  "Narxlar": "Цены",
+  "Instruktorlar": "Инструкторы",
+  "Rasmlar": "Фото",
+  "Sharoitlar": "Условия",
+  "Video": "Видео",
+  "Kurs muddati": "Срок обучения",
+  "Manzil": "Адрес",
+  "Qo‘ng‘iroq": "Позвонить",
+  "Savol berish": "Задать вопрос",
+  "Savollar": "Вопросы",
+  "Yo‘l belgilari va svetoforlar": "Дорожные знаки и светофоры",
+  "Ishlaydigan svetoforlar, STOP, yo‘l berish va yo‘nalish belgilari.": "Работающие светофоры, знаки STOP, «Уступи дорогу» и указатели направления.",
+  "Real yo‘l qatnovlari": "Реальная дорожная разметка",
+  "Belgilangan yo‘laklar, chorrahalar, piyoda o‘tish joylari va bordyurlar.": "Размеченные полосы, перекрёстки, пешеходные переходы и бордюры.",
+  "Parkovka va manyovr zonalari": "Зоны парковки и манёвров",
+  "To‘xtash joylari va burilish mashqlari uchun ajratilgan maydon.": "Отдельная площадка для парковки и упражнений на развороты.",
+  "Imtihonga tayyorlov": "Подготовка к экзамену",
+  "Maydoncha imtihon talablariga mos — shu yerda mashq qilib, tayyor bo‘lasiz.": "Площадка соответствует экзаменационным требованиям — тренируйтесь здесь и будьте готовы.",
+  "Tasdiqlangan instruktorlar": "Проверенные инструкторы",
+  "Har biri admin tekshiruvidan o‘tgan, reyting real baholardan.": "Каждый проверен администрацией, рейтинг — по реальным оценкам.",
+  "Ish vaqti": "Время работы",
+  "Qaysi toifalar bor?": "Какие есть категории?",
+  "A — mototsikl.\nB — yengil avtomobil.\nC — yuk avtomobili (faqat amaliy haydash).": "A — мотоцикл.\nB — легковой автомобиль.\nC — грузовой автомобиль (только практическое вождение).",
+  "Kurs qancha davom etadi?": "Сколько длится курс?",
+  "A toifa — 15 kun.\nB toifa — 2 oy 15 kun.\nC toifa — to‘liq kurs yo‘q, faqat soatlik amaliy haydash.": "Категория A — 15 дней.\nКатегория B — 2 месяца 15 дней.\nКатегория C — полного курса нет, только почасовое практическое вождение.",
+  "Qanday bron qilaman?": "Как забронировать?",
+  "«Bron» tugmasini bosing: toifa → necha soat → vaqt → bo‘sh instruktor. Admin tasdiqlagach Telegram’ga xabar keladi.": "Нажмите «Бронь»: категория → сколько часов → время → свободный инструктор. После подтверждения администратором придёт сообщение в Telegram.",
+  "To‘lov qanday?": "Как оплатить?",
+  "To‘lov avtodrom kassasida. Bron qilgach sizga kassa kodi (AVD-1234) beriladi — kassaga shuni aytasiz.": "Оплата — в кассе автодрома. После бронирования вы получите код для кассы (AVD-1234) — назовите его кассиру.",
+  "Bu yerda imtihon topshiriladimi?": "Здесь сдают экзамен?",
+  "Yo‘q. Bu — imtihonga TAYYORLOV maydonchasi. Imtihonning o‘zi rasmiy imtihon markazida topshiriladi.": "Нет. Это площадка для ПОДГОТОВКИ к экзамену. Сам экзамен сдаётся в официальном экзаменационном центре.",
+  "Bronni bekor qila olamanmi?": "Можно ли отменить бронь?",
+  "Ha. Tasdiqlanmagan bron darhol bekor bo‘ladi. Tasdiqlangan bron uchun sabab yozib so‘rov yuborasiz.": "Да. Неподтверждённая бронь отменяется сразу. Для подтверждённой брони отправьте запрос с указанием причины.",
+  "Ish vaqtingiz?": "Ваше время работы?",
+  "Qayerda joylashgansiz?": "Где вы находитесь?",
+  "Xaritada ochish uchun «Manzil» bo‘limiga o‘ting.": "Чтобы открыть на карте, перейдите в раздел «Адрес».",
+  "Manzilni «Yordam» orqali so‘rang.": "Уточните адрес через «Помощь».",
+  "TASH INDEX AVTODROM — haydashni amaliy o‘rganish uchun to‘liq jihozlangan maydoncha. Yo‘l belgilari, svetoforlar, piyoda o‘tish joylari va real yo‘l qatnovlari bilan: ko‘chaga chiqishdan va imtihonga borishdan oldin barcha vaziyatlarni shu yerda mashq qilasiz.": "TASH INDEX AVTODROM — полностью оборудованная площадка для практического обучения вождению. Дорожные знаки, светофоры, пешеходные переходы и реальная разметка: здесь вы отработаете все ситуации, прежде чем выехать в город и пойти на экзамен.",
+  "Natijalar": "Результаты",
+  "Orqaga": "Назад",
+  "Toshkent": "Ташкент",
+  "Rasmlar va videolar": "Фото и видео",
+  "{n} ta": "{n} шт.",
+  "Media": "Медиа",
+  "Video qo‘llanma": "Видеоинструкция",
+  "15 kun": "15 дней",
+  "2 oy 15 kun": "2 месяца 15 дней",
+  "Amaliy": "Практика",
+  "Mototsikl — to‘liq kurs": "Мотоцикл — полный курс",
+  "Yengil avto — to‘liq kurs": "Легковой авто — полный курс",
+  "Yuk avto — soatlik haydash": "Грузовой авто — почасовое вождение",
+  "{c} toifa": "Категория {c}",
+  "narxlar so‘mda": "цены в сумах",
+  "Yengil avtomobil": "Легковой автомобиль",
+  "Yuk avtomobili": "Грузовой автомобиль",
+  "5 soat · paket": "5 ч · пакет",
+  "{c} toifaga bron qilish": "Забронировать категорию {c}",
+  "To‘lov avtodrom kassasida. Narxlar admin tomonidan yangilanadi.": "Оплата — в кассе автодрома. Цены обновляет администратор.",
+  "Yangi instruktor": "Новый инструктор",
+  "Xarita": "Карта",
+  "Manzil admin tomonidan kiritiladi": "Адрес добавит администратор",
+  "Ko‘p beriladigan savollar": "Частые вопросы",
+  "Yopish": "Закрыть",
+  "Oldingi": "Предыдущее",
+  "Keyingi": "Следующее",
+  "Band vaqtlarni yuklab bo‘lmadi.": "Не удалось загрузить занятое время.",
+  "Hisobingiz bloklangan": "Ваш аккаунт заблокирован",
+  "Mashg‘ulotlar hali qo‘shilmagan": "Занятия ещё не добавлены",
+  "Onlayn bron vaqtincha yopiq": "Онлайн-бронирование временно закрыто",
+  "Savollar bo‘lsa, admin bilan bog‘laning.": "Если есть вопросы, свяжитесь с администратором.",
+  "Iltimos, keyinroq urinib ko‘ring yoki admin bilan bog‘laning.": "Пожалуйста, попробуйте позже или свяжитесь с администратором.",
+  "Adminga yozish": "Написать администратору",
+  "5 soat paket · {s}": "Пакет 5 часов · {s}",
+  "Qaysi toifada o‘qiysiz?": "В какой категории учитесь?",
+  "{n} o‘rgatadigan toifalar": "Категории, которые ведёт {n}",
+  "Narx 1 soat uchun": "Цена за 1 час",
+  " · hozircha instruktor yo‘q": " · пока нет инструкторов",
+  "Necha soat haydaysiz?": "Сколько часов будете ездить?",
+  "Narx avtomatik hisoblanadi": "Цена рассчитывается автоматически",
+  "PAKET": "ПАКЕТ",
+  "{m} tejaysiz": "экономия {m}",
+  "5 soat": "5 часов",
+  "Bir kunda yoki bir necha kunga bo‘lib — o‘zingiz tanlaysiz": "За один день или в несколько дней — выбираете сами",
+  "{n}-mashg‘ulot — qachon?": "Занятие {n} — когда?",
+  "Qachon kelasiz?": "Когда придёте?",
+  "{d} · {all} ta mashg‘ulotdan {n}-si. Har biri boshqa kunda.": "{d} · занятие {n} из {all}. Каждое — в другой день.",
+  "5 soat birdaniga": "5 часов подряд",
+  "{n} bo‘sh bo‘lgan vaqtlar": "Свободное время: {n}",
+  "boshlanish vaqtini tanlang": "выберите время начала",
+  "Vaqtni tanlang — keyin shu vaqtda bo‘sh instruktorlar chiqadi": "Выберите время — затем появятся инструкторы, свободные в это время",
+  "tanlanmagan": "не выбрано",
+  "Bu kunda boshqa mashg‘ulot tanlangan": "На этот день уже выбрано другое занятие",
+  "Avval instruktorni tanlamoqchiman": "Хочу сначала выбрать инструктора",
+  "Farqi yo‘q — hamma bo‘sh vaqtlarni ko‘rish": "Не важно — показать всё свободное время",
+  "Bu toifa bo‘yicha hozircha instruktor yo‘q. Boshqa toifani tanlang yoki adminga yozing.": "По этой категории пока нет инструкторов. Выберите другую категорию или напишите администратору.",
+  "{d} bo‘sh vaqt qolmadi": "{d}: свободного времени нет",
+  "Boshqa kunni tanlang yoki boshqa instruktorni ko‘ring.": "Выберите другой день или посмотрите другого инструктора.",
+  "Boshqa kunni tanlang.": "Выберите другой день.",
+  "{d}ni ko‘rish": "Показать: {d}",
+  "sizda bron": "ваша бронь",
+  "{n} bo‘sh": "{n} своб.",
+  "band": "занято",
+  "Batafsil": "Подробнее",
+  "Kim bilan haydaysiz?": "С кем будете ездить?",
+  "Tanlangan hamma kunlarda bo‘sh bitta instruktor topilmadi.": "Не нашлось инструктора, свободного во все выбранные дни.",
+  "Bu vaqtda bo‘sh instruktor qolmadi.": "На это время свободных инструкторов не осталось.",
+  "Boshqa vaqtni tanlash": "Выбрать другое время",
+  "Farqi yo‘q": "Не важно",
+  "Eng yuqori baholangan bo‘sh instruktor": "Свободный инструктор с самым высоким рейтингом",
+  "Instruktorni tanlang": "Выберите инструктора",
+  "Farqi yo‘q — vaqt bo‘yicha tanlash": "Не важно — выбрать по времени",
+  "Telefon raqamingiz — admin siz bilan bog‘lanadi": "Ваш номер телефона — администратор свяжется с вами",
+  "Izoh (ixtiyoriy)": "Комментарий (необязательно)",
+  "Masalan: birinchi marta haydayman": "Например: еду впервые",
+  "+ Izoh qo‘shish": "+ Добавить комментарий",
+  "Hammasi to‘g‘rimi?": "Всё верно?",
+  "Qatorni bossangiz — o‘zgartirasiz": "Нажмите на строку, чтобы изменить",
+  "Toifa": "Категория",
+  "Paket": "Пакет",
+  "5 soat · {s}": "5 часов · {s}",
+  "{n}-mashg‘ulot": "Занятие {n}",
+  " · avtomatik": " · автоматически",
+  "Jami": "Итого",
+  "To‘lov avtodrom kassasida — butun paketni bir marta to‘laysiz. Har mashg‘ulot uchun alohida kassa kodi beriladi.": "Оплата — в кассе автодрома, весь пакет оплачивается один раз. Для каждого занятия выдаётся свой код для кассы.",
+  "Davomiylik": "Длительность",
+  "Kun va vaqt": "День и время",
+  "To‘lov avtodrom kassasida. Bron qilgach sizga kassa kodi beriladi.": "Оплата — в кассе автодрома. После бронирования вы получите код для кассы.",
+  "5 soatlik paket": "Пакет 5 часов",
+  "bir kunda": "за один день",
+  "Tasdiqlash": "Подтвердить",
+  "Telefon raqamini kiriting: +998 90 123 45 67": "Введите номер телефона: +998 90 123 45 67",
+  "Paket bron qilindi!": "Пакет забронирован!",
+  " · kassa kodi — bosib nusxalang": " · код для кассы — нажмите, чтобы скопировать",
+  "Paket narxi": "Цена пакета",
+  "Kassaga kelganda istalgan kodni ayting — kassir butun paketni bir marta qabul qiladi.": "В кассе назовите любой из кодов — кассир примет оплату за весь пакет сразу.",
+  "Yana bron": "Ещё бронь",
+  "Bron yuborildi!": "Бронь отправлена!",
+  "Admin tasdiqlagach Telegram’ga xabar keladi.": "После подтверждения администратором придёт сообщение в Telegram.",
+  "Kassa uchun kod": "Код для кассы",
+  "Kassaga shu kodni ayting · bosib nusxalang": "Назовите этот код в кассе · нажмите, чтобы скопировать",
+  "Kassaga kelganda ismingizni ayting — kassir bronni topadi.": "В кассе назовите своё имя — кассир найдёт бронь.",
+  "Qachon": "Когда",
+  "Narx": "Цена",
+  "Kutilmoqda": "Ожидает",
+  "Tasdiqlangan": "Подтверждена",
+  "Jarayonda": "Идёт",
+  "Tugagan": "Завершена",
+  "Bekor qilingan": "Отменена",
+  "Rad etilgan": "Отклонена",
+  "Kelmagan": "Неявка",
+  "Yangilash": "Обновить",
+  "Kelgusi": "Предстоящие",
+  "Tarix": "История",
+  "Kelgusi bron yo‘q": "Нет предстоящих броней",
+  "Tarix bo‘sh": "История пуста",
+  "Birinchi darsingizni bir daqiqada bron qiling.": "Забронируйте первое занятие за минуту.",
+  "Tugagan va bekor qilingan bronlar shu yerda ko‘rinadi.": "Здесь будут завершённые и отменённые брони.",
+  "Admin tasdiqlashini kutmoqda.": "Ожидает подтверждения администратора.",
+  "Bekor qilish": "Отменить",
+  "Bekor qilish so‘rovi yuborilgan — admin javobini kuting.": "Запрос на отмену отправлен — дождитесь ответа администратора.",
+  "Bekor qilishni so‘rash": "Запросить отмену",
+  "Baho qo‘yilgan. Rahmat!": "Оценка поставлена. Спасибо!",
+  "Instruktorni baholash": "Оценить инструктора",
+  "Sabab:": "Причина:",
+  "Paket {a}/{b}": "Пакет {a}/{b}",
+  "Izoh:": "Комментарий:",
+  "Bronni bekor qilish": "Отмена брони",
+  "Bron tasdiqlangan, shuning uchun so‘rov adminga yuboriladi. Admin javobini Telegram’da olasiz.": "Бронь уже подтверждена, поэтому запрос отправится администратору. Ответ придёт в Telegram.",
+  "Vaqtim to‘g‘ri kelmadi": "Не подходит время",
+  "Boshqa kunga o‘tkazmoqchiman": "Хочу перенести на другой день",
+  "Kasal bo‘lib qoldim": "Заболел(а)",
+  "Rejalarim o‘zgardi": "Изменились планы",
+  "Sabab": "Причина",
+  "Qisqacha yozing…": "Коротко опишите…",
+  "Ortga": "Назад",
+  "So‘rov yuborish": "Отправить запрос",
+  "Sababni yozing yoki tanlang": "Напишите или выберите причину",
+  "So‘rov adminga yuborildi": "Запрос отправлен администратору",
+  "Bron bekor qilindi": "Бронь отменена",
+  "Dars qanday o‘tdi?": "Как прошло занятие?",
+  "Fikringiz (ixtiyoriy)": "Ваш отзыв (необязательно)",
+  "Instruktor haqida bir-ikki so‘z…": "Пару слов об инструкторе…",
+  "Rahmat! Bahoyingiz yuborildi": "Спасибо! Ваша оценка отправлена",
+  "Yordam markazi · admin tez javob beradi": "Центр помощи · администратор быстро ответит",
+  "Savolingiz bormi?": "Есть вопрос?",
+  "Yozing — admin shu yerda javob beradi va Telegram’ga xabar keladi.": "Напишите — администратор ответит здесь, и вам придёт сообщение в Telegram.",
+  "Narxlar haqida savolim bor": "У меня вопрос о ценах",
+  "Bronimni boshqa vaqtga o‘tkazmoqchiman": "Хочу перенести бронь на другое время",
+  "Manzilni qanday topaman?": "Как найти адрес?",
+  "Guvohnoma olish uchun nima kerak?": "Что нужно для получения прав?",
+  "Foydalanuvchi": "Пользователь",
+  "Telefon kiritilmagan": "Телефон не указан",
+  "Tahrirlash": "Редактировать",
+  "Jami bron": "Всего броней",
+  "O‘tgan dars": "Пройдено занятий",
+  "Soat haydash": "Часов вождения",
+  "Bron holati haqidagi xabarlar": "Сообщения о статусе брони",
+  "Kelgusi va o‘tgan darslar": "Предстоящие и прошедшие занятия",
+  "Avtodrom manzili": "Адрес автодрома",
+  "Admin bilan yozishma": "Переписка с администратором",
+  "Ma’lumotlarim": "Мои данные",
+  "Admin siz bilan shu ma’lumotlar orqali bog‘lanadi.": "По этим данным администратор свяжется с вами.",
+  "Telefon": "Телефон",
+  "Saqlash": "Сохранить",
+  "Ismingizni kiriting": "Введите имя",
+  "Telefon formati: +998 90 123 45 67": "Формат телефона: +998 90 123 45 67",
+  "Saqlandi": "Сохранено",
+  "Hozircha xabar yo‘q": "Пока нет уведомлений",
+  "Bron holati o‘zgarsa shu yerda ko‘rinadi.": "Здесь появятся изменения статуса брони.",
+  "Manzil admin tomonidan kiritiladi.": "Адрес добавит администратор.",
+  "Xaritada ochish": "Открыть на карте",
+  "Shu instruktor bilan bron": "Забронировать с этим инструктором",
+  "5 soatni qanday bo‘lasiz?": "Как разделить 5 часов?",
+  "Paket narxi o‘zgarmaydi — {p}. Har mashg‘ulot boshqa kunda bo‘ladi.": "Цена пакета не меняется — {p}. Каждое занятие — в отдельный день.",
+  "Bir kunda — 5 soat": "За один день — 5 часов",
+  "Hammasini bir kunda haydaysiz": "Все часы в один день",
+  "2 kunda — 3 + 2 soat": "За 2 дня — 3 + 2 часа",
+  "1-kuni 3 soat, 2-kuni 2 soat": "1-й день 3 часа, 2-й день 2 часа",
+  "3 kunda — 2 + 2 + 1 soat": "За 3 дня — 2 + 2 + 1 час",
+  "2 soat, 2 soat va 1 soat": "2 часа, 2 часа и 1 час",
+  "5 kunda — har kuni 1 soat": "За 5 дней — по 1 часу",
+  "5 kun, 1 soatdan": "5 дней по 1 часу",
+  "Yangilandi": "Обновлено",
+  "📝 Broningiz qabul qilindi": "📝 Ваша бронь принята",
+  "✅ Broningiz tasdiqlandi": "✅ Ваша бронь подтверждена",
+  "❌ Broningiz rad etildi": "❌ Ваша бронь отклонена",
+  "🚫 Bron bekor qilindi": "🚫 Бронь отменена",
+  "🚫 Broningiz bekor qilindi": "🚫 Ваша бронь отменена",
+  "🚗 Darsingiz boshlandi": "🚗 Ваше занятие началось",
+  "🏁 Darsingiz yakunlandi": "🏁 Ваше занятие завершено",
+  "ℹ️ Siz kelmagan deb belgilandingiz": "ℹ️ Вы отмечены как неявившийся",
+  "📝 5 soatlik paket qabul qilindi": "📝 Пакет 5 часов принят",
+  "🔔 Dars eslatmasi": "🔔 Напоминание о занятии",
+  "Ism majburiy": "Имя обязательно",
+  "Bu raqam boshqa Telegram hisobiga bog‘langan. Boshqa raqam kiriting yoki admin bilan bog‘laning.": "Этот номер привязан к другому аккаунту Telegram. Введите другой номер или свяжитесь с администратором.",
+  "Bu raqam avtodromda allaqachon ro‘yxatdan o‘tgan. «Telegramdagi raqamimni yuborish» tugmasini bosing — hisobingiz shu raqamga ulanadi.": "Этот номер уже зарегистрирован на автодроме. Нажмите «Отправить мой номер из Telegram» — аккаунт привяжется к этому номеру.",
+  "Ikki hisobingizda ham bron bor — birlashtirish uchun admin bilan bog‘laning.": "В обоих ваших аккаунтах есть брони — для объединения свяжитесь с администратором.",
+  "date=YYYY-MM-DD formatida bo‘lishi kerak": "Дата должна быть в формате ГГГГ-ММ-ДД",
+  "5 soat — paket. Uni paket sifatida bron qiling.": "5 часов — это пакет. Забронируйте его как пакет.",
+  "Davomiylik: 30 daqiqa, 1 soat yoki 2 soat": "Длительность: 30 минут, 1 час или 2 часа",
+  "Soat soni 1 dan 8 gacha bo‘lishi kerak": "Количество часов — от 1 до 8",
+  "Mashg‘ulot turini tanlang": "Выберите вид занятия",
+  "start_at majburiy": "Укажите время начала",
+  "Sana/vaqt noto‘g‘ri": "Неверная дата или время",
+  "O‘tgan vaqtga bron qilib bo‘lmaydi": "Нельзя забронировать прошедшее время",
+  "Mashg‘ulot topilmadi yoki faol emas": "Занятие не найдено или неактивно",
+  "Vaqt oralig‘i noto‘g‘ri": "Неверный интервал времени",
+  "Instruktor tasdiqlanmagan yoki faol emas": "Инструктор не подтверждён или неактивен",
+  "Sizda shu vaqtda boshqa bron bor": "У вас уже есть бронь на это время",
+  "Instruktor bu vaqtda band": "Инструктор занят в это время",
+  "Instruktor bu vaqtda band. Boshqa vaqtni tanlang.": "Инструктор занят в это время. Выберите другое время.",
+  "Bu vaqt allaqachon band. Boshqa vaqtni tanlang.": "Это время уже занято. Выберите другое время.",
+  "Bron yaratilmadi": "Бронь не создана",
+  "Paket faqat A, B, C toifalar uchun": "Пакет доступен только для категорий A, B, C",
+  "5 soatlik paket hozir o‘chirilgan": "Пакет 5 часов сейчас отключён",
+  "5 soatlik paket faqat B toifa uchun": "Пакет 5 часов — только для категории B",
+  "Paket bron qilinmadi": "Пакет не забронирован",
+  "Paket 1 tadan 5 tagacha mashg‘ulotga bo‘linadi": "Пакет делится на 1–5 занятий",
+  "Har bir mashg‘ulot butun soat bo‘lishi kerak (1–5 soat)": "Каждое занятие — целое число часов (1–5)",
+  "Mashg‘ulotlar jami 5 soat bo‘lishi kerak": "Всего занятий должно быть на 5 часов",
+  "Mashg‘ulotlar vaqtini tanlang": "Выберите время занятий",
+  "Mashg‘ulotlar vaqti bir-birining ustiga tushyapti": "Время занятий пересекается",
+  "Bron topilmadi": "Бронь не найдена",
+  "Bu bronni endi bekor qilib bo‘lmaydi": "Эту бронь уже нельзя отменить",
+  "Bekor qilish sababini yozing (kamida 3 belgi)": "Укажите причину отмены (минимум 3 символа)",
+  "So‘rovingiz allaqachon yuborilgan. Admin javobini kuting.": "Запрос уже отправлен. Дождитесь ответа администратора.",
+  "So‘rov Adminga yuborildi. Javobni kuting.": "Запрос отправлен администратору. Дождитесь ответа.",
+  "Bekor qilish so‘rovi yuborilmadi": "Не удалось отправить запрос на отмену",
+  "Ruxsat yo‘q": "Нет доступа",
+  "Bu bron sizga tegishli emas": "Эта бронь не принадлежит вам",
+  "Baho 1 dan 5 gacha bo‘lishi kerak": "Оценка — от 1 до 5",
+  "Faqat tugagan mashg‘ulot uchun sharh qoldirish mumkin": "Отзыв можно оставить только после завершённого занятия",
+  "Bu bronda instruktor biriktirilmagan": "К этой брони не назначен инструктор",
+  "Bu mashg‘ulot uchun sharh allaqachon yuborilgan": "Отзыв к этому занятию уже отправлен",
+  "Profil topilmadi": "Профиль не найден",
+  "Xabar bo‘sh bo‘lmasin": "Сообщение не должно быть пустым",
+  "Serverda xato yuz berdi. Qayta urinib ko‘ring.": "На сервере произошла ошибка. Попробуйте ещё раз.",
+  "Profil saqlanmadi": "Профиль не сохранён",
+  "Instruktorlar yuklanmadi": "Не удалось загрузить инструкторов",
+  "Band vaqtlar yuklanmadi": "Не удалось загрузить занятое время",
+  "Bronlar yuklanmadi": "Не удалось загрузить брони",
+  "Bu telefon raqami boshqa foydalanuvchida ro‘yxatdan o‘tgan": "Этот номер телефона зарегистрирован у другого пользователя",
+  "Foydalanuvchi yaratilmadi": "Не удалось создать пользователя",
+}/*/RU*/;
+
 /* --- vaqt: hammasi Toshkent vaqti bilan --- */
 const ymd = (d = new Date()) => new Intl.DateTimeFormat('en-CA', { timeZone: TZ }).format(d);
 const hhmm = d => new Intl.DateTimeFormat('en-GB', { timeZone: TZ, hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(d);
@@ -662,24 +1082,39 @@ const at = (date, time) => new Date(`${date}T${time}:00+05:00`);
 const addDays = (date, n) => ymd(new Date(at(date, '12:00').getTime() + n * 864e5));
 const toMin = t => { const [h, m] = String(t || '').split(':').map(Number); return (h || 0) * 60 + (m || 0); };
 const fromMin = m => `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
-const WD = ['yakshanba', 'dushanba', 'seshanba', 'chorshanba', 'payshanba', 'juma', 'shanba'];
-const WD_S = ['Ya', 'Du', 'Se', 'Cho', 'Pa', 'Ju', 'Sha'];
-const MON = ['yanvar', 'fevral', 'mart', 'aprel', 'may', 'iyun', 'iyul', 'avgust', 'sentabr', 'oktabr', 'noyabr', 'dekabr'];
-const MON_S = ['yan', 'fev', 'mar', 'apr', 'may', 'iyn', 'iyl', 'avg', 'sen', 'okt', 'noy', 'dek'];
+const DT = {
+  uz: {
+    wd: ['yakshanba', 'dushanba', 'seshanba', 'chorshanba', 'payshanba', 'juma', 'shanba'],
+    wds: ['Ya', 'Du', 'Se', 'Cho', 'Pa', 'Ju', 'Sha'],
+    mon: ['yanvar', 'fevral', 'mart', 'aprel', 'may', 'iyun', 'iyul', 'avgust', 'sentabr', 'oktabr', 'noyabr', 'dekabr'],
+    mons: ['yan', 'fev', 'mar', 'apr', 'may', 'iyn', 'iyl', 'avg', 'sen', 'okt', 'noy', 'dek'],
+  },
+  ru: {
+    wd: ['воскресенье', 'понедельник', 'вторник', 'среда', 'четверг', 'пятница', 'суббота'],
+    wds: ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'],
+    mon: ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'],
+    mons: ['янв', 'фев', 'мар', 'апр', 'мая', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек'],
+  },
+};
+const dt = () => DT[LANG] || DT.uz;
 const dp = date => ({ wd: at(date, '12:00').getUTCDay(), day: Number(date.slice(8, 10)), mon: Number(date.slice(5, 7)) - 1 });
 function dayName(date, withWd = true) {
   const t = ymd();
-  if (date === t) return 'Bugun';
-  if (date === addDays(t, 1)) return 'Ertaga';
-  if (date === addDays(t, -1)) return 'Kecha';
-  const p = dp(date);
-  return `${p.day}-${MON[p.mon]}${withWd ? ', ' + WD[p.wd] : ''}`;
+  if (date === t) return T('Bugun');
+  if (date === addDays(t, 1)) return T('Ertaga');
+  if (date === addDays(t, -1)) return T('Kecha');
+  const p = dp(date), L = dt();
+  return `${p.day}${LANG === 'ru' ? ' ' : '-'}${L.mon[p.mon]}${withWd ? ', ' + L.wd[p.wd] : ''}`;
 }
 const whenText = iso => { if (!iso) return '—'; const d = new Date(iso); return `${dayName(ymd(d))} · ${hhmm(d)}`; };
 /* Raqam ichida bo'linmas bo'shliq, «so‘m» oldida oddiy — tor ekranda so‘m keyingi qatorga tushadi */
-const money = v => new Intl.NumberFormat('ru-RU').format(Math.round(Number(v) || 0)).replace(/[\s\u202f]/g, '\u00a0') + ' so‘m';
+const money = v => new Intl.NumberFormat('ru-RU').format(Math.round(Number(v) || 0)).replace(/[\s\u202f]/g, '\u00a0') + (LANG === 'ru' ? ' сум' : ' so‘m');
 const num = v => new Intl.NumberFormat('ru-RU').format(Math.round(Number(v) || 0)).replace(/[\s\u202f]/g, '\u00a0');
-const fmtDur = m => { const n = Math.round(Number(m) || 0), h = Math.floor(n / 60), r = n % 60; return h ? (r ? `${h} soat ${r} daq` : `${h} soat`) : `${r} daq`; };
+const fmtDur = m => {
+  const n = Math.round(Number(m) || 0), h = Math.floor(n / 60), r = n % 60;
+  const [H, M] = LANG === 'ru' ? ['ч', 'мин'] : ['soat', 'daq'];
+  return h ? (r ? `${h} ${H} ${r} ${M}` : `${h} ${H}`) : `${r} ${M}`;
+};
 const fmtPhone = v => { const d = String(v || '').replace(/\D/g, ''); return d.length === 12 && d.startsWith('998') ? `+998 ${d.slice(3, 5)} ${d.slice(5, 8)} ${d.slice(8, 10)} ${d.slice(10)}` : String(v || ''); };
 const initials = n => String(n || '?').trim().split(/\s+/).slice(0, 2).map(x => x[0] || '').join('').toUpperCase() || '?';
 
@@ -709,6 +1144,7 @@ const P = {
   refresh: '<path d="M20 12a8 8 0 1 1-2.4-5.7"/><path d="M20 4.5v5h-5"/>',
   info: '<circle cx="12" cy="12" r="8.5"/><path d="M12 11v5.5M12 7.8h.01"/>',
   lock: '<rect x="5" y="10.5" width="14" height="10" rx="2.5"/><path d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5"/>',
+  globe: '<circle cx="12" cy="12" r="8.5"/><path d="M3.5 12h17M12 3.5c2.4 2.3 3.6 5.1 3.6 8.5s-1.2 6.2-3.6 8.5c-2.4-2.3-3.6-5.1-3.6-8.5S9.6 5.8 12 3.5z"/>',
   wheel: '<circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="2.2"/><path d="M12 14.2v6.3M9.9 11.3 4 9.5M14.1 11.3 20 9.5"/>',
 };
 /* Logotip — admin panel bilan bir xil, ichiga joylangan (tashqi so'rov yo'q) */
@@ -752,7 +1188,7 @@ async function copyText(text) {
     ta.remove();
   }
   haptic.ok();
-  toast(`${text} — nusxalandi`);
+  toast(T('{t} — nusxalandi', { t: text }));
 }
 
 /* =========================================================================
@@ -772,13 +1208,13 @@ async function req(path, { method = 'GET', body, timeout = 15000 } = {}) {
     let d = {};
     try { d = await r.json(); } catch (e) {}
     if (!r.ok || d.ok === false) {
-      const e = new Error(d.error || `Server xatosi (${r.status})`);
-      e.status = r.status; e.code = d.code || ''; throw e;
+      const e = new Error(trErr(d.error) || T('Server xatosi ({s})', { s: r.status }));
+      e.status = r.status; e.code = d.code || ''; e.raw = d.error || ''; throw e;
     }
     return d;
   } catch (e) {
-    if (e.name === 'AbortError') throw new Error('Server javob bermadi. Internetni tekshiring.');
-    if (e instanceof TypeError) throw new Error('Internet aloqasi yo‘q. Qayta urinib ko‘ring.');
+    if (e.name === 'AbortError') throw new Error(T('Server javob bermadi. Internetni tekshiring.'));
+    if (e instanceof TypeError) throw new Error(T('Internet aloqasi yo‘q. Qayta urinib ko‘ring.'));
     throw e;
   } finally { clearTimeout(timer); }
 }
@@ -889,12 +1325,12 @@ function options() {
   const pick = list => [...list].sort((a, b) =>
     ((Number(a.duration_minutes) === 60 ? 0 : 1) - (Number(b.duration_minutes) === 60 ? 0 : 1)) ||
     (Number(a.duration_minutes) - Number(b.duration_minutes)))[0];
-  const out = ['A', 'B', 'C'].filter(k => byCat[k]).map(k => ({ key: k, cat: k, course: pick(byCat[k]), title: k, sub: CAT_INFO[k] }));
-  other.forEach(c => out.push({ key: 'c:' + c.id, cat: '', course: c, title: c.name || 'Mashg‘ulot', sub: fmtDur(c.duration_minutes) }));
+  const out = ['A', 'B', 'C'].filter(k => byCat[k]).map(k => ({ key: k, cat: k, course: pick(byCat[k]), title: k, sub: T(CAT_INFO[k]) }));
+  other.forEach(c => out.push({ key: 'c:' + c.id, cat: '', course: c, title: c.name || T('Mashg‘ulot'), sub: fmtDur(c.duration_minutes) }));
   return out;
 }
 const curOpt = () => options().find(o => o.key === B.key) || null;
-const insName = i => (i && (i.full_name || [i.first_name, i.last_name].filter(Boolean).join(' '))) || 'Instruktor';
+const insName = i => (i && (i.full_name || [i.first_name, i.last_name].filter(Boolean).join(' '))) || T('Instruktor');
 const insCats = i => (Array.isArray(i.categories) && i.categories.length ? i.categories : ['B']).map(x => String(x).toUpperCase());
 function catInstructors(opt = curOpt()) {
   if (!opt) return [];
@@ -908,7 +1344,7 @@ const avatar = (i, cls = '') => {
   const url = insPhoto(i);
   return url
     ? `<span class="ava zoomable ${cls}" style="background-image:url('${esc(url)}')" role="button" tabindex="0"
-        data-act="insphoto" data-v="${esc(i.id)}" aria-label="${esc(insName(i))} — rasmni kattalashtirish"><span class="zm">${ico('zoom', 14, 2.4)}</span></span>`
+        data-act="insphoto" data-v="${esc(i.id)}" aria-label="${T('{n} — rasmni kattalashtirish', { n: esc(insName(i)) })}"><span class="zm">${ico('zoom', 14, 2.4)}</span></span>`
     : `<span class="ava ${cls}">${esc(initials(insName(i)))}</span>`;
 };
 function openInsPhoto(id) {
@@ -917,6 +1353,8 @@ function openInsPhoto(id) {
   if (!url) return;
   openViewer([{ public_url: url, media_type: 'image', title: insName(i) }], 0);
 }
+const rateN = n => N(Number(n) || 0, '{n} baho', ['{n} оценка', '{n} оценки', '{n} оценок']);
+const expN = n => N(Number(n) || 0, '{n} yil tajriba', ['опыт {n} год', 'опыт {n} года', 'опыт {n} лет']);
 const catTags = i => `<span class="cats">${insCats(i).map(c => `<span class="tag a">${esc(c)}</span>`).join('')}</span>`;
 
 /* =========================================================================
@@ -953,11 +1391,14 @@ async function boot() {
   const wait = 650 - (Date.now() - t0);
   if (wait > 0) await new Promise(r => setTimeout(r, wait));
 
-  /* Birinchi kirish: avval telefon, keyin ism */
-  if (!S.me.phone && store.get('onb_skip') !== '1') return startOnb();
-
-  /* Bot havolasidan kelgan bo'lsa: t.me/bot?startapp=book */
-  const sp = String((tg.initDataUnsafe && tg.initDataUnsafe.start_param) || '').toLowerCase();
+  /* Birinchi kirish: avval TIL, keyin telefon va ism.
+     Telefoni bor eski mijozdan ham bir marta til so'raladi. */
+  if (needOnb()) return startOnb();
+  enterApp();
+}
+/** Ilovaga kirish. Bot havolasidan kelgan bo'lsa: t.me/bot?startapp=book */
+function enterApp() {
+  const sp = String((tg && tg.initDataUnsafe && tg.initDataUnsafe.start_param) || '').toLowerCase();
   const first = VIEWS.find(v => v !== 'onb' && sp.startsWith(v)) || (location.hash.slice(1) || 'home');
   go(first, false);
   loadNotes();
@@ -995,28 +1436,28 @@ function renderShell() {
   $('#app').innerHTML = `
     <main class="wrap" id="main"></main>
     <div id="dock"></div>
-    <nav class="nav" aria-label="Menyu"><div class="nav-in">
+    <nav class="nav" aria-label="${T('Menyu')}"><div class="nav-in">
       ${NAV.map(([v, i, t]) => v === 'book'
-        ? `<button class="fab" data-act="go" data-v="book" aria-label="Bron qilish"><span class="fb">${ico('book', 26, 2.2)}</span><span>${t}</span></button>`
-        : `<button data-act="go" data-v="${v}" aria-label="${t}">${ico(i, 23)}<span>${t}</span>${v === 'bookings' ? '<i class="badge hidden" id="bkBadge"></i>' : ''}</button>`).join('')}
+        ? `<button class="fab" data-act="go" data-v="book" aria-label="${T('Bron qilish')}"><span class="fb">${ico('book', 26, 2.2)}</span><span>${T(t)}</span></button>`
+        : `<button data-act="go" data-v="${v}" aria-label="${T(t)}">${ico(i, 23)}<span>${T(t)}</span>${v === 'bookings' ? '<i class="badge hidden" id="bkBadge"></i>' : ''}</button>`).join('')}
     </div></nav>`;
 }
 function renderSplash() {
   document.body.classList.add('onb-mode');
-  $('#main').innerHTML = `<div class="splash"><div>${logoImg()}<b>TASH INDEX AVTODROM</b><small>Yuklanmoqda…</small></div></div>`;
+  $('#main').innerHTML = `<div class="splash"><div>${logoImg()}<b>TASH INDEX AVTODROM</b><small>${T('Yuklanmoqda…')}</small></div></div>`;
 }
 function renderFatal(kind, msg) {
   document.body.classList.remove('onb-mode');
   const txt = kind === 'tg'
-    ? { h: 'Telegram orqali oching', p: 'Bu ilova TASH INDEX AVTODROM botidagi «Mini App» tugmasi orqali ishlaydi.' }
-    : { h: 'Kirish amalga oshmadi', p: msg || 'Iltimos, ilovani yopib, bot orqali qayta oching.' };
+    ? { h: T('Telegram orqali oching'), p: T('Bu ilova TASH INDEX AVTODROM botidagi «Mini App» tugmasi orqali ishlaydi.') }
+    : { h: T('Kirish amalga oshmadi'), p: msg || T('Iltimos, ilovani yopib, bot orqali qayta oching.') };
   $('#app').innerHTML = `<div class="fatal"><div>${logoImg('logo big')}<h2>${esc(txt.h)}</h2><p>${esc(txt.p)}</p>
-    ${kind === 'auth' ? `<button class="btn btn-primary btn-sm" data-act="reload" style="margin:0 auto">${ico('refresh', 18)} Qayta urinish</button>` : ''}</div></div>`;
+    ${kind === 'auth' ? `<button class="btn btn-primary btn-sm" data-act="reload" style="margin:0 auto">${ico('refresh', 18)} ${T('Qayta urinish')}</button>` : ''}</div></div>`;
 }
 
 function go(v, push = true, anchor = '') {
   if (!VIEWS.includes(v)) v = 'home';
-  if (v === 'onb' && S.me && S.me.phone) v = 'home';
+  if (v === 'onb' && !needOnb()) v = 'home';
   if (S.view === 'support' && v !== 'support') stopChatPoll();
   if (v === 'book' && (!B.started || B.done)) startBook();   // tugagan bron o'rniga yangisi
   S.view = v;
@@ -1047,8 +1488,8 @@ function renderDock() {
   if (S.view === 'support') {
     if (!$('#chatIn')) {
       d.innerHTML = `<div class="composer"><div class="composer-in">
-        <textarea class="input" id="chatIn" rows="1" maxlength="2000" placeholder="Xabar yozing…" aria-label="Xabar"></textarea>
-        <button class="send" data-act="send" id="sendBtn" aria-label="Yuborish" disabled>${ico('send', 21)}</button></div></div>`;
+        <textarea class="input" id="chatIn" rows="1" maxlength="2000" placeholder="${T('Xabar yozing…')}" aria-label="${T('Xabar')}"></textarea>
+        <button class="send" data-act="send" id="sendBtn" aria-label="${T('Yuborish')}" disabled>${ico('send', 21)}</button></div></div>`;
     }
     return;
   }
@@ -1056,13 +1497,13 @@ function renderDock() {
 }
 function syncBack() {
   if (!tg || !tg.BackButton) return;
-  const show = viewerOpen() || sheetOpen() || (S.view === 'onb' ? S.onbStep > 1 : S.view !== 'home');
+  const show = viewerOpen() || sheetOpen() || (S.view === 'onb' ? S.onbStep > 0 : S.view !== 'home');
   try { show ? tg.BackButton.show() : tg.BackButton.hide(); } catch (e) {}
 }
 function onBack() {
   if (viewerOpen()) return closeViewer();
   if (sheetOpen()) return closeSheet();
-  if (S.view === 'onb') { if (S.onbStep > 1) { S.onbStep = 1; render(); syncBack(); } return; }
+  if (S.view === 'onb') { if (S.onbStep > 0) { S.onbStep--; S.onbDir = 'b'; render(); syncBack(); } return; }
   if (S.view === 'book' && B.started && !B.done) return prevStep();   // bron bosqichlari bo'yicha orqaga
   if (S.view !== 'home') go('home');
 }
@@ -1115,9 +1556,12 @@ function confetti() {
 /* =========================================================================
    KIRISH: 1) telefon  2) ism-familiya  →  xush kelibsiz
    ========================================================================= */
+const langChosen = () => !!LANGS[store.get('lang') || ''];
+const needPhone = () => !(S.me && S.me.phone) && store.get('onb_skip') !== '1';
+const needOnb = () => !langChosen() || needPhone();
 function startOnb() {
   const tu = (tg && tg.initDataUnsafe && tg.initDataUnsafe.user) || {};
-  S.onbStep = 1;
+  S.onbStep = langChosen() ? 1 : 0;
   S.onb = {
     phone: '',
     first: S.me.first_name || tu.first_name || '',
@@ -1128,30 +1572,55 @@ function startOnb() {
 }
 const phoneDigits = v => { let d = String(v || '').replace(/\D/g, ''); if (d.length > 9 && d.startsWith('998')) d = d.slice(3); return d.slice(0, 9); };
 const phoneMask = d => [d.slice(0, 2), d.slice(2, 5), d.slice(5, 7), d.slice(7, 9)].filter(Boolean).join(' ');
+/* 0-qadam — til. Ikki tilda yozilgan: mijoz hali tanlamagan.
+   Telegram tili bo'yicha taxmin qilingani ramka bilan belgilanadi. */
+function renderLangPick() {
+  $('#main').innerHTML = `<div class="onb ${S.onbDir === 'b' ? 'slide-b' : 'slide-f'}">
+    <div class="onb-logo">${logoImg()}</div>
+    <h1 class="lang-h">Tilni tanlang<span>Выберите язык</span></h1>
+    <div class="lang-pick">${Object.keys(LANGS).map(k => `
+      <button class="${k === LANG ? 'sug' : ''}" data-act="onblang" data-v="${k}">
+        <span class="flag" aria-hidden="true">${FLAG[k]}</span>
+        <span class="tx"><b>${LANGS[k]}</b><small>${k === 'ru' ? 'Продолжить на русском' : 'O‘zbek tilida davom etish'}</small></span>
+        <span class="go">${ico('arrow', 20, 2.4)}</span></button>`).join('')}</div>
+    <p class="lang-note">Keyin Profil → Til orqali o‘zgartirish mumkin<br>Позже можно изменить: Профиль → Язык</p>
+  </div>`;
+}
+function onbLang(l) {
+  if (!LANGS[l]) return;
+  haptic.tap();
+  LANG = l;
+  store.set('lang', l);
+  document.documentElement.lang = l;
+  renderShell();                       // pastki menyu ham tanlangan tilda
+  if (needPhone()) { S.onbStep = 1; S.onbDir = 'f'; render(); syncBack(); return; }
+  enterApp();
+}
 function renderOnb() {
+  if (S.onbStep === 0) return renderLangPick();
   const o = S.onb, one = S.onbStep === 1;
   const canShare = !!(tg && tg.requestContact && ver('6.9'));
   $('#main').innerHTML = `<div class="onb ${S.onbDir === 'b' ? 'slide-b' : 'slide-f'}">
     <div class="onb-logo">${logoImg()}</div>
     <div class="onb-dots" aria-hidden="true"><i class="${one ? 'on' : ''}"></i><i class="${one ? '' : 'on'}"></i></div>
     ${one ? `
-      <h1>Telefon raqamingiz</h1>
-      <p class="lead">Bron holati va eslatmalar shu raqamga bog‘lanadi. Admin kerak bo‘lsa qo‘ng‘iroq qiladi.</p>
+      <h1>${T('Telefon raqamingiz')}</h1>
+      <p class="lead">${T('Bron holati va eslatmalar shu raqamga bog‘lanadi. Admin kerak bo‘lsa qo‘ng‘iroq qiladi.')}</p>
       <label class="phone-box"><span>+998</span>
-        <input id="onbPhone" type="tel" inputmode="numeric" autocomplete="tel-national" placeholder="90 123 45 67" value="${esc(phoneMask(o.phone))}" aria-label="Telefon raqami"></label>
-      ${canShare ? `<div class="or">yoki</div>
-        <button class="btn ${o.code === 'PHONE_NEEDS_CONTACT' ? 'btn-primary' : 'btn-tg'}" data-act="sharecontact">${ico('phone', 20)} Telegramdagi raqamimni yuborish</button>` : ''}`
+        <input id="onbPhone" type="tel" inputmode="numeric" autocomplete="tel-national" placeholder="90 123 45 67" value="${esc(phoneMask(o.phone))}" aria-label="${T('Telefon raqami')}"></label>
+      ${canShare ? `<div class="or">${T('yoki')}</div>
+        <button class="btn ${o.code === 'PHONE_NEEDS_CONTACT' ? 'btn-primary' : 'btn-tg'}" data-act="sharecontact">${ico('phone', 20)} ${T('Telegramdagi raqamimni yuborish')}</button>` : ''}`
     : `
-      <h1>Ismingiz nima?</h1>
-      <p class="lead">Instruktor va admin sizga shunday murojaat qiladi.</p>
-      <input class="big-in" id="onbFirst" autocomplete="given-name" placeholder="Ism" value="${esc(o.first)}" aria-label="Ism">
-      <input class="big-in" id="onbLast" autocomplete="family-name" placeholder="Familiya" value="${esc(o.last)}" aria-label="Familiya">`}
-    ${o.err ? `<div class="note err onb-err">${esc(o.err)}</div>` : ''}
+      <h1>${T('Ismingiz nima?')}</h1>
+      <p class="lead">${T('Instruktor va admin sizga shunday murojaat qiladi.')}</p>
+      <input class="big-in" id="onbFirst" autocomplete="given-name" placeholder="${T('Ism')}" value="${esc(o.first)}" aria-label="${T('Ism')}">
+      <input class="big-in" id="onbLast" autocomplete="family-name" placeholder="${T('Familiya')}" value="${esc(o.last)}" aria-label="${T('Familiya')}">`}
+    ${o.err ? `<div class="note err onb-err">${esc(T(o.err))}</div>` : ''}
     ${one && /^PHONE_/.test(o.code || '')
-      ? `<button class="link" style="margin:14px auto 0;padding:8px" data-act="onbskip">Hozircha raqamsiz davom etish</button>` : ''}
+      ? `<button class="link" style="margin:14px auto 0;padding:8px" data-act="onbskip">${T('Hozircha raqamsiz davom etish')}</button>` : ''}
   </div>
   <div class="onb-foot"><button class="btn btn-primary" data-act="onbnext" ${o.saving ? 'disabled' : ''}>
-    ${o.saving ? '<span class="spin"></span>' : one ? `Davom etish ${ico('arrow', 20)}` : `Tayyor ${ico('check', 20, 2.4)}`}</button></div>`;
+    ${o.saving ? '<span class="spin"></span>' : one ? `${T('Davom etish')} ${ico('arrow', 20)}` : `${T('Tayyor')} ${ico('check', 20, 2.4)}`}</button></div>`;
   setTimeout(() => { const el = $(one ? '#onbPhone' : (o.first ? '#onbLast' : '#onbFirst')); if (el && !o.phone && one) el.focus(); }, 250);
 }
 function onbNext() {
@@ -1191,7 +1660,7 @@ async function saveOnb() {
     o.code = e.code || '';
     /* Raqam band bo'lsa — raqam ekraniga qaytamiz. Kassada ro'yxatdan o'tgan
        mijoz Telegram raqamini yuborib, eski hisobini ulaydi. */
-    if (/^PHONE_/.test(o.code) || /telefon|raqam/i.test(e.message)) S.onbStep = 1;
+    if (/^PHONE_/.test(o.code) || /telefon|raqam/i.test(e.raw || e.message)) S.onbStep = 1;
     haptic.err(); render(); syncBack();
   }
 }
@@ -1224,15 +1693,15 @@ function shareContact() {
         if (S.onb.phone.length === 9) { S.onbStep = 2; S.onbDir = 'f'; }
         render(); syncBack();
       } else if (ok) {
-        toast('Raqam yuborildi. Iltimos, uni shu yerga ham yozing.');
+        toast(T('Raqam yuborildi. Iltimos, uni shu yerga ham yozing.'));
       }
     });
-  } catch (e) { toast('Raqamni qo‘lda kiriting', true); }
+  } catch (e) { toast(T('Raqamni qo‘lda kiriting'), true); }
 }
 function sayHello() {
   const el = document.createElement('div');
   el.className = 'hello';
-  el.innerHTML = `<div>${logoImg()}<h2>Xush kelibsiz, ${esc(S.me.first_name || S.onb.first)}!</h2><p>TASH INDEX AVTODROM</p></div>`;
+  el.innerHTML = `<div>${logoImg()}<h2>${T('Xush kelibsiz, {n}!', { n: esc(S.me.first_name || S.onb.first) })}</h2><p>TASH INDEX AVTODROM</p></div>`;
   document.body.appendChild(el);
   confetti();
   const done = () => { if (!el.isConnected) return; el.classList.add('out'); setTimeout(() => el.remove(), 360); };
@@ -1290,14 +1759,14 @@ function phonesOf() {
 }
 const telOf = () => phonesOf().length ? phonesOf()[0].tel : '';
 const callBtns = (cls = '') => phonesOf().map(p =>
-  `<a class="callbtn ${cls}" href="tel:${esc(p.tel)}"><span class="ic">${ico('phone', 22)}</span><span>Qo‘ng‘iroq qilish<small>${esc(p.text)}</small></span></a>`).join('');
+  `<a class="callbtn ${cls}" href="tel:${esc(p.tel)}"><span class="ic">${ico('phone', 22)}</span><span>${T('Qo‘ng‘iroq qilish')}<small>${esc(p.text)}</small></span></a>`).join('');
 function openCalls() {
   const ph = phonesOf();
   if (ph.length === 1) { location.href = 'tel:' + ph[0].tel; return; }
-  openSheet(`<h3>Qo‘ng‘iroq qilish</h3>
-    <p class="lead">Qaysi raqamga qo‘ng‘iroq qilamiz?</p>${callBtns()}`);
+  openSheet(`<h3>${T('Qo‘ng‘iroq qilish')}</h3>
+    <p class="lead">${T('Qaysi raqamga qo‘ng‘iroq qilamiz?')}</p>${callBtns()}`);
 }
-const hoursText = () => S.settings.working_hours || `Har kuni ${S.settings.work_start} – ${S.settings.work_end}`;
+const hoursText = () => S.settings.working_hours || T('Har kuni {a} – {b}', { a: S.settings.work_start, b: S.settings.work_end });
 
 /* =========================================================================
    ASOSIY — xush kelibsiz va katta tanlovlar
@@ -1313,7 +1782,7 @@ function renderHome() {
   const hm = homeMedia(), g = gallery(), tel = telOf(), vid = guideVideo();
   const infoBg = (g.find(x => x.media_type !== 'video') || hm);
   const hr = Number(hhmm(new Date()).slice(0, 2));
-  const hi = hr < 5 ? 'Xayrli tun' : hr < 11 ? 'Xayrli tong' : hr < 17 ? 'Xayrli kun' : 'Xayrli kech';
+  const hi = T(hr < 5 ? 'Xayrli tun' : hr < 11 ? 'Xayrli tong' : hr < 17 ? 'Xayrli kun' : 'Xayrli kech');
   const photo = safeUrl(tu.photo_url);
   const tile = (cls, icon, label, act, v = '', extra = '') =>
     `<button class="tile rv" style="--d:${tileN++ * 0.04}s" data-act="${act}" data-v="${esc(v)}" ${extra}><span class="ti ${cls}">${ico(icon, 25)}</span>${label}</button>`;
@@ -1324,54 +1793,54 @@ function renderHome() {
     <header class="top">
       ${logoImg()}
       <div class="who brand"><h1>TASH INDEX<br>AVTODROM</h1></div>
-      <button class="icon-btn" data-act="notes" aria-label="Bildirishnomalar">${ico('bell', 21)}<i class="dot hidden" id="noteDot"></i></button>
-      <button class="me" data-act="go" data-v="profile" aria-label="Profil" ${photo ? `style="background-image:url('${esc(photo)}')"` : ''}>${photo ? '' : esc(initials(me.full_name || first))}</button>
+      <button class="icon-btn" data-act="notes" aria-label="${T('Bildirishnomalar')}">${ico('bell', 21)}<i class="dot hidden" id="noteDot"></i></button>
+      <button class="me" data-act="go" data-v="profile" aria-label="${T('Profil')}" ${photo ? `style="background-image:url('${esc(photo)}')"` : ''}>${photo ? '' : esc(initials(me.full_name || first))}</button>
     </header>
 
-    ${me.is_blocked ? `<div class="note err" style="margin-bottom:12px">Hisobingiz bloklangan. Savollar bo‘lsa «Yordam» bo‘limiga yozing.</div>` : ''}
-    ${S.loadErr ? `<div class="note warn" style="margin-bottom:12px">${esc(S.loadErr)}</div>` : ''}
+    ${me.is_blocked ? `<div class="note err" style="margin-bottom:12px">${T('Hisobingiz bloklangan. Savollar bo‘lsa «Yordam» bo‘limiga yozing.')}</div>` : ''}
+    ${S.loadErr ? `<div class="note warn" style="margin-bottom:12px">${esc(T(S.loadErr))}</div>` : ''}
 
     <section class="welcome rv ${hm ? '' : 'noimg'}">
       ${hm ? `<div class="welcome-bg" style="${bgOf(hm)}"></div>` : '<div class="road3d" aria-hidden="true"></div>'}
       <div class="welcome-shade"></div>
       <div class="welcome-in">
         <small>${esc(hi)}</small>
-        <h2>Xush kelibsiz${first ? `,<br>${esc(first)}` : ''} <span class="wave">👋</span></h2>
-        <p>TASH INDEX AVTODROMga</p>
+        <h2>${T('Xush kelibsiz')}${first ? `,<br>${esc(first)}` : ''} <span class="wave">👋</span></h2>
+        <p>${T('TASH INDEX AVTODROMga')}</p>
       </div>
     </section>
 
-    <div class="ask rv">Nima qilamiz?</div>
+    <div class="ask rv">${T('Nima qilamiz?')}</div>
     <div class="choices">
       <button class="choice main rv" data-act="go" data-v="book">
         <span class="ci">${ico('book', 30, 2)}</span>
-        <span><b>Bron qilish</b><small>Toifa → soat → vaqt. Bir daqiqada</small></span>
+        <span><b>${T('Bron qilish')}</b><small>${T('Toifa → soat → vaqt. Bir daqiqada')}</small></span>
         <span class="go">${ico('arrow', 20, 2.4)}</span></button>
       <button class="choice info rv" style="--d:.06s;${infoBg ? bgOf(infoBg) : ''}" data-act="about">
         <span class="ci">${ico('pin', 30, 2)}</span>
-        <span><b>Avtodrom haqida</b><small>Rasmlar, videolar, narxlar, manzil</small></span>
+        <span><b>${T('Avtodrom haqida')}</b><small>${T('Rasmlar, videolar, narxlar, manzil')}</small></span>
         <span class="go">${ico('chev', 20, 2.4)}</span></button>
     </div>
 
     ${next ? `<div class="card next rv" data-act="go" data-v="bookings" role="button" tabindex="0">
-      <div class="lbl"><span>Keyingi darsingiz</span>${pill(next.status)}</div>
+      <div class="lbl"><span>${T('Keyingi darsingiz')}</span>${pill(next.status)}</div>
       <div class="when">${esc(whenText(next.start_at))}</div>
       <div class="meta">${esc(bkLine(next))}</div>
       ${next.pickup_code ? codeBox(next.pickup_code) : ''}
     </div>` : ''}
 
-    <div class="ask rv">Katalog</div>
+    <div class="ask rv">${T('Katalog')}</div>
     <div class="tiles">
-      ${tile('t1', 'star', 'Narxlar', 'about', 'a-prices')}
-      ${tile('t2', 'user', 'Instruktorlar', 'about', 'a-ins')}
-      ${g.length ? tile('t4', 'copy', 'Rasmlar', 'gallery', '0') : tile('t4', 'info', 'Sharoitlar', 'about', 'a-fac')}
-      ${vid ? tile('t6', 'play', 'Video', 'about', 'a-video') : tile('t6', 'clock', 'Kurs muddati', 'about', 'a-course')}
-      ${tile('t5', 'pin', 'Manzil', 'about', 'a-loc')}
-      ${tel ? tile('t7', 'phone', 'Qo‘ng‘iroq', 'calls')
-            : tile('t7', 'chat', 'Savol berish', 'go', 'support')}
-      ${tile('t3', 'list', 'Bronlarim', 'go', 'bookings', '')}
-      ${tile('t8', 'info', 'Savollar', 'about', 'a-faq')}
-      ${tile('t9', 'user', 'Profil', 'go', 'profile')}
+      ${tile('t1', 'star', T('Narxlar'), 'about', 'a-prices')}
+      ${tile('t2', 'user', T('Instruktorlar'), 'about', 'a-ins')}
+      ${g.length ? tile('t4', 'copy', T('Rasmlar'), 'gallery', '0') : tile('t4', 'info', T('Sharoitlar'), 'about', 'a-fac')}
+      ${vid ? tile('t6', 'play', T('Video'), 'about', 'a-video') : tile('t6', 'clock', T('Kurs muddati'), 'about', 'a-course')}
+      ${tile('t5', 'pin', T('Manzil'), 'about', 'a-loc')}
+      ${tel ? tile('t7', 'phone', T('Qo‘ng‘iroq'), 'calls')
+            : tile('t7', 'chat', T('Savol berish'), 'go', 'support')}
+      ${tile('t3', 'list', T('Bronlarim'), 'go', 'bookings', '')}
+      ${tile('t8', 'info', T('Savollar'), 'about', 'a-faq')}
+      ${tile('t9', 'user', T('Profil'), 'go', 'profile')}
     </div>`;
   if (n) { const b = document.querySelector('.tile[data-v="bookings"]'); if (b) b.insertAdjacentHTML('beforeend', `<i class="n">${n}</i>`); }
   updateNoteDot();
@@ -1399,25 +1868,25 @@ function facilities() {
   const list = parseFacilities(S.settings.facilities);
   if (list.length) return list;
   return [
-    { icon: '🚦', title: 'Yo‘l belgilari va svetoforlar', text: 'Ishlaydigan svetoforlar, STOP, yo‘l berish va yo‘nalish belgilari.' },
-    { icon: '🛣️', title: 'Real yo‘l qatnovlari', text: 'Belgilangan yo‘laklar, chorrahalar, piyoda o‘tish joylari va bordyurlar.' },
-    { icon: '🅿️', title: 'Parkovka va manyovr zonalari', text: 'To‘xtash joylari va burilish mashqlari uchun ajratilgan maydon.' },
-    { icon: '🏛️', title: 'Imtihonga tayyorlov', text: 'Maydoncha imtihon talablariga mos — shu yerda mashq qilib, tayyor bo‘lasiz.' },
-    { icon: '👨‍🏫', title: 'Tasdiqlangan instruktorlar', text: 'Har biri admin tekshiruvidan o‘tgan, reyting real baholardan.' },
-    { icon: '🕖', title: 'Ish vaqti', text: hoursText() },
+    { icon: '🚦', title: T('Yo‘l belgilari va svetoforlar'), text: T('Ishlaydigan svetoforlar, STOP, yo‘l berish va yo‘nalish belgilari.') },
+    { icon: '🛣️', title: T('Real yo‘l qatnovlari'), text: T('Belgilangan yo‘laklar, chorrahalar, piyoda o‘tish joylari va bordyurlar.') },
+    { icon: '🅿️', title: T('Parkovka va manyovr zonalari'), text: T('To‘xtash joylari va burilish mashqlari uchun ajratilgan maydon.') },
+    { icon: '🏛️', title: T('Imtihonga tayyorlov'), text: T('Maydoncha imtihon talablariga mos — shu yerda mashq qilib, tayyor bo‘lasiz.') },
+    { icon: '👨‍🏫', title: T('Tasdiqlangan instruktorlar'), text: T('Har biri admin tekshiruvidan o‘tgan, reyting real baholardan.') },
+    { icon: '🕖', title: T('Ish vaqti'), text: hoursText() },
   ];
 }
 function faqList() {
   const L = locInfo();
   return [
-    ['Qaysi toifalar bor?', 'A — mototsikl.\nB — yengil avtomobil.\nC — yuk avtomobili (faqat amaliy haydash).'],
-    ['Kurs qancha davom etadi?', 'A toifa — 15 kun.\nB toifa — 2 oy 15 kun.\nC toifa — to‘liq kurs yo‘q, faqat soatlik amaliy haydash.'],
-    ['Qanday bron qilaman?', '«Bron» tugmasini bosing: toifa → necha soat → vaqt → bo‘sh instruktor. Admin tasdiqlagach Telegram’ga xabar keladi.'],
-    ['To‘lov qanday?', 'To‘lov avtodrom kassasida. Bron qilgach sizga kassa kodi (AVD-1234) beriladi — kassaga shuni aytasiz.'],
-    ['Bu yerda imtihon topshiriladimi?', 'Yo‘q. Bu — imtihonga TAYYORLOV maydonchasi. Imtihonning o‘zi rasmiy imtihon markazida topshiriladi.'],
-    ['Bronni bekor qila olamanmi?', 'Ha. Tasdiqlanmagan bron darhol bekor bo‘ladi. Tasdiqlangan bron uchun sabab yozib so‘rov yuborasiz.'],
-    ['Ish vaqtingiz?', hoursText()],
-    ['Qayerda joylashgansiz?', L.address ? L.address + '\nXaritada ochish uchun «Manzil» bo‘limiga o‘ting.' : 'Manzilni «Yordam» orqali so‘rang.'],
+    [T('Qaysi toifalar bor?'), T('A — mototsikl.\nB — yengil avtomobil.\nC — yuk avtomobili (faqat amaliy haydash).')],
+    [T('Kurs qancha davom etadi?'), T('A toifa — 15 kun.\nB toifa — 2 oy 15 kun.\nC toifa — to‘liq kurs yo‘q, faqat soatlik amaliy haydash.')],
+    [T('Qanday bron qilaman?'), T('«Bron» tugmasini bosing: toifa → necha soat → vaqt → bo‘sh instruktor. Admin tasdiqlagach Telegram’ga xabar keladi.')],
+    [T('To‘lov qanday?'), T('To‘lov avtodrom kassasida. Bron qilgach sizga kassa kodi (AVD-1234) beriladi — kassaga shuni aytasiz.')],
+    [T('Bu yerda imtihon topshiriladimi?'), T('Yo‘q. Bu — imtihonga TAYYORLOV maydonchasi. Imtihonning o‘zi rasmiy imtihon markazida topshiriladi.')],
+    [T('Bronni bekor qila olamanmi?'), T('Ha. Tasdiqlanmagan bron darhol bekor bo‘ladi. Tasdiqlangan bron uchun sabab yozib so‘rov yuborasiz.')],
+    [T('Ish vaqtingiz?'), hoursText()],
+    [T('Qayerda joylashgansiz?'), L.address ? L.address + '\n' + T('Xaritada ochish uchun «Manzil» bo‘limiga o‘ting.') : T('Manzilni «Yordam» orqali so‘rang.')],
   ];
 }
 function stats() {
@@ -1427,19 +1896,21 @@ function stats() {
   const avg = reviews ? rated.reduce((s, i) => s + Number(i.rating || 0) * Number(i.total_reviews || 0), 0) / reviews : 0;
   const exp = ins.reduce((s, i) => s + Number(i.experience_years || 0), 0);
   const cats = new Set(options().filter(o => o.cat).map(o => o.cat));
+  const cl = [...cats].join(', ') || 'A, B, C';
   return [
-    { n: ins.length, t: 'tasdiqlangan instruktor', i: 'user' },
-    reviews ? { n: avg, dec: 1, t: `o‘rtacha baho (${reviews} ta)`, i: 'star' } : null,
-    exp ? { n: exp, t: 'yil umumiy tajriba', i: 'clock' } : null,
-    { n: cats.size || 3, t: `toifa: ${[...cats].join(', ') || 'A, B, C'}`, i: 'car' },
+    { n: ins.length, t: N(ins.length, 'tasdiqlangan instruktor', ['проверенный инструктор', 'проверенных инструктора', 'проверенных инструкторов']), i: 'user' },
+    reviews ? { n: avg, dec: 1, t: N(reviews, 'o‘rtacha baho ({n} ta)', ['средняя оценка ({n} отзыв)', 'средняя оценка ({n} отзыва)', 'средняя оценка ({n} отзывов)']), i: 'star' } : null,
+    exp ? { n: exp, t: N(exp, 'yil umumiy tajriba', ['год общего опыта', 'года общего опыта', 'лет общего опыта']), i: 'clock' } : null,
+    { n: cats.size || 3, t: N(cats.size || 3, 'toifa: {c}', ['категория: {c}', 'категории: {c}', 'категорий: {c}'], { c: cl }), i: 'car' },
   ].filter(Boolean);
 }
 function renderAbout() {
   const cov = coverMedia(), g = gallery(), vid = guideVideo(), L = locInfo(), tel = telOf(), li = locImage();
   const opts = options().filter(o => o.cat);
-  const about = S.settings.about_text || 'TASH INDEX AVTODROM — haydashni amaliy o‘rganish uchun to‘liq jihozlangan maydoncha. Yo‘l belgilari, svetoforlar, piyoda o‘tish joylari va real yo‘l qatnovlari bilan: ko‘chaga chiqishdan va imtihonga borishdan oldin barcha vaziyatlarni shu yerda mashq qilasiz.';
+  const about = (LANG === 'ru' && S.settings.about_text_ru) || S.settings.about_text || T('TASH INDEX AVTODROM — haydashni amaliy o‘rganish uchun to‘liq jihozlangan maydoncha. Yo‘l belgilari, svetoforlar, piyoda o‘tish joylari va real yo‘l qatnovlari bilan: ko‘chaga chiqishdan va imtihonga borishdan oldin barcha vaziyatlarni shu yerda mashq qilasiz.');
   const secs = [['a-stats', 'Natijalar'], g.length ? ['a-gallery', 'Rasmlar'] : null, vid ? ['a-video', 'Video'] : null,
-                ['a-prices', 'Narxlar'], ['a-ins', 'Instruktorlar'], ['a-loc', 'Manzil'], ['a-faq', 'Savollar']].filter(Boolean);
+                ['a-prices', 'Narxlar'], ['a-ins', 'Instruktorlar'], ['a-loc', 'Manzil'], ['a-faq', 'Savollar']].filter(Boolean)
+                .map(([id, t]) => [id, T(t)]);
 
   $('#main').innerHTML = `
     <div class="cover">
@@ -1448,73 +1919,73 @@ function renderAbout() {
         : `<div class="slide" data-act="viewer" data-v="${i}" data-src="cover" style="${bgOf(m)}"></div>`).join('')
         : `<div class="slide"><div class="road3d" aria-hidden="true" style="right:18%;width:64%;height:340px"></div></div>`}</div>
       <div class="cover-shade"></div>
-      <button class="cover-back" data-act="go" data-v="home" aria-label="Orqaga">${ico('chevl', 22, 2.4)}</button>
+      <button class="cover-back" data-act="go" data-v="home" aria-label="${T('Orqaga')}">${ico('chevl', 22, 2.4)}</button>
       ${cov.length > 1 ? `<div class="dots" id="coverDots">${cov.map((_, i) => `<i class="${i ? '' : 'on'}"></i>`).join('')}</div>` : ''}
-      <div class="cover-cap">${logoImg()}<div><b>TASH INDEX AVTODROM</b><small>${esc(L.address || 'Toshkent')}</small></div></div>
+      <div class="cover-cap">${logoImg()}<div><b>TASH INDEX AVTODROM</b><small>${esc(L.address || T('Toshkent'))}</small></div></div>
     </div>
 
     <nav class="chipsnav" id="chipsnav">${secs.map(([id, t]) => `<button data-act="jump" data-v="${id}">${t}</button>`).join('')}</nav>
 
     <p class="about-txt rv">${esc(about)}</p>
 
-    <section class="asec" id="a-stats"><h2 class="rv">Natijalar</h2>
+    <section class="asec" id="a-stats"><h2 class="rv">${T('Natijalar')}</h2>
       <div class="stats4">${stats().map((s, i) => `<div class="stat rv" style="--d:${i * 0.06}s"><span class="si">${ico(s.i, 20)}</span>
         <b data-count="${s.n}" data-dec="${s.dec || 0}">0</b><span>${esc(s.t)}</span></div>`).join('')}</div>
     </section>
 
-    <section class="asec" id="a-fac"><h2 class="rv">Sharoitlar</h2>
+    <section class="asec" id="a-fac"><h2 class="rv">${T('Sharoitlar')}</h2>
       <div class="fac">${facilities().map((f, i) => `<div class="rv" style="--d:${i * 0.04}s"><i>${esc(f.icon || '✔️')}</i><span><b>${esc(f.title)}</b>${f.text ? `<span>${esc(f.text)}</span>` : ''}</span></div>`).join('')}</div>
     </section>
 
-    ${g.length ? `<section class="asec" id="a-gallery"><h2 class="rv">Rasmlar va videolar <span class="muted" style="font-size:14px;font-weight:600">${g.length} ta</span></h2>
-      <div class="gal rv">${g.slice(0, 7).map((m, i) => `<button data-act="gallery" data-v="${i}" style="${bgOf(m)}" aria-label="${esc(m.title || 'Media')}">
+    ${g.length ? `<section class="asec" id="a-gallery"><h2 class="rv">${T('Rasmlar va videolar')} <span class="muted" style="font-size:14px;font-weight:600">${T('{n} ta', { n: g.length })}</span></h2>
+      <div class="gal rv">${g.slice(0, 7).map((m, i) => `<button data-act="gallery" data-v="${i}" style="${bgOf(m)}" aria-label="${esc(m.title || T('Media'))}">
         ${m.media_type === 'video' ? `<video src="${esc(mUrl(m))}#t=0.5" muted playsinline preload="metadata" style="width:100%;height:100%;object-fit:cover"></video><span class="vi">${ico('play', 30)}</span>` : ''}
         ${i === 6 && g.length > 7 ? `<span class="more">+${g.length - 7}</span>` : ''}</button>`).join('')}</div>
     </section>` : ''}
 
-    ${vid ? `<section class="asec" id="a-video"><h2 class="rv">${esc(vid.title || 'Video qo‘llanma')}</h2>
+    ${vid ? `<section class="asec" id="a-video"><h2 class="rv">${esc(vid.title || T('Video qo‘llanma'))}</h2>
       <div class="vid rv"><video src="${esc(mUrl(vid))}" controls playsinline preload="metadata"></video></div>
     </section>` : ''}
 
-    <section class="asec" id="a-course"><h2 class="rv">Kurs muddati</h2>
-      <div class="course">${COURSES.map((c, i) => `<div class="rv" style="--d:${i * 0.06}s"><b>${c.c}</b><span>${esc(c.t)}</span><small>${esc(c.s)}</small></div>`).join('')}</div>
+    <section class="asec" id="a-course"><h2 class="rv">${T('Kurs muddati')}</h2>
+      <div class="course">${COURSES.map((c, i) => `<div class="rv" style="--d:${i * 0.06}s"><b>${c.c}</b><span>${esc(T(c.t))}</span><small>${esc(T(c.s))}</small></div>`).join('')}</div>
     </section>
 
-    ${opts.length ? `<section class="asec" id="a-prices"><h2 class="rv">Narxlar</h2>
+    ${opts.length ? `<section class="asec" id="a-prices"><h2 class="rv">${T('Narxlar')}</h2>
       ${opts.map((o, i) => { const t = tariff(o.cat); return `<div class="prc rv" style="--d:${i * 0.06}s">
-        <div class="prc-h"><span class="lt">${o.cat}</span><span><b>${o.cat} toifa</b><small>${esc(CAT_LONG[o.cat])} · narxlar so‘mda</small></span></div>
-        <div class="prow"><div><span>30 daq</span><b>${num(t.half)}</b></div><div><span>1 soat</span><b>${num(t.hour)}</b></div>
-          <div><span>2 soat</span><b>${num(t.hour * 2)}</b></div>${pkgPrice(o.cat) > 0
-            ? `<div class="pkgp"><span>5 soat · paket</span><b>${num(pkgPrice(o.cat))}</b>${t.hour * 5 > pkgPrice(o.cat) ? `<s>${num(t.hour * 5)}</s>` : ''}</div>`
-            : `<div><span>5 soat</span><b>${num(t.hour * 5)}</b></div>`}</div>
-        <button class="btn btn-primary btn-sm" style="width:100%" data-act="quickcat" data-v="${o.key}">${o.cat} toifaga bron qilish ${ico('arrow', 17)}</button>
+        <div class="prc-h"><span class="lt">${o.cat}</span><span><b>${T('{c} toifa', { c: o.cat })}</b><small>${esc(T(CAT_LONG[o.cat]))} · ${T('narxlar so‘mda')}</small></span></div>
+        <div class="prow"><div><span>${fmtDur(30)}</span><b>${num(t.half)}</b></div><div><span>${fmtDur(60)}</span><b>${num(t.hour)}</b></div>
+          <div><span>${fmtDur(120)}</span><b>${num(t.hour * 2)}</b></div>${pkgPrice(o.cat) > 0
+            ? `<div class="pkgp"><span>${T('5 soat · paket')}</span><b>${num(pkgPrice(o.cat))}</b>${t.hour * 5 > pkgPrice(o.cat) ? `<s>${num(t.hour * 5)}</s>` : ''}</div>`
+            : `<div><span>${fmtDur(300)}</span><b>${num(t.hour * 5)}</b></div>`}</div>
+        <button class="btn btn-primary btn-sm" style="width:100%" data-act="quickcat" data-v="${o.key}">${T('{c} toifaga bron qilish', { c: o.cat })} ${ico('arrow', 17)}</button>
       </div>`; }).join('')}
-      <p class="muted" style="font-size:13px;margin:4px 2px 0">To‘lov avtodrom kassasida. Narxlar admin tomonidan yangilanadi.</p>
+      <p class="muted" style="font-size:13px;margin:4px 2px 0">${T('To‘lov avtodrom kassasida. Narxlar admin tomonidan yangilanadi.')}</p>
     </section>` : ''}
 
-    ${S.instructors.length ? `<section class="asec" id="a-ins"><h2 class="rv">Instruktorlar</h2>
+    ${S.instructors.length ? `<section class="asec" id="a-ins"><h2 class="rv">${T('Instruktorlar')}</h2>
       <div class="ins-row2">${[...S.instructors].sort(byRating).map((i, n) => {
         const car = [i.vehicle_model, i.vehicle_plate].filter(Boolean).join(' · ');
         return `<button class="icard2 rv" style="--d:${n * 0.05}s" data-act="ins" data-v="${esc(i.id)}">${avatar(i)}
-          <b>${esc(insName(i))}</b><small>${Number(i.total_reviews) ? `★ ${Number(i.rating || 0).toFixed(1)} · ${Number(i.total_reviews)} baho` : 'Yangi instruktor'}</small>
-          ${Number(i.experience_years) ? `<small>${Number(i.experience_years)} yil tajriba</small>` : ''}${car ? `<small>${esc(car)}</small>` : ''}${catTags(i)}</button>`; }).join('')}</div>
+          <b>${esc(insName(i))}</b><small>${Number(i.total_reviews) ? `★ ${Number(i.rating || 0).toFixed(1)} · ${rateN(i.total_reviews)}` : T('Yangi instruktor')}</small>
+          ${Number(i.experience_years) ? `<small>${expN(i.experience_years)}</small>` : ''}${car ? `<small>${esc(car)}</small>` : ''}${catTags(i)}</button>`; }).join('')}</div>
     </section>` : `<section class="asec" id="a-ins"></section>`}
 
-    <section class="asec" id="a-loc"><h2 class="rv">Manzil</h2>
+    <section class="asec" id="a-loc"><h2 class="rv">${T('Manzil')}</h2>
       <div class="map rv">${li ? `<div class="ph" style="${bgOf(li)}"></div><span class="pin">${ico('pin', 44, 2.2)}</span>`
-        : L.has ? `<iframe title="Xarita" loading="lazy" src="https://www.openstreetmap.org/export/embed.html?bbox=${L.lng - 0.006},${L.lat - 0.003},${L.lng + 0.006},${L.lat + 0.003}&layer=mapnik&marker=${L.lat},${L.lng}"></iframe>`
+        : L.has ? `<iframe title="${T('Xarita')}" loading="lazy" src="https://www.openstreetmap.org/export/embed.html?bbox=${L.lng - 0.006},${L.lat - 0.003},${L.lng + 0.006},${L.lat + 0.003}&layer=mapnik&marker=${L.lat},${L.lng}"></iframe>`
         : `<div class="road3d" aria-hidden="true" style="right:20%;width:60%"></div><span class="pin">${ico('pin', 44, 2.2)}</span>`}</div>
-      <div class="card rv" style="margin-top:10px"><b>${esc(L.name)}</b><div class="muted" style="font-size:14px;margin-top:2px">${esc(L.address || 'Manzil admin tomonidan kiritiladi')}</div>
+      <div class="card rv" style="margin-top:10px"><b>${esc(L.name)}</b><div class="muted" style="font-size:14px;margin-top:2px">${esc(L.address || T('Manzil admin tomonidan kiritiladi'))}</div>
         <div class="muted" style="font-size:14px;margin-top:6px;display:flex;gap:6px;align-items:center">${ico('clock', 16)} ${esc(hoursText())}</div></div>
       <div class="maprow rv"><button data-act="link" data-v="${esc(L.google)}">Google</button><button data-act="link" data-v="${esc(L.yandex)}">Yandex</button><button data-act="link" data-v="${esc(L.gis)}">2GIS</button></div>
       ${tel ? callBtns('rv') : ''}
     </section>
 
-    <section class="asec" id="a-faq"><h2 class="rv">Ko‘p beriladigan savollar</h2>
+    <section class="asec" id="a-faq"><h2 class="rv">${T('Ko‘p beriladigan savollar')}</h2>
       ${faqList().map(([q, a], i) => `<details class="faq rv" ${i ? '' : 'open'}><summary>${esc(q)}${ico('chev', 18)}</summary><p>${esc(a)}</p></details>`).join('')}
     </section>
 
-    <button class="btn btn-primary cta-big rv" data-act="go" data-v="book">${ico('book', 22)} Bron qilish</button>`;
+    <button class="btn btn-primary cta-big rv" data-act="go" data-v="book">${ico('book', 22)} ${T('Bron qilish')}</button>`;
   initCover();
   initChipsNav();
 }
@@ -1583,13 +2054,13 @@ function openViewer(list, i) {
 function drawViewer() {
   const m = V.list[V.i], el = $('#viewer');
   if (!m || !el) return;
-  el.innerHTML = `<div class="viewer-top"><button class="viewer-x" data-act="closeviewer" aria-label="Yopish">${ico('x', 20)}</button>
+  el.innerHTML = `<div class="viewer-top"><button class="viewer-x" data-act="closeviewer" aria-label="${T('Yopish')}">${ico('x', 20)}</button>
       <b>${esc(m.title || 'TASH INDEX AVTODROM')}</b><span>${V.i + 1} / ${V.list.length}</span></div>
     <div class="viewer-stage">${m.media_type === 'video'
       ? `<video src="${esc(mUrl(m))}" controls autoplay playsinline></video>`
       : `<img src="${esc(mUrl(m))}" alt="${esc(m.title || '')}">`}
-      ${V.list.length > 1 ? `<button class="viewer-nav l" data-act="vstep" data-v="-1" aria-label="Oldingi">${ico('chevl', 24, 2.4)}</button>
-        <button class="viewer-nav r" data-act="vstep" data-v="1" aria-label="Keyingi">${ico('chev', 24, 2.4)}</button>` : ''}</div>`;
+      ${V.list.length > 1 ? `<button class="viewer-nav l" data-act="vstep" data-v="-1" aria-label="${T('Oldingi')}">${ico('chevl', 24, 2.4)}</button>
+        <button class="viewer-nav r" data-act="vstep" data-v="1" aria-label="${T('Keyingi')}">${ico('chev', 24, 2.4)}</button>` : ''}</div>`;
 }
 function viewerStep(d) { V.i = (V.i + d + V.list.length) % V.list.length; haptic.tap(); drawViewer(); }
 function closeViewer() { const el = $('#viewer'); if (el) el.remove(); syncBack(); }
@@ -1604,6 +2075,8 @@ function closeViewer() { const el = $('#viewer'); if (el) el.remove(); syncBack(
      toifa → necha soat → instruktor → UNING bo'sh vaqtlari → tasdiq
    ========================================================================= */
 const CAT_LONG = { A: 'Mototsikl', B: 'Yengil avtomobil', C: 'Yuk avtomobili' };
+/** «B — Yengil avtomobil» (tanlangan tilda); toifasiz kurs — o'z nomi */
+const catLong = o => !o ? '' : o.cat ? `${o.cat} — ${T(CAT_LONG[o.cat])}` : (o.title || '');
 const stepsOf = () => B.mode === 'ins' ? ['cat', 'dur', 'ins', 'time', 'confirm'] : ['cat', 'dur', 'time', 'ins', 'confirm'];
 const selIns = () => S.instructors.find(i => String(i.id) === String(B.ins)) || null;
 const byRating = (a, b) => ((Number(b.rating) || 0) - (Number(a.rating) || 0)) || ((Number(b.total_reviews) || 0) - (Number(a.total_reviews) || 0));
@@ -1760,11 +2233,11 @@ function advance() {
 function renderBook() {
   const opts = options(), blocked = S.me && S.me.is_blocked;
   if (!S.settings.bookingOn || blocked || !opts.length) {
-    $('#main').innerHTML = `<div class="page-h"><h1>Bron qilish</h1></div>
+    $('#main').innerHTML = `<div class="page-h"><h1>${T('Bron qilish')}</h1></div>
       <div class="card empty"><div class="ill">${ico(blocked ? 'lock' : 'info', 30)}</div>
-      <b>${blocked ? 'Hisobingiz bloklangan' : !opts.length ? 'Mashg‘ulotlar hali qo‘shilmagan' : 'Onlayn bron vaqtincha yopiq'}</b>
-      <p>${blocked ? 'Savollar bo‘lsa, admin bilan bog‘laning.' : 'Iltimos, keyinroq urinib ko‘ring yoki admin bilan bog‘laning.'}</p>
-      <button class="btn btn-soft btn-sm" style="margin:0 auto" data-act="go" data-v="support">${ico('chat', 18)} Adminga yozish</button></div>`;
+      <b>${T(blocked ? 'Hisobingiz bloklangan' : !opts.length ? 'Mashg‘ulotlar hali qo‘shilmagan' : 'Onlayn bron vaqtincha yopiq')}</b>
+      <p>${T(blocked ? 'Savollar bo‘lsa, admin bilan bog‘laning.' : 'Iltimos, keyinroq urinib ko‘ring yoki admin bilan bog‘laning.')}</p>
+      <button class="btn btn-soft btn-sm" style="margin:0 auto" data-act="go" data-v="support">${ico('chat', 18)} ${T('Adminga yozish')}</button></div>`;
     return;
   }
   if (!B.started) startBook();
@@ -1775,7 +2248,7 @@ function renderBook() {
   const body = { cat: stepCat, dur: stepDur, time: stepTime, ins: stepIns, confirm: stepConfirm }[B.step]();
   $('#main').innerHTML = `<div class="${B.dir === 'b' ? 'slide-b' : 'slide-f'}">
     <div class="wz-top">
-      <button class="wz-back" data-act="wzback" aria-label="Orqaga">${ico('chevl', 21, 2.4)}</button>
+      <button class="wz-back" data-act="wzback" aria-label="${T('Orqaga')}">${ico('chevl', 21, 2.4)}</button>
       <div class="wz-prog" aria-hidden="true">${s.map((x, n) => `<i class="${n < idx ? 'done' : n === idx ? 'cur' : ''}"></i>`).join('')}</div>
       <span class="wz-count">${idx + 1}/${s.length}</span>
     </div>
@@ -1795,10 +2268,10 @@ function crumbs() {
   const opt = curOpt(), s = stepsOf(), idx = s.indexOf(B.step), out = [];
   for (const st of s.slice(0, idx)) {
     let t = '';
-    if (st === 'cat' && opt) t = opt.cat ? `${opt.cat} toifa` : opt.title;
-    if (st === 'dur' && B.pkg) t = `5 soat paket · ${B.pkg.m.map(m => m / 60).join('+')}`;
+    if (st === 'cat' && opt) t = opt.cat ? T('{c} toifa', { c: opt.cat }) : opt.title;
+    if (st === 'dur' && B.pkg) t = T('5 soat paket · {s}', { s: B.pkg.m.map(m => m / 60).join('+') });
     else if (st === 'dur' && (B.hours || B.min)) t = fmtDur(dur());
-    if (st === 'time' && B.pkg) { const k = B.pkg.s.filter(Boolean).length; if (k) t = `${k} ta kun tanlangan`; }
+    if (st === 'time' && B.pkg) { const k = B.pkg.s.filter(Boolean).length; if (k) t = N(k, '{n} ta kun tanlangan', ['выбран {n} день', 'выбрано {n} дня', 'выбрано {n} дней']); }
     else if (st === 'time' && B.time) t = `${dayName(B.date, false)}, ${B.time}`;
     if (st === 'ins' && selIns()) t = insName(selIns());
     if (t) out.push(`<button data-act="wzjump" data-v="${st}">${esc(t)}${ico('edit', 13)}</button>`);
@@ -1808,16 +2281,16 @@ function crumbs() {
 
 function stepCat() {
   const opts = options(), locked = B.insLocked ? selIns() : null;
-  return `<h1 class="wz-h">Qaysi toifada o‘qiysiz?</h1>
-    <p class="wz-sub">${locked ? `${esc(insName(locked))} o‘rgatadigan toifalar` : 'Narx 1 soat uchun'}</p>
+  return `<h1 class="wz-h">${T('Qaysi toifada o‘qiysiz?')}</h1>
+    <p class="wz-sub">${locked ? T('{n} o‘rgatadigan toifalar', { n: esc(insName(locked)) }) : T('Narx 1 soat uchun')}</p>
     <div class="opt-list">${opts.map(o => {
       const list = catInstructors(o);
       const ok = list.length && (!locked || list.some(i => String(i.id) === B.ins));
       return `<button class="opt ${o.key === B.key ? 'on' : ''}" data-act="wzcat" data-v="${esc(o.key)}" ${ok ? '' : 'disabled'}>
         <span class="lt">${o.cat ? esc(o.cat) : ico('car', 26)}</span>
-        <span class="tx"><b>${esc(o.cat ? o.cat + ' toifa' : o.title)}</b>
-          <small>${esc(o.cat ? CAT_LONG[o.cat] : o.sub)}${list.length ? ` · ${list.length} instruktor` : ' · hozircha instruktor yo‘q'}</small></span>
-        <span class="rt">${money(o.cat ? tariff(o.cat).hour : o.course.price)}<small>${o.cat ? '1 soat' : fmtDur(unitOf(o))}</small></span>
+        <span class="tx"><b>${esc(o.cat ? T('{c} toifa', { c: o.cat }) : o.title)}</b>
+          <small>${esc(o.cat ? T(CAT_LONG[o.cat]) : o.sub)}${list.length ? N(list.length, ' · {n} instruktor', [' · {n} инструктор', ' · {n} инструктора', ' · {n} инструкторов']) : T(' · hozircha instruktor yo‘q')}</small></span>
+        <span class="rt">${money(o.cat ? tariff(o.cat).hour : o.course.price)}<small>${o.cat ? fmtDur(60) : fmtDur(unitOf(o))}</small></span>
       </button>`;
     }).join('')}</div>`;
 }
@@ -1826,20 +2299,20 @@ function stepDur() {
   const opt = curOpt(), maxH = maxHours(opt);
   if (opt && opt.cat) {
     const p = pkgPrice(opt.cat), list = minPrice(opt.cat, PKG_MIN);
-    return `<h1 class="wz-h">Necha soat haydaysiz?</h1>
-    <p class="wz-sub">Narx avtomatik hisoblanadi</p>
+    return `<h1 class="wz-h">${T('Necha soat haydaysiz?')}</h1>
+    <p class="wz-sub">${T('Narx avtomatik hisoblanadi')}</p>
     <div class="dur-grid three">${MINS.map(m => `
       <button class="dur ${!B.pkg && B.min === m ? 'on' : ''}" data-act="wzmin" data-v="${m}">
         <b>${fmtDur(m)}</b><small>${money(minPrice(opt.cat, m))}</small></button>`).join('')}</div>
     ${p > 0 ? `<button class="pkg-card ${B.pkg ? 'on' : ''}" data-act="wzpkg">
-      <span class="badge">PAKET${list > p ? ` · ${money(list - p)} tejaysiz` : ''}</span>
-      <span class="ttl">5 soat</span>
-      <span class="sub">Bir kunda yoki bir necha kunga bo‘lib — o‘zingiz tanlaysiz</span>
+      <span class="badge">${T('PAKET')}${list > p ? ` · ${T('{m} tejaysiz', { m: money(list - p) })}` : ''}</span>
+      <span class="ttl">${T('5 soat')}</span>
+      <span class="sub">${T('Bir kunda yoki bir necha kunga bo‘lib — o‘zingiz tanlaysiz')}</span>
       <span class="pr">${list > p ? `<s>${money(list)}</s>` : ''}<b>${money(p)}</b></span>
     </button>` : ''}`;
   }
-  return `<h1 class="wz-h">Necha soat haydaysiz?</h1>
-    <p class="wz-sub">Narx avtomatik hisoblanadi</p>
+  return `<h1 class="wz-h">${T('Necha soat haydaysiz?')}</h1>
+    <p class="wz-sub">${T('Narx avtomatik hisoblanadi')}</p>
     <div class="dur-grid">${Array.from({ length: maxH }, (_, n) => n + 1).map(h => `
       <button class="dur ${h === B.hours ? 'on' : ''}" data-act="wzdur" data-v="${h}">
         <b>${fmtDur(unitOf(opt) * h)}</b><small>${money(priceOf(opt, h))}</small></button>`).join('')}</div>`;
@@ -1850,22 +2323,22 @@ function stepTime() {
   const who = B.mode === 'ins' ? selIns() : null;
   const used = pkgUsedDays();
   const pk = B.pkg && B.pkg.m.length > 1;
-  return `<h1 class="wz-h">${pk ? `${B.pkg.i + 1}-mashg‘ulot — qachon?` : 'Qachon kelasiz?'}</h1>
-    <p class="wz-sub">${pk ? `${esc(fmtDur(dur()))} · ${B.pkg.m.length} ta mashg‘ulotdan ${B.pkg.i + 1}-si. Har biri boshqa kunda.`
-      : B.pkg ? `5 soat birdaniga · ${who ? esc(insName(who)) + ' bo‘sh bo‘lgan vaqtlar' : 'boshlanish vaqtini tanlang'}`
-      : who ? `${esc(insName(who))} bo‘sh bo‘lgan vaqtlar` : 'Vaqtni tanlang — keyin shu vaqtda bo‘sh instruktorlar chiqadi'}</p>
+  return `<h1 class="wz-h">${pk ? T('{n}-mashg‘ulot — qachon?', { n: B.pkg.i + 1 }) : T('Qachon kelasiz?')}</h1>
+    <p class="wz-sub">${pk ? T('{d} · {all} ta mashg‘ulotdan {n}-si. Har biri boshqa kunda.', { d: esc(fmtDur(dur())), all: B.pkg.m.length, n: B.pkg.i + 1 })
+      : B.pkg ? `${T('5 soat birdaniga')} · ${who ? T('{n} bo‘sh bo‘lgan vaqtlar', { n: esc(insName(who)) }) : T('boshlanish vaqtini tanlang')}`
+      : who ? T('{n} bo‘sh bo‘lgan vaqtlar', { n: esc(insName(who)) }) : T('Vaqtni tanlang — keyin shu vaqtda bo‘sh instruktorlar chiqadi')}</p>
     ${pk ? `<div class="sess-tabs">${B.pkg.m.map((m, j) => { const x = B.pkg.s[j]; return `
       <button class="sess-tab ${j === B.pkg.i ? 'on' : ''} ${x ? 'set' : ''}" data-act="wzsess" data-v="${j}">
-        <b>${j + 1}) ${esc(fmtDur(m))}</b><small>${x ? `${esc(dayName(x.date, false))}, ${esc(x.time)}` : 'tanlanmagan'}</small></button>`; }).join('')}</div>` : ''}
+        <b>${j + 1}) ${esc(fmtDur(m))}</b><small>${x ? `${esc(dayName(x.date, false))}, ${esc(x.time)}` : T('tanlanmagan')}</small></button>`; }).join('')}</div>` : ''}
     <div class="scroller" id="days">${days.map(d => { const p = dp(d); const u = used.includes(d); return `
-      <button class="day ${d === B.date ? 'on' : ''} ${u ? 'used' : ''}" data-act="wzday" data-v="${d}" aria-pressed="${d === B.date}" ${u ? 'disabled title="Bu kunda boshqa mashg‘ulot tanlangan"' : ''}>
-        <span class="w">${d === ymd() ? 'Bugun' : WD_S[p.wd]}</span><span class="d">${p.day}</span><span class="m">${MON_S[p.mon]}</span></button>`; }).join('')}
+      <button class="day ${d === B.date ? 'on' : ''} ${u ? 'used' : ''}" data-act="wzday" data-v="${d}" aria-pressed="${d === B.date}" ${u ? `disabled title="${T('Bu kunda boshqa mashg‘ulot tanlangan')}"` : ''}>
+        <span class="w">${d === ymd() ? T('Bugun') : dt().wds[p.wd]}</span><span class="d">${p.day}</span><span class="m">${dt().mons[p.mon]}</span></button>`; }).join('')}
     </div>
     <div class="day-title">${esc(dayName(B.date))}</div>
     <div id="times"></div>
     ${B.mode === 'time'
-      ? `<button class="switch-link" data-act="wzmode" data-v="ins">${ico('user', 19)} Avval instruktorni tanlamoqchiman</button>`
-      : `<button class="switch-link" data-act="wzmode" data-v="time">${ico('clock', 19)} Farqi yo‘q — hamma bo‘sh vaqtlarni ko‘rish</button>`}`;
+      ? `<button class="switch-link" data-act="wzmode" data-v="ins">${ico('user', 19)} ${T('Avval instruktorni tanlamoqchiman')}</button>`
+      : `<button class="switch-link" data-act="wzmode" data-v="time">${ico('clock', 19)} ${T('Farqi yo‘q — hamma bo‘sh vaqtlarni ko‘rish')}</button>`}`;
 }
 /** Shu vaqtda mijozning o'zida boshqa faol bron bormi */
 function mineAt(date, time, minutes) {
@@ -1877,11 +2350,11 @@ function renderTimes() {
   const box = $('#times');
   if (!box || B.step !== 'time') return;
   if (!candidates().length) {
-    box.innerHTML = `<div class="note warn">Bu toifa bo‘yicha hozircha instruktor yo‘q. Boshqa toifani tanlang yoki adminga yozing.</div>`;
+    box.innerHTML = `<div class="note warn">${T('Bu toifa bo‘yicha hozircha instruktor yo‘q. Boshqa toifani tanlang yoki adminga yozing.')}</div>`;
     return;
   }
   if (B.loading) { box.innerHTML = `<div class="times">${'<div class="sk"></div>'.repeat(12)}</div>`; return; }
-  if (B.err) { box.innerHTML = `<div class="note err">${esc(B.err)} <button class="link" data-act="retry">Qayta urinish</button></div>`; return; }
+  if (B.err) { box.innerHTML = `<div class="note err">${esc(T(B.err))} <button class="link" data-act="retry">${T('Qayta urinish')}</button></div>`; return; }
   /* Mijozning O'Z bronlari (va paketning boshqa mashg'ulotlari) bilan ustma-ust
      tushadigan vaqt ham yopiq — server baribir rad etardi. */
   const list = slotsFor(B.date).map(s => {
@@ -1891,47 +2364,47 @@ function renderTimes() {
   if (!list.some(s => s.n)) {
     const next = addDays(B.date, 1);
     box.innerHTML = `<div class="card empty" style="padding:22px 16px"><div class="ill" style="width:52px;height:52px">${ico('clock', 26)}</div>
-      <b>${esc(dayName(B.date, false))} bo‘sh vaqt qolmadi</b>
-      <p>Boshqa kunni tanlang${B.mode === 'ins' ? ' yoki boshqa instruktorni ko‘ring' : ''}.</p>
-      <button class="btn btn-soft btn-sm" style="margin:0 auto" data-act="wzday" data-v="${next}">${esc(dayName(next, false))}ni ko‘rish ${ico('arrow', 17)}</button></div>`;
+      <b>${T('{d} bo‘sh vaqt qolmadi', { d: esc(dayName(B.date, false)) })}</b>
+      <p>${T(B.mode === 'ins' ? 'Boshqa kunni tanlang yoki boshqa instruktorni ko‘ring.' : 'Boshqa kunni tanlang.')}</p>
+      <button class="btn btn-soft btn-sm" style="margin:0 auto" data-act="wzday" data-v="${next}">${T('{d}ni ko‘rish', { d: esc(dayName(next, false)) })} ${ico('arrow', 17)}</button></div>`;
     return;
   }
   const many = B.mode === 'time' && candidates().length > 1;
   box.innerHTML = `<div class="times">${list.map(s => `<button class="time ${s.t === B.time ? 'on' : ''}" data-act="wztime" data-v="${s.t}"
-      ${s.n ? '' : 'disabled'} aria-pressed="${s.t === B.time}">${s.t}${s.mine ? '<small>sizda bron</small>' : many ? `<small>${s.n ? s.n + ' bo‘sh' : 'band'}</small>` : ''}</button>`).join('')}</div>`;
+      ${s.n ? '' : 'disabled'} aria-pressed="${s.t === B.time}">${s.t}${s.mine ? `<small>${T('sizda bron')}</small>` : many ? `<small>${s.n ? T('{n} bo‘sh', { n: s.n }) : T('band')}</small>` : ''}</button>`).join('')}</div>`;
 }
 
 function insOpt(i) {
   const car = [i.vehicle_model, i.vehicle_plate].filter(Boolean).join(' · ');
-  const meta = [Number(i.total_reviews) ? `★ ${Number(i.rating || 0).toFixed(1)} (${Number(i.total_reviews)} baho)` : 'Yangi instruktor',
-                Number(i.experience_years) ? `${Number(i.experience_years)} yil tajriba` : ''].filter(Boolean).join(' · ');
+  const meta = [Number(i.total_reviews) ? `★ ${Number(i.rating || 0).toFixed(1)} (${rateN(i.total_reviews)})` : T('Yangi instruktor'),
+                Number(i.experience_years) ? expN(i.experience_years) : ''].filter(Boolean).join(' · ');
   return `<div class="opt ins ${String(i.id) === B.ins ? 'on' : ''}">
     <button class="opt-main" data-act="wzins" data-v="${esc(i.id)}">
       ${avatar(i, 'lg')}<span class="tx"><b>${esc(insName(i))}</b><small>${esc(meta)}</small>
       ${car ? `<small class="car">${ico('car', 15)} ${esc(car)}</small>` : ''}</span></button>
-    <button class="info-btn" data-act="ins" data-v="${esc(i.id)}" aria-label="Batafsil">${ico('info', 21)}</button>
+    <button class="info-btn" data-act="ins" data-v="${esc(i.id)}" aria-label="${T('Batafsil')}">${ico('info', 21)}</button>
   </div>`;
 }
 function stepIns() {
   if (B.mode === 'time') {
     const free = (B.pkg ? pkgAllFree(catInstructors()) : freeFor(B.time)).sort(byRating);
-    if (!free.length) return `<h1 class="wz-h">Kim bilan haydaysiz?</h1>
-      <div class="note warn">${B.pkg ? 'Tanlangan hamma kunlarda bo‘sh bitta instruktor topilmadi.' : 'Bu vaqtda bo‘sh instruktor qolmadi.'} <button class="link" data-act="wzjump" data-v="time">Boshqa vaqtni tanlash</button></div>`;
-    return `<h1 class="wz-h">Kim bilan haydaysiz?</h1>
-      <p class="wz-sub">${B.pkg ? `Paketning hamma kunlarida bo‘sh — ${free.length} ta instruktor`
-        : `${esc(dayName(B.date, false))}, ${esc(B.time)} da bo‘sh — ${free.length} ta instruktor`}</p>
+    if (!free.length) return `<h1 class="wz-h">${T('Kim bilan haydaysiz?')}</h1>
+      <div class="note warn">${T(B.pkg ? 'Tanlangan hamma kunlarda bo‘sh bitta instruktor topilmadi.' : 'Bu vaqtda bo‘sh instruktor qolmadi.')} <button class="link" data-act="wzjump" data-v="time">${T('Boshqa vaqtni tanlash')}</button></div>`;
+    return `<h1 class="wz-h">${T('Kim bilan haydaysiz?')}</h1>
+      <p class="wz-sub">${B.pkg ? N(free.length, 'Paketning hamma kunlarida bo‘sh — {n} ta instruktor', ['Свободен во все дни пакета — {n} инструктор', 'Свободны во все дни пакета — {n} инструктора', 'Свободны во все дни пакета — {n} инструкторов'])
+        : N(free.length, '{w} da bo‘sh — {n} ta instruktor', ['{w} — свободен {n} инструктор', '{w} — свободны {n} инструктора', '{w} — свободны {n} инструкторов'], { w: `${esc(dayName(B.date, false))}, ${esc(B.time)}` })}</p>
       <div class="opt-list">
         ${free.length > 1 ? `<button class="opt" data-act="wzins" data-v="auto">
           <span class="lt solid">${ico('check', 26, 2.6)}</span>
-          <span class="tx"><b>Farqi yo‘q</b><small>Eng yuqori baholangan bo‘sh instruktor</small></span>${ico('chev', 18)}</button>` : ''}
+          <span class="tx"><b>${T('Farqi yo‘q')}</b><small>${T('Eng yuqori baholangan bo‘sh instruktor')}</small></span>${ico('chev', 18)}</button>` : ''}
         ${free.map(insOpt).join('')}
       </div>`;
   }
   const opt = curOpt(), list = catInstructors().sort(byRating);
-  return `<h1 class="wz-h">Instruktorni tanlang</h1>
-    <p class="wz-sub">${esc(opt.cat ? opt.cat + ' toifa' : opt.title)} · ${list.length} ta instruktor. Keyin uning bo‘sh vaqtlari chiqadi.</p>
+  return `<h1 class="wz-h">${T('Instruktorni tanlang')}</h1>
+    <p class="wz-sub">${esc(opt.cat ? T('{c} toifa', { c: opt.cat }) : opt.title)} · ${N(list.length, '{n} ta instruktor. Keyin uning bo‘sh vaqtlari chiqadi.', ['{n} инструктор. Затем появится его свободное время.', '{n} инструктора. Затем появится свободное время выбранного.', '{n} инструкторов. Затем появится свободное время выбранного.'])}</p>
     <div class="opt-list">${list.map(insOpt).join('')}</div>
-    <button class="switch-link" data-act="wzmode" data-v="time">${ico('clock', 19)} Farqi yo‘q — vaqt bo‘yicha tanlash</button>`;
+    <button class="switch-link" data-act="wzmode" data-v="time">${ico('clock', 19)} ${T('Farqi yo‘q — vaqt bo‘yicha tanlash')}</button>`;
 }
 
 function stepConfirm() {
@@ -1939,38 +2412,38 @@ function stepConfirm() {
   const row = (st, k, v) => `<button class="sum-row" data-act="wzjump" data-v="${st}"><span>${k}</span><b>${esc(v)}</b><i>${ico('edit', 15)}</i></button>`;
   if (B.pkg) {
     const p = pkgPrice(opt.cat), list = minPrice(opt.cat, PKG_MIN);
-    return `<h1 class="wz-h">Hammasi to‘g‘rimi?</h1>
-    <p class="wz-sub">Qatorni bossangiz — o‘zgartirasiz</p>
+    return `<h1 class="wz-h">${T('Hammasi to‘g‘rimi?')}</h1>
+    <p class="wz-sub">${T('Qatorni bossangiz — o‘zgartirasiz')}</p>
     <div class="card sum-card">
-      ${row('cat', 'Toifa', opt.cat ? `${opt.cat} — ${CAT_LONG[opt.cat]}` : opt.title)}
-      ${row('dur', 'Paket', `5 soat · ${B.pkg.m.map(m => m / 60).join(' + ')}`)}
-      ${B.pkg.m.map((m, j) => { const x = B.pkg.s[j]; return `<button class="sum-row" data-act="wzsess" data-v="${j}"><span>${j + 1}-mashg‘ulot</span>
+      ${row('cat', T('Toifa'), catLong(opt))}
+      ${row('dur', T('Paket'), T('5 soat · {s}', { s: B.pkg.m.map(m => m / 60).join(' + ') }))}
+      ${B.pkg.m.map((m, j) => { const x = B.pkg.s[j]; return `<button class="sum-row" data-act="wzsess" data-v="${j}"><span>${T('{n}-mashg‘ulot', { n: j + 1 })}</span>
         <b>${x ? `${esc(dayName(x.date))} · ${esc(x.time)}` : '—'} · ${esc(fmtDur(m))}</b><i>${ico('edit', 15)}</i></button>`; }).join('')}
-      ${row('ins', 'Instruktor', insName(who) + (B.auto ? ' · avtomatik' : ''))}
-      <div class="sum-total"><span>Jami${list > p ? `<span class="save-tag">−${money(list - p)}</span>` : ''}</span><b class="tnum">${list > p ? `<s>${money(list)}</s>` : ''}${money(p)}</b></div>
+      ${row('ins', T('Instruktor'), insName(who) + (B.auto ? T(' · avtomatik') : ''))}
+      <div class="sum-total"><span>${T('Jami')}${list > p ? `<span class="save-tag">−${money(list - p)}</span>` : ''}</span><b class="tnum">${list > p ? `<s>${money(list)}</s>` : ''}${money(p)}</b></div>
     </div>
-    <div class="note info" style="margin-top:12px;display:flex;gap:10px;align-items:flex-start">${ico('info', 19)}<span>To‘lov avtodrom kassasida — butun paketni bir marta to‘laysiz. Har mashg‘ulot uchun alohida kassa kodi beriladi.</span></div>
-    ${!S.me.phone ? `<label class="field"><span>Telefon raqamingiz — admin siz bilan bog‘lanadi</span>
+    <div class="note info" style="margin-top:12px;display:flex;gap:10px;align-items:flex-start">${ico('info', 19)}<span>${T('To‘lov avtodrom kassasida — butun paketni bir marta to‘laysiz. Har mashg‘ulot uchun alohida kassa kodi beriladi.')}</span></div>
+    ${!S.me.phone ? `<label class="field"><span>${T('Telefon raqamingiz — admin siz bilan bog‘lanadi')}</span>
       <input class="input" id="phoneIn" type="tel" inputmode="tel" autocomplete="tel" placeholder="+998 90 123 45 67" value="${esc(B.phone)}"></label>` : ''}
     ${B.showNote
-      ? `<label class="field"><span>Izoh (ixtiyoriy)</span><textarea class="input" id="noteIn" maxlength="500" placeholder="Masalan: birinchi marta haydayman">${esc(B.note)}</textarea></label>`
-      : `<button class="link" style="margin-top:16px;padding:6px 2px" data-act="shownote">+ Izoh qo‘shish</button>`}`;
+      ? `<label class="field"><span>${T('Izoh (ixtiyoriy)')}</span><textarea class="input" id="noteIn" maxlength="500" placeholder="${T('Masalan: birinchi marta haydayman')}">${esc(B.note)}</textarea></label>`
+      : `<button class="link" style="margin-top:16px;padding:6px 2px" data-act="shownote">${T('+ Izoh qo‘shish')}</button>`}`;
   }
-  return `<h1 class="wz-h">Hammasi to‘g‘rimi?</h1>
-    <p class="wz-sub">Qatorni bossangiz — o‘zgartirasiz</p>
+  return `<h1 class="wz-h">${T('Hammasi to‘g‘rimi?')}</h1>
+    <p class="wz-sub">${T('Qatorni bossangiz — o‘zgartirasiz')}</p>
     <div class="card sum-card">
-      ${row('cat', 'Toifa', opt.cat ? `${opt.cat} — ${CAT_LONG[opt.cat]}` : opt.title)}
-      ${row('dur', 'Davomiylik', fmtDur(dur()))}
-      ${row('time', 'Kun va vaqt', `${dayName(B.date)} · ${B.time}`)}
-      ${row('ins', 'Instruktor', insName(who) + (B.auto ? ' · avtomatik' : ''))}
-      <div class="sum-total"><span>Jami</span><b class="tnum">${money(bkPrice(opt))}</b></div>
+      ${row('cat', T('Toifa'), catLong(opt))}
+      ${row('dur', T('Davomiylik'), fmtDur(dur()))}
+      ${row('time', T('Kun va vaqt'), `${dayName(B.date)} · ${B.time}`)}
+      ${row('ins', T('Instruktor'), insName(who) + (B.auto ? T(' · avtomatik') : ''))}
+      <div class="sum-total"><span>${T('Jami')}</span><b class="tnum">${money(bkPrice(opt))}</b></div>
     </div>
-    <div class="note info" style="margin-top:12px;display:flex;gap:10px;align-items:flex-start">${ico('info', 19)}<span>To‘lov avtodrom kassasida. Bron qilgach sizga kassa kodi beriladi.</span></div>
-    ${!S.me.phone ? `<label class="field"><span>Telefon raqamingiz — admin siz bilan bog‘lanadi</span>
+    <div class="note info" style="margin-top:12px;display:flex;gap:10px;align-items:flex-start">${ico('info', 19)}<span>${T('To‘lov avtodrom kassasida. Bron qilgach sizga kassa kodi beriladi.')}</span></div>
+    ${!S.me.phone ? `<label class="field"><span>${T('Telefon raqamingiz — admin siz bilan bog‘lanadi')}</span>
       <input class="input" id="phoneIn" type="tel" inputmode="tel" autocomplete="tel" placeholder="+998 90 123 45 67" value="${esc(B.phone)}"></label>` : ''}
     ${B.showNote
-      ? `<label class="field"><span>Izoh (ixtiyoriy)</span><textarea class="input" id="noteIn" maxlength="500" placeholder="Masalan: birinchi marta haydayman">${esc(B.note)}</textarea></label>`
-      : `<button class="link" style="margin-top:16px;padding:6px 2px" data-act="shownote">+ Izoh qo‘shish</button>`}`;
+      ? `<label class="field"><span>${T('Izoh (ixtiyoriy)')}</span><textarea class="input" id="noteIn" maxlength="500" placeholder="${T('Masalan: birinchi marta haydayman')}">${esc(B.note)}</textarea></label>`
+      : `<button class="link" style="margin-top:16px;padding:6px 2px" data-act="shownote">${T('+ Izoh qo‘shish')}</button>`}`;
 }
 function renderBar() {
   if (S.view !== 'book') return;
@@ -1978,9 +2451,9 @@ function renderBar() {
   if (B.step !== 'confirm' || B.done || !opt || !S.settings.bookingOn || (S.me && S.me.is_blocked)) { d.innerHTML = ''; return; }
   d.innerHTML = `<div class="bar"><div class="bar-in">
     <div class="sum"><b class="tnum">${money(bkPrice(opt))}</b><span>${B.pkg
-      ? `5 soatlik paket · ${B.pkg.m.length > 1 ? B.pkg.m.length + ' kun' : 'bir kunda'}`
+      ? `${T('5 soatlik paket')} · ${B.pkg.m.length > 1 ? N(B.pkg.m.length, '{n} kun', ['{n} день', '{n} дня', '{n} дней']) : T('bir kunda')}`
       : `${esc(dayName(B.date, false))}, ${esc(B.time)} · ${esc(fmtDur(dur()))}`}</span></div>
-    <button class="btn btn-primary" data-act="submit" ${B.sending ? 'disabled' : ''}>${B.sending ? '<span class="spin"></span>' : 'Tasdiqlash'}</button>
+    <button class="btn btn-primary" data-act="submit" ${B.sending ? 'disabled' : ''}>${B.sending ? '<span class="spin"></span>' : T('Tasdiqlash')}</button>
   </div></div>`;
 }
 
@@ -2004,7 +2477,7 @@ async function submitBooking() {
   if (!S.me.phone) {
     phone = normPhone(($('#phoneIn') || {}).value || B.phone);
     if (!phone) {
-      haptic.err(); toast('Telefon raqamini kiriting: +998 90 123 45 67', true);
+      haptic.err(); toast(T('Telefon raqamini kiriting: +998 90 123 45 67'), true);
       const el = $('#phoneIn'); if (el) { el.focus(); el.scrollIntoView({ block: 'center', behavior: 'smooth' }); }
       return;
     }
@@ -2017,7 +2490,7 @@ async function submitBooking() {
         const r = await api.saveMe({ phone });
         S.me = r.profile || r.user || Object.assign({}, S.me, { phone });
       } catch (e) {
-        if (!/^PHONE_/.test(e.code || '') && !/telefon|raqam/i.test(e.message)) throw e;
+        if (!/^PHONE_/.test(e.code || '') && !/telefon|raqam/i.test(e.raw || e.message)) throw e;
         B.phone = ''; store.set('onb_skip', '1');
       }
     }
@@ -2033,10 +2506,11 @@ async function submitBooking() {
       CACHE.clear();
       const list = r.bookings || [];
       S.bookings = [...list, ...S.bookings.filter(x => !list.some(y => y.id === x.id))];
+      /* Matn emas, xom qiymat saqlanadi — til almashsa ham to'g'ri chiqadi */
       B.done = {
         pkg: true,
-        list: list.map(b => ({ code: b.pickup_code || '', when: whenText(b.start_at), dur: fmtDur(b.duration_minutes) })),
-        cat: opt.cat ? `${opt.cat} — ${CAT_LONG[opt.cat]}` : opt.title,
+        list: list.map(b => ({ code: b.pickup_code || '', start: b.start_at, min: b.duration_minutes })),
+        opt: { cat: opt.cat, title: opt.title },
         ins: insName(who),
         price: (r.package && r.package.price) || pkgPrice(opt.cat),
         list_price: (r.package && r.package.list_price) || minPrice(opt.cat, PKG_MIN),
@@ -2065,9 +2539,9 @@ async function submitBooking() {
     S.bookings = [bk, ...S.bookings.filter(x => x.id !== bk.id)];
     B.done = {
       code: bk.pickup_code || '',
-      when: whenText(bk.start_at || `${B.date}T${B.time}:00+05:00`),
-      cat: opt.cat ? `${opt.cat} — ${CAT_LONG[opt.cat]}` : opt.title,
-      dur: fmtDur(bk.duration_minutes || dur()),
+      start: bk.start_at || `${B.date}T${B.time}:00+05:00`,
+      opt: { cat: opt.cat, title: opt.title },
+      min: bk.duration_minutes || dur(),
       ins: insName(who),
       price: bk.price || bk.total_price || bkPrice(opt),
     };
@@ -2093,38 +2567,38 @@ function renderDone() {
   if (d.pkg) {
     $('#main').innerHTML = `<div class="slide-f done">
       <div class="big-ok">${ico('check', 38, 2.6)}</div>
-      <h1 class="wz-h" style="text-align:center">Paket bron qilindi!</h1>
-      <p class="wz-sub" style="text-align:center">5 soatlik paket · ${d.list.length} ta mashg‘ulot. Admin tasdiqlagach Telegram’ga xabar keladi.</p>
+      <h1 class="wz-h" style="text-align:center">${T('Paket bron qilindi!')}</h1>
+      <p class="wz-sub" style="text-align:center">${N(d.list.length, '5 soatlik paket · {n} ta mashg‘ulot. Admin tasdiqlagach Telegram’ga xabar keladi.', ['Пакет 5 часов · {n} занятие. После подтверждения администратором придёт сообщение в Telegram.', 'Пакет 5 часов · {n} занятия. После подтверждения администратором придёт сообщение в Telegram.', 'Пакет 5 часов · {n} занятий. После подтверждения администратором придёт сообщение в Telegram.'])}</p>
       <div class="done-list">${d.list.map((x, j) => `<div class="done-row" ${x.code ? `data-act="copy" data-v="${esc(x.code)}" role="button" tabindex="0"` : ''}>
-        <span class="n">${j + 1}</span><span class="tx"><b>${esc(x.when)}</b><small>${esc(x.dur)}${x.code ? ' · kassa kodi — bosib nusxalang' : ''}</small></span>
+        <span class="n">${j + 1}</span><span class="tx"><b>${esc(whenText(x.start))}</b><small>${esc(fmtDur(x.min))}${x.code ? T(' · kassa kodi — bosib nusxalang') : ''}</small></span>
         ${x.code ? `<span class="cd">${esc(x.code)}</span>` : ''}</div>`).join('')}</div>
       <div class="card" style="padding:4px 16px">
-        <div class="kv"><span>Toifa</span><b>${esc(d.cat)}</b></div>
-        <div class="kv"><span>Instruktor</span><b>${esc(d.ins)}</b></div>
-        <div class="kv"><span>Paket narxi</span><b class="tnum">${d.list_price > d.price ? `<s style="color:var(--hint);font-weight:600;margin-right:6px">${money(d.list_price)}</s>` : ''}${money(d.price)}</b></div>
+        <div class="kv"><span>${T('Toifa')}</span><b>${esc(catLong(d.opt))}</b></div>
+        <div class="kv"><span>${T('Instruktor')}</span><b>${esc(d.ins)}</b></div>
+        <div class="kv"><span>${T('Paket narxi')}</span><b class="tnum">${d.list_price > d.price ? `<s style="color:var(--hint);font-weight:600;margin-right:6px">${money(d.list_price)}</s>` : ''}${money(d.price)}</b></div>
       </div>
-      <div class="note info" style="margin:12px 0 0">Kassaga kelganda istalgan kodni ayting — kassir butun paketni bir marta qabul qiladi.</div>
-      <div class="btn-row" style="margin-top:16px"><button class="btn btn-soft" data-act="wznew">Yana bron</button>
-        <button class="btn btn-primary" data-act="gobookings">Bronlarim</button></div>
+      <div class="note info" style="margin:12px 0 0">${T('Kassaga kelganda istalgan kodni ayting — kassir butun paketni bir marta qabul qiladi.')}</div>
+      <div class="btn-row" style="margin-top:16px"><button class="btn btn-soft" data-act="wznew">${T('Yana bron')}</button>
+        <button class="btn btn-primary" data-act="gobookings">${T('Bronlarim')}</button></div>
     </div>`;
     return;
   }
   $('#main').innerHTML = `<div class="slide-f done">
     <div class="big-ok">${ico('check', 38, 2.6)}</div>
-    <h1 class="wz-h" style="text-align:center">Bron yuborildi!</h1>
-    <p class="wz-sub" style="text-align:center">Admin tasdiqlagach Telegram’ga xabar keladi.</p>
+    <h1 class="wz-h" style="text-align:center">${T('Bron yuborildi!')}</h1>
+    <p class="wz-sub" style="text-align:center">${T('Admin tasdiqlagach Telegram’ga xabar keladi.')}</p>
     ${d.code
-      ? `<button class="code-big" data-act="copy" data-v="${esc(d.code)}"><small>Kassa uchun kod</small><b>${esc(d.code)}</b><span>Kassaga shu kodni ayting · bosib nusxalang</span></button>`
-      : `<div class="note info" style="margin:14px 0">Kassaga kelganda ismingizni ayting — kassir bronni topadi.</div>`}
+      ? `<button class="code-big" data-act="copy" data-v="${esc(d.code)}"><small>${T('Kassa uchun kod')}</small><b>${esc(d.code)}</b><span>${T('Kassaga shu kodni ayting · bosib nusxalang')}</span></button>`
+      : `<div class="note info" style="margin:14px 0">${T('Kassaga kelganda ismingizni ayting — kassir bronni topadi.')}</div>`}
     <div class="card" style="padding:4px 16px">
-      <div class="kv"><span>Qachon</span><b>${esc(d.when)}</b></div>
-      <div class="kv"><span>Toifa</span><b>${esc(d.cat)}</b></div>
-      <div class="kv"><span>Davomiylik</span><b>${esc(d.dur)}</b></div>
-      <div class="kv"><span>Instruktor</span><b>${esc(d.ins)}</b></div>
-      <div class="kv"><span>Narx</span><b class="tnum">${money(d.price)}</b></div>
+      <div class="kv"><span>${T('Qachon')}</span><b>${esc(whenText(d.start))}</b></div>
+      <div class="kv"><span>${T('Toifa')}</span><b>${esc(catLong(d.opt))}</b></div>
+      <div class="kv"><span>${T('Davomiylik')}</span><b>${esc(fmtDur(d.min))}</b></div>
+      <div class="kv"><span>${T('Instruktor')}</span><b>${esc(d.ins)}</b></div>
+      <div class="kv"><span>${T('Narx')}</span><b class="tnum">${money(d.price)}</b></div>
     </div>
-    <div class="btn-row" style="margin-top:16px"><button class="btn btn-soft" data-act="wznew">Yana bron</button>
-      <button class="btn btn-primary" data-act="gobookings">Bronlarim</button></div>
+    <div class="btn-row" style="margin-top:16px"><button class="btn btn-soft" data-act="wznew">${T('Yana bron')}</button>
+      <button class="btn btn-primary" data-act="gobookings">${T('Bronlarim')}</button></div>
   </div>`;
 }
 
@@ -2132,9 +2606,9 @@ function renderDone() {
    BRONLARIM
    ========================================================================= */
 const ST = { pending: 'Kutilmoqda', confirmed: 'Tasdiqlangan', in_progress: 'Jarayonda', completed: 'Tugagan', cancelled: 'Bekor qilingan', rejected: 'Rad etilgan', no_show: 'Kelmagan' };
-const pill = s => `<span class="pill ${esc(s || 'pending')}">${esc(ST[s] || s || '—')}</span>`;
+const pill = s => `<span class="pill ${esc(s || 'pending')}">${esc(ST[s] ? T(ST[s]) : s || '—')}</span>`;
 const codeBox = code => `<span class="code" data-act="copy" data-v="${esc(code)}" role="button" tabindex="0">
-  <span class="tx"><small>Kassa uchun kod</small><b>${esc(code)}</b></span>${ico('copy', 20)}</span>`;
+  <span class="tx"><small>${T('Kassa uchun kod')}</small><b>${esc(code)}</b></span>${ico('copy', 20)}</span>`;
 const bkIns = b => {
   const p = b.instructor && b.instructor.profile;
   return (p && [p.first_name, p.last_name].filter(Boolean).join(' ')) || (b.instructor && b.instructor.user && b.instructor.user.full_name) || '—';
@@ -2143,7 +2617,7 @@ const bkCat = b => String(b.category || (b.course && b.course.category) || '').t
 const bkMin = b => Number(b.duration_minutes || b.total_minutes) || 0;
 function bkLine(b) {
   const c = bkCat(b);
-  return [c ? `${c} toifa` : (b.course && b.course.name) || '', bkMin(b) ? fmtDur(bkMin(b)) : '', bkIns(b)].filter(x => x && x !== '—').join(' · ');
+  return [c ? T('{c} toifa', { c }) : (b.course && b.course.name) || '', bkMin(b) ? fmtDur(bkMin(b)) : '', bkIns(b)].filter(x => x && x !== '—').join(' · ');
 }
 async function refreshBookings() {
   try {
@@ -2163,37 +2637,37 @@ function renderBookings() {
   const past = S.bookings.filter(b => !act.includes(b)).sort((a, b) => Date.parse(b.start_at || 0) - Date.parse(a.start_at || 0));
   const list = S.bkTab === 'active' ? act : past;
   $('#main').innerHTML = `
-    <div class="page-h"><h1>Bronlarim</h1><button class="icon-btn" data-act="refresh" aria-label="Yangilash">${ico('refresh', 20)}</button></div>
+    <div class="page-h"><h1>${T('Bronlarim')}</h1><button class="icon-btn" data-act="refresh" aria-label="${T('Yangilash')}">${ico('refresh', 20)}</button></div>
     <div class="seg" role="tablist">
-      <button class="${S.bkTab === 'active' ? 'on' : ''}" data-act="tab" data-v="active" role="tab">Kelgusi${act.length ? ` · ${act.length}` : ''}</button>
-      <button class="${S.bkTab === 'past' ? 'on' : ''}" data-act="tab" data-v="past" role="tab">Tarix</button>
+      <button class="${S.bkTab === 'active' ? 'on' : ''}" data-act="tab" data-v="active" role="tab">${T('Kelgusi')}${act.length ? ` · ${act.length}` : ''}</button>
+      <button class="${S.bkTab === 'past' ? 'on' : ''}" data-act="tab" data-v="past" role="tab">${T('Tarix')}</button>
     </div>
     ${list.length ? list.map(bkCard).join('') : `<div class="card empty"><div class="ill">${ico(S.bkTab === 'active' ? 'book' : 'list', 30)}</div>
-      <b>${S.bkTab === 'active' ? 'Kelgusi bron yo‘q' : 'Tarix bo‘sh'}</b>
-      <p>${S.bkTab === 'active' ? 'Birinchi darsingizni bir daqiqada bron qiling.' : 'Tugagan va bekor qilingan bronlar shu yerda ko‘rinadi.'}</p>
-      ${S.bkTab === 'active' ? `<button class="btn btn-primary btn-sm" style="margin:0 auto" data-act="go" data-v="book">${ico('book', 18)} Bron qilish</button>` : ''}</div>`}`;
+      <b>${T(S.bkTab === 'active' ? 'Kelgusi bron yo‘q' : 'Tarix bo‘sh')}</b>
+      <p>${T(S.bkTab === 'active' ? 'Birinchi darsingizni bir daqiqada bron qiling.' : 'Tugagan va bekor qilingan bronlar shu yerda ko‘rinadi.')}</p>
+      ${S.bkTab === 'active' ? `<button class="btn btn-primary btn-sm" style="margin:0 auto" data-act="go" data-v="book">${ico('book', 18)} ${T('Bron qilish')}</button>` : ''}</div>`}`;
 }
 function bkCard(b) {
   const active = ['pending', 'confirmed', 'in_progress'].includes(b.status);
   const reqOpen = b.cancel_requested_at && !b.cancel_reviewed_at;
   const price = Number(b.price) || Number(b.total_price) || 0;
   let foot = '';
-  if (b.status === 'pending') foot = `<div class="foot">Admin tasdiqlashini kutmoqda.</div>
-      <div class="btn-row"><button class="btn btn-danger btn-sm" data-act="cancel" data-v="${esc(b.id)}">Bekor qilish</button></div>`;
+  if (b.status === 'pending') foot = `<div class="foot">${T('Admin tasdiqlashini kutmoqda.')}</div>
+      <div class="btn-row"><button class="btn btn-danger btn-sm" data-act="cancel" data-v="${esc(b.id)}">${T('Bekor qilish')}</button></div>`;
   else if (b.status === 'confirmed') foot = reqOpen
-      ? `<div class="note warn" style="margin-top:10px">Bekor qilish so‘rovi yuborilgan — admin javobini kuting.</div>`
-      : `<div class="btn-row"><button class="btn btn-soft btn-sm" data-act="cancel" data-v="${esc(b.id)}">Bekor qilishni so‘rash</button></div>`;
+      ? `<div class="note warn" style="margin-top:10px">${T('Bekor qilish so‘rovi yuborilgan — admin javobini kuting.')}</div>`
+      : `<div class="btn-row"><button class="btn btn-soft btn-sm" data-act="cancel" data-v="${esc(b.id)}">${T('Bekor qilishni so‘rash')}</button></div>`;
   else if (b.status === 'completed') foot = b.reviewed
-      ? `<div class="foot">${ico('check', 15)} Baho qo‘yilgan. Rahmat!</div>`
-      : `<div class="btn-row"><button class="btn btn-primary btn-sm" data-act="review" data-v="${esc(b.id)}">${ico('star', 17)} Instruktorni baholash</button></div>`;
-  else if (b.cancellation_reason) foot = `<div class="foot">Sabab: ${esc(b.cancellation_reason)}</div>`;
+      ? `<div class="foot">${ico('check', 15)} ${T('Baho qo‘yilgan. Rahmat!')}</div>`
+      : `<div class="btn-row"><button class="btn btn-primary btn-sm" data-act="review" data-v="${esc(b.id)}">${ico('star', 17)} ${T('Instruktorni baholash')}</button></div>`;
+  else if (b.cancellation_reason) foot = `<div class="foot">${T('Sabab:')} ${esc(T(b.cancellation_reason))}</div>`;
 
   return `<article class="bk">
     <div class="bk-top"><div><div class="bk-when">${esc(whenText(b.start_at))}</div>
-      <div class="bk-meta">${esc(bkCat(b) ? bkCat(b) + ' toifa' : (b.course && b.course.name) || 'Mashg‘ulot')}${bkMin(b) ? ' · ' + esc(fmtDur(bkMin(b))) : ''}${b.package ? `<span class="pkg-pill">Paket ${esc(b.package.n)}/${esc(b.package.of)}</span>` : ''}</div></div>${pill(b.status)}</div>
-    <div class="bk-grid"><div><span>Instruktor</span><b>${esc(bkIns(b))}</b></div><div><span>Narx</span><b class="tnum">${price ? money(price) : '—'}</b></div></div>
+      <div class="bk-meta">${esc(bkCat(b) ? T('{c} toifa', { c: bkCat(b) }) : (b.course && b.course.name) || T('Mashg‘ulot'))}${bkMin(b) ? ' · ' + esc(fmtDur(bkMin(b))) : ''}${b.package ? `<span class="pkg-pill">${T('Paket {a}/{b}', { a: esc(b.package.n), b: esc(b.package.of) })}</span>` : ''}</div></div>${pill(b.status)}</div>
+    <div class="bk-grid"><div><span>${T('Instruktor')}</span><b>${esc(bkIns(b))}</b></div><div><span>${T('Narx')}</span><b class="tnum">${price ? money(price) : '—'}</b></div></div>
     ${active && b.pickup_code ? codeBox(b.pickup_code) : ''}
-    ${b.customer_note && !b.package ? `<div class="foot">Izoh: ${esc(b.customer_note)}</div>` : ''}
+    ${b.customer_note && !b.package ? `<div class="foot">${T('Izoh:')} ${esc(b.customer_note)}</div>` : ''}
     ${foot}
   </article>`;
 }
@@ -2205,26 +2679,26 @@ function openCancel(id) {
   if (!b) return;
   const req = b.status === 'confirmed';
   openSheet(`
-    <h3>${req ? 'Bekor qilishni so‘rash' : 'Bronni bekor qilish'}</h3>
+    <h3>${T(req ? 'Bekor qilishni so‘rash' : 'Bronni bekor qilish')}</h3>
     <p class="lead">${esc(whenText(b.start_at))} · ${esc(bkLine(b))}</p>
-    ${req ? `<div class="note info" style="margin-bottom:12px">Bron tasdiqlangan, shuning uchun so‘rov adminga yuboriladi. Admin javobini Telegram’da olasiz.</div>` : ''}
-    <div class="reasons">${REASONS.map(r => `<button data-act="reason" data-v="${esc(r)}">${esc(r)}</button>`).join('')}</div>
-    <label class="field"><span>Sabab</span><textarea class="input" id="reasonIn" maxlength="300" placeholder="Qisqacha yozing…"></textarea></label>
-    <div class="btn-row"><button class="btn btn-soft" data-act="closesheet">Ortga</button>
-      <button class="btn btn-danger" data-act="docancel" data-v="${esc(b.id)}">${req ? 'So‘rov yuborish' : 'Bekor qilish'}</button></div>`);
+    ${req ? `<div class="note info" style="margin-bottom:12px">${T('Bron tasdiqlangan, shuning uchun so‘rov adminga yuboriladi. Admin javobini Telegram’da olasiz.')}</div>` : ''}
+    <div class="reasons">${REASONS.map(r => `<button data-act="reason" data-v="${esc(T(r))}">${esc(T(r))}</button>`).join('')}</div>
+    <label class="field"><span>${T('Sabab')}</span><textarea class="input" id="reasonIn" maxlength="300" placeholder="${T('Qisqacha yozing…')}"></textarea></label>
+    <div class="btn-row"><button class="btn btn-soft" data-act="closesheet">${T('Ortga')}</button>
+      <button class="btn btn-danger" data-act="docancel" data-v="${esc(b.id)}">${T(req ? 'So‘rov yuborish' : 'Bekor qilish')}</button></div>`);
 }
 async function doCancel(id, btn) {
   const reason = ($('#reasonIn') || {}).value ? $('#reasonIn').value.trim() : '';
-  if (reason.length < 3) { haptic.err(); toast('Sababni yozing yoki tanlang', true); const el = $('#reasonIn'); if (el) el.focus(); return; }
+  if (reason.length < 3) { haptic.err(); toast(T('Sababni yozing yoki tanlang'), true); const el = $('#reasonIn'); if (el) el.focus(); return; }
   btn.disabled = true; btn.innerHTML = '<span class="spin"></span>';
   try {
     const r = await api.cancel(id, reason);
     haptic.ok(); closeSheet();
-    toast(r.mode === 'requested' ? (r.message || 'So‘rov adminga yuborildi') : 'Bron bekor qilindi');
+    toast(r.mode === 'requested' ? (trErr(r.message) || T('So‘rov adminga yuborildi')) : T('Bron bekor qilindi'));
     if (r.booking) S.bookings = S.bookings.map(x => String(x.id) === String(id) ? Object.assign({}, x, r.booking) : x);
     CACHE.clear();
     render(); refreshBookings();
-  } catch (e) { haptic.err(); toast(e.message, true); btn.disabled = false; btn.textContent = 'Qayta urinish'; }
+  } catch (e) { haptic.err(); toast(e.message, true); btn.disabled = false; btn.textContent = T('Qayta urinish'); }
 }
 
 /* --- baholash --- */
@@ -2234,20 +2708,20 @@ function openReview(id) {
   if (!b) return;
   stars = 5;
   openSheet(`
-    <h3 style="text-align:center">Dars qanday o‘tdi?</h3>
+    <h3 style="text-align:center">${T('Dars qanday o‘tdi?')}</h3>
     <p class="lead" style="text-align:center">${esc(bkIns(b))} · ${esc(whenText(b.start_at))}</p>
-    <div class="stars" id="stars">${[1, 2, 3, 4, 5].map(n => `<button data-act="star" data-v="${n}" aria-label="${n} yulduz" class="on">${ico('star', 40, 1.2)}</button>`).join('')}</div>
-    <label class="field"><span>Fikringiz (ixtiyoriy)</span><textarea class="input" id="reviewIn" maxlength="1000" placeholder="Instruktor haqida bir-ikki so‘z…"></textarea></label>
-    <div class="btn-row"><button class="btn btn-primary" data-act="doreview" data-v="${esc(b.id)}">Yuborish</button></div>`);
+    <div class="stars" id="stars">${[1, 2, 3, 4, 5].map(n => `<button data-act="star" data-v="${n}" aria-label="${N(n, '{n} yulduz', ['{n} звезда', '{n} звезды', '{n} звёзд'])}" class="on">${ico('star', 40, 1.2)}</button>`).join('')}</div>
+    <label class="field"><span>${T('Fikringiz (ixtiyoriy)')}</span><textarea class="input" id="reviewIn" maxlength="1000" placeholder="${T('Instruktor haqida bir-ikki so‘z…')}"></textarea></label>
+    <div class="btn-row"><button class="btn btn-primary" data-act="doreview" data-v="${esc(b.id)}">${T('Yuborish')}</button></div>`);
 }
 async function doReview(id, btn) {
   btn.disabled = true; btn.innerHTML = '<span class="spin"></span>';
   try {
     await api.review({ booking_id: id, rating: stars, comment: (($('#reviewIn') || {}).value || '').trim() || undefined });
-    haptic.ok(); closeSheet(); toast('Rahmat! Bahoyingiz yuborildi');
+    haptic.ok(); closeSheet(); toast(T('Rahmat! Bahoyingiz yuborildi'));
     S.bookings = S.bookings.map(x => String(x.id) === String(id) ? Object.assign({}, x, { reviewed: true }) : x);
     render();
-  } catch (e) { haptic.err(); toast(e.message, true); btn.disabled = false; btn.textContent = 'Qayta urinish'; }
+  } catch (e) { haptic.err(); toast(e.message, true); btn.disabled = false; btn.textContent = T('Qayta urinish'); }
 }
 
 /* =========================================================================
@@ -2257,15 +2731,15 @@ let chatTimer = 0;
 const QUICK = ['Narxlar haqida savolim bor', 'Bronimni boshqa vaqtga o‘tkazmoqchiman', 'Manzilni qanday topaman?', 'Guvohnoma olish uchun nima kerak?'];
 function renderSupport() {
   $('#main').innerHTML = `
-    <div class="chat-h">${logoImg()}<div><b>TASH INDEX AVTODROM</b><small>Yordam markazi · admin tez javob beradi</small></div></div>
+    <div class="chat-h">${logoImg()}<div><b>TASH INDEX AVTODROM</b><small>${T('Yordam markazi · admin tez javob beradi')}</small></div></div>
     <div class="msgs" id="msgs">${chatHtml()}</div>`;
   scrollChat();
 }
 function chatHtml() {
   if (!S.msgsLoaded) return `<div class="sk" style="min-height:44px;width:60%"></div><div class="sk" style="min-height:44px;width:45%;align-self:flex-end"></div>`;
   if (!S.msgs.length) return `<div class="card" style="text-align:center;padding:20px 16px">
-      <b>Savolingiz bormi?</b><p class="muted" style="margin:6px 0 12px;font-size:14px">Yozing — admin shu yerda javob beradi va Telegram’ga xabar keladi.</p>
-      <div class="quick" style="justify-content:center">${QUICK.map(q => `<button data-act="quick" data-v="${esc(q)}">${esc(q)}</button>`).join('')}</div></div>`;
+      <b>${T('Savolingiz bormi?')}</b><p class="muted" style="margin:6px 0 12px;font-size:14px">${T('Yozing — admin shu yerda javob beradi va Telegram’ga xabar keladi.')}</p>
+      <div class="quick" style="justify-content:center">${QUICK.map(q => `<button data-act="quick" data-v="${esc(T(q))}">${esc(T(q))}</button>`).join('')}</div></div>`;
   let last = '', out = '';
   for (const m of S.msgs) {
     const d = m.created_at ? ymd(new Date(m.created_at)) : '';
@@ -2323,43 +2797,44 @@ function renderProfile() {
   const done = S.bookings.filter(b => b.status === 'completed');
   const hours = Math.round(done.reduce((s, b) => s + bkMin(b), 0) / 6) / 10;
   $('#main').innerHTML = `
-    <div class="page-h"><h1>Profil</h1></div>
+    <div class="page-h"><h1>${T('Profil')}</h1></div>
     <div class="card pcard">
       ${photo ? `<span class="ava" style="background-image:url('${esc(photo)}')"></span>` : `<span class="ava">${esc(initials(u.full_name || tu.first_name))}</span>`}
-      <div style="flex:1;min-width:0"><b>${esc(u.full_name || tu.first_name || 'Foydalanuvchi')}</b>
-        <small>${esc(u.phone ? fmtPhone(u.phone) : 'Telefon kiritilmagan')}</small>${u.username || tu.username ? `<small>@${esc(u.username || tu.username)}</small>` : ''}</div>
-      <button class="icon-btn" data-act="editme" aria-label="Tahrirlash" style="box-shadow:none;background:var(--card-2)">${ico('edit', 19)}</button>
+      <div style="flex:1;min-width:0"><b>${esc(u.full_name || tu.first_name || T('Foydalanuvchi'))}</b>
+        <small>${esc(u.phone ? fmtPhone(u.phone) : T('Telefon kiritilmagan'))}</small>${u.username || tu.username ? `<small>@${esc(u.username || tu.username)}</small>` : ''}</div>
+      <button class="icon-btn" data-act="editme" aria-label="${T('Tahrirlash')}" style="box-shadow:none;background:var(--card-2)">${ico('edit', 19)}</button>
     </div>
-    <div class="stats"><div><b>${S.bookings.length}</b><span>Jami bron</span></div><div><b>${done.length}</b><span>O‘tgan dars</span></div><div><b>${hours}</b><span>Soat haydash</span></div></div>
+    <div class="stats"><div><b>${S.bookings.length}</b><span>${T('Jami bron')}</span></div><div><b>${done.length}</b><span>${T('O‘tgan dars')}</span></div><div><b>${hours}</b><span>${T('Soat haydash')}</span></div></div>
     <div class="list">
-      <button class="row" data-act="notes"><span class="ic">${ico('bell', 20)}</span><span class="tx"><b>Bildirishnomalar</b><small>Bron holati haqidagi xabarlar</small></span><span class="chev">${ico('chev', 18)}</span></button>
-      <button class="row" data-act="go" data-v="bookings"><span class="ic">${ico('list', 20)}</span><span class="tx"><b>Bronlarim</b><small>Kelgusi va o‘tgan darslar</small></span><span class="chev">${ico('chev', 18)}</span></button>
-      <button class="row" data-act="location"><span class="ic">${ico('pin', 20)}</span><span class="tx"><b>Avtodrom manzili</b><small>Google, Yandex, 2GIS</small></span><span class="chev">${ico('chev', 18)}</span></button>
-      <button class="row" data-act="go" data-v="support"><span class="ic">${ico('chat', 20)}</span><span class="tx"><b>Yordam</b><small>Admin bilan yozishma</small></span><span class="chev">${ico('chev', 18)}</span></button>
+      <button class="row" data-act="lang"><span class="ic">${ico('globe', 20)}</span><span class="tx"><b>${T('Til')}</b><small>${esc(LANGS[LANG])}</small></span><span class="chev">${ico('chev', 18)}</span></button>
+      <button class="row" data-act="notes"><span class="ic">${ico('bell', 20)}</span><span class="tx"><b>${T('Bildirishnomalar')}</b><small>${T('Bron holati haqidagi xabarlar')}</small></span><span class="chev">${ico('chev', 18)}</span></button>
+      <button class="row" data-act="go" data-v="bookings"><span class="ic">${ico('list', 20)}</span><span class="tx"><b>${T('Bronlarim')}</b><small>${T('Kelgusi va o‘tgan darslar')}</small></span><span class="chev">${ico('chev', 18)}</span></button>
+      <button class="row" data-act="location"><span class="ic">${ico('pin', 20)}</span><span class="tx"><b>${T('Avtodrom manzili')}</b><small>Google, Yandex, 2GIS</small></span><span class="chev">${ico('chev', 18)}</span></button>
+      <button class="row" data-act="go" data-v="support"><span class="ic">${ico('chat', 20)}</span><span class="tx"><b>${T('Yordam')}</b><small>${T('Admin bilan yozishma')}</small></span><span class="chev">${ico('chev', 18)}</span></button>
     </div>
     <p class="muted" style="text-align:center;font-size:12px;margin-top:20px">TASH INDEX AVTODROM · Mini App</p>`;
 }
 function openEditMe() {
   const u = S.me || {};
   openSheet(`
-    <h3>Ma’lumotlarim</h3><p class="lead">Admin siz bilan shu ma’lumotlar orqali bog‘lanadi.</p>
-    <label class="field"><span>Ism</span><input class="input" id="fFirst" autocomplete="given-name" value="${esc(u.first_name || '')}"></label>
-    <label class="field"><span>Familiya</span><input class="input" id="fLast" autocomplete="family-name" value="${esc(u.last_name || '')}"></label>
-    <label class="field"><span>Telefon</span><input class="input" id="fPhone" type="tel" inputmode="tel" autocomplete="tel" placeholder="+998 90 123 45 67" value="${esc(u.phone || '')}"></label>
-    <div class="btn-row"><button class="btn btn-primary" data-act="saveme">Saqlash</button></div>`);
+    <h3>${T('Ma’lumotlarim')}</h3><p class="lead">${T('Admin siz bilan shu ma’lumotlar orqali bog‘lanadi.')}</p>
+    <label class="field"><span>${T('Ism')}</span><input class="input" id="fFirst" autocomplete="given-name" value="${esc(u.first_name || '')}"></label>
+    <label class="field"><span>${T('Familiya')}</span><input class="input" id="fLast" autocomplete="family-name" value="${esc(u.last_name || '')}"></label>
+    <label class="field"><span>${T('Telefon')}</span><input class="input" id="fPhone" type="tel" inputmode="tel" autocomplete="tel" placeholder="+998 90 123 45 67" value="${esc(u.phone || '')}"></label>
+    <div class="btn-row"><button class="btn btn-primary" data-act="saveme">${T('Saqlash')}</button></div>`);
 }
 async function saveMe(btn) {
   const first = $('#fFirst').value.trim(), last = $('#fLast').value.trim(), raw = $('#fPhone').value.trim();
-  if (!first) { haptic.err(); toast('Ismingizni kiriting', true); return $('#fFirst').focus(); }
+  if (!first) { haptic.err(); toast(T('Ismingizni kiriting'), true); return $('#fFirst').focus(); }
   const phone = raw ? normPhone(raw) : '';
-  if (raw && !phone) { haptic.err(); toast('Telefon formati: +998 90 123 45 67', true); return $('#fPhone').focus(); }
+  if (raw && !phone) { haptic.err(); toast(T('Telefon formati: +998 90 123 45 67'), true); return $('#fPhone').focus(); }
   btn.disabled = true; btn.innerHTML = '<span class="spin"></span>';
   try {
     const r = await api.saveMe({ first_name: first, last_name: last, phone });
     S.me = r.profile || r.user || S.me;
     B.phone = S.me.phone || '';
-    haptic.ok(); closeSheet(); toast('Saqlandi'); render();
-  } catch (e) { haptic.err(); toast(e.message, true); btn.disabled = false; btn.textContent = 'Saqlash'; }
+    haptic.ok(); closeSheet(); toast(T('Saqlandi')); render();
+  } catch (e) { haptic.err(); toast(e.message, true); btn.disabled = false; btn.textContent = T('Saqlash'); }
 }
 
 /* =========================================================================
@@ -2375,10 +2850,10 @@ function updateNoteDot() {
 }
 async function openNotes() {
   const seen = lastSeen();
-  const draw = () => openSheet(`<h3>Bildirishnomalar</h3>
+  const draw = () => openSheet(`<h3>${T('Bildirishnomalar')}</h3>
     ${S.notes.length ? `<div class="notes">${S.notes.slice(0, 50).map(n => `<div class="n ${Date.parse(n.created_at || 0) > seen ? 'new' : ''}">
-      <b>${esc(n.title || 'TASH INDEX AVTODROM')}</b>${n.body || n.message ? `<p>${esc(n.body || n.message)}</p>` : ''}<time>${esc(whenText(n.created_at))}</time></div>`).join('')}</div>`
-      : `<div class="empty"><div class="ill">${ico('bell', 28)}</div><b>Hozircha xabar yo‘q</b><p>Bron holati o‘zgarsa shu yerda ko‘rinadi.</p></div>`}`);
+      <b>${esc(n.title ? T(n.title) : 'TASH INDEX AVTODROM')}</b>${n.body || n.message ? `<p>${esc(noteBody(n.body || n.message))}</p>` : ''}<time>${esc(whenText(n.created_at))}</time></div>`).join('')}</div>`
+      : `<div class="empty"><div class="ill">${ico('bell', 28)}</div><b>${T('Hozircha xabar yo‘q')}</b><p>${T('Bron holati o‘zgarsa shu yerda ko‘rinadi.')}</p></div>`}`);
   draw();
   await loadNotes();
   if (sheetOpen()) draw();
@@ -2388,9 +2863,9 @@ async function openNotes() {
 function openLocation() {
   const L = locInfo(), tel = telOf();
   openSheet(`<h3>${esc(L.name)}</h3>
-    <p class="lead">${esc(L.address || 'Manzil admin tomonidan kiritiladi.')}</p>
+    <p class="lead">${esc(L.address || T('Manzil admin tomonidan kiritiladi.'))}</p>
     <div class="list" style="box-shadow:none;background:var(--card-2)">${[['Google Maps', L.google], ['Yandex Maps', L.yandex], ['2GIS', L.gis]].map(([t, u]) =>
-      `<button class="row" data-act="link" data-v="${esc(u)}"><span class="ic">${ico('pin', 20)}</span><span class="tx"><b>${t}</b><small>Xaritada ochish</small></span><span class="chev">${ico('chev', 18)}</span></button>`).join('')}</div>
+      `<button class="row" data-act="link" data-v="${esc(u)}"><span class="ic">${ico('pin', 20)}</span><span class="tx"><b>${t}</b><small>${T('Xaritada ochish')}</small></span><span class="chev">${ico('chev', 18)}</span></button>`).join('')}</div>
     ${tel ? callBtns() : ''}`);
 }
 function openInstructor(id) {
@@ -2399,12 +2874,12 @@ function openInstructor(id) {
   const car = [i.vehicle_model, i.vehicle_plate].filter(Boolean).join(' · ');
   openSheet(`<div class="ins-hero">${avatar(i)}<h3>${esc(insName(i))}</h3>${catTags(i)}</div>
     <div class="stats">
-      <div><b>${Number(i.total_reviews) ? '★ ' + Number(i.rating || 0).toFixed(1) : '—'}</b><span>${Number(i.total_reviews) || 0} baho</span></div>
-      <div><b>${Number(i.experience_years) || 0}</b><span>yil tajriba</span></div>
-      <div><b>${insCats(i).join(', ')}</b><span>toifa</span></div></div>
+      <div><b>${Number(i.total_reviews) ? '★ ' + Number(i.rating || 0).toFixed(1) : '—'}</b><span>${rateN(i.total_reviews)}</span></div>
+      <div><b>${Number(i.experience_years) || 0}</b><span>${N(Number(i.experience_years) || 0, 'yil tajriba', ['год опыта', 'года опыта', 'лет опыта'])}</span></div>
+      <div><b>${insCats(i).join(', ')}</b><span>${N(insCats(i).length, 'toifa', ['категория', 'категории', 'категорий'])}</span></div></div>
     ${car ? `<div class="kv" style="margin-bottom:8px"><span>${ico('car', 18)}</span><b>${esc(car)}</b></div>` : ''}
     ${i.bio ? `<p class="bio">${esc(i.bio)}</p>` : ''}
-    <button class="btn btn-primary" data-act="bookwith" data-v="${esc(i.id)}">${ico('book', 19)} Shu instruktor bilan bron</button>`);
+    <button class="btn btn-primary" data-act="bookwith" data-v="${esc(i.id)}">${ico('book', 19)} ${T('Shu instruktor bilan bron')}</button>`);
 }
 
 /* =========================================================================
@@ -2414,7 +2889,7 @@ const sheetOpen = () => $('#sheet').classList.contains('show');
 function openSheet(html) {
   hideToast();   // eski xabar oynani to'smasin
   const s = $('#sheet');
-  s.innerHTML = `<div class="grab"></div><button class="x" data-act="closesheet" aria-label="Yopish">${ico('x', 18)}</button>${html}`;
+  s.innerHTML = `<div class="grab"></div><button class="x" data-act="closesheet" aria-label="${T('Yopish')}">${ico('x', 18)}</button>${html}`;
   s.scrollTop = 0;
   s.classList.add('show'); $('#sheetBg').classList.add('show');
   document.body.style.overflow = 'hidden';
@@ -2424,12 +2899,69 @@ function openSheet(html) {
 function openSplits() {
   const opt = curOpt();
   const p = opt && opt.cat ? pkgPrice(opt.cat) : 0;
-  openSheet(`<h3>5 soatni qanday bo‘lasiz?</h3>
-    <p class="lead">Paket narxi o‘zgarmaydi — ${money(p)}. Har mashg‘ulot boshqa kunda bo‘ladi.</p>
+  openSheet(`<h3>${T('5 soatni qanday bo‘lasiz?')}</h3>
+    <p class="lead">${T('Paket narxi o‘zgarmaydi — {p}. Har mashg‘ulot boshqa kunda bo‘ladi.', { p: money(p) })}</p>
     <div class="split-list">${SPLITS.map(x => `<button class="split ${B.pkg && B.pkg.k === x.k ? 'on' : ''}" data-act="wzsplit" data-v="${x.k}">
       <span class="bars">${x.m.map(m => `<i style="flex:${m}"></i>`).join('')}</span>
-      <span class="tx"><b>${esc(x.t)}</b><small>${esc(x.s)}</small></span>${ico('chev', 18)}</button>`).join('')}</div>`);
+      <span class="tx"><b>${esc(T(x.t))}</b><small>${esc(T(x.s))}</small></span>${ico('chev', 18)}</button>`).join('')}</div>`);
 }
+/* =========================================================================
+   TIL TANLASH — kirishdagi birinchi ekran (telefon raqamidan oldin) va
+   keyinroq almashtirish uchun Profil → Til. Tanlov shu qurilmada saqlanadi.
+   ========================================================================= */
+const FLAG = { uz: '🇺🇿', ru: '🇷🇺' };
+function openLang() {
+  openSheet(`<h3>Til · Язык</h3>
+    <div class="list lang-list" style="box-shadow:none;background:var(--card-2)">${Object.keys(LANGS).map(k =>
+      `<button class="row ${k === LANG ? 'on' : ''}" data-act="setlang" data-v="${k}" aria-pressed="${k === LANG}"><span class="flag">${FLAG[k]}</span>
+        <span class="tx"><b>${LANGS[k]}</b></span>${k === LANG ? `<span class="ok">${ico('check', 22, 2.6)}</span>` : ''}</button>`).join('')}</div>`);
+}
+function setLang(l) {
+  if (sheetOpen()) closeSheet();
+  if (!LANGS[l]) return;
+  store.set('lang', l);
+  if (l === LANG) return;
+  LANG = l;
+  document.documentElement.lang = l;
+  haptic.ok();
+  if (!S.ready) return;
+  const y = window.scrollY;
+  renderShell();
+  document.querySelectorAll('.nav button').forEach(b => b.classList.toggle('on', b.dataset.v === S.view));
+  render();
+  window.scrollTo(0, y);
+}
+
+/* Bildirishnomalar bazada o'zbekcha saqlangan bo'lishi mumkin — ruschada o'giramiz */
+const NOTE_TXT = [
+  ['Admin tasdiqlashini kuting.', 'Дождитесь подтверждения администратора.'],
+  ['Belgilangan vaqtda avtodromga keling.', 'Приходите на автодром в назначенное время.'],
+  ['Boshqa vaqt yoki instruktorni tanlashingiz mumkin.', 'Можно выбрать другое время или инструктора.'],
+  ['Instruktorni baholashingiz mumkin — Mini Appni oching.', 'Вы можете оценить инструктора — откройте Mini App.'],
+  ['Xatolik bo‘lsa, Chat orqali bizga yozing.', 'Если это ошибка, напишите нам в чат.'],
+  ['So‘rovingiz tasdiqlandi — bron bekor qilindi.', 'Ваш запрос одобрен — бронь отменена.'],
+  ['Bekor qilish so‘rovi rad etildi. Bron kuchda qoladi.', 'Запрос на отмену отклонён. Бронь остаётся в силе.'],
+  ['Bekor qilish so‘rovi rad etildi. Admin izohi:', 'Запрос на отмену отклонён. Комментарий администратора:'],
+];
+const NOTE_RX = [
+  [/Amaliy haydash — ([ABC]) toifa \(([^)]+)\)/g, (m, c, k) =>
+    `Практическое вождение — категория ${c} (${({ mototsikl: 'мотоцикл', 'yengil avtomobil': 'легковой автомобиль', 'yuk avtomobili': 'грузовой автомобиль' })[k] || k})`],
+  [/(\d{1,2})-(yanvar|fevral|mart|aprel|may|iyun|iyul|avgust|sentabr|oktabr|noyabr|dekabr)(?:, (yakshanba|dushanba|seshanba|chorshanba|payshanba|juma|shanba))?/g,
+    (m, d, mo, w) => `${d} ${DT.ru.mon[DT.uz.mon.indexOf(mo)]}${w ? ', ' + DT.ru.wd[DT.uz.wd.indexOf(w)] : ''}`],
+  [/(\d+) ta mashg‘ulot/g, (m, n) => N(Number(n), '', ['{n} занятие', '{n} занятия', '{n} занятий'])],
+  [/ · (.+) dan boshlab$/, ' · начиная с $1'],
+  [/Dars vaqtidan (\d+) daqiqa o‘tdi — bron avtomatik bekor qilindi\./, 'С начала занятия прошло $1 мин — бронь автоматически отменена.'],
+  [/^Instruktor eslatdi: /, 'Инструктор напомнил: '],
+  [/\(bron (#\w+)\)/, '(бронь $1)'],
+];
+function noteBody(s) {
+  let o = String(s || '');
+  if (LANG !== 'ru') return o;
+  for (const [uz, ru] of NOTE_TXT) o = o.split(uz).join(ru);
+  for (const [rx, to] of NOTE_RX) o = o.replace(rx, to);
+  return o;
+}
+
 function closeSheet() {
   $('#sheet').classList.remove('show'); $('#sheetBg').classList.remove('show');
   document.body.style.overflow = '';
@@ -2452,6 +2984,7 @@ document.addEventListener('click', e => {
     case 'vstep': viewerStep(Number(v)); break;
     case 'closeviewer': closeViewer(); break;
     case 'insphoto': haptic.tap(); openInsPhoto(v); break;
+    case 'onblang': onbLang(v); break;
     case 'onbnext': onbNext(); break;
     case 'sharecontact': shareContact(); break;
     case 'onbskip': onbSkip(); break;
@@ -2498,7 +3031,7 @@ document.addEventListener('click', e => {
     case 'submit': submitBooking(); break;
     case 'gobookings': closeSheet(); S.bkTab = 'active'; go('bookings'); break;
     case 'tab': S.bkTab = v; haptic.tap(); render(); break;
-    case 'refresh': haptic.tap(); refreshBookings().then(() => toast('Yangilandi')); break;
+    case 'refresh': haptic.tap(); refreshBookings().then(() => toast(T('Yangilandi'))); break;
     case 'cancel': openCancel(v); break;
     case 'reason': { const t = $('#reasonIn'); if (t) t.value = v; document.querySelectorAll('.reasons button').forEach(b => b.classList.toggle('on', b === el)); haptic.tap(); break; }
     case 'docancel': doCancel(v, el); break;
@@ -2517,6 +3050,8 @@ document.addEventListener('click', e => {
     case 'send': { const t = $('#chatIn'); if (t) sendChat(t.value); break; }
     case 'quick': sendChat(v); break;
     case 'closesheet': closeSheet(); break;
+    case 'lang': haptic.tap(); openLang(); break;
+    case 'setlang': setLang(v); break;
   }
 });
 
