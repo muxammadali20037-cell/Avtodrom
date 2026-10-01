@@ -270,3 +270,52 @@ export async function notifyAdminsNewBooking(
     return { chats: 0, sent: 0, failed: 1, errors: [String(e?.message || e)] };
   }
 }
+
+/* ======================================================================
+   BRON YOPILDI / BEKOR QILINDI — adminga xabar
+   Mijoz o'zi bekor qilsa, instruktor «kelmadi» desa yoki bron avtomatik
+   yopilsa — administrator darhol biladi (vaqt bo'shadi yoki pul masalasi).
+   ====================================================================== */
+export type BookingCloseKind = 'customer_cancel' | 'instructor_no_show' | 'auto_late' | 'auto_paid';
+
+const CLOSE_HEAD: Record<BookingCloseKind, string> = {
+  customer_cancel: '🚫 <b>BRON BEKOR QILINDI</b> · mijoz o‘zi (Mini App)',
+  instructor_no_show: '🙅 <b>MIJOZ KELMADI</b> · instruktor belgiladi',
+  auto_late: '⏰ <b>BRON YOPILDI</b> · mijoz kelmadi (avtomatik)',
+  auto_paid: '💰 <b>TO‘LANGAN BRON YOPILDI</b> · dars o‘tmadi (avtomatik)',
+};
+const CLOSE_TAIL: Record<BookingCloseKind, string> = {
+  customer_cancel: 'ℹ️ Bu vaqt bo‘shadi — boshqa mijozga berish mumkin.',
+  instructor_no_show: 'ℹ️ Xato bo‘lsa — admin panelda bronni qayta oching.',
+  auto_late: 'ℹ️ Mijoz kelgan bo‘lsa — admin panelda bronni qayta oching.',
+  auto_paid: '⚠️ Pul kassada. Mijoz bilan bog‘laning: pulni qaytarish yoki bronni qayta ochib, darsni o‘tkazish.',
+};
+
+export function adminBookingClosedText(booking: any, ctx: AdminBookingContext, kind: BookingCloseKind, reason?: string | null): string {
+  const L: string[] = [CLOSE_HEAD[kind], ''];
+  L.push(`👤 <b>${escHtml(ctx.customer.name || 'Mijoz')}</b>${ctx.customer.phone ? ` · ${escHtml(ctx.customer.phone)}` : ''}`);
+  if (ctx.instructor.name) L.push(`👨‍🏫 Instruktor: ${escHtml(ctx.instructor.name)}${ctx.instructor.phone ? ` · ${escHtml(ctx.instructor.phone)}` : ''}`);
+  const mins = Number(booking?.duration_minutes) || Math.round((Date.parse(booking?.end_at) - Date.parse(booking?.start_at)) / 60000) || 0;
+  const line = [ctx.course.category ? `${ctx.course.category} toifa` : ctx.course.name, mins > 0 ? durText(mins) : ''].filter(Boolean).join(' · ');
+  if (line) L.push(`📚 ${escHtml(line)}`);
+  L.push(`📅 <b>${escHtml(whenRange(booking?.start_at || booking?.booking_date, booking?.end_at))}</b>`);
+  if (Number(booking?.price) > 0) L.push(`💵 ${escHtml(fmtMoney(booking.price))}`);
+  if (booking?.pickup_code) L.push(`🎫 Bron kodi: <code>${escHtml(booking.pickup_code)}</code>`);
+  const why = String(reason ?? booking?.cancellation_reason ?? '').trim();
+  if (why) L.push(`💬 Sabab: ${escHtml(why.slice(0, 300))}`);
+  L.push('', CLOSE_TAIL[kind]);
+  return L.join('\n');
+}
+
+/** Hech qachon xato otmaydi. */
+export async function notifyAdminsBookingClosed(booking: any, kind: BookingCloseKind, reason?: string | null): Promise<AdminSendResult> {
+  try {
+    if (!booking) return { chats: 0, sent: 0, failed: 0, errors: [], skipped: 'bron yo‘q' };
+    if (!adminBotToken()) return { chats: 0, sent: 0, failed: 0, errors: [], skipped: 'ADMIN_BOT_TOKEN sozlanmagan' };
+    const ctx = await loadAdminContext(booking);
+    return await notifyAdmins(adminBookingClosedText(booking, ctx, kind, reason), { html: true, open: 'bookings/all', button: '🛡️ Admin panelda ochish' });
+  } catch (e: any) {
+    console.error('Bron yopildi — admin xabari ketmadi:', e);
+    return { chats: 0, sent: 0, failed: 1, errors: [String(e?.message || e)] };
+  }
+}

@@ -4,7 +4,7 @@ import { selectIn } from './rest-chunks.js';
 import { loadTariffs, computePrice, loadKrug } from './pricing.js';
 import { q, findUserByTelegram, toProfile } from './identity.js';
 import { fmtWhen, fmtMoney } from './notify.js';
-import { readRegisterToken, ownRegisterFromToken, reportScope, openShiftId } from './shift-routes.js';
+import { readRegisterToken, ownRegisterFromToken, reportScope, openShiftId, priceGuard } from './shift-routes.js';
 import { bookingSearchFilter } from './booking-search.js';
 import { loadBlocks, overlapping, instructorBlockedAt, blockedMessage } from './instructor-blocks.js';
 import {
@@ -70,11 +70,13 @@ async function loadMaps(bookings: any[]) {
   const cids = [...new Set(bookings.map((b) => b.course_id).filter(Boolean).map(String))];
   const bids = bookings.map((b) => String(b.id));
 
-  const [users, ips, courses, pays] = await Promise.all([
+  const [users, ips, courses, pays, tariffs, pkgPrices] = await Promise.all([
     selectIn<any>('users', 'id', uids, 'id,full_name,phone,telegram_id'),
     selectIn<any>('instructor_profiles', 'id', iids, 'id,user_id'),
     selectIn<any>('courses', 'id', cids, 'id,name,duration_minutes,price,category'),
     selectIn<any>('payments', 'booking_id', bids, '*'),
+    loadTariffs().catch(() => null),
+    loadPackagePrices().catch(() => null),
   ]);
   const um = new Map(users.map((u) => [String(u.id), u]));
   const iuids = [...new Set(ips.map((i) => i.user_id).filter(Boolean).map(String))];
@@ -85,7 +87,23 @@ async function loadMaps(bookings: any[]) {
     im: new Map(ips.map((i) => [String(i.id), { ...i, profile: ium.get(String(i.user_id)) || null }])),
     cm: new Map(courses.map((c) => [String(c.id), c])),
     pm: new Map(pays.map((p) => [String(p.booking_id), p])),
+    tariffs, pkgPrices,
   };
+}
+
+/**
+ * BRONNING TO'LANISHI KERAK BO'LGAN SUMMASI — kassada ham, serverda ham
+ * bitta qoida: bron yaratilganda saqlangan narx; bo'lmasa — tarif
+ * (toifa + daqiqa, 5 soat — paket). Kutilayotgan to'lov yozuvidagi eski
+ * summa (kurs narxi) hisobga olinmaydi: 30 daqiqalik bronga 250 000
+ * chiqib qolardi.
+ */
+function bookingDue(b: any, tariffs: any, pkgPrices: any, courseFallback = 0): number {
+  if (Number(b?.price) > 0) return Math.round(Number(b.price));
+  const mins = Number(b?.duration_minutes) > 0 ? Number(b.duration_minutes) : 60 * (Number(b?.hours ?? 1) || 1);
+  const cat = String(b?.category || '').toUpperCase();
+  if (tariffs && /^[ABC]$/.test(cat)) return priceWithPackage(cat, mins, tariffs, pkgPrices || {});
+  return Math.round(courseFallback);
 }
 
 function shape(b: any, m: any) {
@@ -110,7 +128,8 @@ function shape(b: any, m: any) {
     /* To'lov bo'lsa — to'langan summa; bo'lmasa bron yaratilganda
        SAQLANGAN narx (paket mashg'uloti 660 000 bo'lishi mumkin); eng
        oxiri kurs narxidan hisoblangani. */
-    price: p?.amount ?? (Number(b.price) > 0 ? Number(b.price) : expected),
+    /* To'langan bo'lsa — to'langan summa; aks holda bron narxi / tarif */
+    price: String(p?.status) === 'paid' ? Number(p.amount) : bookingDue({ ...b, category: b.category || c?.category, duration_minutes: mins }, m.tariffs, m.pkgPrices, expected),
     is_paid: String(p?.status) === 'paid',
   };
 }
@@ -722,10 +741,14 @@ export async function registerCashierRoutes(
       const course = booking.course_id
         ? (await supabaseRest<any[]>('courses', { query: `?id=eq.${q(String(booking.course_id))}&select=price,name,duration_minutes&limit=1` }))[0]
         : null;
+      /* Standart summa: bron narxi (yoki tarif). O'zgartirish — faqat maxsus parol bilan. */
+      const [tariffs, pkgPrices] = await Promise.all([loadTariffs(), loadPackagePrices()]);
       const bookedHours = Number(booking.hours ?? 1) || 1;
-      // Standart summa: kurs narxi × soat soni. Kassir uni o'zgartira oladi.
-      const amount = Number(amountRaw ?? (Number(course?.price ?? 0) * bookedHours));
+      const due = bookingDue(booking, tariffs, pkgPrices, Number(course?.price ?? 0) * bookedHours);
+      const amount = Math.round(Number(amountRaw ?? due));
       if (!Number.isFinite(amount) || amount <= 0) return reply.code(400).send({ ok: false, error: 'Summa noto‘g‘ri' });
+      const pg = await priceGuard(req, req.body?.price_token, amount, due);
+      if (pg) return reply.code(pg.code).send({ ok: false, error: pg.error, needs_price_pin: true, expected: due });
 
       const existing = (await supabaseRest<any[]>('payments', { query: `?booking_id=eq.${q(bookingId)}&select=*&limit=1` }))[0];
       if (existing && String(existing.status) === 'paid') {
@@ -1062,6 +1085,9 @@ export async function registerCashierRoutes(
       if (cash + card !== total) {
         return reply.code(400).send({ ok: false, error: `Naqd (${cash}) + terminal (${card}) = ${cash + card}, jami esa ${total}. Mos kelmadi.` });
       }
+      /* NARXNI O'ZGARTIRISH — faqat maxsus parol bilan (token). Bronsiz
+         chekda tekshiruv HECH NARSA yaratilmasidan oldin. */
+      let expected = Math.round(suggested);
 
       /* Chek qaysi KASSAdan chiqarilgani — mijoz yuborgan qiymatdan EMAS,
          imzolangan TOKENdan olinadi. */
@@ -1097,7 +1123,15 @@ export async function registerCashierRoutes(
             .sort((x, y) => String(x.start_at).localeCompare(String(y.start_at)));
           if (!targets.length) return reply.code(409).send({ ok: false, error: 'Paketning hamma mashg‘ulotlari allaqachon to‘langan' });
           packageInfo = { id: pk.id, price: pk.price, list_price: pk.list_price, of: pk.of };
+          expected = targets.reduce((a, t) => a + bookingDue(t, tariffs, pkgPrices), 0);
+          const g = await priceGuard(req, b.price_token, total, expected);
+          if (g) return reply.code(g.code).send({ ok: false, error: g.error, needs_price_pin: true, expected });
         } else {
+          /* Kassada davomiylik o'zgartirilsa — yangi davomiylik tarifi; aks holda bron narxi */
+          const sameLen = Number(booking.duration_minutes || 0) === minutes;
+          expected = sameLen ? bookingDue(booking, tariffs, pkgPrices) : priceWithPackage(String(b.category || booking.category || 'B').toUpperCase(), minutes, tariffs, pkgPrices);
+          const g = await priceGuard(req, b.price_token, total, expected);
+          if (g) return reply.code(g.code).send({ ok: false, error: g.error, needs_price_pin: true, expected });
           targets = [booking];
           // Bronli holatda ham davomiylik/kategoriya kassada aniqlanishi mumkin
           if (Number(booking.duration_minutes || 0) !== minutes || b.category) {
@@ -1148,6 +1182,11 @@ export async function registerCashierRoutes(
         for (const s of sessions) {
           const blk = await instructorBlockedAt(instructorId, s.start, s.end);
           if (blk) return reply.code(409).send({ ok: false, error: blockedMessage(blk) });
+        }
+        /* Bronsiz chekda narx tekshiruvi — mijoz ham, bron ham hali yaratilmagan */
+        {
+          const g = await priceGuard(req, b.price_token, total, expected);
+          if (g) return reply.code(g.code).send({ ok: false, error: g.error, needs_price_pin: true, expected });
         }
 
         let customer: any = b.customer_id
@@ -1237,7 +1276,7 @@ export async function registerCashierRoutes(
           : (await supabaseRest<any[]>('payments', {
               method: 'POST', headers: { Prefer: 'return=representation' }, body: JSON.stringify(payload) }))[0];
         await audit(admin.id, 'RECEIPT_ISSUED', 'payments', payment?.id ?? null, null,
-          { amount: amounts[i], suggested, method, cash: c, card: k, receipt_code: receiptCode, booking_id: t.id, mode, krug,
+          { amount: amounts[i], suggested: expected, price_override: total !== expected ? { expected, total } : undefined, method, cash: c, card: k, receipt_code: receiptCode, booking_id: t.id, mode, krug,
             register: register.code, package: packageInfo?.id || null });
         payments.push(payment);
       }

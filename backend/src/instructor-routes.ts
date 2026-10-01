@@ -264,6 +264,10 @@ export async function registerInstructorRoutes(
       });
       const updated = rows[0] || { ...booking, ...patch };
       await notifyBookingStatus(updated, target);
+      if (target === 'no_show') {
+        const { notifyAdminsBookingClosed } = await import('./admin-notify.js');
+        await notifyAdminsBookingClosed(updated, 'instructor_no_show', String(request.body?.reason || '').trim() || null);
+      }
       return { ok: true, booking: updated };
     } catch (e) {
       return reply.code(400).send({ ok: false, error: e instanceof Error ? e.message : 'Amal bajarilmadi' });

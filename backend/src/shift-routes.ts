@@ -130,6 +130,44 @@ export function readRegisterToken(token: string): string | null {
   return id;
 }
 
+/* =======================================================================
+   NARXNI O'ZGARTIRISH PAROLI
+   Kassada summani avtomatik narxdan boshqa qilish (chegirma, qo'shimcha)
+   faqat maxsus parol bilan. Parol admin_settings.price_pin da xeshlangan.
+   O'rnatilmagan bo'lsa — BOSHQARUV PIN (mgmt_pin) ishlaydi.
+   Parol to'g'ri bo'lsa 15 daqiqalik, shu xodimga bog'langan token beriladi;
+   chek chiqarishda server tokenni tekshiradi.
+   ======================================================================= */
+export const PRICE_KEY = 'price_pin';
+const PRICE_TTL_MS = 15 * 60 * 1000;
+export const pricePinHash = (pin: string) => hmac(`price:${pin}`);
+export const mgmtPinHashOf = (pin: string) => hmac(`mgmt:${pin}`);
+const staffKey = (me: any) => String(me?.id || me?.login || me?.role || 'staff');
+export function makePriceToken(me: any, now = Date.now()) {
+  const exp = now + PRICE_TTL_MS, who = staffKey(me);
+  return { token: `price.${exp}.${hmac(`price-tok:${exp}:${who}`)}`, expires_at: new Date(exp).toISOString() };
+}
+/** Token to'g'rimi, muddati o'tmaganmi va AYNAN shu xodimnikimi */
+export async function verifyPriceToken(req: any, token: unknown): Promise<boolean> {
+  const parts = String(token || '').split('.');
+  if (parts.length !== 3 || parts[0] !== 'price') return false;
+  const [, expStr, sig] = parts;
+  if (!Number(expStr) || Number(expStr) < Date.now()) return false;
+  const me = await currentStaffSafe(req);
+  if (!me) return false;
+  return safeEq(sig, hmac(`price-tok:${expStr}:${staffKey(me)}`));
+}
+/**
+ * Summa avtomatik narxdan farq qilsa — token talab qilinadi.
+ * Qaytaradi: null (ruxsat) yoki { code, error } (rad).
+ */
+export async function priceGuard(req: any, token: unknown, total: number, expected: number): Promise<{ code: number; error: string } | null> {
+  if (Math.round(Number(total)) === Math.round(Number(expected))) return null;
+  if (await verifyPriceToken(req, token)) return null;
+  const nf = (v: number) => String(Math.round(Number(v) || 0)).replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+  return { code: 403, error: `Narx o‘zgartirilgan (${nf(expected)} → ${nf(total)} so‘m). Narxni o‘zgartirish uchun maxsus parol kerak — «Narxni o‘zgartirish»ni bosib, parolni kiriting.` };
+}
+
 /** Faqat administrator. Kassir 403 oladi. */
 async function requireStaffAdmin(req: any) {
   const { guardAdmin } = await import('./admin-password-routes.js');
@@ -962,6 +1000,80 @@ export async function registerShiftRoutes(
       return { ok: true, token: makeMgmtToken() };
     } catch (e: any) {
       return reply.code(e?.statusCode ?? 400).send({ ok: false, error: e?.message || 'Ochib bo‘lmadi' });
+    }
+  });
+
+  /* ---------------- Narxni o'zgartirish paroli ---------------- */
+  const priceFails = new Map<string, { n: number; at: number }>();
+  const readHash = async (key: string) => {
+    const r = (await supabaseRest<any[]>('admin_settings', { query: `?key=eq.${key}&select=value&limit=1` }).catch(() => []))[0];
+    const v = r?.value?.hash || r?.value;
+    return v && String(v).length > 10 ? String(v) : '';
+  };
+
+  app.get('/api/admin/price-pin', async (req: any, reply: any) => {
+    try {
+      await requireAdmin(req);
+      const [own, mgmt] = await Promise.all([readHash(PRICE_KEY), readHash(MGMT_KEY)]);
+      return { ok: true, is_set: !!own, uses_mgmt: !own && !!mgmt, ready: !!(own || mgmt) };
+    } catch (e: any) {
+      return reply.code(e?.statusCode ?? 500).send({ ok: false, error: e?.message || 'Holatni o‘qib bo‘lmadi' });
+    }
+  });
+
+  app.put('/api/admin/price-pin', async (req: any, reply: any) => {
+    try {
+      await requireStaffAdmin(req);
+      const pin = String(req.body?.pin ?? '').trim();
+      if (!/^\d{4,8}$/.test(pin)) return reply.code(400).send({ ok: false, error: 'Parol 4 dan 8 tagacha raqam bo‘lsin' });
+      const value = { hash: pricePinHash(pin), set_at: new Date().toISOString() };
+      const now = new Date().toISOString();
+      const rows = await supabaseRest<any[]>('admin_settings', {
+        method: 'PATCH', headers: { Prefer: 'return=representation' }, query: `?key=eq.${PRICE_KEY}`,
+        body: JSON.stringify({ value, updated_at: now }),
+      });
+      if (!rows?.length) {
+        await supabaseRest('admin_settings', { method: 'POST', body: JSON.stringify({ key: PRICE_KEY, value, updated_at: now }) });
+      }
+      try { const admin = await adminUser(); await audit(admin.id, 'PRICE_PIN_SET', 'admin_settings', PRICE_KEY, null, null); } catch { /* audit ixtiyoriy */ }
+      return { ok: true };
+    } catch (e: any) {
+      return reply.code(e?.statusCode ?? 400).send({ ok: false, error: e?.message || 'Parol saqlanmadi' });
+    }
+  });
+
+  /** Parolni tekshiradi — 15 daqiqalik token (faqat shu xodim uchun). 10 daqiqada 5 xatodan keyin bloklanadi. */
+  app.post('/api/admin/price-unlock', async (req: any, reply: any) => {
+    try {
+      await requireAdmin(req);
+      const me: any = await currentStaffSafe(req);
+      if (!me) return reply.code(401).send({ ok: false, error: 'Kirish talab qilinadi' });
+      if (me.role === 'operator') return reply.code(403).send({ ok: false, error: 'Operator narxni o‘zgartira olmaydi' });
+      const who = String(me.id || me.login || 'staff') + '|' + String(req.headers?.['x-real-ip'] || req.ip || '');
+      const f = priceFails.get(who);
+      if (f && Date.now() - f.at < 10 * 60000 && f.n >= 5) {
+        return reply.code(429).send({ ok: false, error: 'Ko‘p marta noto‘g‘ri parol kiritildi. 10 daqiqadan keyin urinib ko‘ring.' });
+      }
+      const pin = String(req.body?.pin ?? '').trim();
+      const [own, mgmt] = await Promise.all([readHash(PRICE_KEY), readHash(MGMT_KEY)]);
+      if (!own && !mgmt) {
+        return reply.code(409).send({ ok: false, error: 'Narx paroli o‘rnatilmagan. Administrator: Narxlar va ish vaqti → «Narxni o‘zgartirish paroli».', needs_setup: true });
+      }
+      const okPin = own ? safeEq(own, pricePinHash(pin)) : safeEq(mgmt, mgmtPinHashOf(pin));
+      let admin: any = null;
+      try { admin = await adminUser(); } catch { /* ixtiyoriy */ }
+      if (!okPin) {
+        const cur = f && Date.now() - f.at < 10 * 60000 ? f : { n: 0, at: Date.now() };
+        cur.n++; cur.at = Date.now(); priceFails.set(who, cur);
+        await audit(admin?.id ?? null, 'PRICE_PIN_FAIL', 'admin_settings', PRICE_KEY, null, { staff: me.login || me.id || null, role: me.role });
+        /* 401 EMAS — panel 401 ni «sessiya tugadi» deb tushunib, kassirni tizimdan chiqarib yuborardi */
+        return reply.code(400).send({ ok: false, error: `Parol noto‘g‘ri${cur.n >= 3 ? ` (${5 - cur.n > 0 ? 5 - cur.n : 0} ta urinish qoldi)` : ''}`, wrong_pin: true });
+      }
+      priceFails.delete(who);
+      await audit(admin?.id ?? null, 'PRICE_UNLOCK', 'admin_settings', PRICE_KEY, null, { staff: me.login || me.id || null, role: me.role });
+      return { ok: true, ...makePriceToken(me) };
+    } catch (e: any) {
+      return reply.code(e?.statusCode ?? 400).send({ ok: false, error: e?.message || 'Tekshirib bo‘lmadi' });
     }
   });
 

@@ -2,7 +2,7 @@ import { supabaseRest } from './supabase.js';
 import { selectIn } from './rest-chunks.js';
 import { telegramApi } from './telegram.js';
 import { loadBookingDetails, fmtWhen, fmtMoney, shortCode } from './notify.js';
-import { notifyAdmins } from './admin-notify.js';
+import { notifyAdmins, notifyAdminsBookingClosed } from './admin-notify.js';
 
 /**
  * DARS OLDIDAN ESLATMA VA KECHIKISH QOIDASI
@@ -294,7 +294,10 @@ export async function closeLateBookings(nowMs = Date.now(), cfg?: ReminderConfig
     }).catch(() => {});
     if (!walkNow && !isPaid && nowMs - startMs < 3 * 3600e3) {
       if (await notifyLateClosed({ ...b, ...upd[0] }, lateMin)) out.notified++;
+      await notifyAdminsBookingClosed({ ...b, ...upd[0] }, 'auto_late', reason);
     }
+    /* To'langan, lekin dars o'tmagan — pul masalasi, admin albatta bilsin */
+    if (isPaid) await notifyAdminsBookingClosed({ ...b, ...upd[0] }, 'auto_paid', reason);
   }
   return out;
 }

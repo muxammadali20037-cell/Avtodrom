@@ -1514,7 +1514,7 @@ async function notifyInstructorDecision(
     'paket5_a', 'paket5_b', 'paket5_c', 'krug_price', 'krug_min'];
   /* Tizim yozuvlari (paketlar, instruktor yopgan soatlar) sozlamalar
      ro'yxatiga kirmaydi — ular yuzlab bo'lishi mumkin. */
-  const HIDE_SYSTEM_KEYS = '&key=not.like.pack*&key=not.like.instructor_busy*';
+  const HIDE_SYSTEM_KEYS = '&key=not.like.pack*&key=not.like.instructor_busy*&key=not.in.(mgmt_pin,price_pin)';
   app.get('/api/admin/settings', async (req: any, reply: any) => {
     try {
       const me = await currentStaff(req);

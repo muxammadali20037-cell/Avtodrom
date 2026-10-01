@@ -38,6 +38,13 @@ export function fmtMoney(v: unknown): string {
   return new Intl.NumberFormat('uz-UZ').format(n) + ' so‘m';
 }
 
+/** 30 → «30 daqiqa», 60 → «1 soat», 90 → «1 soat 30 daqiqa», 120 → «2 soat» */
+export function fmtMinutes(minutes: unknown): string {
+  const m = Math.round(Number(minutes) || 0), h = Math.floor(m / 60), r = m % 60;
+  if (m <= 0) return '';
+  return h ? (r ? `${h} soat ${r} daqiqa` : `${h} soat`) : `${r} daqiqa`;
+}
+
 /** UUID o'rniga qisqa, o'qish mumkin bo'lgan kod: #9CB6110C */
 export function shortCode(id: unknown): string {
   const s = String(id ?? '').replace(/-/g, '');
@@ -101,6 +108,18 @@ export async function loadBookingDetails(booking: any): Promise<BookingDetails> 
       }))[0];
       if (c) { out.courseName = c.name; out.durationMinutes = c.duration_minutes; out.price = c.price; }
     }
+    /* DAVOMIYLIK VA NARX — BRONNING O'ZIDAN, kursdan emas. Ilgari 30
+       daqiqalik bron instruktorga «60 daqiqa · 250 000» bo'lib borardi
+       (kursning standart qiymatlari). */
+    const span = Date.parse(booking?.end_at) - Date.parse(booking?.start_at || booking?.booking_date);
+    const bMin = Number(booking?.duration_minutes) > 0 ? Math.round(Number(booking.duration_minutes))
+      : Number.isFinite(span) && span > 0 ? Math.round(span / 60000) : 0;
+    if (bMin > 0) {
+      const unit = Number(out.durationMinutes) > 0 ? Number(out.durationMinutes) : 60;
+      if (Number(out.price) > 0 && bMin !== unit) out.price = Math.round(Number(out.price) * bMin / unit);
+      out.durationMinutes = bMin;
+    }
+    if (Number(booking?.price) > 0) out.price = Math.round(Number(booking.price));
     if (booking?.instructor_id) {
       const ip = (await supabaseRest<any[]>('instructor_profiles', {
         query: `?id=eq.${encodeURIComponent(String(booking.instructor_id))}&select=user_id&limit=1`,
@@ -138,7 +157,7 @@ export function bookingMessage(
   const title = HEAD[event][audience];
   const lines: string[] = [];
 
-  const course = [d.courseName, d.durationMinutes ? `${d.durationMinutes} daqiqa` : '']
+  const course = [d.courseName, d.durationMinutes ? fmtMinutes(d.durationMinutes) : '']
     .filter(Boolean).join(' · ');
   if (course) lines.push(`📚 ${course}`);
 

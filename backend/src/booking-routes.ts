@@ -13,7 +13,7 @@ import {
   type PackageRecord,
 } from './packages.js';
 import { sendBookingNotification } from './telegram.js';
-import { notifyAdmins, notifyAdminsNewBooking, escHtml } from './admin-notify.js';
+import { notifyAdmins, notifyAdminsNewBooking, notifyAdminsBookingClosed, escHtml } from './admin-notify.js';
 import type { TelegramWebAppUser } from './telegram.js';
 import {
   q, joinName, splitName, toProfile, toInstructorCard,
@@ -658,7 +658,8 @@ export async function registerBookingRoutes(
           }),
         });
         const updated = rows[0] ?? booking;
-        await notifyBookingParties(updated, 'cancelled');
+        /* Mijoz, instruktor va ADMIN BOTI — vaqt bo'shadi, admin bilsin */
+        await Promise.all([notifyBookingParties(updated, 'cancelled'), notifyAdminsBookingClosed(updated, 'customer_cancel', reason)]);
         return { ok: true, mode: 'cancelled', booking: shapeBooking(updated) };
       }
 
@@ -755,6 +756,10 @@ export async function registerBookingRoutes(
       });
       const booking = rows[0] ?? current[0];
       await notifyBookingParties(booking, String(body.status) as BookingEvent);
+      /* Instruktor o'zi yopgan bo'lsa — admin bilsin */
+      if (user.role === 'instructor' && ['no_show', 'cancelled', 'rejected'].includes(String(body.status))) {
+        await notifyAdminsBookingClosed(booking, 'instructor_no_show', body.reason || null);
+      }
       return { ok: true, booking: shapeBooking(booking) };
     } catch (e) {
       return reply.code(400).send({ ok: false, error: e instanceof Error ? e.message : 'Holat yangilanmadi' });
