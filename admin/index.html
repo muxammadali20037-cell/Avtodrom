@@ -625,6 +625,8 @@ button.tr:active{background:var(--card-2)}
   .tr .t-v small{display:block;opacity:1;color:var(--hint);font-size:12px}
   .tr .t-d{display:block;text-align:right;font-size:15px}
   .ir-cols{grid-template-columns:30px minmax(0,2.4fr) repeat(5,minmax(0,1fr)) minmax(0,1.3fr) 18px}
+  .rt-cols{grid-template-columns:30px minmax(0,2.2fr) minmax(0,1.15fr) repeat(5,minmax(0,.9fr)) minmax(0,1.2fr) 18px}
+  .tr .t-big.rt-rate{font-size:17px}
   .dy-cols{grid-template-columns:minmax(0,2.2fr) repeat(4,minmax(0,1fr)) minmax(0,1.3fr)}
   .st-cols{grid-template-columns:minmax(0,2.4fr) repeat(4,minmax(0,1fr)) minmax(0,1.3fr)}
 }
@@ -636,6 +638,26 @@ button.tr:active{background:var(--card-2)}
 .price-row + .price-row{margin-top:10px}
 .price-row .lt{width:52px;height:52px;border-radius:16px;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;font-size:24px;font-weight:800}
 .price-row label span{display:block;font-size:12px;color:var(--hint);font-weight:650;margin:0 2px 4px}
+
+/* ---------- o'quvchini qaytarish ---------- */
+.rt-rule{display:flex;gap:10px;align-items:flex-start;margin-top:12px;font-size:13.5px;line-height:1.45}
+.rt-rule svg{flex:none;margin-top:1px}
+.rt-good{color:var(--ok)!important}
+.rt-mid{color:var(--warn)!important}
+.rt-bad{color:var(--danger)!important}
+.rt-bar{display:block;height:5px;border-radius:3px;background:var(--line);margin-top:5px;overflow:hidden;min-width:56px}
+.rt-bar u{display:block;height:100%;border-radius:3px;background:currentColor}
+.rt-bar u.rt-good{background:var(--ok)}
+.rt-bar u.rt-mid{background:var(--warn)}
+.rt-bar u.rt-bad{background:var(--danger)}
+.tr .t-big.rt-rate{min-width:64px}
+.tr .t-big.rt-rate::after{margin-top:3px}
+.rt-big{flex:none;text-align:right;font-weight:800;font-size:22px;line-height:1}
+.rt-big small{display:block;font-size:11px;font-weight:700;color:var(--hint);margin-top:3px}
+.row.rt-st{align-items:flex-start}
+.row.rt-st .ava.sm{width:38px;height:38px;border-radius:12px;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;font-weight:800;font-size:13px;flex:none}
+.row.rt-st .tx small{white-space:normal}
+.rt-line{display:flex!important;flex-wrap:wrap;gap:4px 6px;align-items:center;margin-top:5px;color:var(--text)!important}
 
 /* ---------- jadval ---------- */
 .sch-tools{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
@@ -725,6 +747,86 @@ button.tr:active{background:var(--card-2)}
   .dur{padding:14px 10px}.dur b{font-size:18px}
   .hero .stats b{font-size:16px}
 }
+
+/* ---------- ISH GRAFIGI ---------- */
+.schtab td.so{background:repeating-linear-gradient(135deg,#ece6f8 0 6px,#f7f4fd 6px 12px);color:#6b5a97;text-align:center;font-weight:700;font-size:11px}
+.in-grafik{width:40px;height:40px;border-radius:12px;box-shadow:none;background:var(--accent-soft);color:var(--accent);margin-left:auto}
+.in-grafik + .sw{margin-left:6px}
+.wp-legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12px;color:var(--hint);font-weight:650;margin:0 2px 10px}
+.wp-legend i{display:inline-block;width:12px;height:12px;border-radius:4px;margin-right:5px;vertical-align:-1px;background:var(--ok-soft);box-shadow:inset 0 0 0 1px #9be3b5}
+.wp-legend i.def{background:var(--card-2);box-shadow:inset 0 0 0 1px var(--line)}
+.wp-legend i.off{background:var(--danger-soft);box-shadow:inset 0 0 0 1px #f3b4b4}
+.wp-row{align-items:flex-start}
+.wp-row .tx{flex:1;min-width:0}
+.wp-row .tx>b{display:block}
+.wp-week{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px;margin-top:8px}
+.wp-c{display:flex;flex-direction:column;align-items:center;gap:1px;padding:5px 2px;border-radius:9px;background:var(--ok-soft);color:var(--ok);font-size:11px;line-height:1.15;min-width:0}
+.wp-c em{font-style:normal;font-weight:700;color:var(--hint);font-size:10.5px}
+.wp-c b{font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.wp-c.def{background:var(--card-2);color:var(--hint)}
+.wp-c.off{background:var(--danger-soft);color:var(--danger)}
+.wp-c.td{box-shadow:inset 0 0 0 1.5px var(--accent)}
+.wp-head{display:flex;gap:14px;align-items:center}
+.wp-head .ava.lg{width:56px;height:56px;font-size:18px}
+.wp-head .tx{min-width:0;flex:1}
+.wp-head .tx>b{display:block;font-size:18px}
+.wp-head .tx small{display:block;color:var(--hint);font-size:13px;margin-top:2px}
+.wp-today{display:inline-flex;align-items:center;gap:6px;margin-top:8px;padding:5px 10px;border-radius:10px;background:var(--ok-soft);color:var(--ok);font-size:13px;font-weight:650}
+.wp-today b{font-weight:800}
+.chip.wp-day{flex-direction:column;min-height:54px;line-height:1.1;gap:3px;padding:6px 13px;justify-content:center}
+.chip.wp-day small{font-size:11px;font-weight:700;color:var(--ok)}
+.chip.wp-day.off small{color:var(--danger)}
+.chip.wp-day.def small{color:var(--hint)}
+.chip.wp-day.on small{color:rgba(255,255,255,.85)}
+.wp-dayhead{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+.wp-dayhead h2{font-size:19px;margin:0 0 3px;font-weight:800;letter-spacing:-.2px}
+.wp-dayhead .muted{font-size:13.5px;font-weight:650}
+.wp-onoff{display:flex;align-items:center;gap:10px;font-weight:750;font-size:13.5px;flex:none;padding:4px 0}
+.wp-quick{display:grid;grid-template-columns:1fr 1fr auto;gap:10px;align-items:end;margin-top:14px;padding:12px;border-radius:14px;background:var(--card-2)}
+.wp-quick label span{display:block;font-size:12px;font-weight:700;color:var(--hint);margin:0 2px 5px}
+.wp-quick .input{min-height:46px;background:var(--card);padding:10px 12px}
+.wp-quick .btn{min-height:46px;width:auto;padding:0 14px;background:var(--card);box-shadow:var(--shadow);color:var(--accent)}
+.wp-sum{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+.wp-sum div{border-radius:14px;padding:10px 12px;font-size:12.5px;font-weight:700;display:flex;align-items:baseline;gap:6px}
+.wp-sum b{font-size:22px;font-weight:850;letter-spacing:-.3px}
+.wp-sum .f{background:var(--ok-soft);color:var(--ok)}
+.wp-sum .c{background:var(--warn-soft);color:var(--warn)}
+.wp-acts{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+.wp-acts .btn{width:auto;flex:1 1 0;min-width:0;white-space:nowrap;font-size:13.5px;padding:0 10px}
+.wp-hint{font-size:12.5px;margin:12px 2px 8px;line-height:1.45}
+.wp-slots{display:grid;gap:8px}
+@media (min-width:700px){.wp-slots{grid-template-columns:1fr 1fr}}
+.wp-slot{display:flex;align-items:center;gap:12px;width:100%;min-height:58px;padding:9px 12px;border-radius:14px;text-align:left;background:var(--card-2);box-shadow:inset 0 0 0 1.5px var(--line);transition:background .12s,box-shadow .12s}
+.wp-slot .h{width:66px;flex:none;font-weight:850;font-size:16px;line-height:1.1}
+.wp-slot .h small{display:block;font-size:11.5px;font-weight:650;color:var(--hint)}
+.wp-slot .s{flex:1;min-width:0;line-height:1.25}
+.wp-slot .s b{display:block;font-size:14px}
+.wp-slot .s small{display:block;font-size:12px;color:var(--hint);overflow:hidden;text-overflow:ellipsis}
+.wp-slot.open{background:var(--ok-soft);box-shadow:inset 0 0 0 1.5px #9be3b5}
+.wp-slot.open .s b{color:var(--ok)}
+.wp-slot.shut{background:#fff7e6;box-shadow:inset 0 0 0 1.5px #f6d89a}
+.wp-slot.shut .s b{color:var(--warn)}
+.wp-slot.dis{opacity:.55}
+.wp-slot.bk{background:var(--info-soft);box-shadow:inset 0 0 0 1.5px #b9d6f4}
+.wp-slot.bk .s b{color:var(--info)}
+.wp-slot.bk.warn{background:var(--danger-soft);box-shadow:inset 0 0 0 1.5px #f3b4b4}
+.wp-slot.bk.warn .s small{color:var(--danger);font-weight:700;white-space:normal}
+.wp-slot.own{background:#f1ecfb;box-shadow:inset 0 0 0 1.5px #d6c9f2;color:#5b47a0}
+.wp-slot.own .s b{color:#5b47a0}
+.wp-slot.past{opacity:.5}
+.wp-slot:is(button):active{transform:scale(.985)}
+.wp-copy{display:flex;flex-wrap:wrap;gap:8px}
+.wp-copy .chip{min-width:62px;justify-content:center}
+.wp-save{position:sticky;bottom:calc(var(--nav-h) + var(--sb) + 10px);z-index:40;margin-top:16px}
+.wp-save-in{display:flex;align-items:center;gap:10px;background:var(--card);border-radius:18px;padding:10px 10px 10px 16px;box-shadow:0 10px 32px rgba(0,0,0,.14)}
+.wp-save .tx{flex:1;min-width:0;line-height:1.25}
+.wp-save .tx b{display:block;font-size:14.5px}
+.wp-save .tx small{display:block;font-size:12px;color:var(--hint)}
+.wp-save .btn{width:auto;min-height:48px;padding:0 16px}
+.wp-save.on .wp-save-in{box-shadow:0 10px 32px rgba(0,0,0,.16),inset 0 0 0 2px var(--warn)}
+.wp-save.on .tx b{color:var(--warn)}
+@media (min-width:960px){.wp-save{bottom:16px}}
+@media (max-width:420px){.wp-quick{grid-template-columns:1fr 1fr}.wp-quick .btn{grid-column:span 2;width:100%}.wp-save .tx small{display:none}}
 </style>
 </head>
 <body>
@@ -1166,8 +1268,10 @@ const ROUTES = {
   bookings:    { t: 'Bronlar', roles: ['operator', 'admin'], render: a => vBookings(a), live: () => loadBookings(true) },
   manual:      { t: 'Qo‘lda bron', roles: ['operator', 'admin'], focus: true, render: () => vManual(), live: () => wzLive(MB) },
   chat:        { t: 'Mijozlar chati', roles: ['operator', 'admin'], render: a => vChat(a), live: a => chatLive(a), parent: a => a ? 'chat' : 'home' },
+  retention:   { t: 'O‘quvchini qaytarish', roles: ['admin'], render: a => vRetention(a), live: () => { if (perLive(RT)) loadRetention(true); }, parent: a => a ? 'retention' : 'home' },
   analytics:   { t: 'Hisobot', roles: ['admin'], render: () => vAnalytics(), live: () => { if (perLive(AN, 400)) loadAnalytics(true); } },
   instructors: { t: 'Instruktorlar', roles: ['admin'], render: a => vInstructors(a), live: () => loadInstructors(true) },
+  grafik:      { t: 'Ish grafigi', roles: ['admin'], render: a => vGrafik(a), live: a => { if (a) wpLoad(a, true); else wpLoadList(true); }, parent: a => a ? 'grafik' : 'home' },
   prices:      { t: 'Narxlar va ish vaqti', roles: ['admin'], render: () => vPrices() },
   staff:       { t: 'Xodimlar', roles: ['admin'], render: () => vStaff(), live: () => loadStaff(true) },
 };
@@ -1258,7 +1362,7 @@ function sideDef(){
     ['bookings/new', 'Yangi bronlar', 'bell', 'pending'], ['bookings/cancels', 'Bekor so‘rovlari', 'ban', 'cancels'], ['bookings/all', 'Barcha bronlar', 'list'],
     ['manual', 'Qo‘lda bron', 'phone'], ['schedule', 'Instruktorlar jadvali', 'cal'], ['chat', 'Mijozlar chati', 'chat', 'chat']] });
   if (isAdmin()) G.push({ title: 'Boshqaruv', items: [
-    ['analytics', 'Hisobot va tahlil', 'chart'], ['insrep', 'Instruktorlar hisoboti', 'steer'], ['instructors', 'Instruktorlar', 'users', 'apps'], ['prices', 'Narxlar va ish vaqti', 'tag'],
+    ['analytics', 'Hisobot va tahlil', 'chart'], ['insrep', 'Instruktorlar hisoboti', 'steer'], ['retention', 'O‘quvchini qaytarish', 'refresh'], ['instructors', 'Instruktorlar', 'users', 'apps'], ['grafik', 'Ish grafigi', 'clock'], ['prices', 'Narxlar va ish vaqti', 'tag'],
     ['staff', 'Xodimlar', 'key'], ['!/admin/full', 'Kengaytirilgan panel', 'ext']] });
   return G;
 }
@@ -1557,7 +1661,9 @@ function vHome(){
     <div class="sec-h" style="margin-top:22px"><h2>Boshqaruv</h2></div><div class="tiles">
       ${tile('analytics', 'chart', 'Hisobot', 'tushum, bronlar, istalgan davr', { cls: 'o' })}
       ${tile('insrep', 'steer', 'Instruktorlar hisoboti', 'o‘quvchilar, avtoshkola, pullik')}
+      ${tile('retention', 'refresh', 'O‘quvchini qaytarish', 'kim jalb qildi, kim qaytardi', { cls: 'g' })}
       ${tile('instructors', 'users', 'Instruktorlar', 'faol / o‘chirilgan, arizalar', { id: 'apps' })}
+      ${tile('grafik', 'clock', 'Ish grafigi', 'kim qachon ishlaydi, tanaffus', { cls: 'b' })}
       ${tile('prices', 'tag', 'Narxlar', 'tarif, 5 soatlik paket, ish vaqti', { cls: 'g' })}
       ${tile('staff', 'key', 'Xodimlar', 'kassir, operator, parollar', { cls: 'b' })}
       ${tile('', 'ext', 'Kengaytirilgan panel', 'hamma bo‘limlar (eski)', { cls: 'dark', href: '/admin/full' })}
@@ -2089,7 +2195,7 @@ function stepIns(W){
       <button class="btn btn-soft" data-act="wzgo" data-s="time" style="margin-top:10px">${I('clock', 20)} Vaqtni o‘zgartirish</button>`;
     if (r.busy.length) list += `<div class="sec-h" style="margin-top:18px"><h2>Band</h2></div>` + r.busy.map(i => `<button class="opt" disabled>
       <span class="ava lg">${esc(ini(i.name))}</span><span class="tx"><b>${esc(i.name)}</b>
-      <small>${i.other ? 'boshqa mashg‘ulot vaqtida band' : i.blocked ? 'bu vaqtni yopgan' : i.free_at ? `${esc(hm(i.free_at))} da bo‘shaydi` : 'band'}</small></span></button>`).join('');
+      <small>${i.other ? 'boshqa mashg‘ulot vaqtida band' : i.off ? (i.free_at ? `ishlamaydi · ${esc(hm(i.free_at))} dan ishlaydi` : 'bu vaqtda ishlamaydi (grafik)') : i.blocked ? 'bu vaqtni yopgan' : i.free_at ? `${esc(hm(i.free_at))} da bo‘shaydi` : 'band'}</small></span></button>`).join('');
   }
   const body = `${wzCrumbs(W)}<h1 class="wz-h">Instruktor</h1><p class="wz-sub">${r ? `${r.free.length} ta bo‘sh · ` : ''}${esc(when)}</p><div class="opt-list">${list}</div>`;
   const bar = W.ins ? `<div class="bar"><div class="bar-in"><div class="sum"><b>${esc(W.ins.name)}</b><span>tanlandi</span></div>
@@ -2486,7 +2592,7 @@ function coInsBody(W){
       s: `${i.rating ? `★ ${Number(i.rating).toFixed(1)} · ` : ''}${esc((i.categories || []).join(', '))} toifa`, rt: '<span class="pill ok">bo‘sh</span>', on: String(W.ins?.id) === String(i.id) })).join('')}</div>`
     : `<div class="note warn">${W.sess.length > 1 ? `Hamma mashg‘ulotda ${esc(W.cat)} toifa bo‘yicha bo‘sh instruktor yo‘q — keyingi kunlarni o‘zgartiring.` : `Hozir ${esc(W.cat)} toifa bo‘yicha bo‘sh instruktor yo‘q. Quyida — kim qachon bo‘shaydi; bo‘shaganda chek chiqaring.`}</div>`;
   if (r.busy.length) h += `<div class="co-opts" style="margin-top:8px">${r.busy.map(i => coOpt({ act: 'coins', v: i.id, lt: esc(ini(i.name)), cls: 'ins', t: esc(i.name),
-      s: i.other ? 'boshqa mashg‘ulot vaqtida band' : i.blocked ? 'bu vaqtni yopgan' : i.free_at ? `${esc(hm(i.free_at))} da bo‘shaydi` : 'band', rt: '<span class="pill bad">band</span>', dis: true })).join('')}</div>`;
+      s: i.other ? 'boshqa mashg‘ulot vaqtida band' : i.off ? (i.free_at ? `ishlamaydi · ${esc(hm(i.free_at))} dan ishlaydi` : 'bu vaqtda ishlamaydi (grafik)') : i.blocked ? 'bu vaqtni yopgan' : i.free_at ? `${esc(hm(i.free_at))} da bo‘shaydi` : 'band', rt: '<span class="pill bad">band</span>', dis: true })).join('')}</div>`;
   return h;
 }
 function coInsSec(W){
@@ -2854,7 +2960,7 @@ function mbInsBody(W){
       <span class="ava">${esc(ini(i.name))}</span><span class="tx"><b>${esc(i.name)}</b><small>${i.rating ? `★ ${Number(i.rating).toFixed(1)} · ` : ''}${esc((i.categories || []).join(', '))} toifa</small></span></button>`).join('')}</div>`
     : `<div class="note warn">${W.sess.length > 1 ? 'Hamma mashg‘ulot vaqtida' : 'Bu vaqtda'} ${esc(W.cat)} toifa bo‘yicha bo‘sh instruktor yo‘q — boshqa soat yoki kunni tanlang.</div>`;
   if (r.busy.length) h += `<div class="insg" style="margin-top:8px">${r.busy.map(i => `<div class="insc" style="opacity:.55">
-      <span class="ava">${esc(ini(i.name))}</span><span class="tx"><b>${esc(i.name)}</b><small>${i.other ? 'boshqa mashg‘ulot vaqtida band' : i.blocked ? 'bu vaqtni yopgan' : i.free_at ? `${esc(hm(i.free_at))} da bo‘shaydi` : 'band'}</small></span></div>`).join('')}</div>`;
+      <span class="ava">${esc(ini(i.name))}</span><span class="tx"><b>${esc(i.name)}</b><small>${i.other ? 'boshqa mashg‘ulot vaqtida band' : i.off ? (i.free_at ? `ishlamaydi · ${esc(hm(i.free_at))} dan ishlaydi` : 'bu vaqtda ishlamaydi (grafik)') : i.blocked ? 'bu vaqtni yopgan' : i.free_at ? `${esc(hm(i.free_at))} da bo‘shaydi` : 'band'}</small></span></div>`).join('')}</div>`;
   return h;
 }
 function mbInsSec(W){
@@ -3679,6 +3785,496 @@ ACT.irdxl = () => {
     { name: 'Darslar', rows: C.rows, merges: C.merges, cols: [18, 8, 24, 16, 12, 14, 12, 13, 18], freeze: { x: 0, y: 3 } },
   ], `instruktor-${String(name).toLowerCase().replace(/[^a-z0-9Ѐ-ӿ]+/gi, '-').replace(/^-|-$/g, '') || 'hisobot'}-${A.file}.xlsx`);
 };
+/* =========================================================================
+   O'QUVCHINI QAYTARISH — instruktor «sotuvchi» (faqat administrator).
+   Qoida (server: retention.ts): yangi pullik o'quvchining BIRINCHI darsi
+   kimga tushsa — o'sha instruktor «jalb qilgan». 7 kun ichida AYNAN o'sha
+   instruktor bilan yana darsga kelsa — «qaytdi». Avtoshkola kirmaydi.
+   Davr — birinchi dars sanasi bo'yicha (har dushanba o'tgan haftani ko'rish).
+   ========================================================================= */
+const RT = { per: 'week', date: kToday(), from: '', to: '', d: null, seq: 0, filter: '', q: '', did: '' };
+perReg('rt', RT, () => { RT.d = null; if ($('rtBody')) { $('rtBody').innerHTML = skel(4); loadRetention(); } });
+const RT_ST = { returned: ['Qaytdi', 'ok'], waiting: ['Kutilmoqda', 'info'], moved: ['Boshqaga o‘tdi', 'warn'], lost: ['Qaytmadi', 'bad'] };
+const rtRate = r => r === null || r === undefined ? '—' : `${String(r).replace('.', ',')}%`;
+const rtCls = r => r === null || r === undefined ? '' : r >= 70 ? 'rt-good' : r >= 40 ? 'rt-mid' : 'rt-bad';
+const rtBar = r => `<i class="rt-bar"><u class="${rtCls(r)}" style="width:${Math.max(0, Math.min(100, Number(r) || 0))}%"></u></i>`;
+const rtRule = () => `<div class="note info rt-rule">${I('refresh', 18)}<span><b>Qoida:</b> yangi pullik o‘quvchining birinchi darsi kimga tushsa — o‘sha instruktor <b>jalb qilgan</b>.
+  ${RT.d?.window_days || 7} kun ichida <b>aynan o‘sha instruktor</b> bilan yana darsga kelsa — <b>qaytdi</b>. Avtoshkola o‘quvchilari kirmaydi.
+  Davr — birinchi dars sanasi bo‘yicha. Kutilayotganlar (${RT.d?.window_days || 7} kuni tugamagan) foizga kirmaydi.</span></div>`;
+
+function vRetention(arg){
+  if (arg) return vRtDetail(arg);
+  $('view').innerHTML = `<div class="view">${perHtml('rt')}${rtRule()}<div id="rtBody" class="sec" style="margin-top:14px">${skel(4)}</div></div>`;
+  if (RT.d) paintRetention();
+  loadRetention();
+}
+async function loadRetention(quiet){
+  if (!$('rtBody')) return;
+  const seq = ++RT.seq;
+  try{
+    const d = await api(`/api/admin/retention?${perQS(RT)}`);
+    if (seq !== RT.seq) return;
+    RT.d = d;
+    if (S.routeName !== 'retention') return;
+    if (S.routeArg) paintRtDetail(); else paintRetention();
+  }catch(e){ if (seq === RT.seq && !quiet && $('rtBody')) $('rtBody').innerHTML = `<div class="note err">${esc(e.message)}</div>`; }
+}
+function rtKpis(t, sub){
+  return `<div class="kpis">
+    <div class="kpi main"><span>${esc(sub)}</span><b>${nf(t.new)} yangi o‘quvchi</b><small>${t.instructors_with_new !== undefined ? `${nf(t.instructors_with_new)} instruktor jalb qildi · ` : ''}birinchi pullik darsi shu davrda</small></div>
+    <div class="kpi"><span>Qaytdi · ${RT.d?.window_days || 7} kunda</span><b class="ok-t">${nf(t.returned)} <small class="${rtCls(t.rate)}" style="font-size:15px">${rtRate(t.rate)}</small></b><small>o‘sha instruktor bilan yana keldi</small></div>
+    <div class="kpi"><span>Kutilmoqda</span><b style="color:var(--info)">${nf(t.waiting)}</b><small>${nf(t.booked)} tasi keyingi vaqtni band qilgan</small></div>
+    <div class="kpi"><span>Qaytmadi</span><b style="color:var(--danger)">${nf(t.lost + t.moved)}</b><small>${nf(t.moved)} tasi boshqa instruktorga o‘tdi</small></div>
+    <div class="kpi"><span>Takroriy kelishlar</span><b>${nf(t.visits)} marta</b><small>${hrsTxt(t.minutes)} soat · ${nf(t.revenue)} so‘m</small></div></div>`;
+}
+function paintRetention(){
+  const d = RT.d; if (!d || !$('rtBody')) return;
+  const t = d.totals || {};
+  $('rtBody').innerHTML = `${rtKpis(t, `${perTitle(RT)} · jalb qilindi`)}
+    <div class="sec"><div class="sec-h"><h2>Instruktorlar reytingi</h2><button class="link xl-btn" data-act="rtxl">${I('dl', 17)} Excel</button></div>
+      <div class="search">${I('search', 20)}<input class="input" id="rtQ" placeholder="Instruktor ismi yoki mashina raqami" value="${esc(RT.q)}" autocomplete="off"></div>
+      <div class="tbl" id="rtTbl" style="margin-top:10px"></div></div>`;
+  $('rtQ').addEventListener('input', e => { RT.q = e.target.value; paintRtTable(); });
+  paintRtTable();
+}
+function paintRtTable(){
+  const el = $('rtTbl'), d = RT.d; if (!el || !d) return;
+  const q = RT.q.trim().toLowerCase();
+  const list = (d.instructors || []).filter(i => !q || [i.name, i.vehicle_plate, i.phone].some(v => String(v || '').toLowerCase().includes(q)));
+  if (!list.length) { el.innerHTML = `<div style="padding:18px">${emptyHtml('users', 'Topilmadi', 'Qidiruvni o‘zgartiring.')}</div>`; return; }
+  const head = `<div class="tr th rt-cols"><span>#</span><span class="l">Instruktor</span><span>Qaytish</span><span>Jalb qildi</span><span>Qaytdi</span><span>Kutilmoqda</span><span>Qaytmadi</span><span>Takroriy</span><span>Tushum</span><span></span></div>`;
+  const row = (i, n) => `<button class="tr rt-cols q2 ${i.new ? '' : 'zero'}" data-go="retention/${esc(i.id)}">
+      <span class="t-n">${n}</span>
+      <span class="t-main"><b>${esc(i.name)}</b><small>${esc([i.vehicle_plate, i.new ? `${i.new} ta yangi o‘quvchi` : 'shu davrda yangi o‘quvchi yo‘q', i.active === false ? 'o‘chirilgan' : ''].filter(Boolean).join(' · '))}</small></span>
+      <span class="t-big rt-rate ${rtCls(i.rate)}" data-u="qaytish">${rtRate(i.rate)}${i.rate !== null ? rtBar(i.rate) : ''}</span><i class="brk"></i>
+      <span class="t-v" data-l="Jalb qildi"><b>${nf(i.new)}</b></span>
+      <span class="t-v sch" data-l="Qaytdi"><b>${nf(i.returned)}</b></span>
+      <span class="t-v" data-l="Kutilmoqda"><b>${nf(i.waiting)}</b>${i.booked ? `<small>${nf(i.booked)} band</small>` : ''}</span>
+      <span class="t-v" data-l="Qaytmadi"><b>${nf(i.lost + i.moved)}</b>${i.moved ? `<small>${nf(i.moved)} boshqaga</small>` : ''}</span>
+      <span class="t-v pd" data-l="Takroriy kelish"><b>${nf(i.visits)}</b><small>${hrsTxt(i.minutes)} soat</small></span>
+      <span class="t-v" data-l="Tushum"><b>${nf(i.revenue)}</b></span>
+      <span class="t-d muted">${I('chev', 18)}</span></button>`;
+  const t = d.totals || {};
+  const tot = `<div class="tr rt-cols q2 tot"><span class="t-n">∑</span><span class="t-main"><b>Jami</b><small>${nf(t.instructors_with_new)} instruktor jalb qildi</small></span>
+      <span class="t-big rt-rate ${rtCls(t.rate)}" data-u="qaytish">${rtRate(t.rate)}${t.rate !== null ? rtBar(t.rate) : ''}</span><i class="brk"></i>
+      <span class="t-v" data-l="Jalb qildi"><b>${nf(t.new)}</b></span><span class="t-v sch" data-l="Qaytdi"><b>${nf(t.returned)}</b></span>
+      <span class="t-v" data-l="Kutilmoqda"><b>${nf(t.waiting)}</b></span><span class="t-v" data-l="Qaytmadi"><b>${nf(t.lost + t.moved)}</b></span>
+      <span class="t-v pd" data-l="Takroriy kelish"><b>${nf(t.visits)}</b><small>${hrsTxt(t.minutes)} soat</small></span>
+      <span class="t-v" data-l="Tushum"><b>${nf(t.revenue)}</b></span><span class="t-d"></span></div>`;
+  el.innerHTML = head + list.map((i, n) => row(i, n + 1)).join('') + (q ? '' : tot);
+}
+
+/* ---------- bitta instruktor: o'quvchilari va holati ---------- */
+function vRtDetail(id){
+  if (RT.did !== id) { RT.did = id; RT.filter = ''; }
+  $('view').innerHTML = `<div class="view">${perHtml('rt')}<div id="rtBody" class="sec" style="margin-top:4px">${skel(4)}</div></div>`;
+  if (RT.d) paintRtDetail();
+  loadRetention();
+}
+function rtStudentLine(s){
+  const W = RT.d?.window_days || 7;
+  if (s.status === 'returned') return `${s.days_to_return} kunda qaytdi · jami ${nf(s.visits)} marta qayta keldi`;
+  if (s.status === 'waiting') {
+    const end = dayAdd(s.first_day, W);
+    return s.next_at ? `Band qilgan: ${dayText(ymdOf(new Date(s.next_at)))}, ${hm(s.next_at)}` : `${dayText(end)} gacha kutiladi — keyingi vaqt band qilinmagan`;
+  }
+  if (s.status === 'moved') return `${W} kun ichida ${s.moved_to_name || 'boshqa instruktor'} bilan keldi`;
+  return s.visits ? `${W} kundan keyin ${nf(s.visits)} marta keldi` : 'Qayta kelmadi';
+}
+function paintRtDetail(){
+  const d = RT.d, id = S.routeArg; if (!d || !$('rtBody')) return;
+  const i = (d.instructors || []).find(x => String(x.id) === String(id));
+  if (!i) { $('rtBody').innerHTML = emptyHtml('users', 'Instruktor topilmadi', 'Ro‘yxatga qayting.'); return; }
+  $('tbTitle').textContent = i.name;
+  const st = i.students || [];
+  const counts = { '': st.length, returned: i.returned, waiting: i.waiting, moved: i.moved, lost: i.lost };
+  const chips = [['', 'Hammasi'], ['returned', 'Qaytdi'], ['waiting', 'Kutilmoqda'], ['moved', 'Boshqaga o‘tdi'], ['lost', 'Qaytmadi']];
+  const list = st.filter(s => !RT.filter || s.status === RT.filter);
+  $('rtBody').innerHTML = `<div class="card ir-who"><span class="ava">${esc(ini(i.name))}</span><span class="tx"><b>${esc(i.name)}</b><small>${esc([i.vehicle_plate, i.phone].filter(Boolean).join(' · ') || perTitle(RT))}</small></span>
+      <span class="rt-big ${rtCls(i.rate)}">${rtRate(i.rate)}<small>qaytish</small></span></div>
+    <div style="margin-top:12px">${rtKpis({ ...i }, `${perTitle(RT)} · jalb qildi`)}</div>
+    <div class="sec"><div class="sec-h"><h2>O‘quvchilari</h2></div>
+      <div class="chips">${chips.map(([k, l]) => `<button class="chip ${RT.filter === k ? 'on' : ''}" data-act="rtf" data-v="${k}">${l} · ${nf(counts[k] || 0)}</button>`).join('')}</div>
+      <div style="margin-top:10px">${list.length ? `<div class="list">${list.map(s => `<div class="row rt-st">
+        <span class="ava sm">${esc(ini(s.name))}</span>
+        <span class="tx"><b>${esc(s.name)}</b><small>${s.phone ? `<a class="tel" href="${telHref(s.phone)}">${esc(s.phone)}</a> · ` : ''}birinchi dars: ${esc(dayText(s.first_day))}, ${esc(hm(s.first_at))}</small>
+          <small class="rt-line">${(([l, c]) => `<span class="pill ${c}">${l}</span>`)(RT_ST[s.status] || ['—', ''])}${s.booked ? ' <span class="pill acc">band qilgan</span>' : ''} ${esc(rtStudentLine(s))}</small></span>
+        <span class="rt">${s.revenue ? nf(s.revenue) : '—'}<small>${s.visits ? `${nf(s.visits)} marta` : ''}</small></span></div>`).join('')}</div>`
+        : emptyHtml('users', 'O‘quvchi yo‘q', RT.filter ? 'Bu holatda o‘quvchi yo‘q.' : `${perTitle(RT)} bu instruktorga yangi pullik o‘quvchi tushmagan.`)}</div></div>`;
+}
+ACT.rtf = el => { RT.filter = el.dataset.v; paintRtDetail(); };
+
+/* ---------- Excel ---------- */
+ACT.rtxl = () => {
+  const d = RT.d; if (!d) return toast('Hisobot hali yuklanmadi', true);
+  const [a, b] = perBounds(RT);
+  const head = (title, cols) => ({
+    rows: [
+      { h: 24, cells: [{ v: title, s: 1 }] },
+      { cells: [{ v: `${rngText(a, b)} · birinchi dars shu davrda · qaytish: ${d.window_days} kun ichida o‘sha instruktor bilan · yuklab olindi: ${new Date().toLocaleString('uz-UZ', { timeZone: TZ })}`, s: 14 }] },
+      { h: 30, cells: cols.map(v => ({ v, s: 2 })) },
+    ],
+    merges: [`A1:${XL.col(cols.length - 1)}1`, `A2:${XL.col(cols.length - 1)}2`],
+  });
+  const H = head(`O‘quvchini qaytarish — ${perTitle(RT)}`, ['№', 'Instruktor', 'Mashina', 'Jalb qildi', 'Qaytdi', 'Qaytish %', 'Kutilmoqda', 'Band qilgan', 'Boshqaga o‘tdi', 'Qaytmadi', 'Takroriy kelish', 'Soat', 'Tushum']);
+  (d.instructors || []).forEach((i, n) => H.rows.push({ cells: [
+    { v: n + 1, s: 13 }, { v: i.name, s: 3 }, { v: i.vehicle_plate || '', s: 12 }, { v: i.new, s: 15 }, { v: i.returned, s: 15 },
+    { v: i.rate === null ? '' : i.rate, s: 12 }, { v: i.waiting, s: 15 }, { v: i.booked, s: 15 }, { v: i.moved, s: 15 }, { v: i.lost, s: 15 },
+    { v: i.visits, s: 15 }, { v: hr1(i.minutes), s: 12 }, { v: i.revenue, s: 15 },
+  ] }));
+  const t = d.totals || {};
+  H.rows.push({ h: 20, cells: [
+    { v: '', s: 17 }, { v: 'JAMI', s: 17 }, { v: '', s: 17 }, { v: t.new, s: 16 }, { v: t.returned, s: 16 }, { v: t.rate === null ? '' : t.rate, s: 17 },
+    { v: t.waiting, s: 16 }, { v: t.booked, s: 16 }, { v: t.moved, s: 16 }, { v: t.lost, s: 16 }, { v: t.visits, s: 16 }, { v: hr1(t.minutes), s: 17 }, { v: t.revenue, s: 16 },
+  ] });
+  const S2 = head(`O‘quvchilar — ${perTitle(RT)}`, ['Instruktor', 'O‘quvchi', 'Telefon', 'Birinchi dars', 'Holat', 'Necha kunda qaytdi', 'Takroriy kelish', 'Tushum', 'Izoh']);
+  for (const i of d.instructors || []) for (const s of i.students || []) S2.rows.push({ cells: [
+    { v: i.name, s: 3 }, { v: s.name, s: 3 }, { v: s.phone || '', s: 12 }, { v: `${absDay(s.first_day)} ${hm(s.first_at)}`, s: 12 },
+    { v: (RT_ST[s.status] || ['—'])[0] + (s.booked ? ' (band qilgan)' : ''), s: 12 }, { v: s.days_to_return ?? '', s: 15 },
+    { v: s.visits, s: 15 }, { v: s.revenue, s: 15 }, { v: rtStudentLine(s), s: 3 },
+  ] });
+  xlSave([
+    { name: 'Instruktorlar', rows: H.rows, merges: H.merges, cols: [5, 26, 12, 10, 9, 10, 11, 11, 12, 10, 12, 8, 14], freeze: { x: 2, y: 3 } },
+    { name: 'O‘quvchilar', rows: S2.rows, merges: S2.merges, cols: [24, 24, 16, 18, 20, 12, 12, 13, 40], freeze: { x: 2, y: 3 } },
+  ], `qaytish-${a}_${b}.xlsx`);
+};
+/* =========================================================================
+   ISH GRAFIGI — har instruktor qaysi kun, soat nechdan nechgacha ishlaydi,
+   qachon tushlik / tanaffus / dam. Instruktor panelidagi «Bo‘sh vaqtlarim»
+   kabi: soatni bosing — yopiladi yoki ochiladi.
+     · Haftalik grafik — har hafta takrorlanadi (Du … Yak)
+     · Sana bo‘yicha  — aniq bir kunga alohida (bayram, ta’til, qisqa kun)
+   Grafikdan tashqari vaqtga Mini App, operator, kassa bron qila olmaydi.
+   ========================================================================= */
+const WP = { list: null, d: null, id: '', tab: 'week', wd: 1, date: '', drafts: {}, seq: 0, lseq: 0 };
+const WP_WD = [1, 2, 3, 4, 5, 6, 0];   // Du … Yak
+const wpClone = o => JSON.parse(JSON.stringify(o ?? null));
+const wpM = t => toMin(t) ?? 0;
+const wpHm = m => m >= 1440 ? '24:00' : fromMin(m);
+const wpRanges = spec => (spec?.closed || []).map(([a, b]) => [wpM(a), wpM(b)]).filter(([a, b]) => b > a);
+function wpMerge(list){
+  const s = list.filter(([a, b]) => b > a).map(([a, b]) => [Math.max(0, a), Math.min(1440, b)]).sort((x, y) => x[0] - y[0]);
+  const out = [];
+  for (const r of s) { const l = out[out.length - 1]; if (l && r[0] <= l[1]) l[1] = Math.max(l[1], r[1]); else out.push([r[0], r[1]]); }
+  return out;
+}
+function wpSub(list, [a, z]){
+  const out = [];
+  for (const [x, y] of list) { if (y <= a || x >= z) out.push([x, y]); else { if (x < a) out.push([x, a]); if (y > z) out.push([z, y]); } }
+  return out;
+}
+const wpSet = (spec, ranges) => { spec.closed = wpMerge(ranges).map(([a, b]) => [wpHm(a), wpHm(b)]); };
+const wpWork = d => ({ ws: wpM((d || WP.d || WP.list)?.work_start || '07:00'), we: wpM((d || WP.d || WP.list)?.work_end || '19:00'), st: Math.max(15, Number((d || WP.d || WP.list)?.slot_step_min) || 60) });
+function wpSlots(d){ const { ws, we, st } = wpWork(d); const out = []; for (let m = ws; m + st <= we; m += st) out.push([m, m + st]); return out; }
+const wpShut = (spec, a, z) => !!spec && (spec.off || wpRanges(spec).some(([x, y]) => x < z && y > a));
+/** Ochiq oraliqlar (ish vaqti ichida). */
+function wpOpen(spec, d){
+  if (spec?.off) return [];
+  const out = [];
+  for (const [a, z] of wpSlots(d)) {
+    if (wpShut(spec, a, z)) continue;
+    const l = out[out.length - 1];
+    if (l && l[1] === a) l[1] = z; else out.push([a, z]);
+  }
+  return out;
+}
+const wpOpenMin = (spec, d) => wpOpen(spec, d).reduce((s, [a, z]) => s + z - a, 0);
+function wpDesc(spec, d){
+  const o = wpOpen(spec, d);
+  if (!o.length) return 'Dam olish kuni';
+  return o.map(([a, z]) => `${wpHm(a)}–${wpHm(z)}`).join(', ');
+}
+/** Ro'yxatdagi qisqa ko'rinish: «9–17» (tanaffus bo'lsa nuqta bilan) yoki «dam». */
+function wpShort(spec, d){
+  const o = wpOpen(spec, d);
+  if (!o.length) return { t: 'dam', c: 'off' };
+  const h = m => (m % 60 ? wpHm(m) : String(m / 60));
+  return { t: `${h(o[0][0])}–${h(o[o.length - 1][1])}${o.length > 1 ? ' ·' : ''}`, c: spec ? '' : 'def' };
+}
+const wpHours = m => { const h = m / 60; return Number.isInteger(h) ? `${h}` : h.toFixed(1).replace('.', ','); };
+
+/* ---------- qoralama: saqlangungacha xotirada (boshqa sahifaga o'tsa ham yo'qolmaydi) ---------- */
+const wpBase = () => WP.d?.schedule || { week: {}, dates: {} };
+const wpCur = () => WP.drafts[WP.id] || wpBase();
+const wpDirty = (id = WP.id) => !!WP.drafts[id];
+function wpEdit(fn){
+  const s = wpClone(wpCur()); s.week = s.week || {}; s.dates = s.dates || {};
+  fn(s);
+  WP.drafts[WP.id] = JSON.stringify(s) === JSON.stringify(wpBase()) ? undefined : s;
+  if (!WP.drafts[WP.id]) delete WP.drafts[WP.id];
+  wpPaint();
+}
+const wpWeekSpec = (s, w) => s.week?.[String(w)] || null;
+const wpDateSpec = (s, day) => s.dates?.[day] || wpWeekSpec(s, wdOf(day));
+
+/* =========================== RO'YXAT =========================== */
+function vGrafik(arg){
+  if (arg) return vWpEdit(arg);
+  $('view').innerHTML = `<div class="view">
+    <div class="note info" style="display:flex;gap:10px;align-items:flex-start">${I('clock', 20)}<span>Har instruktor qaysi kun, soat <b>nechdan nechgacha</b> ishlashi va <b>tanaffusini</b> belgilang. Grafikdan tashqari vaqtga mijoz (Mini App), operator va kassa <b>bron qila olmaydi</b>.</span></div>
+    <div id="wpList" class="sec" style="margin-top:12px">${skel(4)}</div></div>`;
+  wpLoadList();
+}
+async function wpLoadList(quiet){
+  const seq = ++WP.lseq;
+  try {
+    const d = await api('/api/admin/work-schedules');
+    if (seq !== WP.lseq) return;
+    WP.list = d; wpPaintList();
+  } catch (e) { if (!quiet && $('wpList')) $('wpList').innerHTML = `<div class="note err">${esc(e.message)}</div>`; }
+}
+function wpPaintList(){
+  const box = $('wpList'); if (!box || !WP.list) return;
+  const L = WP.list, rows = L.instructors || [];
+  if (!rows.length) { box.innerHTML = emptyHtml('users', 'Instruktor yo‘q', 'Instruktorlar bo‘limida qo‘shing yoki arizani tasdiqlang.'); return; }
+  const todayWd = wdOf(L.today || kToday());
+  box.innerHTML = `<div class="wp-legend"><span><i class="wk"></i>ish vaqti</span><span><i class="def"></i>grafik qo‘yilmagan — to‘liq kun</span><span><i class="off"></i>dam</span><span>· — tanaffus bor</span></div>
+    <div class="list">${rows.map(i => {
+      const s = WP.drafts[i.id] || i.schedule;
+      const has = !!(s && (Object.keys(s.week || {}).length || Object.keys(s.dates || {}).length));
+      const cells = WP_WD.map(w => { const x = wpShort(s ? wpWeekSpec(s, w) : null, L);
+        return `<span class="wp-c ${x.c} ${w === todayWd ? 'td' : ''}"><em>${WDS[w]}</em><b>${esc(x.t)}</b></span>`; }).join('');
+      return `<button class="row wp-row" data-go="grafik/${esc(i.id)}">
+        <span class="ava" style="${i.active ? '' : 'opacity:.45'}">${esc(ini(i.name))}</span>
+        <span class="tx"><b>${esc(i.name)}${wpDirty(i.id) ? ' <span class="pill warn">saqlanmagan</span>' : ''}${i.active ? '' : ' <span class="pill">o‘chirilgan</span>'}</b>
+          <small>${esc((i.categories || []).join(', '))} toifa · ${has ? 'grafik bor' : 'grafik qo‘yilmagan'}</small>
+          <span class="wp-week">${cells}</span></span>${I('chev')}</button>`;
+    }).join('')}</div>`;
+}
+
+/* =========================== TAHRIRLASH =========================== */
+function vWpEdit(id){
+  if (WP.id !== id) { WP.d = null; WP.id = id; WP.tab = 'week'; WP.wd = wdOf(kToday()); WP.date = kToday(); }
+  $('view').innerHTML = `<div class="view"><div id="wpHead"></div><div id="wpBody">${skel(5)}</div><div id="wpSave"></div></div>`;
+  $('view').className = 'wrap has-bar';
+  if (WP.d && String(WP.d.instructor?.id) === id) wpPaint();
+  wpLoad(id);
+}
+async function wpLoad(id, quiet){
+  const seq = ++WP.seq;
+  try {
+    const d = await api(`/api/admin/instructors/${encodeURIComponent(id)}/work-schedule?days=14`);
+    if (seq !== WP.seq || WP.id !== id) return;
+    const same = quiet && WP.d && JSON.stringify(WP.d) === JSON.stringify(d);
+    WP.d = d;
+    if (!WP.date || WP.date < d.today) WP.date = d.today;
+    if (!same) wpPaint();
+  } catch (e) { if (!quiet && $('wpBody')) $('wpBody').innerHTML = `<div class="note err">${esc(e.message)}</div>`; }
+}
+function wpPaint(){
+  const d = WP.d; if (!d || !$('wpBody')) return;
+  const s = wpCur(), ins = d.instructor || {};
+  const todaySpec = wpDateSpec(s, d.today);
+  $('tbTitle').textContent = `Ish grafigi — ${ins.name || ''}`;
+  $('wpHead').innerHTML = `<div class="card wp-head"><span class="ava lg">${esc(ini(ins.name))}</span>
+    <div class="tx"><b>${esc(ins.name || 'Instruktor')}</b><small>${esc((ins.categories || []).join(', '))} toifa${ins.phone ? ' · ' + esc(ins.phone) : ''}</small>
+      <span class="wp-today">${I('clock', 15)} Bugun: <b>${esc(wpDesc(todaySpec, d))}</b></span></div></div>
+    <div class="seg" style="margin-top:12px"><button class="${WP.tab === 'week' ? 'on' : ''}" data-act="wptab" data-v="week">Haftalik grafik</button>
+      <button class="${WP.tab === 'date' ? 'on' : ''}" data-act="wptab" data-v="date">Sana bo‘yicha${Object.keys(s.dates || {}).length ? `<span class="n" style="background:var(--accent)">${Object.keys(s.dates).length}</span>` : ''}</button></div>`;
+  $('wpBody').innerHTML = WP.tab === 'week' ? wpWeekHtml(s) : wpDateHtml(s);
+  const dirty = wpDirty();
+  $('wpSave').innerHTML = `<div class="wp-save ${dirty ? 'on' : ''}"><div class="wp-save-in">
+    <span class="tx"><b>${dirty ? 'O‘zgarishlar saqlanmagan' : 'Hammasi saqlangan'}</b><small>${dirty ? 'Saqlang — Mini App, operator va kassa yangi grafik bo‘yicha ishlaydi' : 'Mijozlar shu grafik bo‘yicha bron qiladi'}</small></span>
+    ${dirty ? `<button class="btn btn-soft" data-act="wpreset">Bekor</button>` : ''}
+    <button class="btn btn-primary" data-act="wpsave" ${dirty ? '' : 'disabled'}>${I('check', 19, 2.4)} Saqlash</button></div></div>`;
+}
+
+/* ---------- soatlar ro'yxati ---------- */
+function wpSlotHtml(spec, a, z, extra = {}){
+  const time = `<span class="h">${wpHm(a)}<small>– ${wpHm(z)}</small></span>`;
+  if (extra.bk) {
+    const b = extra.bk, warn = wpShut(spec, a, z);
+    return `<div class="wp-slot bk ${warn ? 'warn' : ''}">${time}<span class="s"><b>Bron · ${esc(b.customer_name)}</b>
+      <small>${esc((ST[b.status] || [b.status])[0])}${warn ? ' · ⚠ grafikdan tashqarida — mijoz bilan kelishing' : ' · yopib bo‘lmaydi'}</small></span></div>`;
+  }
+  if (extra.past) return `<div class="wp-slot past">${time}<span class="s"><b>O‘tib ketdi</b></span></div>`;
+  if (spec?.off) return `<div class="wp-slot shut dis">${time}<span class="s"><b>Dam olish kuni</b><small>Kun yoqilmagan</small></span><span class="sw"></span></div>`;
+  if (extra.own && !wpShut(spec, a, z)) return `<button class="wp-slot own" data-act="wpown" data-a="${a}" data-z="${z}">${time}<span class="s"><b>Instruktor o‘zi yopgan</b><small>Bosing — ochish</small></span>${I('lock', 18)}</button>`;
+  const shut = wpShut(spec, a, z);
+  return `<button class="wp-slot ${shut ? 'shut' : 'open'}" data-act="wptog" data-a="${a}" data-z="${z}" aria-pressed="${!shut}">${time}
+    <span class="s"><b>${shut ? 'Dam / tanaffus' : 'Ishlaydi'}</b><small>${shut ? 'Bron qilib bo‘lmaydi' : 'Mijoz bron qila oladi'}</small></span><span class="sw ${shut ? '' : 'on'}"></span></button>`;
+}
+function wpSumHtml(spec){
+  const all = wpSlots().length * wpWork().st, open = wpOpenMin(spec);
+  return `<div class="wp-sum"><div class="f"><b>${wpHours(open)}</b>soat ishlaydi</div><div class="c"><b>${wpHours(spec?.off ? all : all - open)}</b>soat dam</div></div>`;
+}
+function wpQuickHtml(spec){
+  const o = wpOpen(spec), { ws, we, st } = wpWork();
+  const from = o.length ? o[0][0] : ws, to = o.length ? o[o.length - 1][1] : we;
+  const opts = (lo, hi, cur) => { let h = ''; for (let m = lo; m <= hi; m += st) h += `<option value="${m}" ${m === cur ? 'selected' : ''}>${wpHm(m)}</option>`; return h; };
+  return `<div class="wp-quick"><label><span>Ishga keladi</span><select class="input" id="wpFrom">${opts(ws, we - st, from)}</select></label>
+    <label><span>Ketadi</span><select class="input" id="wpTo">${opts(ws + st, we, to)}</select></label>
+    <button class="btn btn-soft" data-act="wpapply">${I('check', 18, 2.4)} Qo‘llash</button></div>`;
+}
+
+/* ---------- HAFTALIK ---------- */
+function wpWeekHtml(s){
+  const w = WP.wd, spec = wpWeekSpec(s, w);
+  const chips = WP_WD.map(x => { const sh = wpShort(wpWeekSpec(s, x));
+    return `<button class="chip wp-day ${x === w ? 'on' : ''} ${sh.c}" data-act="wpwd" data-v="${x}">${WDS[x]}<small>${esc(sh.t)}</small></button>`; }).join('');
+  return `<div class="chips" style="margin-top:12px">${chips}</div>
+    <div class="card" style="margin-top:10px">
+      <div class="wp-dayhead"><div><h2>${esc(cap(WDF[w]))}</h2><span class="muted">${esc(spec ? wpDesc(spec) : 'Grafik qo‘yilmagan — to‘liq ish kuni')}</span></div>
+        <button class="wp-onoff" data-act="wpoff"><span>${spec?.off ? 'Dam olish kuni' : 'Ish kuni'}</span><span class="sw ${spec?.off ? '' : 'on'}"></span></button></div>
+      ${spec?.off ? '' : wpQuickHtml(spec)}
+      ${wpSumHtml(spec)}
+      <div class="wp-acts"><button class="btn btn-soft btn-sm" data-act="wpall" data-v="open">🔓 Hammasini ochish</button>
+        <button class="btn btn-soft btn-sm" data-act="wpcopy">📋 Boshqa kunlarga</button></div>
+      <p class="muted wp-hint">Soatni bosing — <b>yopiladi</b> (tanaffus, dam) yoki <b>ochiladi</b>. Har ${esc(cap(WDF[w]))} shunday bo‘ladi.</p>
+      <div class="wp-slots">${wpSlots().map(([a, z]) => wpSlotHtml(spec, a, z)).join('')}</div>
+    </div>`;
+}
+
+/* ---------- SANA BO'YICHA ---------- */
+function wpDateHtml(s){
+  const d = WP.d, day = WP.date, own = s.dates?.[day], spec = wpDateSpec(s, day);
+  const days = Array.from({ length: d.days || 14 }, (_, i) => dayAdd(d.today, i));
+  const chips = days.map((x, i) => { const sp = wpDateSpec(s, x), sh = wpShort(sp);
+    return `<button class="chip wp-day ${x === day ? 'on' : ''} ${sh.c}" data-act="wpdate" data-v="${x}">${i === 0 ? 'Bugun' : i === 1 ? 'Ertaga' : WDS[wdOf(x)]}<small>${esc(Number(x.slice(8)) + ' ' + MONS[Number(x.slice(5, 7)) - 1])}${s.dates?.[x] ? ' ●' : ''}</small></button>`; }).join('');
+  const d0 = atTk(day, '00:00').getTime();
+  const rel = iso => (Date.parse(iso) - d0) / 60000;
+  const bks = (d.bookings || []).filter(b => rel(b.end_at) > 0 && rel(b.start_at) < 1440);
+  const ownBl = (d.blocks || []).filter(b => rel(b.end_at) > 0 && rel(b.start_at) < 1440);
+  const nowMin = day === d.today ? toMin(nowHM()) : -1;
+  const slots = wpSlots().map(([a, z]) => {
+    const bk = bks.find(b => rel(b.start_at) < z && rel(b.end_at) > a);
+    const ownB = ownBl.some(b => rel(b.start_at) < z && rel(b.end_at) > a);
+    return wpSlotHtml(spec, a, z, { bk, own: ownB, past: !bk && z <= nowMin });
+  }).join('');
+  return `<div class="chips" style="margin-top:12px">${chips}</div>
+    <div class="card" style="margin-top:10px">
+      <div class="wp-dayhead"><div><h2>${esc(dayTitle(day))}</h2>
+        <span class="muted">${esc(wpDesc(spec))}</span>
+        <div style="margin-top:6px">${own ? `<span class="pill acc">Shu sana uchun alohida</span> <button class="link" data-act="wpdreset" style="font-size:13px">Haftalik grafikka qaytarish</button>`
+          : `<span class="pill">Haftalik grafik bo‘yicha (${esc(WDF[wdOf(day)])})</span>`}</div></div>
+        <button class="wp-onoff" data-act="wpdoff"><span>${spec?.off ? 'Dam olish kuni' : 'Ish kuni'}</span><span class="sw ${spec?.off ? '' : 'on'}"></span></button></div>
+      ${wpSumHtml(spec)}
+      <div class="wp-acts"><button class="btn btn-soft btn-sm" data-act="wpdall" data-v="open">🔓 Hammasini ochish</button>
+        <button class="btn btn-soft btn-sm" data-act="wpdall" data-v="shut">🔒 Kunni yopish</button></div>
+      <p class="muted wp-hint">Faqat <b>${esc(dayLabel(day))}</b> uchun o‘zgaradi (masalan, ta’til yoki qisqa kun). Bron bor soatni yopib bo‘lmaydi.</p>
+      <div class="wp-slots">${slots}</div>
+    </div>`;
+}
+
+/* ---------- amallar ---------- */
+const wpWeekEdit = fn => wpEdit(s => { const k = String(WP.wd); const spec = s.week[k] || { off: false, closed: [] }; fn(spec, s); s.week[k] = spec; });
+const wpDayEdit = fn => wpEdit(s => {
+  const day = WP.date;
+  const spec = s.dates[day] || wpClone(wpWeekSpec(s, wdOf(day))) || { off: false, closed: [] };
+  fn(spec, s); s.dates[day] = spec;
+});
+/** Shu kunning bron bor soatlari (daqiqa) — yopilmasin. */
+function wpBusyRanges(day){
+  const d0 = atTk(day, '00:00').getTime();
+  return (WP.d?.bookings || []).filter(b => ['pending', 'confirmed', 'in_progress'].includes(b.status))
+    .map(b => [(Date.parse(b.start_at) - d0) / 60000, (Date.parse(b.end_at) - d0) / 60000]).filter(([a, z]) => z > 0 && a < 1440);
+}
+ACT.wptab = el => { WP.tab = el.dataset.v; wpPaint(); };
+ACT.wpwd = el => { WP.wd = Number(el.dataset.v); wpPaint(); };
+ACT.wpdate = el => { WP.date = el.dataset.v; wpPaint(); };
+ACT.wptog = el => {
+  const a = Number(el.dataset.a), z = Number(el.dataset.z);
+  const tog = spec => { const r = wpRanges(spec); wpSet(spec, wpShut(spec, a, z) ? wpSub(r, [a, z]) : [...r, [a, z]]); };
+  if (WP.tab === 'week') wpWeekEdit(tog); else wpDayEdit(tog);
+};
+ACT.wpoff = () => wpWeekEdit(spec => { spec.off = !spec.off; });
+ACT.wpdoff = () => {
+  const busy = wpBusyRanges(WP.date);
+  const spec = wpDateSpec(wpCur(), WP.date);
+  if (!spec?.off && busy.length) { toast('Bu kunda bron bor — butun kunni dam qilib bo‘lmaydi. Bron yo‘q soatlarni yoping.', true); return; }
+  wpDayEdit(sp => { sp.off = !sp.off; });
+};
+ACT.wpall = el => wpWeekEdit(spec => { spec.off = false; if (el.dataset.v === 'open') spec.closed = []; });
+ACT.wpdall = el => {
+  const busy = wpBusyRanges(WP.date);
+  wpDayEdit(spec => {
+    spec.off = false;
+    if (el.dataset.v === 'open') { spec.closed = []; return; }
+    let r = [[0, 1440]];
+    for (const b of busy) r = wpSub(r, b);
+    wpSet(spec, r);
+  });
+  if (el.dataset.v === 'shut') toast(busy.length ? 'Kun yopildi (bron bor soatlardan tashqari). Ishlaydigan soatni bosib oching.' : 'Kun yopildi. Ishlaydigan soatni bosib oching.');
+};
+ACT.wpapply = () => {
+  const from = Number($('wpFrom').value), to = Number($('wpTo').value);
+  if (!(to > from)) { toast('Ketish vaqti kelish vaqtidan keyin bo‘lsin', true); return; }
+  wpWeekEdit(spec => {
+    spec.off = false;
+    const inner = wpRanges(spec).filter(([a, z]) => z > from && a < to).map(([a, z]) => [Math.max(a, from), Math.min(z, to)]);
+    wpSet(spec, [[0, from], [to, 1440], ...inner]);
+  });
+  toast(`${cap(WDF[WP.wd])}: ${wpHm(from)} dan ${wpHm(to)} gacha`);
+};
+ACT.wpdreset = () => wpEdit(s => { delete s.dates[WP.date]; });
+ACT.wpreset = async () => {
+  const ok = await ask({ title: 'O‘zgarishlar bekor qilinsinmi?', text: 'Saqlanmagan o‘zgarishlar o‘chadi, oxirgi saqlangan grafik qaytadi.', ok: 'Bekor qilish', danger: true });
+  if (!ok) return;
+  delete WP.drafts[WP.id]; wpPaint();
+};
+
+/* Boshqa kunlarga nusxalash */
+WP.copy = new Set();
+ACT.wpcopy = () => {
+  const s = wpCur(), spec = wpWeekSpec(s, WP.wd);
+  WP.copy = new Set();
+  const paint = () => {
+    $('wpCopyDays').innerHTML = WP_WD.filter(x => x !== WP.wd).map(x => `<button class="chip ${WP.copy.has(x) ? 'on' : ''}" data-act="wpcpk" data-v="${x}">${WDS[x]}</button>`).join('');
+    $('wpCopyGo').disabled = !WP.copy.size;
+  };
+  openSheet(`<h3>Boshqa kunlarga nusxalash</h3>
+    <p class="lead">${esc(cap(WDF[WP.wd]))} grafigi — <b>${esc(spec ? wpDesc(spec) : 'to‘liq ish kuni')}</b> — qaysi kunlarga ham qo‘yilsin?</p>
+    <div class="wp-copy" id="wpCopyDays"></div>
+    <div class="grid2" style="margin-top:12px"><button class="btn btn-soft btn-sm" data-act="wpcpq" data-v="work">Du–Sha (ish kunlari)</button><button class="btn btn-soft btn-sm" data-act="wpcpq" data-v="all">Hamma kunlar</button></div>
+    <button class="btn btn-primary" id="wpCopyGo" data-act="wpcpgo" style="margin-top:14px">Nusxalash</button>`);
+  WP.copyPaint = paint; paint();
+};
+ACT.wpcpk = el => { const v = Number(el.dataset.v); WP.copy.has(v) ? WP.copy.delete(v) : WP.copy.add(v); WP.copyPaint?.(); };
+ACT.wpcpq = el => { WP.copy = new Set(WP_WD.filter(x => x !== WP.wd && (el.dataset.v === 'all' || x !== 0))); WP.copyPaint?.(); };
+ACT.wpcpgo = () => {
+  const src = wpClone(wpWeekSpec(wpCur(), WP.wd)) || { off: false, closed: [] };
+  const n = WP.copy.size;
+  wpEdit(s => { for (const x of WP.copy) s.week[String(x)] = wpClone(src); });
+  closeSheet();
+  toast(`${n} ta kunga nusxalandi — saqlashni unutmang`);
+};
+
+/* Instruktor o'zi yopgan soatni admin ochadi (darhol saqlanadi) */
+ACT.wpown = async el => {
+  const a = Number(el.dataset.a), z = Number(el.dataset.z), day = WP.date, d = WP.d;
+  const ok = await ask({ title: `${wpHm(a)}–${wpHm(z)} ochilsinmi?`, text: `${d.instructor?.name || 'Instruktor'} bu soatni o‘zi yopgan. Ochsangiz — mijozlar bron qila oladi.`, ok: 'Ochish' });
+  if (!ok) return;
+  const d0 = atTk(day, '00:00').getTime();
+  let r = (d.blocks || []).map(b => [(Date.parse(b.start_at) - d0) / 60000, (Date.parse(b.end_at) - d0) / 60000]).filter(([x, y]) => y > 0 && x < 1440);
+  r = wpSub(wpMerge(r), [a, z]);
+  try {
+    await api(`/api/admin/instructors/${encodeURIComponent(d.instructor.id)}/blocks`, { method: 'PUT',
+      body: JSON.stringify({ date: day, slots: r.map(([x, y]) => ({ from: wpHm(Math.max(0, x)), to: wpHm(Math.min(1440, y)) })) }) });
+    toast(`${wpHm(a)} ochildi`);
+    wpLoad(d.instructor.id, true);
+  } catch (e) { fail(e); }
+};
+
+/* Saqlash */
+ACT.wpsave = async el => {
+  const s = WP.drafts[WP.id]; if (!s) return;
+  busyBtn(el, true, 'Saqlanmoqda');
+  try {
+    const r = await api(`/api/admin/instructors/${encodeURIComponent(WP.id)}/work-schedule`, { method: 'PUT', body: JSON.stringify({ week: s.week || {}, dates: s.dates || {} }) });
+    WP.d.schedule = r.schedule; delete WP.drafts[WP.id];
+    SCHC.clear();
+    if (WP.list) { const it = (WP.list.instructors || []).find(x => String(x.id) === String(WP.id)); if (it) it.schedule = r.schedule; }
+    wpPaint();
+    toast('Grafik saqlandi');
+    const c = r.conflicts || [];
+    if (c.length) openSheet(`<h3>${c.length} ta bron grafikdan tashqarida qoldi</h3>
+      <p class="lead">Bronlar o‘zgarmadi. Mijoz bilan kelishib, vaqtini o‘zgartiring yoki boshqa instruktorga o‘tkazing.</p>
+      <div class="list">${c.map(b => `<div class="row"><span class="ic">${I('clock', 19)}</span><span class="tx"><b>${esc(whenText(b.start_at))} · ${esc(b.customer_name)}</b>
+        <small>${esc((ST[b.status] || [b.status])[0])}${b.customer_phone ? ' · ' + esc(b.customer_phone) : ''}</small></span>${b.customer_phone ? `<a class="icon-btn" href="${telHref(b.customer_phone)}" aria-label="Qo‘ng‘iroq">${I('phone', 18)}</a>` : ''}</div>`).join('')}</div>
+      <button class="btn btn-primary" data-go="bookings/all" style="margin-top:14px">Bronlarga o‘tish</button>`);
+  } catch (e) { fail(e); }
+  finally { busyBtn(el, false); }
+};
 
 /* =========================================================================
    INSTRUKTORLAR JADVALI — kim qachon bo'sh, kim band
@@ -3697,6 +4293,7 @@ function vSchedule(){
       <div class="chips grow" style="margin:0;padding:2px 0 4px">${dayChips(SCH.date, 'schday', [[t, 'Bugun'], [dayAdd(t, 1), 'Ertaga'], [dayAdd(t, 2), 'Indinga']])}</div>
       <div class="seg">${[[30, '30 daq'], [60, '1 soat']].map(([k, l]) => `<button class="${SCH.step === k ? 'on' : ''}" data-act="schstep" data-v="${k}">${l}</button>`).join('')}</div>
       <button class="btn btn-white btn-sm" data-act="schxl">${I('dl', 18)} Excel</button>
+      ${isAdmin() ? `<button class="btn btn-white btn-sm" data-go="grafik">${I('clock', 18)} Ish grafigi</button>` : ''}
     </div>
     <div class="sec-h" style="margin:4px 2px 10px"><h2 id="schTitle">${esc(dayTitle(SCH.date))}</h2>
       <span><button class="icon-btn" data-act="schmove" data-v="-1" aria-label="Oldingi kun" style="display:inline-grid;width:38px;height:38px">${I('back', 18)}</button>
@@ -3705,7 +4302,7 @@ function vSchedule(){
     <div id="schGrid" style="margin-top:12px">${skel(4)}</div>
     <div class="legend"><span><i style="background:#ecfdf3;box-shadow:inset 0 0 0 1px #9be3b5"></i>Bo‘sh — bosing</span><span><i style="background:#fde2e4"></i>Tasdiqlangan</span>
       <span><i style="background:#fff1c2"></i>Kutilmoqda</span><span><i style="background:#dbe5ff"></i>Jarayonda</span><span><i style="background:#e5e7eb"></i>Tugagan</span>
-      <span><i style="background:#ffe4cc"></i>Kelmagan</span><span><i style="background:#e4e7ee"></i>Yopiq</span></div></div>`;
+      <span><i style="background:#ffe4cc"></i>Kelmagan</span><span><i style="background:#e4e7ee"></i>Yopiq</span><span><i style="background:repeating-linear-gradient(135deg,#e9e3f7 0 3px,#f6f3fc 3px 6px)"></i>Ishlamaydi (grafik)</span></div></div>`;
   bindDatePick();
   if (SCH.d && SCH.d.date === SCH.date) paintSchedule();
   loadSchedule();
@@ -3740,7 +4337,7 @@ function schModel(){
       for (const x of bk) { const ov = Math.min(e, Date.parse(x.end_at)) - Math.max(s, Date.parse(x.start_at)); if (ov > bestOv) { best = x; bestOv = ov; } }
       if (best) return { kind: 'b', key: 'b' + best.id, b: best, s, e };
       const blk = bl.find(x => Date.parse(x.start_at) < e && Date.parse(x.end_at) > s);
-      if (blk) return { kind: 'k', key: 'k' + blk.start_at, s, e };
+      if (blk) return blk.off ? { kind: 'o', key: 'o' + blk.start_at, s, e } : { kind: 'k', key: 'k' + blk.start_at, s, e };
       return { kind: e <= now ? 'p' : 'f', key: '', s, e };
     });
     const spans = [];
@@ -3776,6 +4373,7 @@ function paintSchedule(){
         return `<td ${w} class="sb ${st.c}" data-act="schbk" data-id="${esc(c.b.id)}"><div><b>${esc(c.b.customer_name)}</b><small>${esc(hm(c.b.start_at))}–${esc(hm(c.b.end_at))}${c.b.package ? ` · paket ${esc(c.b.package.n)}/${esc(c.b.package.of)}` : ''}${c.b.is_paid ? ' · ✓' : ''}</small></div></td>`;
       }
       if (c.kind === 'k') return `<td ${w} class="sk" title="Instruktor bu vaqtni yopgan">yopiq</td>`;
+      if (c.kind === 'o') return `<td ${w} class="so" title="Ish grafigi bo‘yicha ishlamaydi">${c.n * M.step >= 60 ? 'dam' : ''}</td>`;
       if (c.kind === 'p') return `<td class="sp"></td>`;
       return `<td class="sf" data-act="schfree" data-id="${esc(r.ins.id)}" data-t="${c.s}" title="${esc(r.ins.name)} · ${esc(hm(new Date(c.s)))} — bo‘sh"></td>`;
     }).join('');
@@ -3978,6 +4576,7 @@ ACT.schxl = () => {
       let cell;
       if (c.kind === 'b') cell = { v: `${c.b.customer_name} · ${hm(c.b.start_at)}–${hm(c.b.end_at)}${c.b.package ? ` · paket ${c.b.package.n}/${c.b.package.of}` : ''}`, s: STY[c.b.status] || 5 };
       else if (c.kind === 'k') cell = { v: 'Yopiq', s: 9 };
+      else if (c.kind === 'o') cell = { v: 'Dam (grafik)', s: 9 };
       else if (c.kind === 'p') cell = { v: '', s: 10 };
       else cell = { v: '', s: 4 };
       cells[ci] = cell;
@@ -4333,8 +4932,9 @@ function paintInstructors(){
   box.innerHTML = `<div class="muted" style="margin:0 2px 8px;font-size:13px">${on} ta faol · ${rows.length - on} ta o‘chirilgan</div><div class="list">${rows.map(i => `
     <div class="row"><span class="ava">${esc(ini(i.profile?.full_name))}</span>
       <span class="tx"><b>${esc(i.profile?.full_name || 'Instruktor')}</b><small>${esc((i.categories || ['B']).join(', '))} toifa${i.vehicle_plate ? ' · ' + esc(i.vehicle_plate) : ''}${i.rating ? ` · ★ ${Number(i.rating).toFixed(1)}` : ''}${i.profile?.phone ? ' · ' + esc(i.profile.phone) : ''}</small></span>
+      <button class="icon-btn in-grafik" data-go="grafik/${esc(i.id)}" aria-label="Ish grafigi" title="Ish grafigi">${I('clock', 19)}</button>
       <button class="sw ${i.active ? 'on' : ''}" data-act="inact" data-id="${esc(i.id)}" aria-label="${i.active ? 'O‘chirish' : 'Yoqish'}"></button></div>`).join('')}</div>
-    <p class="muted" style="font-size:12.5px;margin:10px 2px 0">Yashil — mijozlar bron qila oladi. O‘chirilgan instruktor jadvalda va bron qilishda ko‘rinmaydi.</p>`;
+    <p class="muted" style="font-size:12.5px;margin:10px 2px 0">Yashil — mijozlar bron qila oladi. O‘chirilgan instruktor jadvalda va bron qilishda ko‘rinmaydi. ${I('clock', 14)} — ish grafigi: soat nechdan nechgacha ishlaydi, tanaffus.</p>`;
 }
 ACT.inact = async el => {
   const i = (IN.list || []).find(x => String(x.id) === el.dataset.id); if (!i) return;
