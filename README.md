@@ -45,6 +45,15 @@ Alternative terminal states: `rejected`, `cancelled`, `no_show`, `expired`.
 
 Only Admin can transition `pending -> confirmed/rejected`.
 
+## Instructor availability
+
+An instructor can be booked only when all three are true:
+1. **Work schedule** (Admin → *Ish grafigi*): a weekly template (Mon–Sun: working day or day off, plus closed hours such as lunch) and optional per-date overrides. Stored in `admin_settings` as `instructor_schedule:<instructor_id>`. No schedule = the whole global work day (`work_start`–`work_end`).
+2. **Own closed hours**: slots the instructor closes in the panel (*Bo‘sh vaqtlarim*), stored as `instructor_busy:<instructor_id>`.
+3. **No overlapping active booking**.
+
+Every booking path enforces this server-side (`instructorBlockedAt` in `backend/src/instructor-blocks.ts`): Mini App, operator manual booking, cashier walk-in/issue and 5-hour packages. The Mini App availability endpoint returns schedule time off as busy, so customers only see instructors who work and are free at the chosen time.
+
 ## No-deposit policy
 
 Deposits are not required for booking creation. Instead the system uses:
