@@ -970,6 +970,8 @@ const canKassa = () => isCashier() || isAdmin();
 const ROLE_UZ = { admin: 'Administrator', operator: 'Operator', cashier: 'Kassir' };
 
 /* ---------- server bilan aloqa ---------- */
+/** Xato matni: satr yoki { message } obyekt — hech qachon «[object Object]» emas. */
+const errMsg = v => !v ? '' : typeof v === 'string' ? v : String(v.message || v.error || v.code || '');
 async function api(path, opt = {}){
   const ctl = new AbortController(), timer = setTimeout(() => ctl.abort(), 20000);
   const writing = !['GET', 'HEAD'].includes(String(opt.method || 'GET').toUpperCase());
@@ -984,12 +986,18 @@ async function api(path, opt = {}){
     /* Kassa tokeni eskirgan (sessiya emas) — hisobdan chiqarmaymiz, tokenni yangilaymiz */
     if (r.status === 401 && REG_PATHS.test(String(path))) {
       regRefresh();
-      const e = Error(d.error || 'Kassa muddati tugagan — qayta urinib ko‘ring'); e.status = 401; throw e;
+      const e = Error(errMsg(d.error) || 'Kassa muddati tugagan — qayta urinib ko‘ring'); e.status = 401; throw e;
     }
     if (r.status === 401 && !String(path).endsWith('/login') && !/\/registers\/[^/]+\/(unlock|token)$/.test(String(path))) {
       showLogin(); const e = Error('Sessiya tugagan. Qayta kiring.'); e.silent = true; throw e;
     }
-    if (!r.ok || d.ok === false) { const e = Error(d.error || d.message || `Xato (${r.status})`); e.status = r.status; throw e; }
+    if (!r.ok || d.ok === false) {
+      /* Vercel o'zi qaytargan 404 ({ error: { code: 'NOT_FOUND' } }) — server bu manzilni bilmaydi */
+      const noRoute = r.status === 404 && d.error && typeof d.error === 'object';
+      const e = Error(noRoute ? `Server bu bo‘limni topmadi (404): ${String(path).split('?')[0]}. Yangilanish to‘liq yuklanmagan bo‘lishi mumkin.`
+        : errMsg(d.error) || errMsg(d.message) || `Xato (${r.status})`);
+      e.status = r.status; throw e;
+    }
     return d;
   }catch(e){
     if (e.name === 'AbortError' || e instanceof TypeError) {
