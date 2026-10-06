@@ -18,6 +18,7 @@ import { registerAnalyticsRoutes } from './analytics-routes.js';
 import { registerShiftRoutes } from './shift-routes.js';
 import { registerMediaRoutes } from './media-routes.js';
 import { registerAdminBotRoutes, sendAdminChatInfo } from './admin-bot-routes.js';
+import { registerScheduleRoutes } from './schedule-routes.js';
 
 const app = Fastify({ logger: true });
 
@@ -124,6 +125,8 @@ await registerCashierRoutes(app, requireAdmin, adminUser, audit, authenticateIns
    (har qanday kirgan xodim) beriladi. */
 await registerAnalyticsRoutes(app, guardAdmin, requireAdmin);
 await registerShiftRoutes(app, requireAdmin, adminUser, audit);
+/* Instruktorlar ish grafigi — faqat administrator */
+await registerScheduleRoutes(app, guardAdmin, adminUser, audit);
 await registerAdminBotRoutes(app);
 
 // IMPORTANT: admin-password-routes.ts is the single owner of the canonical

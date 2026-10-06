@@ -366,9 +366,11 @@ export async function registerBookingRoutes(
           `&start_at=lt.${q(dayEnd.toISOString())}&end_at=gt.${q(dayStart.toISOString())}` +
           `&status=in.(${ACTIVE_STATUSES})&select=start_at,end_at`,
       });
-      /* Instruktor o'zi yopgan soatlar ham band ko'rinadi (sababi aytilmaydi) */
+      /* Instruktor o'zi yopgan soatlar va ISH GRAFIGI bo'yicha dam vaqtlar ham
+         band ko'rinadi (sababi aytilmaydi) — Mini App shu vaqtda bu instruktorni
+         ko'rsatmaydi. */
       const { loadBlocks } = await import('./instructor-blocks.js');
-      const own = ((await loadBlocks([instructorId])).get(instructorId) || [])
+      const own = ((await loadBlocks([instructorId], { from: dayStart, to: dayEnd })).get(instructorId) || [])
         .filter((b) => Date.parse(b.start_at) < dayEnd.getTime() && Date.parse(b.end_at) > dayStart.getTime())
         .map((b) => ({ start_at: b.start_at, end_at: b.end_at }));
       return { ok: true, busy: [...rows, ...own] };

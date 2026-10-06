@@ -551,7 +551,10 @@ export async function registerInstructorRoutes(
       const to = tashkentAt(isYmd(qy.to) ? qy.to : today, '00:00').getTime() + 864e5;
       const blocks = (await blocksFor(String(instructor.id)))
         .filter((b) => Date.parse(b.end_at) > from && Date.parse(b.start_at) < to);
-      return { ok: true, blocks };
+      /* Admin belgilagan ish grafigi: shu kunlarda qaysi vaqt dam (instruktor o'zgartira olmaydi) */
+      const { scheduleFor, offBlocksBetween } = await import('./instructor-schedule.js');
+      const off = offBlocksBetween(await scheduleFor(String(instructor.id)), new Date(from), new Date(to));
+      return { ok: true, blocks, off };
     } catch (e) {
       return reply.code(400).send({ ok: false, error: e instanceof Error ? e.message : 'Yopiq soatlar yuklanmadi' });
     }

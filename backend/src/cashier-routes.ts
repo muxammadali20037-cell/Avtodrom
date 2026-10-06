@@ -7,6 +7,7 @@ import { fmtWhen, fmtMoney } from './notify.js';
 import { readRegisterToken, ownRegisterFromToken, reportScope, openShiftId, priceGuard } from './shift-routes.js';
 import { bookingSearchFilter } from './booking-search.js';
 import { loadBlocks, overlapping, instructorBlockedAt, blockedMessage } from './instructor-blocks.js';
+import { tashkentYmdOf } from './instructor-schedule.js';
 import {
   PACKAGE_MINUTES, loadPackagePrices, priceWithPackage, packagePriceOf, parseSessions, sessionConflict, createPackage,
   packagesFor, packageOf, type Session,
@@ -476,11 +477,12 @@ export async function registerCashierRoutes(
       });
 
       const dayS = Date.parse(start), dayE = Date.parse(end);
-      const bm = await loadBlocks(instructors.map((i) => i.id));
+      /* Instruktor o'zi yopgan soatlar + ish grafigi bo'yicha dam (off: true) */
+      const bm = await loadBlocks(instructors.map((i) => i.id), { from: new Date(dayS), to: new Date(dayE) });
       const blocks: any[] = [];
       for (const [iid, list] of bm) {
         for (const x of list) {
-          if (Date.parse(x.start_at) < dayE && Date.parse(x.end_at) > dayS) blocks.push({ instructor_id: iid, start_at: x.start_at, end_at: x.end_at });
+          if (Date.parse(x.start_at) < dayE && Date.parse(x.end_at) > dayS) blocks.push({ instructor_id: iid, start_at: x.start_at, end_at: x.end_at, ...(x.off ? { off: true } : {}) });
         }
       }
       const sv = (k: string) => { const r = setRows.find((x: any) => x.key === k); return r ? (r.value?.value ?? r.value) : null; };
@@ -1009,12 +1011,17 @@ export async function registerCashierRoutes(
           '&select=instructor_id,start_at,end_at&limit=1000',
       });
 
-      /* Instruktor o'zi yopgan soatlar ham band hisoblanadi */
-      const blocks = await loadBlocks(ips.map((i) => String(i.id)));
+      /* Instruktor o'zi yopgan soatlar va ish grafigi bo'yicha dam vaqtlar ham band hisoblanadi */
+      const blocks = await loadBlocks(ips.map((i) => String(i.id)), { from: new Date(dayStart), to: new Date(dayEnd) });
+      /* Grafik bo'yicha dam bo'lsa «qachon bo'shaydi» — faqat shu ish kuni ichida */
+      const atDay = tashkentYmdOf(at);
+      const wsRow = await supabaseRest<any[]>('admin_settings', { query: '?key=eq.work_end&select=value&limit=1' }).catch(() => []);
+      const weRaw = String(wsRow?.[0]?.value?.value ?? wsRow?.[0]?.value ?? '19:00');
+      const workEndMs = Date.parse(`${atDay}T${/^\d{1,2}:\d{2}/.test(weRaw) ? weRaw.slice(0, 5).padStart(5, '0') : '19:00'}:00+05:00`);
 
       const free: any[] = [], busy: any[] = [];
       for (const ip of ips) {
-        const own = (blocks.get(String(ip.id)) || []).map((x) => ({ instructor_id: ip.id, start_at: x.start_at, end_at: x.end_at, blocked: true }));
+        const own = (blocks.get(String(ip.id)) || []).map((x) => ({ instructor_id: ip.id, start_at: x.start_at, end_at: x.end_at, blocked: true, off: !!x.off }));
         const mine = [...busyRows.filter((b) => String(b.instructor_id) === String(ip.id)), ...own];
         const clash = mine.find((b) => new Date(b.start_at) < end && new Date(b.end_at) > at);
         const info = {
@@ -1036,8 +1043,11 @@ export async function registerCashierRoutes(
             }
           }
         }
-        busy.push({ ...info, free_at: freeAt.toISOString(), wait_minutes: Math.round((freeAt.getTime() - at.getTime()) / 60000),
-          blocked: !!(clash as any).blocked });
+        const off = !!(clash as any).off;
+        const backToday = !off || (tashkentYmdOf(freeAt) === atDay && freeAt.getTime() < workEndMs);
+        busy.push({ ...info, free_at: backToday ? freeAt.toISOString() : null,
+          wait_minutes: backToday ? Math.round((freeAt.getTime() - at.getTime()) / 60000) : 24 * 60,
+          blocked: !!(clash as any).blocked, ...(off ? { off: true } : {}) });
       }
       free.sort((a, b) => b.rating - a.rating);
       busy.sort((a, b) => a.wait_minutes - b.wait_minutes);

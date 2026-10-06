@@ -2,6 +2,7 @@ import type { FastifyInstance } from 'fastify';
 import { lessonMinutes, isSchoolLesson, tashkentYmd } from './lesson-math.js';
 import { supabaseRest } from './supabase.js';
 import { selectIn } from './rest-chunks.js';
+import { computeRetention } from './retention.js';
 
 /**
  * HISOBOT VA ANALITIKA
@@ -302,6 +303,109 @@ export async function registerAnalyticsRoutes(
       };
     } catch (e: any) {
       return reply.code(e?.statusCode ?? 500).send({ ok: false, error: e?.message || 'Instruktorlar hisoboti yuklanmadi' });
+    }
+  });
+
+  /**
+   * O'QUVCHINI QAYTARISH — instruktorlar reytingi (qoidasi: retention.ts).
+   * ?from=YYYY-MM-DD&to=YYYY-MM-DD — BIRINCHI pullik darsi shu davrga
+   * tushgan yangi o'quvchilar va ular 7 kun ichida o'sha instruktorga
+   * qaytdimi. Faqat administrator.
+   */
+  app.get('/api/admin/retention', async (req: any, reply: any) => {
+    try {
+      await requireAdmin(req);
+      const { from, to, fromYmd, toYmd } = rangeFromQuery(req.query, 'week');
+      const fromDay = fromYmd || tashkentYmd(from.toISOString());
+      const toDay = toYmd || tashkentYmd(new Date(to.getTime() - 1).toISOString());
+      const today = todayTk();
+
+      /* 1) O'tilgan pullik darslar — BUTUN tarix: o'quvchining birinchi
+            darsi qachon va kimga bo'lganini bilish uchun kerak. */
+      const raw: any[] = [];
+      for (let offset = 0; offset < 200000; offset += 1000) {
+        const chunk = await supabaseRest<any[]>('bookings', {
+          query:
+            '?instructor_id=not.is.null&customer_id=not.is.null&status=in.(in_progress,completed)' +
+            '&select=id,customer_id,instructor_id,start_at,booking_date,end_at,duration_minutes,source,school_receipt_code,customer_note' +
+            `&order=start_at.asc,id.asc&limit=1000&offset=${offset}`,
+        });
+        raw.push(...chunk);
+        if (chunk.length < 1000) break;
+      }
+      const lessons = raw.filter((b) => !isSchoolLesson(b)).map((b) => ({
+        id: String(b.id), customer_id: String(b.customer_id), instructor_id: String(b.instructor_id),
+        at: String(b.start_at || b.booking_date || ''), day: tashkentYmd(b.start_at || b.booking_date), minutes: lessonMinutes(b),
+      })).filter((l) => l.day);
+
+      /* 2) Keyingi bronlar — «band qilgan» belgisi uchun */
+      const upRaw = await supabaseRest<any[]>('bookings', {
+        query:
+          '?instructor_id=not.is.null&customer_id=not.is.null&status=in.(pending,confirmed)' +
+          `&start_at=gte.${q(new Date(Date.now() - 864e5).toISOString())}` +
+          '&select=id,customer_id,instructor_id,start_at,booking_date,source,school_receipt_code,customer_note&order=start_at.asc&limit=3000',
+      });
+      const upcoming = upRaw.filter((b) => !isSchoolLesson(b)).map((b) => ({
+        customer_id: String(b.customer_id), instructor_id: String(b.instructor_id),
+        at: String(b.start_at || b.booking_date || ''), day: tashkentYmd(b.start_at || b.booking_date),
+      })).filter((u) => u.day);
+
+      /* 3) Mijozlar — ism va telefon (bitta odamni telefon bo'yicha birlashtirish) */
+      const cids = [...new Set([...lessons, ...upcoming].map((l) => l.customer_id))];
+      const custs = await selectIn<any>('users', 'id', cids, 'id,full_name,phone');
+      const people = new Map(custs.map((u) => [String(u.id), { name: u.full_name, phone: u.phone }]));
+
+      const r = computeRetention({ lessons, upcoming, people, fromDay, toDay, today });
+
+      /* 4) Takroriy darslardan tushum */
+      const repIds = [...r.perIns.values()].flatMap((g) => g.students.flatMap((s) => s.repeat_ids));
+      const pm = payMap(repIds.length ? await selectIn<any>('payments', 'booking_id', repIds, 'booking_id,amount,status') : []);
+      const paidOf = (id: string) => { const p = pm.get(id); return p && p.status === 'paid' ? Number(p.amount || 0) : 0; };
+
+      /* 5) Instruktorlar — faollari hammasi (0 bilan ham), o'chirilganlari
+            faqat shu davrda yangi o'quvchisi bo'lsa */
+      const ips = await supabaseRest<any[]>('instructor_profiles', { query: '?select=*&limit=1000' });
+      const uids = [...new Set(ips.map((i: any) => i.user_id).filter(Boolean).map(String))];
+      const iusers = await selectIn<any>('users', 'id', uids, 'id,full_name,phone,is_active,is_blocked');
+      const um = new Map(iusers.map((u) => [String(u.id), u]));
+      const ipm = new Map(ips.map((i: any) => [String(i.id), i]));
+      const nameOf = (id: string) => {
+        const i: any = ipm.get(id); const u: any = i ? um.get(String(i.user_id)) : null;
+        return u?.full_name || i?.full_name || 'O‘chirilgan instruktor';
+      };
+      const ids = new Set<string>(r.perIns.keys());
+      for (const i of ips) {
+        const u: any = um.get(String(i.user_id));
+        if (i.is_verified && i.is_available && u?.is_active !== false && !u?.is_blocked) ids.add(String(i.id));
+      }
+
+      let totalRevenue = 0;
+      const instructors = [...ids].map((id) => {
+        const g = r.perIns.get(id);
+        const i: any = ipm.get(id) || {};
+        const u: any = um.get(String(i.user_id)) || {};
+        let revenue = 0;
+        const students = (g?.students || []).map(({ repeat_ids, ...s }) => {
+          const rev = repeat_ids.reduce((a, x) => a + paidOf(x), 0);
+          revenue += rev;
+          return { ...s, revenue: rev, moved_to_name: s.moved_to ? nameOf(s.moved_to) : null };
+        });
+        totalRevenue += revenue;
+        return {
+          id, name: nameOf(id), phone: u.phone || null, vehicle_plate: i.vehicle_plate || null,
+          active: Boolean(i.is_available), ...(g?.agg || { new: 0, returned: 0, waiting: 0, booked: 0, moved: 0, lost: 0, rate: null, visits: 0, minutes: 0 }),
+          revenue, students,
+        };
+      }).sort((a, b) =>
+        (b.rate ?? -1) - (a.rate ?? -1) || b.returned - a.returned || b.new - a.new || String(a.name).localeCompare(String(b.name), 'uz'));
+
+      return {
+        ok: true, from_day: fromDay, to_day: toDay, today, window_days: r.windowDays,
+        totals: { ...r.total, revenue: totalRevenue, instructors_with_new: instructors.filter((x) => x.new > 0).length },
+        instructors,
+      };
+    } catch (e: any) {
+      return reply.code(e?.statusCode ?? 500).send({ ok: false, error: e?.message || 'Qaytish hisoboti yuklanmadi' });
     }
   });
 
