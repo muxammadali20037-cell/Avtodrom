@@ -159,6 +159,34 @@ for (let off = 1; off <= 45; off++) {
   });
 }
 
+// O'quvchini qaytarish hisoboti: yangi pullik o'quvchilar (oxirgi 2 hafta)
+{
+  const dd = (n: number) => new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Tashkent' }).format(new Date(Date.now() + n * 864e5));
+  const rp = [
+    ['u-r1', 'Jamshid Qodirov', '+998911000001'], ['u-r2', 'Nilufar Saidova', '+998911000002'], ['u-r3', 'Sherzod Aliev', '+998911000003'],
+    ['u-r4', 'Kamola Rahimova', '+998911000004'], ['u-r5', 'Farrux Tursunov', '+998911000005'], ['u-r6', 'Dildora Xasanova', '+998911000006'],
+    ['u-r7', 'Akmal Yo‘ldoshev', '+998911000007'], ['u-r8', 'Mohira Ergasheva', '+998911000008'], ['u-r9', 'Sardor Mirzayev', '+998911000009'],
+    ['u-r10', 'Zarina Komilova', '+998911000010'],
+  ];
+  for (const [id, full_name, phone] of rp) db.users.push({ id, full_name, phone, role: 'customer', is_active: true, is_blocked: false, created_at: at('08:00') });
+  let rn = 0;
+  const paidLesson = (cust: string, ins: string, n: number, hm = '15:00') => {
+    const day = dd(n), id = bk(cust, ins, hm, 'completed', { start: at(hm, day), source: 'cashier' });
+    db.payments.push({ id: `pay-r${++rn}`, booking_id: id, customer_id: cust, amount: 250000, cash_amount: 250000, card_amount: 0, method: 'cash',
+      status: 'paid', paid_at: at(hm, day), receipt_code: `AVD-R${rn}`, register_id: 'reg-p1', created_at: at(hm, day) });
+  };
+  paidLesson('u-r1', 'ip-1', -12); paidLesson('u-r1', 'ip-1', -9); paidLesson('u-r1', 'ip-1', -5);
+  paidLesson('u-r2', 'ip-1', -11); paidLesson('u-r2', 'ip-1', -6);
+  paidLesson('u-r3', 'ip-1', -10);
+  paidLesson('u-r4', 'ip-1', -3); bk('u-r4', 'ip-1', '16:00', 'confirmed', { start: at('16:00', dd(1)) });
+  paidLesson('u-r5', 'ip-1', -9); paidLesson('u-r5', 'ip-2', -7);
+  paidLesson('u-r6', 'ip-2', -12);
+  paidLesson('u-r7', 'ip-2', -8); paidLesson('u-r7', 'ip-2', -2);
+  paidLesson('u-r8', 'ip-2', -4);
+  paidLesson('u-r9', 'ip-2', -13);
+  paidLesson('u-r10', 'ip-2', -6); paidLesson('u-r10', 'ip-2', -1);
+}
+
 // Operator uchun: yangi (tasdiq kutayotgan) bronlar va bekor so'rovi
 const tomorrow = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Tashkent' }).format(new Date(Date.now() + 864e5));
 bk('u-6', 'ip-1', '17:00', 'pending', { start: at('10:00', tomorrow) });

@@ -832,3 +832,48 @@ describe('Instruktor yopgan soatlar', () => {
     expect(all.body.blocks).toHaveLength(2);
   });
 });
+
+describe('Instruktorni o‘chirish odamning hisobini BLOKLAMAYDI', () => {
+  const TG = 6140529649;
+  const asCustomer = (method: string, url: string, payload?: any) =>
+    h.app.inject({ method, url, headers: { 'x-telegram-init-data': signedInitData({ id: TG, first_name: 'Muxammadali' }) }, payload })
+      .then((r: any) => ({ status: r.statusCode, body: JSON.parse(r.payload || '{}') }));
+  const insUser = () => h.db.users.find((u: any) => u.id === 'u-instr');
+  beforeEach(() => { insUser().telegram_id = TG; });
+
+  it('faolsizlantirilsa — faqat instruktor yashiriladi, mijoz ilovasi ishlayveradi', async () => {
+    const r = await h.call('PATCH', '/api/admin/instructors/ip-1', { cookie: admin, payload: { active: false } });
+    expect(r.status).toBe(200);
+    expect(h.db.instructor_profiles[0].is_available).toBe(false);
+    expect(insUser().is_blocked).toBe(false);
+    expect(insUser().is_active).toBe(true);
+    // bron ro'yxatida chiqmaydi
+    const list = await asCustomer('GET', '/api/instructors');
+    expect(list.body.instructors.map((i: any) => i.id)).not.toContain('ip-1');
+    // o'sha odam mijoz sifatida: bloklanmagan, yozishma ishlaydi
+    const me = await asCustomer('GET', '/api/me');
+    expect(me.body.profile.is_blocked).toBe(false);
+    const msg = await asCustomer('POST', '/api/support/messages', { body: 'Salom' });
+    expect(msg.status).toBe(201);
+  });
+
+  it('qayta yoqilsa — eski blok ham olinadi', async () => {
+    Object.assign(insUser(), { is_blocked: true, is_active: false });
+    h.db.instructor_profiles[0].is_available = false;
+    const r = await h.call('PATCH', '/api/admin/instructors/ip-1', { cookie: admin, payload: { active: true } });
+    expect(r.status).toBe(200);
+    expect(h.db.instructor_profiles[0].is_available).toBe(true);
+    expect(insUser().is_blocked).toBe(false);
+    expect(insUser().is_active).toBe(true);
+  });
+
+  it('o‘chirilsa ham — hisob bloklanmaydi', async () => {
+    const r = await h.call('DELETE', '/api/admin/instructors/ip-1', { cookie: admin });
+    expect(r.status).toBe(200);
+    expect(h.db.instructor_profiles.length).toBe(0);
+    expect(insUser().is_blocked).toBe(false);
+    expect(insUser().is_active).toBe(true);
+    const me = await asCustomer('GET', '/api/me');
+    expect(me.body.profile.is_blocked).toBe(false);
+  });
+});
