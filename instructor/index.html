@@ -140,6 +140,9 @@ h2{font-size:20px;margin:0 0 3px}
 button.slot{width:100%;text-align:left;cursor:pointer;font:inherit;color:inherit}
 button.slot:active{transform:scale(.985)}
 .slot.closed{border-color:#f3d2a5;background:#fff6e8}.slot.closed .s{color:#9a5b00}
+.slot.off{border-color:#ddd5f0;background:repeating-linear-gradient(135deg,#f5f2fc 0 8px,#fbfaff 8px 16px)}.slot.off .s{color:#6b5a97}
+.workhint{display:flex;gap:8px;align-items:flex-start;margin:0 0 12px;padding:10px 12px;border-radius:12px;background:#f3f0fb;color:#4e3f86;font-size:13px;font-weight:650;line-height:1.4}
+.chip.day.dayoff .d2{color:#b42318;opacity:1}
 .tgl{width:50px;height:30px;border-radius:99px;background:#d9a35a;position:relative;flex:none;transition:background .18s}
 .tgl::after{content:"";position:absolute;top:3px;left:3px;width:24px;height:24px;border-radius:50%;background:#fff;box-shadow:0 2px 5px rgba(0,0,0,.2);transition:left .18s}
 .tgl.on{background:var(--ok)}.tgl.on::after{left:23px}
@@ -390,6 +393,7 @@ details.list[open] summary::after{content:"▴"}
     <div class="c"><b id="fClosed">0</b>yopiq</div>
     <div class="b"><b id="fBusy">0</b>bron</div>
   </div>
+  <div class="workhint" id="workHint" style="display:none"></div>
   <div class="freeacts">
     <button class="btn" id="closeDay">🔒 Kunni yopish</button>
     <button class="btn" id="openDay">🔓 Hammasini ochish</button>
@@ -507,7 +511,7 @@ function tickCountdowns(){
   });
 }
 
-const S = { profile:null, instructor:null, bookings:[], settings:null, bkFilter:'today', freeDay:'', calc:null, month:null, blocks:[] };
+const S = { profile:null, instructor:null, bookings:[], settings:null, bkFilter:'today', freeDay:'', calc:null, month:null, blocks:[], off:[] };
 
 /* ------------------------------ API ------------------------------ */
 function errText(d, status, path){
@@ -742,7 +746,7 @@ function renderMenu(){
     : (tm ? `Bugun yo‘q · ertaga ${tm} ta` : 'Bugun dars yo‘q');
   $('tBookBadge').textContent = left; $('tBookBadge').classList.toggle('hide', !left);
 
-  const slots = slotsFor(t).filter(x => !x.b && !x.past && !x.closed).length;
+  const slots = slotsFor(t).filter(x => !x.b && !x.past && !x.closed && !x.off).length;
   $('tFree').textContent = slots ? `Bugun ${slots} ta bo‘sh vaqt` : 'Bugun bo‘sh vaqt yo‘q';
 
   const m = S.month?.summary;
@@ -892,7 +896,8 @@ function renderFreeDays(){
   for (let i = 0; i < 7; i++) {
     const d = addDays(t, i);
     const lab = i === 0 ? 'Bugun' : i === 1 ? 'Ertaga' : WD_SHORT[wdOf(d)];
-    html += `<button class="chip day ${d === S.freeDay ? 'on' : ''}" data-d="${d}">${lab}<span class="d2">${esc(dShort(d))}</span></button>`;
+    const sl = slotsFor(d), dayOff = sl.length > 0 && sl.every(x => x.off);
+    html += `<button class="chip day ${d === S.freeDay ? 'on' : ''} ${dayOff ? 'dayoff' : ''}" data-d="${d}">${lab}<span class="d2">${dayOff ? 'dam' : esc(dShort(d))}</span></button>`;
   }
   box.innerHTML = html;
   box.querySelectorAll('[data-d]').forEach(c => c.onclick = () => { S.freeDay = c.dataset.d; renderFree(); });
@@ -908,8 +913,10 @@ function slotsFor(d){
       const be = x.end_at ? new Date(x.end_at).getTime() : bs + minutesOf(x) * 60000;
       return bs < s1 && be > s0;
     }) || null;
-    const closed = !b && S.blocks.some(k => Date.parse(k.start_at) < s1 && Date.parse(k.end_at) > s0);
-    return { a, z, b, past: s1 <= now, closed };
+    /* Admin belgilagan ish grafigi bo'yicha dam — instruktor o'zgartira olmaydi */
+    const off = !b && S.off.some(k => Date.parse(k.start_at) < s1 && Date.parse(k.end_at) > s0);
+    const closed = !b && !off && S.blocks.some(k => Date.parse(k.start_at) < s1 && Date.parse(k.end_at) > s0);
+    return { a, z, b, past: s1 <= now, closed, off };
   });
 }
 
@@ -919,13 +926,16 @@ async function loadBlocks(){
     const t = today();
     const d = await api(`/api/instructor/blocks?from=${t}&to=${addDays(t, 6)}`);
     S.blocks = d.blocks || [];
+    S.off = d.off || [];
   } catch (e) { /* ro'yxat ikkilamchi — bo'sh qoladi */ }
 }
 
 function renderFree(){
   renderFreeDays();
   let free = 0, busy = 0, closed = 0;
-  const html = slotsFor(S.freeDay).map(({ a, z, b, past, closed: cl }) => {
+  const list = slotsFor(S.freeDay);
+  const html = list.map(x => {
+    const { a, z, b, past, closed: cl } = x;
     const time = `<div class="h">${hm(a)} <small>– ${hm(z)}</small></div>`;
     if (b) {
       busy++;
@@ -935,6 +945,7 @@ function renderFree(){
           <span>${esc(custName(b))}${cat ? ' · ' + esc(cat) : ''}${isSchool(b) ? ' · avtoshkola' : ''}</span></div></div>`;
     }
     if (past) return `<div class="slot ${cl ? 'closed' : 'free'} past">${time}<div class="s">O‘tib ketdi</div></div>`;
+    if (x.off) return `<div class="slot off">${time}<div class="s">Ish vaqti emas<span>Admin grafigi bo‘yicha dam</span></div></div>`;
     if (cl) {
       closed++;
       return `<button class="slot closed" data-tog="${hm(a)}">${time}
@@ -946,6 +957,17 @@ function renderFree(){
   }).join('');
   const box = $('slotList');
   box.innerHTML = html || '<div class="empty">Ish vaqti sozlanmagan.</div>';
+  /* Ish grafigi (admin): shu kuni qachon ishlaydi */
+  const wh = $('workHint');
+  if (wh) {
+    const offN = list.filter(x => x.off).length;
+    if (!offN) { wh.innerHTML = ''; wh.style.display = 'none'; }
+    else {
+      const open = []; for (const x of list) { if (x.off) continue; const l = open[open.length - 1]; if (l && l[1] === x.a) l[1] = x.z; else open.push([x.a, x.z]); }
+      wh.style.display = '';
+      wh.innerHTML = `🗓️ <span>${open.length ? `Ish grafigingiz: <b>${open.map(([p, q]) => `${hm(p)}–${hm(q)}`).join(', ')}</b>` : '<b>Bu kun — dam olish kuni</b>'}. Grafikni admin belgilaydi; qolgan soatlarda sizga bron tushmaydi.</span>`;
+    }
+  }
   box.querySelectorAll('[data-tog]').forEach(el => el.onclick = () => toggleSlot(el.dataset.tog));
   $('fFree').textContent = free; $('fBusy').textContent = busy; $('fClosed').textContent = closed;
   $('closeDay').disabled = !free; $('openDay').disabled = !closed;
@@ -983,7 +1005,7 @@ function toggleSlot(start){
 }
 $('closeDay').onclick = () => {
   const day = S.freeDay, set = closedStartsOf(day);
-  slotsFor(day).forEach(x => { if (!x.b && !x.past) set.add(hm(x.a)); });
+  slotsFor(day).forEach(x => { if (!x.b && !x.past && !x.off) set.add(hm(x.a)); });
   toast('Kun yopildi. Bo‘sh soatingizni bosib oching.');
   saveDayClosed(day, set);
 };
