@@ -60,8 +60,31 @@ describe('Instruktor boti — xabarni o‘qish', () => {
     expect(p('99-313-56-26 16:00')).toMatchObject({ kind: 'book', phone: '+998993135626', h0: 16 });
     expect(p('901234567 14')).toMatchObject({ kind: 'book', h0: 14 });
   });
+  it('instruktorlar har xil yozadi — hammasini tushunadi', () => {
+    const b = (t: string) => { const r: any = p(t); return r.kind === 'book' ? `${r.date} ${r.h0}-${r.h1} ${r.phone}${r.cat ? ' ' + r.cat : ''}${r.name ? ' ' + r.name : ''}` : `${r.kind}:${r.error || ''}`; };
+    const D1 = '2026-10-09', P = '+998932728766';
+    expect(b('ertaga 13:00 998932728766')).toBe(`${D1} 13-14 ${P}`);
+    expect(b('ertaga13:00 932728766')).toBe(`${D1} 13-14 ${P}`);
+    expect(b('13:00da ertaga 93 272 87 66')).toBe(`${D1} 13-14 ${P}`);
+    expect(b('Ertaga soat 13 da +998 93 272 87 66')).toBe(`${D1} 13-14 ${P}`);
+    expect(b('эртага 13:00 932728766')).toBe(`${D1} 13-14 ${P}`);
+    expect(b('ертага 13:00 932728766')).toBe(`${D1} 13-14 ${P}`);
+    expect(b('ertag 13:00 932728766')).toBe(`${D1} 13-14 ${P}`);
+    expect(b('ertaga 13dan 15gacha 932728766')).toBe(`${D1} 13-15 ${P}`);
+    expect(b('ertaga 2 soat 13:00 932728766')).toBe(`${D1} 13-15 ${P}`);
+    expect(b('932728766 ertaga 13:00 3 soat')).toBe(`${D1} 13-16 ${P}`);
+    expect(b('ertaga soat 3 da 932728766')).toBe(`${D1} 15-16 ${P}`);
+    expect(b('kechki 6 da 932728766')).toBe(`${T} 18-19 ${P}`);
+    expect(b('ertaga 2-4 932728766')).toBe(`${D1} 14-16 ${P}`);
+    expect(b('juma 10:00 932728766')).toBe(`2026-10-09 10-11 ${P}`);           // 8-oktabr — payshanba
+    expect(b('dushanba 10:00 932728766')).toBe(`2026-10-12 10-11 ${P}`);
+    expect(b('ertaga 13:00 932728766 iltimos bron qiling')).toBe(`${D1} 13-14 ${P}`);
+    expect(b('ertaga 932728766 Akmal aka 13:00')).toBe(`${D1} 13-14 ${P} Akmal`);
+    expect(b('13:00 932728766 Дурдона')).toBe(`${T} 13-14 ${P} Дурдона`);
+  });
   it('bekor, jadval va xatolar', () => {
     expect(p('bekor 14:00')).toEqual({ kind: 'cancel', date: T, h0: 14, phone: null });
+    expect(p('bekor 932728766')).toEqual({ kind: 'cancel', date: T, h0: null, phone: '+998932728766', anyDay: true });
     expect(p('отмена завтра 901234567')).toMatchObject({ kind: 'cancel', date: '2026-10-09', phone: '+998901234567' });
     expect(p('ertaga')).toEqual({ kind: 'list', date: '2026-10-09' });
     expect(p('12.10')).toEqual({ kind: 'list', date: '2026-10-12' });
@@ -122,6 +145,13 @@ describe('Instruktor boti — bron', () => {
     expect(active()).toHaveLength(1);
   });
 
+  it('«bekor <raqam>» — kun aytilmasa ham o‘sha raqamni topib bekor qiladi', async () => {
+    await say('ertaga 932728766 15:00');
+    expect(active()).toHaveLength(1);
+    expect(await say('bekor 932728766')).toMatch(/Bekor qilindi: Ertaga, 15:00–16:00/);
+    expect(active()).toHaveLength(0);
+  });
+
   it('to‘langan bronni bekor qilmaydi', async () => {
     await say('ertaga 901234567 10:00');
     h.db.payments.push({ id: 'p1', booking_id: active()[0].id, status: 'paid', amount: 250000 });
@@ -144,6 +174,6 @@ describe('Instruktor boti — bron', () => {
   });
 
   it('noma’lum xabarga yordam matni', async () => {
-    expect(await say('salom')).toMatch(/Bron qilish uchun shunday yozing/);
+    expect(await say('salom')).toMatch(/Mijoz raqami va vaqtni istalgan tartibda yozing/);
   });
 });
