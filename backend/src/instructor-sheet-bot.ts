@@ -25,20 +25,35 @@ import { adminUser, audit } from './admin-password-routes.js';
 
 export type BotCmd =
   | { kind: 'book'; date: string; h0: number; h1: number; phone: string; cat: 'A' | 'B' | 'C' | null; half: boolean; name: string | null }
-  | { kind: 'cancel'; date: string; h0: number | null; phone: string | null }
+  | { kind: 'cancel'; date: string; h0: number | null; phone: string | null; anyDay?: boolean }
   | { kind: 'list'; date: string }
   | { kind: 'help'; error?: string };
 
 const MAX_DAYS = 30;
 const MAX_HOURS = 5;
 const CYR: Record<string, 'A' | 'B' | 'C'> = { 'а': 'A', 'в': 'B', 'с': 'C', a: 'A', b: 'B', c: 'C' };
-const STOP = /(^|\s)(bugun|ertaga|indinga|soat|da|ga|dan|gacha|kuni|bron|qil|qiling|mijoz|сегодня|завтра|послезавтра|в|на|с|до|час|часа|бронь|клиент|min|мин|daq|minut|минут)(?=\s|$)/giu;
+/* Ism bo'la olmaydigan so'zlar (xabardagi qolgan so'zlardan mijoz ismi olinadi) */
+const STOP_WORDS = new Set(('bugun ertaga ertag ertga indinga soat soatga da ga dan gacha kuni kun bron broni bronga qil qiling qilib qilish ' +
+  'mijoz mijozga yoz yozib yozing yozdim qo\'y qoy qo\'ying qoying qo\'yib iltimos uchun kerak dars darsga darsi o\'quvchi oquvchi ' +
+  'kechki kechqurun kechqurin ertalab tushdan keyin oldin band ber bering bor yangi raqam raqami nomer tel telefon aka opa ' +
+  'dushanba seshanba chorshanba payshanba juma shanba yakshanba min daq minut minutlik daqiqa avtomat mexanika ' +
+  'сегодня завтра послезавтра бугун эртага ертага индинга в на с до час часа часов бронь клиент мин минут запиши записать ' +
+  'пожалуйста ученик урок вечер вечера утра утром понедельник вторник среда среду четверг пятница пятницу суббота субботу воскресенье').split(' '));
+
+/** Hafta kunlari → JS getDay */
+const WEEKDAYS: [RegExp, number][] = [
+  [/(^|\s)(dushanba|душанба|понедельник)(?=[\s,.!]|$)/u, 1], [/(^|\s)(seshanba|сешанба|вторник)(?=[\s,.!]|$)/u, 2],
+  [/(^|\s)(chorshanba|чоршанба|среда|среду)(?=[\s,.!]|$)/u, 3], [/(^|\s)(payshanba|пайшанба|четверг)(?=[\s,.!]|$)/u, 4],
+  [/(^|\s)(juma|жума|пятница|пятницу)(?=[\s,.!]|$)/u, 5], [/(^|\s)(shanba|шанба|суббота|субботу)(?=[\s,.!]|$)/u, 6],
+  [/(^|\s)(yakshanba|якшанба|воскресенье)(?=[\s,.!]|$)/u, 0],
+];
 
 /** Xabardan buyruq. today — Toshkent bo'yicha bugungi sana (YYYY-MM-DD). */
 export function parseBotText(raw: string, today: string): BotCmd {
   const text = String(raw || '').replace(/[’'`ʻ‘]/g, "'").replace(/\s+/g, ' ').trim();
   if (!text) return { kind: 'help' };
-  let s = ` ${text.toLowerCase()} `;
+  /* «ertaga13:00», «13da», «15gacha» — harf va raqam orasiga bo'shliq */
+  let s = ` ${text.toLowerCase()} `.replace(/(\p{L})(?=\d)/gu, '$1 ').replace(/(\d)(?=\p{L})/gu, '$1 ');
   const cut = (re: RegExp) => { s = s.replace(re, ' '); };
 
   /* --- buyruq turi --- */
@@ -47,9 +62,21 @@ export function parseBotText(raw: string, today: string): BotCmd {
 
   /* --- sana --- */
   let date = today;
-  if (/(^|\s)(indinga|послезавтра|poslezavtra)(?=[\s,.!]|$)/u.test(s)) { date = addDaysYmd(today, 2); cut(/(^|\s)(indinga|послезавтра|poslezavtra)(?=[\s,.!]|$)/u); }
-  if (/(^|\s)(ertaga|завтра|zavtra)(?=[\s,.!]|$)/u.test(s)) { date = addDaysYmd(today, 1); cut(/(^|\s)(ertaga|завтра|zavtra)(?=[\s,.!]|$)/u); }
-  if (/(^|\s)(bugun|сегодня|segodnya)(?=[\s,.!]|$)/u.test(s)) { date = today; cut(/(^|\s)(bugun|сегодня|segodnya)(?=[\s,.!]|$)/u); }
+  const s0 = s;
+  const DAY2 = /(^|\s)(indinga|индинга|послезавтра|poslezavtra)(?=[\s,.!]|$)/u;
+  const DAY1 = /(^|\s)(ertaga|ertag|ertga|эртага|ертага|завтра|zavtra)(?=[\s,.!]|$)/u;
+  const DAY0 = /(^|\s)(bugun|бугун|сегодня|segodnya)(?=[\s,.!]|$)/u;
+  if (DAY2.test(s)) { date = addDaysYmd(today, 2); cut(DAY2); }
+  if (DAY1.test(s)) { date = addDaysYmd(today, 1); cut(DAY1); }
+  if (DAY0.test(s)) { date = today; cut(DAY0); }
+  /* «payshanba», «juma» — shu haftaning (yoki keyingi) o'sha kuni */
+  for (const [re, wd] of WEEKDAYS) {
+    if (!re.test(s)) continue;
+    const cur = new Date(`${today}T12:00:00Z`).getUTCDay();
+    date = addDaysYmd(today, (wd - cur + 7) % 7);
+    cut(re);
+    break;
+  }
   /* Faqat nuqta bilan: «12.10». «3/10» — Excel'dagi «10 tadan 3-dars» belgisi, sana emas */
   const dm = /(^|\s)(\d{1,2})\.(\d{1,2})(?:\.(\d{2}|\d{4}))?(?=[\s,]|$)/.exec(s);
   if (dm) {
@@ -65,6 +92,12 @@ export function parseBotText(raw: string, today: string): BotCmd {
       s = s.replace(dm[0], ' ');
     }
   }
+
+  const dateGiven = s !== s0;
+  /* --- davomiyligi: «2 soat», «3 часа» (1–5) --- */
+  let dur: number | null = null;
+  const dd = /(^|\s)([1-5])\s*(?:soat|соат|часа|час)(?:lik|га|ga)?(?=[\s,.]|$)/u.exec(s);
+  if (dd) { dur = Number(dd[2]); s = s.replace(dd[0], ' '); }
 
   /* --- vaqt: «15-17», «15:00-17:00», «с 15 до 17», «14:00», «14.00», «soat 14», «14 da» --- */
   let h0: number | null = null, h1: number | null = null, badMinute = false;
@@ -94,10 +127,17 @@ export function parseBotText(raw: string, today: string): BotCmd {
     s = s.replace(new RegExp(`(?:\\+?9${sep}9${sep}8${sep})?${local}`), ' ');
   }
   if (h0 === null) {
-    /* oddiy son: «901234567 14» */
+    /* oddiy son: «901234567 14», «soat 3» */
     const bare = /(^|\s)(\d{1,2})(?=[\s,]|$)/.exec(s);
-    if (bare && hh(bare[2]) >= SHEET_FIRST_HOUR && hh(bare[2]) <= SHEET_LAST_HOUR) { h0 = hh(bare[2]); s = s.replace(bare[0], ' '); }
+    if (bare && hh(bare[2]) >= 1 && hh(bare[2]) <= SHEET_LAST_HOUR) { h0 = hh(bare[2]); s = s.replace(bare[0], ' '); }
   }
+  /* «soat 3 da» — kunduzgi 15:00 (avtodrom 6:00 dan ishlaydi); «kechki 6» — 18:00 */
+  const PM = /(^|\s)(kechki|kechqurun|kechqurin|кечки|кечкурун|вечер|вечера|вечером|tushdan)(?=[\s,.]|$)/u;
+  const pm = PM.test(s);
+  if (pm) cut(PM);
+  if (h0 !== null && ((h0 >= 1 && h0 <= 5) || (pm && h0 < 12))) h0 += 12;
+  if (h0 !== null && h1 !== null && ((h1 <= h0 && h1 + 12 > h0) || (pm && h1 < 12))) h1 += 12;
+  if (h0 !== null && h1 === null && dur) h1 = h0 + dur;
 
   /* --- toifa: «/C», «C toifa», katta lotin harfi --- */
   let cat: 'A' | 'B' | 'C' | null = null;
@@ -109,11 +149,12 @@ export function parseBotText(raw: string, today: string): BotCmd {
   }
   const half = parseHalf(text);
   s = s.replace(/(^|\s)30\s*(min|мин|daq|minut|минут)\S*/giu, ' ').replace(/toifa|тоифа/giu, ' ');
-  const name = nameFrom(s.replace(STOP, ' ').replace(/[\d/]+/g, ' '));
+  const name = nameFrom(s.replace(/[\d/:+().,!?-]+/g, ' ').split(/\s+/).filter((w) => w.length >= 3 && !STOP_WORDS.has(w)).join(' '));
 
   if (isCancel) {
     if (h0 === null && !phone) return { kind: 'help', error: 'Qaysi bronni bekor qilish kerak? Masalan: bekor 14:00' };
-    return { kind: 'cancel', date, h0, phone };
+    /* «bekor 932728766» (kunsiz) — bot yaqin kunlardan o'sha raqamni o'zi topadi */
+    return { kind: 'cancel', date, h0, phone, ...(h0 === null && !dateGiven ? { anyDay: true } : {}) };
   }
   if (!phone) {
     /* «bugun», «ertaga», «12.10», «jadval» — o'sha kunning ro'yxati (rasm bilan) */
@@ -143,15 +184,15 @@ function dayText(date: string, today: string) {
 }
 const hText = (h: number) => `${String(h).padStart(2, '0')}:00`;
 export const BOT_HELP = [
-  '📝 Bron qilish uchun shunday yozing:',
+  '📝 Mijoz raqami va vaqtni istalgan tartibda yozing:',
   '',
-  '<code>901234567 14:00</code> — bugun 14:00, 1 soat',
-  '<code>ertaga 901234567 15-17</code> — ertaga, 2 soat',
-  '<code>12.10 901234567 10:00</code> — 12-oktabr',
-  '<code>901234567 9:00 /C</code> — C toifa',
-  '<code>901234567 9:00 30 min</code> — 30 daqiqa',
+  '<code>ertaga 13:00 932728766</code> — ertaga, 1 soat',
+  '<code>932728766 bugun 18</code> — bugun 18:00',
+  '<code>ertaga 15-17 932728766</code> yoki <code>ertaga 2 soat 15:00 …</code> — 2 soat',
+  '<code>juma 10:00 932728766</code>, <code>12.10 10:00 …</code> — hafta kuni yoki sana',
+  '<code>… /C</code> — C toifa, <code>… 30 min</code> — yarim soat, ism ham yozsa bo‘ladi',
   '',
-  '<code>bekor 14:00</code> — o‘zingiz yozgan bronni bekor qilish',
+  '<code>bekor 13:00</code> yoki <code>bekor 932728766</code> — o‘zingiz yozgan bronni bekor qilish',
   '<code>bugun</code>, <code>ertaga</code> yoki <code>12.10</code> — o‘quvchilaringiz (rasm + raqamlar)',
 ].join('\n');
 
@@ -192,6 +233,14 @@ export async function handleInstructorSheetMessage(token: string, chatId: number
     return true;
   }
 
+  if (cmd.kind === 'cancel' && cmd.anyDay && cmd.phone) {
+    /* Kun aytilmagan: bugundan 14 kun ichida shu raqam yozilgan birinchi kun */
+    for (let i = 0; i <= 14; i++) {
+      const d = addDaysYmd(today, i);
+      const dv = i === 0 ? day : await instructorDay(d, insId);
+      if (dv.cells.some((c) => c.sc && c.sc.bi === insId && parsePhone(c.sc.t) === cmd.phone)) { cmd.date = d; day.cells = dv.cells; break; }
+    }
+  }
   if (cmd.kind === 'cancel') {
     const keys = new Set<string>();
     let reason = '';
