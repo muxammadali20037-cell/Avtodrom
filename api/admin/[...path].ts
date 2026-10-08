@@ -3,7 +3,11 @@ import app from '../../backend/src/app.js';
 export default async function handler(request: any, response: any) {
   try {
     const headers: Record<string, string> = {};
+    /* Uzunlik sarlavhasi ko'chirilmaydi: tana qayta JSON qilinadi va uzunligi
+       o'zgarishi mumkin (Telegram kirill/emoji’ni \uXXXX qilib yuboradi) —
+       eski uzunlik bilan Fastify 400 qaytarardi va bot xabarni ololmasdi. */
     for (const [key, value] of Object.entries(request.headers || {})) {
+      if (/^(content-length|transfer-encoding|connection)$/i.test(key)) continue;
       if (typeof value === 'string') headers[key] = value;
       else if (Array.isArray(value)) headers[key] = value.join(', ');
     }
