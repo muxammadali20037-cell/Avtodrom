@@ -1,5 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 import { supabaseRest } from './supabase.js';
+import { testInstructorIds } from './test-instructors.js';
 import { selectIn } from './rest-chunks.js';
 import { loadTariffs, computePrice, loadKrug } from './pricing.js';
 import { q, findUserByTelegram, toProfile } from './identity.js';
@@ -362,9 +363,11 @@ export async function registerCashierRoutes(
       await requireAdmin(req);          // har qanday kirgan xodim (kassir ham)
       /* select=* — ustunlar to'plami bazadan bazaga farq qiladi;
          aniq ro'yxat yozilsa, yo'q ustun butun so'rovni yiqitardi. */
-      const ips = await supabaseRest<any[]>('instructor_profiles', {
+      const [allIps, hidden] = await Promise.all([supabaseRest<any[]>('instructor_profiles', {
         query: '?select=*&limit=500',
-      });
+      }), testInstructorIds()]);
+      /* sinov akkauntlari kassaga ko'rinmaydi */
+      const ips = allIps.filter((x: any) => !hidden.has(String(x.id)));
       const uids = [...new Set(ips.map((i: any) => i.user_id).filter(Boolean).map(String))];
       const users = uids.length
         ? await supabaseRest<any[]>('users', {
@@ -429,7 +432,7 @@ export async function registerCashierRoutes(
     try {
       await requireAdmin(req);
       const { start, end, day } = dayRange(String(req.query?.date || ''));
-      const [ips, setRows, rows] = await Promise.all([
+      const [ips, setRows, rows, hidden] = await Promise.all([
         supabaseRest<any[]>('instructor_profiles', { query: '?select=*&limit=500' }),
         supabaseRest<any[]>('admin_settings', { query: '?key=in.(work_start,work_end,slot_step_min)&select=key,value' }).catch(() => []),
         supabaseRest<any[]>('bookings', {
@@ -437,6 +440,7 @@ export async function registerCashierRoutes(
                  '&status=in.(pending,confirmed,in_progress,completed,no_show)' +
                  '&select=*&order=start_at.asc&limit=1000',
         }),
+        testInstructorIds(),
       ]);
       const uids = [...new Set(ips.map((i) => i.user_id).filter(Boolean).map(String))];
       const users = await selectIn<any>('users', 'id', uids, 'id,full_name,phone,is_active,is_blocked');
@@ -451,7 +455,8 @@ export async function registerCashierRoutes(
             phone: u?.phone || null,
             categories: Array.isArray(x.categories) && x.categories.length ? x.categories : ['B'],
             vehicle: [x.vehicle_model, x.vehicle_plate].filter(Boolean).join(' · ') || null,
-            active: Boolean(x.is_verified && x.is_available && u?.is_active !== false && !u?.is_blocked),
+            /* sinov akkaunti — faqat shu kuni broni bo'lsa ko'rinadi */
+            active: Boolean(x.is_verified && x.is_available && u?.is_active !== false && !u?.is_blocked) && !hidden.has(String(x.id)),
           };
         })
         .filter((i) => i.active || withBookings.has(i.id))
@@ -991,9 +996,10 @@ export async function registerCashierRoutes(
       /* Kategoriya berilsa — faqat o'sha kategoriyani o'rgatadiganlar. */
       const cat = String(req.query?.category || '').trim().toUpperCase();
       const catFilter = /^[ABC]$/.test(cat) ? `&categories=cs.{${cat}}` : '';
-      const ips = await supabaseRest<any[]>('instructor_profiles', {
+      const [allIps, hidden] = await Promise.all([supabaseRest<any[]>('instructor_profiles', {
         query: `?is_verified=eq.true&is_available=eq.true&select=id,user_id,rating,categories${catFilter}&limit=200`,
-      });
+      }), testInstructorIds()]);
+      const ips = allIps.filter((x) => !hidden.has(String(x.id)));
       if (!ips.length) return { ok: true, free: [], busy: [] };
 
       const uids = [...new Set(ips.map((i) => i.user_id).filter(Boolean).map(String))];

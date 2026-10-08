@@ -1,5 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 import { supabaseRest } from './supabase.js';
+import { testInstructorIds } from './test-instructors.js';
 import { selectIn } from './rest-chunks.js';
 import { loadBlocks, type Block } from './instructor-blocks.js';
 import { tashkentYmdOf, addDaysYmd } from './instructor-schedule.js';
@@ -47,7 +48,8 @@ const samePhone = (a: unknown, b: unknown) => {
   return d(a).length === 9 && d(a) === d(b);
 };
 
-type Ins = { id: string; name: string; phone: string | null; categories: string[]; group: string; active: boolean };
+/** shown — Excel bron jadvalida ko'rinadimi (sinov akkaunti faqat o'sha kuni yozuvi bo'lsa) */
+type Ins = { id: string; name: string; phone: string | null; categories: string[]; group: string; active: boolean; shown: boolean };
 type State = {
   date: string; dayS: number; sheet: Sheet; instructors: Ins[]; insMap: Map<string, Ins>;
   day: any[]; byId: Map<string, any>; users: Map<string, any>; paid: Set<string>;
@@ -57,12 +59,13 @@ type State = {
 /** Bir kunning hamma ma'lumoti: jadval, instruktorlar, bronlar, to'lovlar, yopiq/dam vaqtlar. */
 async function loadState(date: string): Promise<State> {
   const dayS = hourStartMs(date, 0), dayE = dayS + 864e5;
-  const [sheet, ips, day] = await Promise.all([
+  const [sheet, ips, day, hidden] = await Promise.all([
     loadSheet(date),
     supabaseRest<any[]>('instructor_profiles', { query: '?is_verified=eq.true&select=*&limit=500' }),
     supabaseRest<any[]>('bookings', {
       query: `?start_at=lt.${q(iso(dayE))}&end_at=gt.${q(iso(dayS))}&status=in.(${SHOWN.join(',')})&select=*&order=start_at.asc&limit=1000`,
     }),
+    testInstructorIds(),
   ]);
   const refs = new Map<string, string[]>();
   for (const [k, c] of Object.entries(sheet.cells)) {
@@ -85,12 +88,18 @@ async function loadState(date: string): Promise<State> {
   const instructors: Ins[] = ips.map((x) => {
     const u: any = um.get(String(x.user_id)) || null;
     const cats = (Array.isArray(x.categories) && x.categories.length ? x.categories : ['B']).map((c: any) => String(c).toUpperCase()).sort();
+    const id = String(x.id), test = hidden.has(id);
+    const active = Boolean(x.is_available && u?.is_active !== false && !u?.is_blocked);
     return {
-      id: String(x.id), name: u?.full_name || x.full_name || 'Instruktor', phone: u?.phone || null,
+      id, name: u?.full_name || x.full_name || 'Instruktor', phone: u?.phone || null,
       categories: cats, group: cats.join(', '),
-      active: Boolean(x.is_available && u?.is_active !== false && !u?.is_blocked),
+      active: active && !test,
+      shown: (active && !test) || usedIns.has(id),
+      /* sinov akkaunti jadvalda ko'rinmasa ham o'z botidan bron yoza oladi */
+      keep: test && active,
     };
-  }).filter((i) => i.active || usedIns.has(i.id))
+  }).filter((i) => i.shown || i.keep)
+    .map(({ keep: _keep, ...i }) => i)
     .sort((a, b) => a.group.localeCompare(b.group) || a.name.localeCompare(b.name, 'uz'));
   const insMap = new Map(instructors.map((i) => [i.id, i]));
   const blocks = await loadBlocks(instructors.map((i) => i.id), { from: new Date(dayS), to: new Date(dayE) }, { sheet: false });
@@ -155,7 +164,8 @@ function cellInfo(st: State, ins: string, h: number) {
 function view(st: State, me: StaffIdentity) {
   const today = tashkentYmdOf(Date.now());
   const cells: Record<string, any> = {};
-  for (const i of st.instructors) {
+  const shown = st.instructors.filter((i) => i.shown);
+  for (const i of shown) {
     for (const h of SHEET_HOURS) {
       const c = cellInfo(st, i.id, h);
       if (c.out) cells[c.key] = c.out;
@@ -164,7 +174,7 @@ function view(st: State, me: StaffIdentity) {
   return {
     date: st.date, today, now: new Date().toISOString(), hours: SHEET_HOURS,
     can_edit: (me.role === 'admin' || me.role === 'operator') && st.date >= today,
-    instructors: st.instructors.map(({ id, name, phone, categories, group, active }) => ({ id, name, phone, categories, group, active })),
+    instructors: shown.map(({ id, name, phone, categories, group, active }) => ({ id, name, phone, categories, group, active })),
     cells, updated_at: st.sheet.updated_at || null, updated_by: st.sheet.updated_by || null,
   };
 }

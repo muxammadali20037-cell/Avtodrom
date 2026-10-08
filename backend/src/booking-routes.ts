@@ -6,6 +6,7 @@
 import crypto from 'node:crypto';
 import type { FastifyInstance } from 'fastify';
 import { supabaseRest } from './supabase.js';
+import { testInstructorIds } from './test-instructors.js';
 import { loadTariffs, computePrice } from './pricing.js';
 import { loadBookingDetails, bookingMessage, inAppMessage, fmtWhen, fmtMoney, lateRuleLine, type BookingEvent } from './notify.js';
 import {
@@ -328,7 +329,7 @@ export async function registerBookingRoutes(
       const cat = String((request.query as any)?.category || '').trim().toUpperCase();
       const catFilter = /^[ABC]$/.test(cat) ? `&categories=cs.{${cat}}` : '';
       await authenticate(request);
-      const rows = await supabaseRest<any[]>('instructor_profiles', {
+      const [rows, hidden] = await Promise.all([supabaseRest<any[]>('instructor_profiles', {
         query:
           '?is_verified=eq.true&is_available=eq.true' + catFilter +
           /* `*` — eski photo_url ustuni bo'lmagan bazada ham so'rov yiqilmasin.
@@ -336,8 +337,9 @@ export async function registerBookingRoutes(
           '&select=*,' +
           'user:user_id(id,full_name,phone,telegram_id,is_active,is_blocked)' +
           '&order=created_at.desc',
-      });
-      const instructors = rows.map(toInstructorCard).filter((x) => x.active);
+      }), testInstructorIds()]);
+      /* Sinov akkauntlari mijozga ko'rinmaydi */
+      const instructors = rows.filter((r) => !hidden.has(String(r.id))).map(toInstructorCard).filter((x) => x.active);
       return { ok: true, instructors };
     } catch (e) {
       return reply.code(400).send({ ok: false, error: e instanceof Error ? e.message : 'Instruktorlar yuklanmadi' });
@@ -482,7 +484,7 @@ export async function registerBookingRoutes(
       const ip = await supabaseRest<any[]>('instructor_profiles', {
         query: `?id=eq.${q(body.instructor_id)}&is_verified=eq.true&is_available=eq.true&select=id&limit=1`,
       });
-      if (!ip[0]) {
+      if (!ip[0] || (await testInstructorIds()).has(String(ip[0].id))) {
         return reply.code(400).send({ ok: false, error: 'Instruktor tasdiqlanmagan yoki faol emas' });
       }
 
@@ -587,7 +589,7 @@ export async function registerBookingRoutes(
       const ip = (await supabaseRest<any[]>('instructor_profiles', {
         query: `?id=eq.${q(String(body.instructor_id))}&is_verified=eq.true&is_available=eq.true&select=id,categories&limit=1`,
       }))[0];
-      if (!ip) return reply.code(400).send({ ok: false, error: 'Instruktor tasdiqlanmagan yoki faol emas' });
+      if (!ip || (await testInstructorIds()).has(String(ip.id))) return reply.code(400).send({ ok: false, error: 'Instruktor tasdiqlanmagan yoki faol emas' });
       const cats: string[] = Array.isArray(ip.categories) && ip.categories.length ? ip.categories.map((x: any) => String(x).toUpperCase()) : ['B'];
       if (!cats.includes(cat)) return reply.code(409).send({ ok: false, error: `Bu instruktor ${cat} toifani o‘rgatmaydi` });
 
