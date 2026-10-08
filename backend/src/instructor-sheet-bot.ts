@@ -5,7 +5,7 @@ import { tashkentYmdOf, addDaysYmd } from './instructor-schedule.js';
 import { cellKey, parsePhone, parseHalf, nameFrom, prettyPhone, SHEET_FIRST_HOUR, SHEET_LAST_HOUR } from './booking-sheet.js';
 import { applySheetChanges, instructorDay, SHEET_LOCK_MSG } from './booking-sheet-routes.js';
 import { adminUser, audit } from './admin-password-routes.js';
-import { parseMenu, MENU_KEYBOARD } from './instructor-bot-menu.js';
+import { parseMenu, MENU_KEYBOARD, latinWords } from './instructor-bot-menu.js';
 
 /**
  * INSTRUKTOR BOTI ORQALI BRON
@@ -55,7 +55,7 @@ export function parseBotText(raw: string, today: string): BotCmd {
   const text = String(raw || '').replace(/[’'`ʻ‘]/g, "'").replace(/\s+/g, ' ').trim();
   if (!text) return { kind: 'help' };
   /* «ertaga13:00», «13da», «15gacha» — harf va raqam orasiga bo'shliq */
-  let s = ` ${text.toLowerCase()} `.replace(/(\p{L})(?=\d)/gu, '$1 ').replace(/(\d)(?=\p{L})/gu, '$1 ');
+  let s = latinWords(` ${text.toLowerCase()} `.replace(/(\p{L})(?=\d)/gu, '$1 ').replace(/(\d)(?=\p{L})/gu, '$1 '));
   const cut = (re: RegExp) => { s = s.replace(re, ' '); };
 
   /* --- buyruq turi --- */
@@ -100,6 +100,10 @@ export function parseBotText(raw: string, today: string): BotCmd {
   let dur: number | null = null;
   const dd = /(^|\s)([1-5])\s*(?:soat|соат|часа|час)(?:lik|га|ga)?(?=[\s,.]|$)/u.exec(s);
   if (dd) { dur = Number(dd[2]); s = s.replace(dd[0], ' '); }
+  /* «yarim soat» / «ярим соат» — 30 daqiqa */
+  const HALF_WORD = /(^|\s)yarim\s*soat(?:lik)?(?=[\s,.]|$)/u;
+  const halfWord = HALF_WORD.test(s);
+  if (halfWord) cut(HALF_WORD);
 
   /* --- vaqt: «15-17», «15:00-17:00», «с 15 до 17», «14:00», «14.00», «soat 14», «14 da» --- */
   let h0: number | null = null, h1: number | null = null, badMinute = false;
@@ -149,7 +153,7 @@ export function parseBotText(raw: string, today: string): BotCmd {
     const up = /(^|\s)([ABC])(?=[\s,]|$)/.exec(` ${text} `);
     if (up) { cat = up[2] as 'A' | 'B' | 'C'; s = s.replace(new RegExp(`(^|\\s)${up[2].toLowerCase()}(?=[\\s,]|$)`), ' '); }
   }
-  const half = parseHalf(text);
+  const half = parseHalf(text) || halfWord;
   s = s.replace(/(^|\s)30\s*(min|мин|daq|minut|минут)\S*/giu, ' ').replace(/toifa|тоифа/giu, ' ');
   const name = nameFrom(s.replace(/[\d/:+().,!?-]+/g, ' ').split(/\s+/).filter((w) => w.length >= 3 && !STOP_WORDS.has(w)).join(' '));
 
@@ -160,7 +164,7 @@ export function parseBotText(raw: string, today: string): BotCmd {
   }
   if (!phone) {
     /* «bugun», «ertaga», «12.10», «jadval» — o'sha kunning ro'yxati (rasm bilan) */
-    const rest = s.replace(/(^|\s)\/?(list|ro'yxat|royxat|jadval|bronlar|bronlarim|o'quvchilar|oquvchilar|список)(?=\s|$)/giu, ' ').trim();
+    const rest = s.replace(/(^|\s)\/?(list|ro'yxat|royxat|jadval|jadvalim|bronlar|bronlarim|o'quvchilar|oquvchilar|список)(?=\s|$)/giu, ' ').trim();
     if (h0 === null && !rest) return { kind: 'list', date };
     return { kind: 'help', error: h0 !== null ? 'Mijozning telefon raqamini yozing (9 ta raqam).' : undefined };
   }
@@ -197,6 +201,8 @@ export const BOT_HELP = [
   '<code>bekor 13:00</code> yoki <code>bekor 932728766</code> — o‘zingiz yozgan bronni bekor qilish',
   '<code>bugun</code>, <code>ertaga</code> yoki <code>12.10</code> — o‘quvchilaringiz (rasm + raqamlar)',
   '',
+  'Kirillda ham bo‘ladi: <code>эртага 14:00 901234567</code>, <code>бекор 14:00</code>',
+  '',
   '👇 Pastdagi menyu: bugungi/ertangi jadval va bronlaringiz — raqamni bosib qo‘ng‘iroq qilasiz.',
 ].join('\n');
 
@@ -222,7 +228,11 @@ export async function handleInstructorSheetMessage(token: string, chatId: number
   const user = await findUserByTelegram(telegramId);
   const prof = user ? await instructorProfileForUser(String(user.id), true) : null;
   if (!prof) {
-    await send(token, chatId, '👋 Bron yozish faqat tasdiqlangan instruktorlar uchun. /start ni bosing.');
+    /* Profil bor, lekin admin o'chirib qo'ygan / bloklangan — shuni aytamiz */
+    const any = user && String(user.role) === 'instructor' ? await instructorProfileForUser(String(user.id), false).catch(() => null) : null;
+    await send(token, chatId, any || user?.is_blocked || user?.is_active === false
+      ? '⚠️ Profilingiz hozir faol emas (admin o‘chirib qo‘ygan). Admin bilan bog‘laning.'
+      : '👋 Bron yozish faqat tasdiqlangan instruktorlar uchun. /start ni bosing.');
     return true;
   }
   const insId = String(prof.id);
