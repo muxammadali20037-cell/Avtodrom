@@ -147,6 +147,10 @@ export async function makeHarness(): Promise<Harness> {
     /* Storage'ga rasm (ikkilik ma'lumot) ham yuboriladi — uni JSON deb o'qimaymiz */
     let body: any = null;
     if (typeof o.body === 'string') { try { body = JSON.parse(o.body); } catch { body = null; } }
+    /* Rasm (sendPhoto) — multipart: chat_id va caption ni yozib qo'yamiz */
+    if (typeof FormData !== 'undefined' && o.body instanceof FormData) {
+      body = { chat_id: Number(o.body.get('chat_id')), text: String(o.body.get('caption') || ''), parse_mode: o.body.get('parse_mode') || undefined, photo: !!o.body.get('photo') };
+    }
     const H = new Map<string, string>();
 
     if (url.includes('api.telegram.org')) {

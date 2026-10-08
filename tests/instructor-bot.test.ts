@@ -64,6 +64,8 @@ describe('Instruktor boti — xabarni o‘qish', () => {
     expect(p('bekor 14:00')).toEqual({ kind: 'cancel', date: T, h0: 14, phone: null });
     expect(p('отмена завтра 901234567')).toMatchObject({ kind: 'cancel', date: '2026-10-09', phone: '+998901234567' });
     expect(p('ertaga')).toEqual({ kind: 'list', date: '2026-10-09' });
+    expect(p('12.10')).toEqual({ kind: 'list', date: '2026-10-12' });
+    expect(p('jadval')).toEqual({ kind: 'list', date: T });
     expect(p('bugun')).toEqual({ kind: 'list', date: T });
     expect(p('salom')).toEqual({ kind: 'help', error: undefined });
     expect(p('901234567')).toMatchObject({ kind: 'help', error: expect.stringMatching(/Vaqtni/) });
@@ -85,9 +87,10 @@ describe('Instruktor boti — bron', () => {
     const g = await h.call('GET', `/api/admin/booking-sheet?date=${ymd(1)}`, { cookie: admin });
     expect(g.body.cells[cellKey('ip-1', 15)]).toMatchObject({ k: 'sheet', t: '901234567', by: 'Bot · Aziz Karimov' });
     expect(g.body.cells[cellKey('ip-1', 16)].bk.code).toBe(b.pickup_code);
-    /* jadval */
+    /* jadval — rasm va ostida bosiladigan raqam */
     const list = await say('ertaga');
-    expect(list).toContain('15:00 — 901234567');
+    expect(list).toContain('15:00–17:00</b> +998901234567');
+    expect(h.telegram[h.telegram.length - 1].method).toBe('sendPhoto');
   });
 
   it('band soatga yozmaydi; bor mijoz qayta yozilsa aytadi', async () => {
