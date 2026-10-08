@@ -57,9 +57,13 @@ export async function instructorChats(insIds: string[]): Promise<Map<string, num
 }
 
 /** Kunlik ustundan: rasm qatorlari va bosiladigan raqamlar ro'yxati */
+/** Bitta bron (instruktorning «Bugungi bronlarim» ro'yxati uchun) */
+export type DayBooking = { start: number; end: number; phone: string; name: string; code: string; paid: boolean; src: string; status: string; note: string };
+
 export function dayModel(day: InsDay, now = Date.now()) {
   const rows: DayRow[] = [];
   const lines: string[] = [];
+  const bookings: DayBooking[] = [];
   let count = 0;
   let prevId = '';
   for (const c of day.cells) {
@@ -80,6 +84,10 @@ export function dayModel(day: InsDay, now = Date.now()) {
       if (!cont) {
         count++;
         const end = Date.parse(b.end) || c.end;
+        bookings.push({
+          start: Date.parse(b.start) || c.start, end, phone: tel(phone), name, code: b.code || '', paid: !!b.paid,
+          src: app ? String(b.src || '') : 'sheet', status: String(b.status || ''), note: phone ? '' : String(o.t || ''),
+        });
         lines.push(`<b>${hm(Date.parse(b.start) || c.start)}–${hm(end)}</b> ${tel(phone) || esc(o.t || '')}${name ? ` · ${esc(name)}` : ''}${b.code ? ` · ${esc(b.code)}` : ''}${b.paid ? ' · ✅' : ''}${app && b.src === 'app' ? ' · Mini App' : ''}`);
       }
       prevId = b.id || '';
@@ -97,7 +105,45 @@ export function dayModel(day: InsDay, now = Date.now()) {
     if (o.k === 'own') { rows.push({ h: c.h, main: 'yopiq', sub: '', tag: '', kind: 'own', past }); continue; }
     rows.push({ h: c.h, main: '', sub: '', tag: '', kind: 'free', past });
   }
-  return { rows, lines, count };
+  return { rows, lines, count, bookings };
+}
+
+const SRC: Record<string, string> = { app: 'Mini App', walk_in: 'kassa', admin: 'admin', sheet: '' };
+
+/**
+ * «Bugungi bronlarim» — faqat bronlar, vaqt tartibida: soat, raqam
+ * (bosilsa qo'ng'iroq), ism, kod. O'tganlari ✔️, hozirgisi ▶️ bilan.
+ */
+export function bookingsText(date: string, day: InsDay, now = Date.now()): string {
+  const { bookings } = dayModel(day, now);
+  const today = tashkentYmdOf(now);
+  const head = `📋 <b>Bronlarim</b> — ${esc(dayTitle(date, today))}`;
+  if (!bookings.length) return `${head}\n\nHozircha bron yo‘q.\n\n📝 Bron yozish: <code>${date === today ? 'bugun' : 'ertaga'} 14:00 901234567</code>`;
+  const lines = bookings.map((b) => {
+    const mark = b.end <= now ? '✔️' : b.start <= now ? '▶️' : '🕐';
+    const extra = [b.name ? esc(b.name) : '', b.code ? esc(b.code) : '', b.paid ? '✅ to‘langan' : '', SRC[b.src] ? esc(SRC[b.src]) : ''].filter(Boolean).join(' · ');
+    return `${mark} <b>${hm(b.start)}–${hm(b.end)}</b>  ${b.phone || esc(b.note || 'raqamsiz')}${extra ? `\n      ${extra}` : ''}`;
+  });
+  const left = bookings.filter((b) => b.end > now).length;
+  return [
+    `${head} · ${bookings.length} ta${left < bookings.length ? ` (${left} tasi qoldi)` : ''}`,
+    '',
+    ...lines,
+    '',
+    '<i>Raqamni bosing — qo‘ng‘iroq qilasiz.</i>',
+  ].join('\n').slice(0, 4000);
+}
+
+export async function sendInstructorBookings(chatId: number, date: string, day: InsDay, extra: Record<string, unknown> = {}): Promise<'sent' | 'fail'> {
+  const token = TOKEN();
+  if (!token || !day.ins) return 'fail';
+  try {
+    await telegramApi(token, 'sendMessage', { chat_id: chatId, text: bookingsText(date, day), parse_mode: 'HTML', ...extra });
+    return 'sent';
+  } catch (e) {
+    console.error('instructor bookings send failed:', e instanceof Error ? e.message : e);
+    return 'fail';
+  }
 }
 
 /**

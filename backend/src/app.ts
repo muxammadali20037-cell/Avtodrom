@@ -8,6 +8,7 @@ import { registerInstructorRoutes } from './instructor-routes.js';
 import { registerInstructorRegistrationRoutes } from './instructor-registration-routes.js';
 import { handleInstructorStart } from './instructor-start.js';
 import { handleInstructorSheetMessage, logBotEvent, readBotLog } from './instructor-sheet-bot.js';
+import { webhookSecret, resetWebhook, healWebhook } from './webhook-secret.js';
 import { registerAdminPasswordRoutes, guard as requireAdmin, guardAdmin, guardDesk, currentStaff, adminUser, audit, peekStaff, operatorMayCall } from './admin-password-routes.js';
 import { registerContentRoutes } from './content-routes.js';
 import { registerCourseRoutes } from './courses-routes.js';
@@ -64,6 +65,9 @@ const CUSTOMER_MINI_APP_URL = process.env.CUSTOMER_MINI_APP_URL || process.env.M
 const INSTRUCTOR_MINI_APP_URL = process.env.INSTRUCTOR_MINI_APP_URL || 'https://avtodrom.vercel.app/instructor';
 const ADMIN_MINI_APP_URL = process.env.ADMIN_MINI_APP_URL || 'https://avtodrom.vercel.app/admin';
 const TELEGRAM_WEBHOOK_SECRET = process.env.TELEGRAM_WEBHOOK_SECRET || '';
+/** Har bir bot uchun webhook siri (env bo'lmasa — tokendan hosil qilinadi) */
+const secretFor = (token: string) => webhookSecret(TELEGRAM_WEBHOOK_SECRET, token);
+const INSTRUCTOR_WEBHOOK_URL = 'https://avtodrom.vercel.app/api/telegram/instructor/webhook';
 
 /* CORS: FRONTEND_ORIGIN sozlanmagan bo'lsa cross-origin so'rovlarga
    cookie yubormaymiz. Ilgari `origin: true` + `credentials: true`
@@ -149,11 +153,12 @@ async function handleTelegramWebhook(request: any, reply: any, token: string, mi
      Ilgari tekshiruv o'tkazib yuborilardi va begona odam soxta
      callback yuborib bron holatini o'zgartira olardi. */
   const secret = String(request.headers['x-telegram-bot-api-secret-token'] || '');
-  if (!TELEGRAM_WEBHOOK_SECRET) {
-    request.log.error('TELEGRAM_WEBHOOK_SECRET sozlanmagan — webhook yopiq');
+  const expected = secretFor(token);
+  if (!expected) {
+    request.log.error(`${role} bot tokeni yo‘q — webhook yopiq`);
     return reply.code(503).send({ ok: false, error: 'Webhook not configured' });
   }
-  if (secret !== TELEGRAM_WEBHOOK_SECRET) return reply.code(401).send({ ok: false, error: 'Invalid webhook secret' });
+  if (secret !== expected) return reply.code(401).send({ ok: false, error: 'Invalid webhook secret' });
   if (!token || !miniAppUrl) return reply.code(503).send({ ok: false, error: `${role} bot is not configured` });
   const message = (request.body as any)?.message;
   const text = typeof message?.text === 'string' ? message.text.trim() : '';
@@ -176,32 +181,25 @@ const webhookView = (info: any) => ({
 });
 
 /**
- * Webhook holati. `?kick=1` — Telegram navbatda turgan xabarlarni darhol
- * qayta yuborishi uchun webhook XUDDI SHU manzil va sir bilan qayta
- * o'rnatiladi (xatodan keyin Telegram ba'zan soatlab kutib qoladi).
- * Faqat webhook allaqachon shu manzilda va navbatda xabar bo'lsa ishlaydi —
- * boshqa joyga ulangan webhook'ga tegilmaydi, navbat o'chirilmaydi.
+ * Webhook holati. `?kick=1` — webhook XUDDI SHU manzilga TO'G'RI sir bilan
+ * qayta o'rnatiladi va Telegram navbatda turgan xabarlarni darhol qayta
+ * yuboradi (xatodan keyin Telegram ba'zan soatlab kutib qoladi).
+ * Boshqa joyga ulangan webhook'ga tegilmaydi, navbat o'chirilmaydi.
+ * `secret` — sir qayerdan: «env» (TELEGRAM_WEBHOOK_SECRET) yoki «tokendan».
  */
 async function webhookDiagnostic(token: string, role: string, expectedUrl: string, kick = false) {
   if (!token) return { configured: false, role, expected_url: expectedUrl, reason: 'bot token missing' };
   try {
-    let info = await telegramApi<any>(token, 'getWebhookInfo', {});
+    let info: any;
     let kicked: string | null = null;
     if (kick) {
-      if (info.url !== expectedUrl) kicked = 'webhook boshqa manzilda — tegilmadi';
-      else if (!TELEGRAM_WEBHOOK_SECRET) kicked = 'TELEGRAM_WEBHOOK_SECRET yo‘q — tegilmadi';
-      else if (!(info.pending_update_count > 0)) kicked = 'navbat bo‘sh — kerak emas';
-      else {
-        await telegramApi(token, 'setWebhook', {
-          url: expectedUrl, secret_token: TELEGRAM_WEBHOOK_SECRET, drop_pending_updates: false,
-          ...(info.max_connections ? { max_connections: info.max_connections } : {}),
-          ...(Array.isArray(info.allowed_updates) ? { allowed_updates: info.allowed_updates } : {}),
-        });
-        kicked = 'qayta o‘rnatildi — navbatdagi xabarlar qayta yuboriladi';
-        info = await telegramApi<any>(token, 'getWebhookInfo', {});
-      }
-    }
-    const out: any = { configured: true, role, expected_url: expectedUrl, telegram: webhookView(info) };
+      const r = await resetWebhook(token, expectedUrl, secretFor(token));
+      info = r.info; kicked = r.note;
+    } else info = await telegramApi<any>(token, 'getWebhookInfo', {});
+    const out: any = {
+      configured: true, role, expected_url: expectedUrl, telegram: webhookView(info),
+      secret: TELEGRAM_WEBHOOK_SECRET ? 'env' : 'tokendan',
+    };
     if (kicked) out.kick = kicked;
     if (role === 'instructor') {
       /* bot jurnalidan faqat vaqt va holat (matn/raqamlar ochiq ko'rsatilmaydi) */
@@ -213,7 +211,7 @@ async function webhookDiagnostic(token: string, role: string, expectedUrl: strin
 }
 const wantKick = (req: any) => /^(1|true|ha)$/i.test(String(req?.query?.kick || ''));
 
-app.get('/api/telegram/instructor/webhook', async (req) => webhookDiagnostic(INSTRUCTOR_BOT_TOKEN, 'instructor', 'https://avtodrom.vercel.app/api/telegram/instructor/webhook', wantKick(req)));
+app.get('/api/telegram/instructor/webhook', async (req) => webhookDiagnostic(INSTRUCTOR_BOT_TOKEN, 'instructor', INSTRUCTOR_WEBHOOK_URL, wantKick(req)));
 app.get('/api/telegram/customer/webhook', async (req) => webhookDiagnostic(CUSTOMER_BOT_TOKEN, 'customer', 'https://avtodrom.vercel.app/api/telegram/customer/webhook', wantKick(req)));
 app.get('/api/telegram/admin/webhook', async (req) => webhookDiagnostic(ADMIN_BOT_TOKEN, 'admin', 'https://avtodrom.vercel.app/api/telegram/admin/webhook', wantKick(req)));
 
@@ -235,15 +233,22 @@ app.post('/api/telegram/instructor/webhook', async (request, reply) => {
      Ilgari tekshiruv o'tkazib yuborilardi va begona odam soxta
      callback yuborib bron holatini o'zgartira olardi. */
   const secret = String(request.headers['x-telegram-bot-api-secret-token'] || '');
-  if (!TELEGRAM_WEBHOOK_SECRET) {
-    request.log.error('TELEGRAM_WEBHOOK_SECRET sozlanmagan — webhook yopiq');
-    return reply.code(503).send({ ok: false, error: 'Webhook not configured' });
+  const expected = secretFor(INSTRUCTOR_BOT_TOKEN);
+  if (!INSTRUCTOR_BOT_TOKEN || !expected) {
+    request.log.error('INSTRUCTOR_BOT_TOKEN yo‘q — webhook yopiq');
+    return reply.code(503).send({ ok: false, error: 'Instructor bot is not configured' });
   }
-  if (secret !== TELEGRAM_WEBHOOK_SECRET) return reply.code(401).send({ ok: false, error: 'Invalid webhook secret' });
+  if (secret !== expected) {
+    /* So'rov rad etiladi. Lekin webhook sirsiz o'rnatib yuborilgan bo'lsa
+       (masalan, Supabase'dagi eski «setup» orqali) — o'zi tuzatadi:
+       Telegram keyingi safar to'g'ri sir bilan yuboradi. */
+    const healed = await healWebhook(INSTRUCTOR_BOT_TOKEN, INSTRUCTOR_WEBHOOK_URL, expected);
+    if (healed) request.log.warn(`instructor webhook: noto‘g‘ri sir — ${healed}`);
+    return reply.code(401).send({ ok: false, error: 'Invalid webhook secret' });
+  }
   const message = (request.body as any)?.message;
   const text = typeof message?.text === 'string' ? message.text.trim() : '';
   const chatId = Number(message?.chat?.id);
-  if (!INSTRUCTOR_BOT_TOKEN) return reply.code(503).send({ ok: false, error: 'Instructor bot is not configured' });
   if (Number.isSafeInteger(chatId) && chatId > 0 && /^\/start(?:@\w+)?(?:\s.*)?$/i.test(text)) await handleInstructorStart(INSTRUCTOR_BOT_TOKEN, chatId, { id: chatId, first_name: message?.from?.first_name, last_name: message?.from?.last_name, username: message?.from?.username }, INSTRUCTOR_MINI_APP_URL);
   /* Instruktor botga «901234567 14:00» yozsa — shu instruktorga bron (Excel bron ustuniga).
      Faqat shaxsiy chat; Telegram qayta yubormasligi uchun xato bo'lsa ham 200. */

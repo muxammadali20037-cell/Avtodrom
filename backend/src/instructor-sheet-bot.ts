@@ -5,6 +5,7 @@ import { tashkentYmdOf, addDaysYmd } from './instructor-schedule.js';
 import { cellKey, parsePhone, parseHalf, nameFrom, prettyPhone, SHEET_FIRST_HOUR, SHEET_LAST_HOUR } from './booking-sheet.js';
 import { applySheetChanges, instructorDay, SHEET_LOCK_MSG } from './booking-sheet-routes.js';
 import { adminUser, audit } from './admin-password-routes.js';
+import { parseMenu, MENU_KEYBOARD } from './instructor-bot-menu.js';
 
 /**
  * INSTRUKTOR BOTI ORQALI BRON
@@ -195,11 +196,13 @@ export const BOT_HELP = [
   '',
   '<code>bekor 13:00</code> yoki <code>bekor 932728766</code> — o‘zingiz yozgan bronni bekor qilish',
   '<code>bugun</code>, <code>ertaga</code> yoki <code>12.10</code> — o‘quvchilaringiz (rasm + raqamlar)',
+  '',
+  '👇 Pastdagi menyu: bugungi/ertangi jadval va bronlaringiz — raqamni bosib qo‘ng‘iroq qilasiz.',
 ].join('\n');
 
 /** Javob yuboradi; xato bo'lsa — matni (aks holda null). */
-const sendRaw = (token: string, chatId: number, text: string): Promise<string | null> =>
-  telegramApi(token, 'sendMessage', { chat_id: chatId, text, parse_mode: 'HTML', disable_web_page_preview: true }).then(() => null, (e) => {
+const sendRaw = (token: string, chatId: number, text: string, extra: Record<string, unknown> = {}): Promise<string | null> =>
+  telegramApi(token, 'sendMessage', { chat_id: chatId, text, parse_mode: 'HTML', disable_web_page_preview: true, ...extra }).then(() => null, (e) => {
     const m = e instanceof Error ? e.message : String(e);
     console.error('instructor bot reply failed:', m);
     return m;
@@ -212,8 +215,8 @@ const htmlEsc = (v: unknown) => String(v ?? '').replace(/[&<>]/g, (c) => ({ '&':
  */
 export async function handleInstructorSheetMessage(token: string, chatId: number, telegramId: number, text: string, log?: string[]): Promise<boolean> {
   /* log — bot nima javob berganini yozib boradi (bot jurnali uchun) */
-  const send = async (t: string, c: number, msg: string) => {
-    const err = await sendRaw(t, c, msg);
+  const send = async (t: string, c: number, msg: string, extra: Record<string, unknown> = {}) => {
+    const err = await sendRaw(t, c, msg, extra);
     log?.push(err ? `[yuborilmadi: ${err}] ${msg}` : msg);
   };
   const user = await findUserByTelegram(telegramId);
@@ -224,10 +227,32 @@ export async function handleInstructorSheetMessage(token: string, chatId: number
   }
   const insId = String(prof.id);
   const today = tashkentYmdOf(Date.now());
+
+  /* Menyu tugmalari va «/» buyruqlari: jadval (rasm), bronlar (soat + raqam) */
+  const menu = parseMenu(text, today);
+  if (menu) {
+    if (menu.kind === 'help') { await send(token, chatId, BOT_HELP, { reply_markup: MENU_KEYBOARD }); return true; }
+    if (menu.kind === 'menu') { await send(token, chatId, '📋 Menyu pastda 👇', { reply_markup: MENU_KEYBOARD }); return true; }
+    const d = await instructorDay(menu.date, insId);
+    if (!d.ins) { await send(token, chatId, '⚠️ Profilingiz hozir faol emas — admin bilan bog‘laning.'); return true; }
+    const notify = await import('./instructor-notify.js');
+    if (menu.kind === 'bookings') {
+      const r = await notify.sendInstructorBookings(chatId, menu.date, d);
+      if (r !== 'sent') await send(token, chatId, '⚠️ Ro‘yxatni yuborib bo‘lmadi. Birozdan keyin qayta yozing.');
+      else log?.push(`[bronlar yuborildi: ${menu.date}]`);
+      return true;
+    }
+    const r = await notify.sendInstructorDay(chatId, menu.date, d);
+    if (r !== 'sent') await send(token, chatId, '⚠️ Jadvalni yuborib bo‘lmadi. Birozdan keyin qayta yozing.');
+    else log?.push(`[jadval yuborildi: ${menu.date}]`);
+    return true;
+  }
+
   const cmd = parseBotText(text, today);
 
   if (cmd.kind === 'help') {
-    await send(token, chatId, `${cmd.error ? `⚠️ ${htmlEsc(cmd.error)}\n\n` : ''}${BOT_HELP}`);
+    /* yordam bilan birga menyu tugmalari ham chiqadi */
+    await send(token, chatId, `${cmd.error ? `⚠️ ${htmlEsc(cmd.error)}\n\n` : ''}${BOT_HELP}`, { reply_markup: MENU_KEYBOARD });
     return true;
   }
 
