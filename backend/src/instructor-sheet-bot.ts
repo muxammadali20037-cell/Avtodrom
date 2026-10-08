@@ -1,4 +1,5 @@
 import { telegramApi } from './telegram.js';
+import { supabaseRest } from './supabase.js';
 import { findUserByTelegram, instructorProfileForUser } from './identity.js';
 import { tashkentYmdOf, addDaysYmd } from './instructor-schedule.js';
 import { cellKey, parsePhone, parseHalf, nameFrom, prettyPhone, SHEET_FIRST_HOUR, SHEET_LAST_HOUR } from './booking-sheet.js';
@@ -196,9 +197,12 @@ export const BOT_HELP = [
   '<code>bugun</code>, <code>ertaga</code> yoki <code>12.10</code> — o‘quvchilaringiz (rasm + raqamlar)',
 ].join('\n');
 
-const send = (token: string, chatId: number, text: string) =>
-  telegramApi(token, 'sendMessage', { chat_id: chatId, text, parse_mode: 'HTML', disable_web_page_preview: true }).catch((e) => {
-    console.error('instructor bot reply failed:', e instanceof Error ? e.message : e);
+/** Javob yuboradi; xato bo'lsa — matni (aks holda null). */
+const sendRaw = (token: string, chatId: number, text: string): Promise<string | null> =>
+  telegramApi(token, 'sendMessage', { chat_id: chatId, text, parse_mode: 'HTML', disable_web_page_preview: true }).then(() => null, (e) => {
+    const m = e instanceof Error ? e.message : String(e);
+    console.error('instructor bot reply failed:', m);
+    return m;
   });
 const htmlEsc = (v: unknown) => String(v ?? '').replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[c] as string);
 
@@ -206,7 +210,12 @@ const htmlEsc = (v: unknown) => String(v ?? '').replace(/[&<>]/g, (c) => ({ '&':
  * Instruktor botiga kelgan oddiy matnli xabar. Instruktor topilmasa — false
  * (chaqiruvchi o'z javobini beradi), aks holda o'zi javob yozadi.
  */
-export async function handleInstructorSheetMessage(token: string, chatId: number, telegramId: number, text: string): Promise<boolean> {
+export async function handleInstructorSheetMessage(token: string, chatId: number, telegramId: number, text: string, log?: string[]): Promise<boolean> {
+  /* log — bot nima javob berganini yozib boradi (bot jurnali uchun) */
+  const send = async (t: string, c: number, msg: string) => {
+    const err = await sendRaw(t, c, msg);
+    log?.push(err ? `[yuborilmadi: ${err}] ${msg}` : msg);
+  };
   const user = await findUserByTelegram(telegramId);
   const prof = user ? await instructorProfileForUser(String(user.id), true) : null;
   if (!prof) {
@@ -229,7 +238,9 @@ export async function handleInstructorSheetMessage(token: string, chatId: number
   if (cmd.kind === 'list') {
     /* Excel ko'rinishidagi rasm + ostida bosib qo'ng'iroq qilinadigan raqamlar */
     const { sendInstructorDay } = await import('./instructor-notify.js');
-    if ((await sendInstructorDay(chatId, cmd.date, day)) !== 'sent') await send(token, chatId, '⚠️ Jadvalni yuborib bo‘lmadi. Birozdan keyin qayta yozing.');
+    const r = await sendInstructorDay(chatId, cmd.date, day);
+    if (r !== 'sent') await send(token, chatId, '⚠️ Jadvalni yuborib bo‘lmadi. Birozdan keyin qayta yozing.');
+    else log?.push(`[jadval yuborildi: ${cmd.date}]`);
     return true;
   }
 
@@ -310,4 +321,36 @@ export async function handleInstructorSheetMessage(token: string, chatId: number
     `Bekor qilish: <code>bekor ${hText(cmd.h0)}</code>`,
   ].join('\n'));
   return true;
+}
+
+/* ------------------------------------------------------------------ */
+/* BOT JURNALI — instruktor botiga kelgan oxirgi xabarlar va javoblar.
+   Bot jim qolsa sababini topish uchun (Vercel loglari doim ham qo'l
+   ostida emas). admin_settings → 'instructor_bot_log', oxirgi 40 ta. */
+export const BOT_LOG_KEY = 'instructor_bot_log';
+export type BotLogEntry = { at: string; sent_at: string | null; chat: number; text: string; reply: string; error: string | null; ms: number };
+
+export async function readBotLog(): Promise<BotLogEntry[]> {
+  try {
+    const rows = await supabaseRest<any[]>('admin_settings', { query: `?key=eq.${BOT_LOG_KEY}&select=value&limit=1` });
+    const v = rows?.[0]?.value;
+    return Array.isArray(v) ? v : Array.isArray(v?.items) ? v.items : [];
+  } catch { return []; }
+}
+
+export async function logBotEvent(e: Omit<BotLogEntry, 'at'>): Promise<void> {
+  try {
+    const entry: BotLogEntry = { ...e, at: new Date().toISOString(), text: e.text.slice(0, 120), reply: e.reply.slice(0, 300), error: e.error ? e.error.slice(0, 300) : null };
+    const items = [entry, ...(await readBotLog())].slice(0, 40);
+    const now = new Date().toISOString();
+    const rows = await supabaseRest<any[]>('admin_settings', {
+      method: 'PATCH', headers: { Prefer: 'return=representation' },
+      query: `?key=eq.${BOT_LOG_KEY}`, body: JSON.stringify({ value: items, updated_at: now }),
+    });
+    if (!rows?.length) {
+      await supabaseRest('admin_settings', { method: 'POST', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ key: BOT_LOG_KEY, value: items, updated_at: now }) });
+    }
+  } catch (err) {
+    console.warn('bot log write failed:', err instanceof Error ? err.message : err);
+  }
 }

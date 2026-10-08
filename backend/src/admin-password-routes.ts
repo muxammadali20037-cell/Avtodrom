@@ -1522,7 +1522,7 @@ async function notifyInstructorDecision(
     'paket5_a', 'paket5_b', 'paket5_c', 'krug_price', 'krug_min'];
   /* Tizim yozuvlari (paketlar, instruktor yopgan soatlar) sozlamalar
      ro'yxatiga kirmaydi — ular yuzlab bo'lishi mumkin. */
-  const HIDE_SYSTEM_KEYS = '&key=not.like.pack*&key=not.like.instructor_busy*&key=not.like.instructor_schedule*&key=not.like.booking_sheet*&key=not.like.instructor_digest*&key=not.in.(mgmt_pin,price_pin)';
+  const HIDE_SYSTEM_KEYS = '&key=not.like.pack*&key=not.like.instructor_busy*&key=not.like.instructor_schedule*&key=not.like.booking_sheet*&key=not.like.instructor_digest*&key=not.like.instructor_bot_log*&key=not.in.(mgmt_pin,price_pin)';
   app.get('/api/admin/settings', async (req: any, reply: any) => {
     try {
       const me = await currentStaff(req);

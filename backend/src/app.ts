@@ -7,7 +7,7 @@ import { registerBookingRoutes } from './booking-routes.js';
 import { registerInstructorRoutes } from './instructor-routes.js';
 import { registerInstructorRegistrationRoutes } from './instructor-registration-routes.js';
 import { handleInstructorStart } from './instructor-start.js';
-import { handleInstructorSheetMessage } from './instructor-sheet-bot.js';
+import { handleInstructorSheetMessage, logBotEvent, readBotLog } from './instructor-sheet-bot.js';
 import { registerAdminPasswordRoutes, guard as requireAdmin, guardAdmin, guardDesk, currentStaff, adminUser, audit, peekStaff, operatorMayCall } from './admin-password-routes.js';
 import { registerContentRoutes } from './content-routes.js';
 import { registerCourseRoutes } from './courses-routes.js';
@@ -168,15 +168,54 @@ async function handleTelegramWebhook(request: any, reply: any, token: string, mi
   return { ok: true };
 }
 
-async function webhookDiagnostic(token: string, role: string, expectedUrl: string) {
-  if (!token) return { configured: false, role, expected_url: expectedUrl, reason: 'bot token missing' };
-  try { const info = await telegramApi<any>(token, 'getWebhookInfo', {}); return { configured: true, role, expected_url: expectedUrl, telegram: { url: info.url || '', pending_update_count: info.pending_update_count || 0, last_error_date: info.last_error_date || null, last_error_message: info.last_error_message || null } }; }
-  catch (error: any) { return { configured: true, role, expected_url: expectedUrl, error: String(error?.message || error) }; }
-}
+const tgTime = (sec: unknown) => (Number(sec) > 0 ? new Date(Number(sec) * 1000).toISOString() : null);
+const webhookView = (info: any) => ({
+  url: info.url || '', pending_update_count: info.pending_update_count || 0,
+  last_error_date: info.last_error_date || null, last_error_at: tgTime(info.last_error_date), last_error_message: info.last_error_message || null,
+  max_connections: info.max_connections ?? null, allowed_updates: info.allowed_updates ?? null,
+});
 
-app.get('/api/telegram/instructor/webhook', async () => webhookDiagnostic(INSTRUCTOR_BOT_TOKEN, 'instructor', 'https://avtodrom.vercel.app/api/telegram/instructor/webhook'));
-app.get('/api/telegram/customer/webhook', async () => webhookDiagnostic(CUSTOMER_BOT_TOKEN, 'customer', 'https://avtodrom.vercel.app/api/telegram/customer/webhook'));
-app.get('/api/telegram/admin/webhook', async () => webhookDiagnostic(ADMIN_BOT_TOKEN, 'admin', 'https://avtodrom.vercel.app/api/telegram/admin/webhook'));
+/**
+ * Webhook holati. `?kick=1` — Telegram navbatda turgan xabarlarni darhol
+ * qayta yuborishi uchun webhook XUDDI SHU manzil va sir bilan qayta
+ * o'rnatiladi (xatodan keyin Telegram ba'zan soatlab kutib qoladi).
+ * Faqat webhook allaqachon shu manzilda va navbatda xabar bo'lsa ishlaydi —
+ * boshqa joyga ulangan webhook'ga tegilmaydi, navbat o'chirilmaydi.
+ */
+async function webhookDiagnostic(token: string, role: string, expectedUrl: string, kick = false) {
+  if (!token) return { configured: false, role, expected_url: expectedUrl, reason: 'bot token missing' };
+  try {
+    let info = await telegramApi<any>(token, 'getWebhookInfo', {});
+    let kicked: string | null = null;
+    if (kick) {
+      if (info.url !== expectedUrl) kicked = 'webhook boshqa manzilda — tegilmadi';
+      else if (!TELEGRAM_WEBHOOK_SECRET) kicked = 'TELEGRAM_WEBHOOK_SECRET yo‘q — tegilmadi';
+      else if (!(info.pending_update_count > 0)) kicked = 'navbat bo‘sh — kerak emas';
+      else {
+        await telegramApi(token, 'setWebhook', {
+          url: expectedUrl, secret_token: TELEGRAM_WEBHOOK_SECRET, drop_pending_updates: false,
+          ...(info.max_connections ? { max_connections: info.max_connections } : {}),
+          ...(Array.isArray(info.allowed_updates) ? { allowed_updates: info.allowed_updates } : {}),
+        });
+        kicked = 'qayta o‘rnatildi — navbatdagi xabarlar qayta yuboriladi';
+        info = await telegramApi<any>(token, 'getWebhookInfo', {});
+      }
+    }
+    const out: any = { configured: true, role, expected_url: expectedUrl, telegram: webhookView(info) };
+    if (kicked) out.kick = kicked;
+    if (role === 'instructor') {
+      /* bot jurnalidan faqat vaqt va holat (matn/raqamlar ochiq ko'rsatilmaydi) */
+      const log = await readBotLog();
+      out.bot = { events: log.length, last_at: log[0]?.at || null, last_ok: log[0] ? !log[0].error : null };
+    }
+    return out;
+  } catch (error: any) { return { configured: true, role, expected_url: expectedUrl, error: String(error?.message || error) }; }
+}
+const wantKick = (req: any) => /^(1|true|ha)$/i.test(String(req?.query?.kick || ''));
+
+app.get('/api/telegram/instructor/webhook', async (req) => webhookDiagnostic(INSTRUCTOR_BOT_TOKEN, 'instructor', 'https://avtodrom.vercel.app/api/telegram/instructor/webhook', wantKick(req)));
+app.get('/api/telegram/customer/webhook', async (req) => webhookDiagnostic(CUSTOMER_BOT_TOKEN, 'customer', 'https://avtodrom.vercel.app/api/telegram/customer/webhook', wantKick(req)));
+app.get('/api/telegram/admin/webhook', async (req) => webhookDiagnostic(ADMIN_BOT_TOKEN, 'admin', 'https://avtodrom.vercel.app/api/telegram/admin/webhook', wantKick(req)));
 
 app.post('/api/telegram/customer/webhook', async (request, reply) => {
   // Eslatma tugmalari («Kelaman» / «Bekor qilmoqchiman») shu yerga tushadi
@@ -209,8 +248,22 @@ app.post('/api/telegram/instructor/webhook', async (request, reply) => {
   /* Instruktor botga «901234567 14:00» yozsa — shu instruktorga bron (Excel bron ustuniga).
      Faqat shaxsiy chat; Telegram qayta yubormasligi uchun xato bo'lsa ham 200. */
   else if (Number.isSafeInteger(chatId) && chatId > 0 && text && Number(message?.from?.id) === chatId) {
-    try { await handleInstructorSheetMessage(INSTRUCTOR_BOT_TOKEN, chatId, chatId, text); }
-    catch (e) { request.log.error({ err: e }, 'instructor bot booking failed'); }
+    const t0 = Date.now(), replies: string[] = [];
+    let error: string | null = null;
+    try { await handleInstructorSheetMessage(INSTRUCTOR_BOT_TOKEN, chatId, chatId, text, replies); }
+    catch (e) {
+      /* Jim qolmasin: instruktor nima bo'lganini bilsin */
+      error = e instanceof Error ? e.message : String(e);
+      request.log.error({ err: e }, 'instructor bot booking failed');
+      await telegramApi(INSTRUCTOR_BOT_TOKEN, 'sendMessage', {
+        chat_id: chatId, text: `⚠️ Xatolik yuz berdi — bron yozilmadi. Birozdan keyin qayta yozing.\n(${error.slice(0, 200)})`,
+      }).catch(() => {});
+    }
+    const sentAt = Number(message?.date);
+    await logBotEvent({
+      sent_at: Number.isFinite(sentAt) && sentAt > 0 ? new Date(sentAt * 1000).toISOString() : null,
+      chat: chatId, text, reply: replies.join(' | ') || (error ? '' : '(javob yo‘q)'), error, ms: Date.now() - t0,
+    });
   }
   return { ok: true };
 });

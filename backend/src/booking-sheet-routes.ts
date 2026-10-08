@@ -392,7 +392,11 @@ export async function applySheetChanges(o: ApplyOpts): Promise<ApplyResult> {
       const blk = (st.blocks.get(r.ins) || []).find((x) => Date.parse(x.start_at) < end && Date.parse(x.end_at) > start);
       if (blk) { fail(r, blk.off ? LOCK_MSG.off : LOCK_MSG.own); continue; }
       let user = byPhone.get(r.phone) || null;
-      if (user && user.role && user.role !== 'customer') { fail(r, 'Bu raqam xodimga tegishli — mijoz raqamini yozing'); continue; }
+      if (user && user.role && user.role !== 'customer') {
+        const who = user.role === 'instructor' ? 'instruktor' : user.role === 'admin' ? 'admin' : 'xodim';
+        fail(r, `${prettyPhone(r.phone)} — ${who} akkauntining raqami${user.full_name ? ` (${user.full_name})` : ''}. Xodim raqamiga bron qilinmaydi — mijozning raqamini yozing.`);
+        continue;
+      }
       if (user?.is_blocked) { fail(r, 'Bu mijoz bloklangan'); continue; }
       if (user) {
         const mine = st.day.find((b) => String(b.customer_id) === String(user.id) && BUSY.includes(String(b.status))

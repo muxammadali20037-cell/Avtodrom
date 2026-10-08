@@ -26,7 +26,7 @@ export const MAX_SESSIONS = 5;
 const PKG = 'pack:';
 const PKGB = 'packb:';
 /** admin_settings ro'yxatida ko'rsatilmaydigan tizim kalitlari */
-export const SYSTEM_KEY_PREFIXES = [PKG, PKGB, 'instructor_busy:', 'instructor_schedule:', 'booking_sheet:', 'instructor_digest:'];
+export const SYSTEM_KEY_PREFIXES = [PKG, PKGB, 'instructor_busy:', 'instructor_schedule:', 'booking_sheet:', 'instructor_digest:', 'instructor_bot_log'];
 
 type Cat = 'A' | 'B' | 'C';
 const CATS: Cat[] = ['A', 'B', 'C'];
