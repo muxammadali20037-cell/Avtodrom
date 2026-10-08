@@ -116,8 +116,9 @@ export function parseBotText(raw: string, today: string): BotCmd {
     return { kind: 'cancel', date, h0, phone };
   }
   if (!phone) {
-    if (h0 === null && /^\s*\/?(bugun|ertaga|indinga|list|ro'yxat|royxat|jadval|bronlar|bronlarim|сегодня|завтра|послезавтра)?\s*$/iu.test(` ${text.toLowerCase()} `.replace(/[’'`ʻ‘]/g, "'")))
-      return { kind: 'list', date };
+    /* «bugun», «ertaga», «12.10», «jadval» — o'sha kunning ro'yxati (rasm bilan) */
+    const rest = s.replace(/(^|\s)\/?(list|ro'yxat|royxat|jadval|bronlar|bronlarim|o'quvchilar|oquvchilar|список)(?=\s|$)/giu, ' ').trim();
+    if (h0 === null && !rest) return { kind: 'list', date };
     return { kind: 'help', error: h0 !== null ? 'Mijozning telefon raqamini yozing (9 ta raqam).' : undefined };
   }
   if (h0 === null) return { kind: 'help', error: 'Vaqtni yozing, masalan: 901234567 14:00' };
@@ -151,7 +152,7 @@ export const BOT_HELP = [
   '<code>901234567 9:00 30 min</code> — 30 daqiqa',
   '',
   '<code>bekor 14:00</code> — o‘zingiz yozgan bronni bekor qilish',
-  '<code>bugun</code> yoki <code>ertaga</code> — jadvalingiz',
+  '<code>bugun</code>, <code>ertaga</code> yoki <code>12.10</code> — o‘quvchilaringiz (rasm + raqamlar)',
 ].join('\n');
 
 const send = (token: string, chatId: number, text: string) =>
@@ -185,19 +186,9 @@ export async function handleInstructorSheetMessage(token: string, chatId: number
   const actor = { login: `Bot · ${day.ins.name}`, role: 'instructor', bi: insId };
 
   if (cmd.kind === 'list') {
-    const lines: string[] = [];
-    for (const c of day.cells) {
-      const o = c.out;
-      if (!o) continue;
-      let t = '';
-      if (o.k === 'sheet') t = `${htmlEsc(o.t)} · ${htmlEsc(o.bk?.code || '')}${o.bk?.paid ? ' ✅' : ''}`;
-      else if (o.k === 'note') t = `${htmlEsc(o.t)}${o.bk?.status === 'cancelled' ? ' (bekor)' : ' (band)'}`;
-      else if (o.k === 'bk') t = `${htmlEsc(o.bk?.name || 'Mijoz')} · ${o.bk?.src === 'app' ? 'Mini App' : 'bron'}${o.bk?.code ? ' · ' + htmlEsc(o.bk.code) : ''}`;
-      else if (o.k === 'off') t = 'dam (grafik)';
-      else if (o.k === 'own') t = 'yopiq';
-      if (t) lines.push(`${hText(c.h)} — ${t}`);
-    }
-    await send(token, chatId, `📋 <b>${dayText(cmd.date, today)}</b> (${cmd.date.split('-').reverse().join('.')})\n\n${lines.length ? lines.join('\n') : 'Hali hech narsa yozilmagan — hamma soat bo‘sh.'}`);
+    /* Excel ko'rinishidagi rasm + ostida bosib qo'ng'iroq qilinadigan raqamlar */
+    const { sendInstructorDay } = await import('./instructor-notify.js');
+    if ((await sendInstructorDay(chatId, cmd.date, day)) !== 'sent') await send(token, chatId, '⚠️ Jadvalni yuborib bo‘lmadi. Birozdan keyin qayta yozing.');
     return true;
   }
 

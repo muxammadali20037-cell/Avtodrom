@@ -191,14 +191,23 @@ function humanError(e: any): string {
 }
 
 /** Bir instruktorning bir kunlik ustuni (instruktor boti uchun) */
-export async function instructorDay(date: string, insId: string) {
-  const st = await loadState(date);
+export type DayCell = { h: number; key: string; start: number; end: number; sc: SheetCell | null; lock: string | null; out: any };
+export type InsDay = { ins: { id: string; name: string; phone: string | null; categories: string[] } | null; cells: DayCell[] };
+function dayOf(st: State, insId: string): InsDay {
   const ins = st.insMap.get(String(insId)) || null;
   const cells = SHEET_HOURS.map((h) => {
     const c = cellInfo(st, String(insId), h);
     return { h, key: c.key, start: c.s, end: c.e, sc: c.sc || null, lock: c.lock as string | null, out: c.out as any };
   });
   return { ins, cells };
+}
+export async function instructorDay(date: string, insId: string): Promise<InsDay> {
+  return dayOf(await loadState(date), insId);
+}
+/** Hamma instruktorlarning bir kunlik ustunlari — bitta yuklash bilan (kunlik xabarnoma uchun) */
+export async function allInstructorDays(date: string): Promise<Map<string, InsDay>> {
+  const st = await loadState(date);
+  return new Map(st.instructors.map((i) => [i.id, dayOf(st, i.id)]));
 }
 export const SHEET_LOCK_MSG = LOCK_MSG;
 
@@ -211,8 +220,15 @@ export type ApplyOpts = {
   /** Bron izohi boshi: «Excel bron» yoki «Instruktor boti» */
   notePrefix?: string;
 };
+/** Instruktorga xabar uchun: kimning ustunida nima o'zgardi */
+export type SheetEvent = {
+  created: { start: string; minutes: number; phone: string; name: string; code: string | null; category: string }[];
+  cancelled: { start: string; minutes: number; phone: string | null; name: string; code: string | null }[];
+  notes: { h: number; text: string; removed: boolean }[];
+};
 export type ApplyResult = {
   saved: number; created: any[]; cancelled: number; cancelledIds: string[]; errors: { key: string; error: string }[];
+  events: Map<string, SheetEvent>;
 };
 
 /**
@@ -444,7 +460,30 @@ export async function applySheetChanges(o: ApplyOpts): Promise<ApplyResult> {
     cancelled, errors: errors.slice(0, 50),
   });
 
-  return { saved: changed.size, created, cancelled: cancelled.length, cancelledIds: cancelled, errors };
+  /* 7. Instruktorlarga xabar uchun o'zgarishlar */
+  const events = new Map<string, SheetEvent>();
+  const ev = (ins: string) => {
+    let e = events.get(ins);
+    if (!e) { e = { created: [], cancelled: [], notes: [] }; events.set(ins, e); }
+    return e;
+  };
+  for (const c of created) {
+    const p = parseKey(c.key);
+    if (p) ev(p.ins).created.push({ start: c.start, minutes: c.minutes, phone: c.phone, name: c.name, code: c.code, category: c.category });
+  }
+  for (const id of cancelled) {
+    const b = toCancel.get(id); if (!b) continue;
+    const u = st.users.get(String(b.customer_id));
+    ev(String(b.instructor_id)).cancelled.push({ start: b.start_at, minutes: durOf(b), phone: u?.phone || null, name: u?.full_name || 'Mijoz', code: b.pickup_code || null });
+  }
+  for (const k of changed) {
+    const p = parseKey(k)!;
+    const before = st.sheet.cells[k]?.t || '', after = work[k]?.t || '';
+    const isNote = (t: string, c?: SheetCell) => !!t && (!parsePhone(t) || (!!c && !c.b));
+    if (after && isNote(after, work[k]) && after !== before) ev(p.ins).notes.push({ h: p.h, text: after, removed: false });
+    else if (!after && before && !parsePhone(before)) ev(p.ins).notes.push({ h: p.h, text: before, removed: true });
+  }
+  return { saved: changed.size, created, cancelled: cancelled.length, cancelledIds: cancelled, errors, events };
 }
 
 export async function registerBookingSheetRoutes(app: FastifyInstance, deps: Deps) {
@@ -473,10 +512,16 @@ export async function registerBookingSheetRoutes(app: FastifyInstance, deps: Dep
       if (changes.length > 800) return reply.code(400).send({ ok: false, error: 'Bir martada juda ko‘p katak' });
 
       const result = await applySheetChanges({ date, changes, actor: { login: me.login, role: me.role }, adminUser: deps.adminUser, audit: deps.audit });
+      /* Instruktorlarga: nima o'zgargani + yangilangan jadval rasmi (xato bo'lsa ham saqlash buzilmaydi) */
+      let notified = 0;
+      try {
+        const { notifySheetSave } = await import('./instructor-notify.js');
+        notified = (await notifySheetSave(date, result.events)).sent;
+      } catch (e) { console.error('sheet notify failed:', e); }
       const after = await loadState(date);
       return {
         ok: true, ...view(after, me),
-        result: { saved: result.saved, created: result.created, cancelled: result.cancelled, errors: result.errors },
+        result: { saved: result.saved, created: result.created, cancelled: result.cancelled, errors: result.errors, notified },
       };
     } catch (e: any) {
       return reply.code(e?.statusCode ?? 500).send({ ok: false, error: e?.message || 'Excel bron saqlanmadi' });

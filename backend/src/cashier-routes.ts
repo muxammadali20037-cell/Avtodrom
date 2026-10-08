@@ -1304,6 +1304,8 @@ export async function registerCashierRoutes(
         if (packageInfo) r.package_text = `5 soatlik paket · ${i + 1}/${targets.length}`;
         receipts.push(r);
       });
+      /* Bronsiz kelgan mijoz — instruktorga darhol xabar */
+      if (mode === 'walk_in') await (await import('./instructor-notify.js')).notifyInstructorNewBooking(targets, 'kassa');
       return reply.code(201).send({
         ok: true, mode, booking: shapedAll[0], payment: payments[0], receipt: receipts[0],
         bookings: shapedAll, payments, receipts, package: packageInfo,
@@ -1419,6 +1421,7 @@ export async function registerCashierRoutes(
         });
         await audit(admin.id, 'MANUAL_BOOKING_CREATED', 'bookings', bookings[0]?.id ?? null, null,
           { customer: fullName, phone, category, minutes: PACKAGE_MINUTES, package: record.id, sessions: bookings.length });
+        await (await import('./instructor-notify.js')).notifyInstructorNewBooking(bookings, 'manual');
         const pkg = { id: record.id, price: record.price, list_price: record.list_price, of: bookings.length };
         return reply.code(201).send({
           ok: true, booking: bookings[0], bookings, customer, course, package: pkg,
@@ -1453,6 +1456,7 @@ export async function registerCashierRoutes(
       const booking = rows[0];
       await audit(admin.id, 'MANUAL_BOOKING_CREATED', 'bookings', booking?.id ?? null, null,
         { customer: fullName, phone, category, minutes });
+      await (await import('./instructor-notify.js')).notifyInstructorNewBooking([booking], 'manual');
 
       return reply.code(201).send({
         ok: true, booking, customer, course,

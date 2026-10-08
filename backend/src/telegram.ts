@@ -46,6 +46,19 @@ export async function telegramApi<T>(token: string, method: string, body: Record
   return data.result as T;
 }
 
+/** Rasm (PNG) yuborish — multipart/form-data. caption ≤ 1024 belgi. */
+export async function telegramSendPhoto(token: string, chatId: number, png: Uint8Array, opts: { caption?: string; parse_mode?: string; filename?: string } = {}) {
+  const form = new FormData();
+  form.append('chat_id', String(chatId));
+  if (opts.caption) form.append('caption', opts.caption);
+  if (opts.parse_mode) form.append('parse_mode', opts.parse_mode);
+  form.append('photo', new Blob([new Uint8Array(png)], { type: 'image/png' }), opts.filename || 'jadval.png');
+  const response = await fetch(botUrl(token, 'sendPhoto'), { method: 'POST', body: form });
+  const data = await response.json() as { ok: boolean; result?: unknown; description?: string };
+  if (!data.ok) throw new Error(data.description || 'Telegram API error: sendPhoto');
+  return data.result;
+}
+
 export async function sendMiniAppStart(token: string, chatId: number, miniAppUrl: string, role: 'customer' | 'instructor' | 'admin') {
   const config = {
     customer: {

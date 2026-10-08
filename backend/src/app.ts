@@ -263,7 +263,10 @@ async function runReminders(request: any, reply: any) {
   }
   try {
     const result = await runRemindersNow('cron');
-    return { ok: true, ...result };
+    /* Instruktorlarga kunlik ro'yxat: 20:00 dan ertangi, 07:00 dan bugungi */
+    const { runInstructorDigest } = await import('./instructor-notify.js');
+    const digest = await runInstructorDigest().catch((e) => ({ ran: false, error: e instanceof Error ? e.message : String(e) }));
+    return { ok: true, ...result, digest };
   } catch (e) {
     return reply.code(500).send({ ok: false, error: e instanceof Error ? e.message : 'Reminder run failed' });
   }
