@@ -177,3 +177,55 @@ describe('Instruktor boti — bron', () => {
     expect(await say('salom')).toMatch(/Mijoz raqami va vaqtni istalgan tartibda yozing/);
   });
 });
+
+describe('Instruktor boti — jim qolmaydi, jurnal, webhook', () => {
+  const WH = 'https://avtodrom.vercel.app/api/telegram/instructor/webhook';
+  const botLog = () => (h.db.admin_settings.find((r: any) => r.key === 'instructor_bot_log')?.value || []) as any[];
+
+  it('xodim raqamiga bron — nima uchunligini aytadi', async () => {
+    h.db.users.push({ id: 'u-me2', full_name: 'Muxammadali', phone: '+998932728766', role: 'instructor', is_active: true, is_blocked: false });
+    const out = await say('ERTAG 14:00 998932728766');
+    expect(out).toMatch(/\+998 93 272 87 66 — instruktor akkauntining raqami \(Muxammadali\)/);
+    expect(active()).toHaveLength(0);
+  });
+
+  it('har xabar va javob jurnalga yoziladi', async () => {
+    await say('ertaga 901234567 14:00');
+    const [e] = botLog();
+    expect(e).toMatchObject({ chat: INS_TG, text: 'ertaga 901234567 14:00', error: null });
+    expect(e.reply).toMatch(/Bron qilindi/);
+    await say('salom');
+    expect(botLog()).toHaveLength(2);
+    expect(botLog()[0].text).toBe('salom');
+  });
+
+  it('kutilmagan xato bo‘lsa ham instruktor javob oladi', async () => {
+    const orig = globalThis.fetch;
+    globalThis.fetch = ((u: any, o: any) => (/\/rest\/v1\/bookings/.test(String(u)) ? Promise.reject(new Error('baza javob bermadi')) : orig(u, o))) as any;
+    try {
+      expect(await say('ertaga 901234567 14:00')).toMatch(/Xatolik yuz berdi — bron yozilmadi[\s\S]*baza javob bermadi/);
+    } finally { globalThis.fetch = orig; }
+    expect(botLog()[0].error).toMatch(/baza javob bermadi/);
+  });
+
+  it('?kick=1 — navbat tiqilib qolsa webhook shu manzilga qayta o‘rnatiladi', async () => {
+    const info = { url: WH, pending_update_count: 1, last_error_date: 1791459225, last_error_message: 'Wrong response from the webhook: 400 Bad Request', max_connections: 40, allowed_updates: ['message', 'callback_query'] };
+    h.tgResults.set('getWebhookInfo', info);
+    const plain = await h.app.inject({ method: 'GET', url: '/api/telegram/instructor/webhook' });
+    expect(JSON.parse(plain.body).telegram).toMatchObject({ pending_update_count: 1, last_error_at: '2026-10-08T11:33:45.000Z' });
+    expect(h.tgCalls.some((c) => c.method === 'setWebhook')).toBe(false);
+
+    const r = JSON.parse((await h.app.inject({ method: 'GET', url: '/api/telegram/instructor/webhook?kick=1' })).body);
+    expect(r.kick).toMatch(/qayta o‘rnatildi/);
+    const set = h.tgCalls.find((c) => c.method === 'setWebhook')!;
+    expect(set.body).toMatchObject({ url: WH, secret_token: 'test-webhook-secret', drop_pending_updates: false, max_connections: 40, allowed_updates: ['message', 'callback_query'] });
+
+    // boshqa joyga ulangan webhook'ga tegilmaydi; navbat bo'sh bo'lsa ham
+    h.tgCalls.length = 0;
+    h.tgResults.set('getWebhookInfo', { ...info, url: 'https://boshqa.example/hook' });
+    expect(JSON.parse((await h.app.inject({ method: 'GET', url: '/api/telegram/instructor/webhook?kick=1' })).body).kick).toMatch(/boshqa manzilda/);
+    h.tgResults.set('getWebhookInfo', { ...info, pending_update_count: 0 });
+    expect(JSON.parse((await h.app.inject({ method: 'GET', url: '/api/telegram/instructor/webhook?kick=1' })).body).kick).toMatch(/navbat bo‘sh/);
+    expect(h.tgCalls.some((c) => c.method === 'setWebhook')).toBe(false);
+  });
+});

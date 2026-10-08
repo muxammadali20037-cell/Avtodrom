@@ -33,6 +33,10 @@ export interface Harness {
   telegram: Array<{ chat: number; text: string; markup?: any; parse?: string; method?: string }>;
   /** Shu chat ID larga Telegram xato qaytaradi (masalan, 'Bad Request: chat not found'). */
   telegramFail: Map<number, string>;
+  /** Telegram API'ga ketgan hamma chaqiruvlar (getWebhookInfo, setWebhook ham) */
+  tgCalls: Array<{ method: string; body: any }>;
+  /** Shu Telegram metodlari uchun javob (result) — masalan getWebhookInfo */
+  tgResults: Map<string, any>;
   login(login: string, password: string): Promise<{ status: number; body: any; cookie: string }>;
   call(method: string, url: string, opts?: { cookie?: string; payload?: any }): Promise<{ status: number; body: any }>;
   reset(): void;
@@ -140,6 +144,8 @@ export async function makeHarness(): Promise<Harness> {
   const db = emptyDb();
   const telegram: Array<{ chat: number; text: string; markup?: any; parse?: string; method?: string }> = [];
   const telegramFail = new Map<number, string>();
+  const tgCalls: Array<{ method: string; body: any }> = [];
+  const tgResults = new Map<string, any>();
 
   globalThis.fetch = (async (u: any, o: any = {}) => {
     const url = String(u);
@@ -160,7 +166,8 @@ export async function makeHarness(): Promise<Harness> {
       if (body?.chat_id && !/^get/.test(tgMethod)) {
         telegram.push({ chat: Number(body.chat_id), text: String(body.text || ''), markup: body.reply_markup, parse: body.parse_mode, method: tgMethod });
       }
-      const result = tgMethod === 'getMe' ? { username: 'avtodrom_admin_bot' } : tgMethod === 'getChat' ? { first_name: 'Chat', last_name: String(body?.chat_id ?? '') } : {};
+      tgCalls.push({ method: tgMethod, body });
+      const result = tgResults.has(tgMethod) ? tgResults.get(tgMethod) : tgMethod === 'getMe' ? { username: 'avtodrom_admin_bot' } : tgMethod === 'getChat' ? { first_name: 'Chat', last_name: String(body?.chat_id ?? '') } : {};
       return { ok: true, status: 200, text: async () => JSON.stringify({ ok: true, result }), json: async () => ({ ok: true, result }), headers: H } as any;
     }
 
@@ -268,11 +275,13 @@ export async function makeHarness(): Promise<Harness> {
   };
 
   return {
-    app, db, telegram, telegramFail, login, call,
+    app, db, telegram, telegramFail, tgCalls, tgResults, login, call,
     reset() {
       for (const k of Object.keys(db)) db[k] = [];
       telegram.length = 0;
       telegramFail.clear();
+      tgCalls.length = 0;
+      tgResults.clear();
     },
   };
 }
