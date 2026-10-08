@@ -554,7 +554,11 @@ export async function registerInstructorRoutes(
       /* Admin belgilagan ish grafigi: shu kunlarda qaysi vaqt dam (instruktor o'zgartira olmaydi) */
       const { scheduleFor, offBlocksBetween } = await import('./instructor-schedule.js');
       const off = offBlocksBetween(await scheduleFor(String(instructor.id)), new Date(from), new Date(to));
-      return { ok: true, blocks, off };
+      /* Admin Excel bronda band qilgan soatlar («BAND», ism, izoh) — instruktor o'zgartira olmaydi */
+      const { sheetBlocksBetween } = await import('./booking-sheet.js');
+      const sheet = ((await sheetBlocksBetween([String(instructor.id)], new Date(from), new Date(to))).get(String(instructor.id)) || [])
+        .map((b) => ({ start_at: b.start_at, end_at: b.end_at, text: b.text }));
+      return { ok: true, blocks, off, sheet };
     } catch (e) {
       return reply.code(400).send({ ok: false, error: e instanceof Error ? e.message : 'Yopiq soatlar yuklanmadi' });
     }

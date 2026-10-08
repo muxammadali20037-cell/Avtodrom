@@ -7,7 +7,7 @@ import { registerBookingRoutes } from './booking-routes.js';
 import { registerInstructorRoutes } from './instructor-routes.js';
 import { registerInstructorRegistrationRoutes } from './instructor-registration-routes.js';
 import { handleInstructorStart } from './instructor-start.js';
-import { registerAdminPasswordRoutes, guard as requireAdmin, guardAdmin, adminUser, audit, peekStaff, operatorMayCall } from './admin-password-routes.js';
+import { registerAdminPasswordRoutes, guard as requireAdmin, guardAdmin, guardDesk, currentStaff, adminUser, audit, peekStaff, operatorMayCall } from './admin-password-routes.js';
 import { registerContentRoutes } from './content-routes.js';
 import { registerCourseRoutes } from './courses-routes.js';
 import { registerReviewRoutes } from './review-routes.js';
@@ -19,6 +19,7 @@ import { registerShiftRoutes } from './shift-routes.js';
 import { registerMediaRoutes } from './media-routes.js';
 import { registerAdminBotRoutes, sendAdminChatInfo } from './admin-bot-routes.js';
 import { registerScheduleRoutes } from './schedule-routes.js';
+import { registerBookingSheetRoutes } from './booking-sheet-routes.js';
 
 const app = Fastify({ logger: true });
 
@@ -127,6 +128,7 @@ await registerAnalyticsRoutes(app, guardAdmin, requireAdmin);
 await registerShiftRoutes(app, requireAdmin, adminUser, audit);
 /* Instruktorlar ish grafigi — faqat administrator */
 await registerScheduleRoutes(app, guardAdmin, adminUser, audit);
+await registerBookingSheetRoutes(app, { currentStaff, guardDesk, adminUser, audit });
 await registerAdminBotRoutes(app);
 
 // IMPORTANT: admin-password-routes.ts is the single owner of the canonical

@@ -477,12 +477,13 @@ export async function registerCashierRoutes(
       });
 
       const dayS = Date.parse(start), dayE = Date.parse(end);
-      /* Instruktor o'zi yopgan soatlar + ish grafigi bo'yicha dam (off: true) */
+      /* Instruktor o'zi yopgan soatlar + ish grafigi bo'yicha dam (off: true) + Excel bron izohlari (sheet: true) */
       const bm = await loadBlocks(instructors.map((i) => i.id), { from: new Date(dayS), to: new Date(dayE) });
       const blocks: any[] = [];
       for (const [iid, list] of bm) {
         for (const x of list) {
-          if (Date.parse(x.start_at) < dayE && Date.parse(x.end_at) > dayS) blocks.push({ instructor_id: iid, start_at: x.start_at, end_at: x.end_at, ...(x.off ? { off: true } : {}) });
+          if (Date.parse(x.start_at) < dayE && Date.parse(x.end_at) > dayS) blocks.push({ instructor_id: iid, start_at: x.start_at, end_at: x.end_at,
+            ...(x.off ? { off: true } : {}), ...(x.sheet ? { sheet: true, text: x.text || '' } : {}) });
         }
       }
       const sv = (k: string) => { const r = setRows.find((x: any) => x.key === k); return r ? (r.value?.value ?? r.value) : null; };

@@ -130,6 +130,8 @@ export const OPERATOR_ALLOWED: RegExp[] = [
   /^(GET) \/api\/admin\/(courses|settings)$/,
   // Instruktorlarning kunlik jadvali (Excel ham shu ma'lumotdan)
   /^(GET) \/api\/admin\/schedule$/,
+  // Excel bron: ko'rish va yozish (katakdagi raqamdan bron yaratiladi)
+  /^(GET|PUT) \/api\/admin\/booking-sheet$/,
   // Mijozlar chati
   /^(GET) \/api\/admin\/support$/,
   /^(GET) \/api\/admin\/support\/[^/]+$/,
@@ -1520,7 +1522,7 @@ async function notifyInstructorDecision(
     'paket5_a', 'paket5_b', 'paket5_c', 'krug_price', 'krug_min'];
   /* Tizim yozuvlari (paketlar, instruktor yopgan soatlar) sozlamalar
      ro'yxatiga kirmaydi — ular yuzlab bo'lishi mumkin. */
-  const HIDE_SYSTEM_KEYS = '&key=not.like.pack*&key=not.like.instructor_busy*&key=not.like.instructor_schedule*&key=not.in.(mgmt_pin,price_pin)';
+  const HIDE_SYSTEM_KEYS = '&key=not.like.pack*&key=not.like.instructor_busy*&key=not.like.instructor_schedule*&key=not.like.booking_sheet*&key=not.in.(mgmt_pin,price_pin)';
   app.get('/api/admin/settings', async (req: any, reply: any) => {
     try {
       const me = await currentStaff(req);
