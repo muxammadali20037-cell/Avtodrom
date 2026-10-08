@@ -67,6 +67,21 @@ Admin panel → *Excel bron*: the spreadsheet the admins used to keep in Excel �
 
 Storage: `admin_settings` → `booking_sheet:<YYYY-MM-DD>` (`backend/src/booking-sheet.ts`), API `GET|PUT /api/admin/booking-sheet` (`backend/src/booking-sheet-routes.ts`). No migration needed.
 
+### Booking through the instructor bot
+
+An approved instructor can write to the **instructor bot** in a private chat, and the bot books that instructor's column of the Excel bron sheet (same checks, same code path — `applySheetChanges`), confirmed, with a pickup code in the reply (`backend/src/instructor-sheet-bot.ts`):
+
+| Message | Meaning |
+|---|---|
+| `901234567 14:00` | today 14:00, 1 hour |
+| `ertaga 901234567 15-17` (`завтра … с 15 до 17`) | tomorrow 15:00–17:00 |
+| `12.10 994188549 10:00 /C` | 12 October, category C |
+| `901234567 9:00 30 min` | 30 minutes |
+| `bekor 14:00` / `bekor ertaga 901234567` | cancel a booking the instructor wrote via the bot (not paid, not started) |
+| `bugun` / `ertaga` | the instructor's day |
+
+The bot never overwrites a non-empty cell, and if the booking cannot be created (schedule, category, conflict) nothing is written. Cells written by the bot show `Bot · <instructor>` in Excel bron. The instructor bot webhook must point to `/api/telegram/instructor/webhook` (check with `GET /api/telegram/instructor/webhook`).
+
 ## No-deposit policy
 
 Deposits are not required for booking creation. Instead the system uses:
