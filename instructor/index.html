@@ -511,7 +511,7 @@ function tickCountdowns(){
   });
 }
 
-const S = { profile:null, instructor:null, bookings:[], settings:null, bkFilter:'today', freeDay:'', calc:null, month:null, blocks:[], off:[] };
+const S = { profile:null, instructor:null, bookings:[], settings:null, bkFilter:'today', freeDay:'', calc:null, month:null, blocks:[], off:[], sheet:[] };
 
 /* ------------------------------ API ------------------------------ */
 function errText(d, status, path){
@@ -746,7 +746,7 @@ function renderMenu(){
     : (tm ? `Bugun yo‘q · ertaga ${tm} ta` : 'Bugun dars yo‘q');
   $('tBookBadge').textContent = left; $('tBookBadge').classList.toggle('hide', !left);
 
-  const slots = slotsFor(t).filter(x => !x.b && !x.past && !x.closed && !x.off).length;
+  const slots = slotsFor(t).filter(x => !x.b && !x.past && !x.closed && !x.off && !x.sheet).length;
   $('tFree').textContent = slots ? `Bugun ${slots} ta bo‘sh vaqt` : 'Bugun bo‘sh vaqt yo‘q';
 
   const m = S.month?.summary;
@@ -915,8 +915,10 @@ function slotsFor(d){
     }) || null;
     /* Admin belgilagan ish grafigi bo'yicha dam — instruktor o'zgartira olmaydi */
     const off = !b && S.off.some(k => Date.parse(k.start_at) < s1 && Date.parse(k.end_at) > s0);
-    const closed = !b && !off && S.blocks.some(k => Date.parse(k.start_at) < s1 && Date.parse(k.end_at) > s0);
-    return { a, z, b, past: s1 <= now, closed, off };
+    /* Admin «Excel bron»da band qilgan soat (BAND, ism, izoh) — instruktor o'zgartira olmaydi */
+    const sheet = !b && !off ? (S.sheet.find(k => Date.parse(k.start_at) < s1 && Date.parse(k.end_at) > s0) || null) : null;
+    const closed = !b && !off && !sheet && S.blocks.some(k => Date.parse(k.start_at) < s1 && Date.parse(k.end_at) > s0);
+    return { a, z, b, past: s1 <= now, closed, off, sheet };
   });
 }
 
@@ -927,6 +929,7 @@ async function loadBlocks(){
     const d = await api(`/api/instructor/blocks?from=${t}&to=${addDays(t, 6)}`);
     S.blocks = d.blocks || [];
     S.off = d.off || [];
+    S.sheet = d.sheet || [];
   } catch (e) { /* ro'yxat ikkilamchi — bo'sh qoladi */ }
 }
 
@@ -946,6 +949,10 @@ function renderFree(){
     }
     if (past) return `<div class="slot ${cl ? 'closed' : 'free'} past">${time}<div class="s">O‘tib ketdi</div></div>`;
     if (x.off) return `<div class="slot off">${time}<div class="s">Ish vaqti emas<span>Admin grafigi bo‘yicha dam</span></div></div>`;
+    if (x.sheet) {
+      busy++;
+      return `<div class="slot busy">${time}<div class="s">Band<span>${esc(x.sheet.text || 'Admin yozgan')} · Excel bron</span></div></div>`;
+    }
     if (cl) {
       closed++;
       return `<button class="slot closed" data-tog="${hm(a)}">${time}
@@ -1005,7 +1012,7 @@ function toggleSlot(start){
 }
 $('closeDay').onclick = () => {
   const day = S.freeDay, set = closedStartsOf(day);
-  slotsFor(day).forEach(x => { if (!x.b && !x.past && !x.off) set.add(hm(x.a)); });
+  slotsFor(day).forEach(x => { if (!x.b && !x.past && !x.off && !x.sheet) set.add(hm(x.a)); });
   toast('Kun yopildi. Bo‘sh soatingizni bosib oching.');
   saveDayClosed(day, set);
 };
