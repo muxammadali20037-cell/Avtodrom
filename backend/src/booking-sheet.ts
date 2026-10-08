@@ -24,7 +24,8 @@ export const SHEET_LAST_HOUR = 21;
 export const SHEET_HOURS = Array.from({ length: SHEET_LAST_HOUR - SHEET_FIRST_HOUR + 1 }, (_, i) => SHEET_FIRST_HOUR + i);
 export const SHEET_MAX_TEXT = 80;
 
-export type SheetCell = { t: string; b?: string; s?: string; m?: number; e?: string; by?: string; at?: string };
+/** t — matn, b/s/m — bron (id, boshlanish, daqiqa), e — xato, by/at — kim/qachon, bi — instruktor boti orqali yozgan instruktor */
+export type SheetCell = { t: string; b?: string; s?: string; m?: number; e?: string; by?: string; at?: string; bi?: string };
 export type Sheet = { cells: Record<string, SheetCell>; updated_at?: string | null; updated_by?: string | null };
 export type SheetBlock = { start_at: string; end_at: string; sheet: true; text: string };
 
@@ -158,6 +159,7 @@ export function normSheet(v: any): Sheet {
     if (Number(raw.m) > 0) c.m = Math.round(Number(raw.m));
     if (raw.e) c.e = String(raw.e).slice(0, 300);
     if (raw.by) c.by = String(raw.by).slice(0, 60);
+    if (raw.bi) c.bi = String(raw.bi).slice(0, 64);
     if (raw.at && !Number.isNaN(Date.parse(String(raw.at)))) c.at = String(raw.at);
     cells[k] = c;
   }

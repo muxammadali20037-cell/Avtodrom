@@ -190,6 +190,263 @@ function humanError(e: any): string {
   return m || 'Bron yaratilmadi';
 }
 
+/** Bir instruktorning bir kunlik ustuni (instruktor boti uchun) */
+export async function instructorDay(date: string, insId: string) {
+  const st = await loadState(date);
+  const ins = st.insMap.get(String(insId)) || null;
+  const cells = SHEET_HOURS.map((h) => {
+    const c = cellInfo(st, String(insId), h);
+    return { h, key: c.key, start: c.s, end: c.e, sc: c.sc || null, lock: c.lock as string | null, out: c.out as any };
+  });
+  return { ins, cells };
+}
+export const SHEET_LOCK_MSG = LOCK_MSG;
+
+export type SheetActor = { login: string; role: string; bi?: string };
+export type ApplyOpts = {
+  date: string; changes: { key: string; t: string; prev: string }[]; actor: SheetActor;
+  adminUser: Deps['adminUser']; audit: Deps['audit'];
+  /** true — bron yaratilmasa katak ham yozilmaydi (instruktor boti) */
+  strict?: boolean;
+  /** Bron izohi boshi: «Excel bron» yoki «Instruktor boti» */
+  notePrefix?: string;
+};
+export type ApplyResult = {
+  saved: number; created: any[]; cancelled: number; cancelledIds: string[]; errors: { key: string; error: string }[];
+};
+
+/**
+ * Kataklarni yozadi va bronlarni yaratadi/bekor qiladi. Excel bron sahifasi
+ * («Saqlash») ham, instruktor boti ham shu bitta yo'ldan o'tadi.
+ * Sana va o'zgarishlar ro'yxati chaqiruvchida tekshirilgan bo'lishi kerak.
+ */
+export async function applySheetChanges(o: ApplyOpts): Promise<ApplyResult> {
+  const { date, changes } = o;
+  const st = await loadState(date);
+  const admin = await o.adminUser();
+  const now = Date.now(), nowIso = iso(now);
+  const work: Record<string, SheetCell> = {};
+  for (const [k, c] of Object.entries(st.sheet.cells)) work[k] = { ...c };
+  const errors: { key: string; error: string }[] = [];
+  const changed = new Set<string>();
+
+  /* 1. Kataklar matni */
+  for (const ch of changes) {
+    const key = String(ch?.key || '');
+    const p = parseKey(key);
+    if (!p || !st.insMap.has(p.ins)) { errors.push({ key, error: 'Katak topilmadi' }); continue; }
+    const t = cleanText(ch?.t), prev = cleanText(ch?.prev);
+    const cur = work[key]?.t || '';
+    if (t === cur) continue;
+    if (prev !== cur) {
+      errors.push({ key, error: `Bu katakni boshqa xodim o‘zgartirgan (hozir: «${cur || 'bo‘sh'}»). Qayta yozing.` });
+      continue;
+    }
+    const info = cellInfo(st, p.ins, p.h);
+    if (info.e <= now) { errors.push({ key, error: 'Bu soat o‘tib ketgan' }); continue; }
+    /* Yozuvli katakda — faqat uning broni to'langan/boshlangan bo'lsa qulf;
+       yozuvsiz katakda — boshqa bron, instruktor yopgan yoki grafik bo'yicha dam */
+    if (info.lock) { errors.push({ key, error: LOCK_MSG[info.lock] || 'Bu katakni o‘zgartirib bo‘lmaydi' }); continue; }
+    if (t) {
+      const c: SheetCell = { ...(work[key] || { t }), t, by: o.actor.login, at: nowIso, ...(o.actor.bi ? { bi: o.actor.bi } : {}) };
+      delete c.e;
+      work[key] = c;
+    } else {
+      work[key] = { ...(work[key] || { t: '' }), t: '' };
+    }
+    changed.add(key);
+  }
+
+  /* 2. Raqamli kataklar → bronlar (har instruktor ustuni alohida).
+     Faqat o'zgargan kataklarga tegishli bronlar qayta ko'riladi: o'zgarmagan
+     bron (masalan to'lanmagan, lekin hech kim tegmagan) joyida qoladi. */
+  const toCancel = new Map<string, any>();
+  const toCreate: (Run & { ins: string })[] = [];
+  const matched: { run: Run; bid: string }[] = [];
+  const defCat = (ins: Ins) => (ins.categories.includes('B') ? 'B' : ins.categories[0] || 'B');
+  for (const insId of new Set([...changed].map((k) => parseKey(k)!.ins))) {
+    const ins = st.insMap.get(insId)!;
+    const inputs: RunInput[] = [];
+    for (const h of SHEET_HOURS) {
+      const key = cellKey(insId, h);
+      const c = work[key];
+      if (!c?.t) continue;
+      if (hourStartMs(date, h) < now - GRACE_MS) continue;
+      if (cellInfo(st, insId, h).lock) continue;      // to'langan / boshlangan bron — chegara
+      const phone = parsePhone(c.t);
+      if (!phone) continue;
+      inputs.push({ h, key, phone, cat: parseCategory(c.t), half: parseHalf(c.t), text: c.t });
+    }
+    const runs = buildRuns(inputs);
+    /* Shu ustundagi Excel bronlari — faqat o'zgartirsa bo'ladiganlari */
+    const mine = [...st.refs].filter(([bid]) => {
+      const b = st.byId.get(bid);
+      return b && String(b.instructor_id) === insId && ['pending', 'confirmed'].includes(String(b.status)) && !lockedReason(st, b);
+    });
+    /* Tegilgan kataklar to'plami kengayadi: o'zgargan katak → uning bronining
+       hamma kataklari → shu kataklardagi yangi bronlar → … (barqaror bo'lguncha) */
+    const T = new Set([...changed].filter((k) => parseKey(k)!.ins === insId));
+    for (let i = 0; i < 8; i++) {
+      const before = T.size;
+      for (const r of runs) if (r.keys.some((k) => T.has(k))) r.keys.forEach((k) => T.add(k));
+      for (const [, keys] of mine) if (keys.some((k) => T.has(k))) keys.forEach((k) => T.add(k));
+      if (T.size === before) break;
+    }
+    const touched = runs.filter((r) => r.keys.some((k) => T.has(k)));
+    const taken = new Set<Run>();
+    for (const [bid, keys] of mine) {
+      if (!keys.some((k) => T.has(k))) continue;
+      const b = st.byId.get(bid);
+      const u = st.users.get(String(b.customer_id));
+      const same = touched.find((r) => !taken.has(r)
+        && Date.parse(b.start_at) === hourStartMs(date, r.h0) && durOf(b) === r.minutes
+        && samePhone(u?.phone, r.phone) && String(b.category || '').toUpperCase() === (r.cat || defCat(ins)));
+      if (same) { taken.add(same); matched.push({ run: same, bid }); }
+      else toCancel.set(bid, b);
+    }
+    for (const r of touched) if (!taken.has(r)) toCreate.push({ ...r, ins: insId });
+  }
+  /* O'zgarmagan bron: kataklarida havola joyida tursin */
+  for (const { run, bid } of matched) {
+    const b = st.byId.get(bid);
+    for (const k of run.keys) if (work[k]) { work[k].b = bid; work[k].s = b.start_at; work[k].m = durOf(b); delete work[k].e; }
+  }
+
+  /* 3. Eski bronlarni bekor qilish (to'lanmagan, boshlanmagan) */
+  const cancelled: string[] = [];
+  if (toCancel.size) {
+    const ids = [...toCancel.keys()];
+    const rows = await supabaseRest<any[]>('bookings', {
+      method: 'PATCH', headers: { Prefer: 'return=representation' },
+      query: `?id=in.(${ids.map(q).join(',')})&status=in.(pending,confirmed)`,
+      body: JSON.stringify({ status: 'cancelled', cancelled_at: nowIso, cancelled_by: admin.id,
+        cancellation_reason: 'Excel bron: katak o‘zgartirildi', updated_at: nowIso }),
+    });
+    for (const r of rows || []) cancelled.push(String(r.id));
+    const gone = new Set(cancelled);
+    st.day = st.day.filter((b) => !gone.has(String(b.id)));
+    for (const [k, c] of Object.entries(work)) if (c.b && gone.has(c.b)) { delete c.b; delete c.s; delete c.m; }
+  }
+
+  /* 4. Yangi bronlar */
+  const created: any[] = [];
+  const fail = (r: Run, msg: string) => {
+    for (const k of r.keys) {
+      if (!work[k]) continue;
+      /* Instruktor boti: bron bo'lmasa yozuv ham qolmaydi (faqat o'zi yozgan kataklar) */
+      if (o.strict && changed.has(k)) { work[k] = { t: '' }; continue; }
+      work[k].e = msg; delete work[k].b; delete work[k].s; delete work[k].m;
+    }
+    errors.push({ key: r.keys[0], error: msg });
+  };
+  if (toCreate.length) {
+    const phones = [...new Set(toCreate.map((r) => r.phone))];
+    const variants = phones.flatMap((p) => [p, p.slice(1), p.slice(4)]);
+    const [found, tariffs, pkgPrices, courses, nextCode] = await Promise.all([
+      selectIn<any>('users', 'phone', variants, 'id,full_name,phone,role,is_active,is_blocked'),
+      loadTariffs(), loadPackagePrices(),
+      supabaseRest<any[]>('courses', { query: '?is_active=eq.true&select=id,category,name&order=created_at.asc&limit=100' }),
+      codePool(toCreate.length),
+    ]);
+    const byPhone = new Map<string, any>();
+    for (const u of found) {
+      const p = phones.find((x) => samePhone(x, u.phone));
+      if (p && (!byPhone.has(p) || u.role === 'customer')) byPhone.set(p, u);
+    }
+    for (const r of toCreate) {
+      const ins = st.insMap.get(r.ins)!;
+      const cat = r.cat || defCat(ins);
+      if (!ins.categories.includes(cat)) { fail(r, `${ins.name} ${cat} toifani o‘rgatmaydi`); continue; }
+      const course = courses.find((c) => String(c.category || '').toUpperCase() === cat);
+      if (!course) { fail(r, `${cat} toifa uchun mashg‘ulot topilmadi (Narxlar bo‘limida qo‘shing)`); continue; }
+      const start = hourStartMs(date, r.h0), end = start + r.minutes * 60000;
+      const clash = st.day.find((b) => String(b.instructor_id) === r.ins && BUSY.includes(String(b.status))
+        && Date.parse(b.start_at) < end && Date.parse(b.end_at) > start);
+      if (clash) { fail(r, `Instruktor ${fmtHm(Date.parse(clash.start_at))} da band — boshqa bron bor`); continue; }
+      const blk = (st.blocks.get(r.ins) || []).find((x) => Date.parse(x.start_at) < end && Date.parse(x.end_at) > start);
+      if (blk) { fail(r, blk.off ? LOCK_MSG.off : LOCK_MSG.own); continue; }
+      let user = byPhone.get(r.phone) || null;
+      if (user && user.role && user.role !== 'customer') { fail(r, 'Bu raqam xodimga tegishli — mijoz raqamini yozing'); continue; }
+      if (user?.is_blocked) { fail(r, 'Bu mijoz bloklangan'); continue; }
+      if (user) {
+        const mine = st.day.find((b) => String(b.customer_id) === String(user.id) && BUSY.includes(String(b.status))
+          && Date.parse(b.start_at) < end && Date.parse(b.end_at) > start);
+        if (mine) {
+          const other = st.insMap.get(String(mine.instructor_id))?.name;
+          fail(r, `Bu mijozda ${fmtHm(Date.parse(mine.start_at))} da boshqa bron bor${other ? ` (${other})` : ''}`);
+          continue;
+        }
+      }
+      try {
+        if (!user) {
+          const name = nameFrom(r.text) || `Mijoz ${prettyPhone(r.phone)}`;
+          try {
+            user = (await supabaseRest<any[]>('users', {
+              method: 'POST', headers: { Prefer: 'return=representation' },
+              body: JSON.stringify({ full_name: name, phone: r.phone, role: 'customer', is_active: true, is_blocked: false }),
+            }))[0];
+          } catch (e: any) {
+            if (!/duplicate key.*phone/i.test(String(e?.message))) throw e;
+            user = (await supabaseRest<any[]>('users', { query: `?phone=eq.${q(r.phone)}&select=*&limit=1` }))[0];
+          }
+          if (!user) throw Error('Mijoz yozilmadi');
+          byPhone.set(r.phone, user);
+          st.users.set(String(user.id), user);
+        }
+        const payload = {
+          customer_id: user.id, instructor_id: r.ins, course_id: course.id,
+          booking_date: iso(start), start_at: iso(start), end_at: iso(end),
+          duration_minutes: r.minutes, hours: Math.max(1, Math.round(r.minutes / 60)), category: cat,
+          price: priceWithPackage(cat, r.minutes, tariffs, pkgPrices),
+          status: 'confirmed', source: 'admin', confirmed_at: nowIso, confirmed_by: admin.id,
+          customer_note: `${o.notePrefix || 'Excel bron'}: ${r.text}`.slice(0, 300),
+        };
+        const [row] = await insertBookings([payload], nextCode);
+        st.day.push(row);
+        for (const k of r.keys) {
+          if (!work[k]) continue;
+          work[k].b = String(row.id); work[k].s = iso(start); work[k].m = r.minutes; delete work[k].e;
+        }
+        created.push({ key: r.keys[0], id: String(row.id), code: row.pickup_code || null, name: user.full_name,
+          phone: user.phone || r.phone, instructor: ins.name, start: iso(start), minutes: r.minutes, category: cat });
+      } catch (e: any) {
+        fail(r, humanError(e));
+      }
+    }
+  }
+
+  /* 5. Raqamsiz bo'lib qolgan kataklarda eski bron havolasi qolmasin */
+  const runKeys = new Set(matched.flatMap((m) => m.run.keys));
+  for (const c of created) runKeys.add(c.key);
+  for (const r of toCreate) for (const k of r.keys) if (work[k]?.b) runKeys.add(k);
+  for (const k of changed) {
+    const c = work[k];
+    if (c && c.b && !runKeys.has(k) && !lockedReason(st, st.byId.get(c.b))) { delete c.b; delete c.s; delete c.m; }
+  }
+
+  /* 6. Yozish: faqat tegilgan kataklar — boshqa xodimning shu paytdagi o'zgarishi saqlanib qoladi */
+  const touchedKeys = new Set<string>([...changed, ...toCreate.flatMap((r) => r.keys), ...matched.flatMap((m) => m.run.keys)]);
+  for (const id of cancelled) for (const k of st.refs.get(id) || []) touchedKeys.add(k);
+  if (touchedKeys.size) {
+    const fresh = await loadSheet(date);
+    for (const k of touchedKeys) {
+      const c = work[k];
+      if (c && c.t) fresh.cells[k] = c; else delete fresh.cells[k];
+    }
+    fresh.updated_at = nowIso;
+    fresh.updated_by = o.actor.login;
+    await writeSheet(date, fresh);
+  }
+
+  await o.audit(admin.id, 'BOOKING_SHEET_SAVED', 'admin_settings', `booking_sheet:${date}`, null, {
+    date, by: o.actor.login, role: o.actor.role, cells: changed.size,
+    created: created.map((c) => ({ code: c.code, phone: c.phone, instructor: c.instructor, start: c.start, minutes: c.minutes })),
+    cancelled, errors: errors.slice(0, 50),
+  });
+
+  return { saved: changed.size, created, cancelled: cancelled.length, cancelledIds: cancelled, errors };
+}
+
 export async function registerBookingSheetRoutes(app: FastifyInstance, deps: Deps) {
   app.get('/api/admin/booking-sheet', async (req: any, reply: any) => {
     try {
@@ -215,227 +472,11 @@ export async function registerBookingSheetRoutes(app: FastifyInstance, deps: Dep
       if (!changes.length) return reply.code(400).send({ ok: false, error: 'O‘zgarish yo‘q' });
       if (changes.length > 800) return reply.code(400).send({ ok: false, error: 'Bir martada juda ko‘p katak' });
 
-      const st = await loadState(date);
-      const admin = await deps.adminUser();
-      const now = Date.now(), nowIso = iso(now);
-      const work: Record<string, SheetCell> = {};
-      for (const [k, c] of Object.entries(st.sheet.cells)) work[k] = { ...c };
-      const errors: { key: string; error: string }[] = [];
-      const changed = new Set<string>();
-
-      /* 1. Kataklar matni */
-      for (const ch of changes) {
-        const key = String(ch?.key || '');
-        const p = parseKey(key);
-        if (!p || !st.insMap.has(p.ins)) { errors.push({ key, error: 'Katak topilmadi' }); continue; }
-        const t = cleanText(ch?.t), prev = cleanText(ch?.prev);
-        const cur = work[key]?.t || '';
-        if (t === cur) continue;
-        if (prev !== cur) {
-          errors.push({ key, error: `Bu katakni boshqa xodim o‘zgartirgan (hozir: «${cur || 'bo‘sh'}»). Qayta yozing.` });
-          continue;
-        }
-        const info = cellInfo(st, p.ins, p.h);
-        if (info.e <= now) { errors.push({ key, error: 'Bu soat o‘tib ketgan' }); continue; }
-        /* Yozuvli katakda — faqat uning broni to'langan/boshlangan bo'lsa qulf;
-           yozuvsiz katakda — boshqa bron, instruktor yopgan yoki grafik bo'yicha dam */
-        if (info.lock) { errors.push({ key, error: LOCK_MSG[info.lock] || 'Bu katakni o‘zgartirib bo‘lmaydi' }); continue; }
-        if (t) {
-          const c: SheetCell = { ...(work[key] || { t }), t, by: me.login, at: nowIso };
-          delete c.e;
-          work[key] = c;
-        } else {
-          work[key] = { ...(work[key] || { t: '' }), t: '' };
-        }
-        changed.add(key);
-      }
-
-      /* 2. Raqamli kataklar → bronlar (har instruktor ustuni alohida).
-         Faqat o'zgargan kataklarga tegishli bronlar qayta ko'riladi: o'zgarmagan
-         bron (masalan to'lanmagan, lekin hech kim tegmagan) joyida qoladi. */
-      const toCancel = new Map<string, any>();
-      const toCreate: (Run & { ins: string })[] = [];
-      const matched: { run: Run; bid: string }[] = [];
-      const defCat = (ins: Ins) => (ins.categories.includes('B') ? 'B' : ins.categories[0] || 'B');
-      for (const insId of new Set([...changed].map((k) => parseKey(k)!.ins))) {
-        const ins = st.insMap.get(insId)!;
-        const inputs: RunInput[] = [];
-        for (const h of SHEET_HOURS) {
-          const key = cellKey(insId, h);
-          const c = work[key];
-          if (!c?.t) continue;
-          if (hourStartMs(date, h) < now - GRACE_MS) continue;
-          if (cellInfo(st, insId, h).lock) continue;      // to'langan / boshlangan bron — chegara
-          const phone = parsePhone(c.t);
-          if (!phone) continue;
-          inputs.push({ h, key, phone, cat: parseCategory(c.t), half: parseHalf(c.t), text: c.t });
-        }
-        const runs = buildRuns(inputs);
-        /* Shu ustundagi Excel bronlari — faqat o'zgartirsa bo'ladiganlari */
-        const mine = [...st.refs].filter(([bid]) => {
-          const b = st.byId.get(bid);
-          return b && String(b.instructor_id) === insId && ['pending', 'confirmed'].includes(String(b.status)) && !lockedReason(st, b);
-        });
-        /* Tegilgan kataklar to'plami kengayadi: o'zgargan katak → uning bronining
-           hamma kataklari → shu kataklardagi yangi bronlar → … (barqaror bo'lguncha) */
-        const T = new Set([...changed].filter((k) => parseKey(k)!.ins === insId));
-        for (let i = 0; i < 8; i++) {
-          const before = T.size;
-          for (const r of runs) if (r.keys.some((k) => T.has(k))) r.keys.forEach((k) => T.add(k));
-          for (const [, keys] of mine) if (keys.some((k) => T.has(k))) keys.forEach((k) => T.add(k));
-          if (T.size === before) break;
-        }
-        const touched = runs.filter((r) => r.keys.some((k) => T.has(k)));
-        const taken = new Set<Run>();
-        for (const [bid, keys] of mine) {
-          if (!keys.some((k) => T.has(k))) continue;
-          const b = st.byId.get(bid);
-          const u = st.users.get(String(b.customer_id));
-          const same = touched.find((r) => !taken.has(r)
-            && Date.parse(b.start_at) === hourStartMs(date, r.h0) && durOf(b) === r.minutes
-            && samePhone(u?.phone, r.phone) && String(b.category || '').toUpperCase() === (r.cat || defCat(ins)));
-          if (same) { taken.add(same); matched.push({ run: same, bid }); }
-          else toCancel.set(bid, b);
-        }
-        for (const r of touched) if (!taken.has(r)) toCreate.push({ ...r, ins: insId });
-      }
-      /* O'zgarmagan bron: kataklarida havola joyida tursin */
-      for (const { run, bid } of matched) {
-        const b = st.byId.get(bid);
-        for (const k of run.keys) if (work[k]) { work[k].b = bid; work[k].s = b.start_at; work[k].m = durOf(b); delete work[k].e; }
-      }
-
-      /* 3. Eski bronlarni bekor qilish (to'lanmagan, boshlanmagan) */
-      const cancelled: string[] = [];
-      if (toCancel.size) {
-        const ids = [...toCancel.keys()];
-        const rows = await supabaseRest<any[]>('bookings', {
-          method: 'PATCH', headers: { Prefer: 'return=representation' },
-          query: `?id=in.(${ids.map(q).join(',')})&status=in.(pending,confirmed)`,
-          body: JSON.stringify({ status: 'cancelled', cancelled_at: nowIso, cancelled_by: admin.id,
-            cancellation_reason: 'Excel bron: katak o‘zgartirildi', updated_at: nowIso }),
-        });
-        for (const r of rows || []) cancelled.push(String(r.id));
-        const gone = new Set(cancelled);
-        st.day = st.day.filter((b) => !gone.has(String(b.id)));
-        for (const [k, c] of Object.entries(work)) if (c.b && gone.has(c.b)) { delete c.b; delete c.s; delete c.m; }
-      }
-
-      /* 4. Yangi bronlar */
-      const created: any[] = [];
-      const fail = (r: Run, msg: string) => {
-        for (const k of r.keys) if (work[k]) { work[k].e = msg; delete work[k].b; delete work[k].s; delete work[k].m; }
-        errors.push({ key: r.keys[0], error: msg });
-      };
-      if (toCreate.length) {
-        const phones = [...new Set(toCreate.map((r) => r.phone))];
-        const variants = phones.flatMap((p) => [p, p.slice(1), p.slice(4)]);
-        const [found, tariffs, pkgPrices, courses, nextCode] = await Promise.all([
-          selectIn<any>('users', 'phone', variants, 'id,full_name,phone,role,is_active,is_blocked'),
-          loadTariffs(), loadPackagePrices(),
-          supabaseRest<any[]>('courses', { query: '?is_active=eq.true&select=id,category,name&order=created_at.asc&limit=100' }),
-          codePool(toCreate.length),
-        ]);
-        const byPhone = new Map<string, any>();
-        for (const u of found) {
-          const p = phones.find((x) => samePhone(x, u.phone));
-          if (p && (!byPhone.has(p) || u.role === 'customer')) byPhone.set(p, u);
-        }
-        for (const r of toCreate) {
-          const ins = st.insMap.get(r.ins)!;
-          const cat = r.cat || defCat(ins);
-          if (!ins.categories.includes(cat)) { fail(r, `${ins.name} ${cat} toifani o‘rgatmaydi`); continue; }
-          const course = courses.find((c) => String(c.category || '').toUpperCase() === cat);
-          if (!course) { fail(r, `${cat} toifa uchun mashg‘ulot topilmadi (Narxlar bo‘limida qo‘shing)`); continue; }
-          const start = hourStartMs(date, r.h0), end = start + r.minutes * 60000;
-          const clash = st.day.find((b) => String(b.instructor_id) === r.ins && BUSY.includes(String(b.status))
-            && Date.parse(b.start_at) < end && Date.parse(b.end_at) > start);
-          if (clash) { fail(r, `Instruktor ${fmtHm(Date.parse(clash.start_at))} da band — boshqa bron bor`); continue; }
-          const blk = (st.blocks.get(r.ins) || []).find((x) => Date.parse(x.start_at) < end && Date.parse(x.end_at) > start);
-          if (blk) { fail(r, blk.off ? LOCK_MSG.off : LOCK_MSG.own); continue; }
-          let user = byPhone.get(r.phone) || null;
-          if (user && user.role && user.role !== 'customer') { fail(r, 'Bu raqam xodimga tegishli — mijoz raqamini yozing'); continue; }
-          if (user?.is_blocked) { fail(r, 'Bu mijoz bloklangan'); continue; }
-          if (user) {
-            const mine = st.day.find((b) => String(b.customer_id) === String(user.id) && BUSY.includes(String(b.status))
-              && Date.parse(b.start_at) < end && Date.parse(b.end_at) > start);
-            if (mine) {
-              const other = st.insMap.get(String(mine.instructor_id))?.name;
-              fail(r, `Bu mijozda ${fmtHm(Date.parse(mine.start_at))} da boshqa bron bor${other ? ` (${other})` : ''}`);
-              continue;
-            }
-          }
-          try {
-            if (!user) {
-              const name = nameFrom(r.text) || `Mijoz ${prettyPhone(r.phone)}`;
-              try {
-                user = (await supabaseRest<any[]>('users', {
-                  method: 'POST', headers: { Prefer: 'return=representation' },
-                  body: JSON.stringify({ full_name: name, phone: r.phone, role: 'customer', is_active: true, is_blocked: false }),
-                }))[0];
-              } catch (e: any) {
-                if (!/duplicate key.*phone/i.test(String(e?.message))) throw e;
-                user = (await supabaseRest<any[]>('users', { query: `?phone=eq.${q(r.phone)}&select=*&limit=1` }))[0];
-              }
-              if (!user) throw Error('Mijoz yozilmadi');
-              byPhone.set(r.phone, user);
-              st.users.set(String(user.id), user);
-            }
-            const payload = {
-              customer_id: user.id, instructor_id: r.ins, course_id: course.id,
-              booking_date: iso(start), start_at: iso(start), end_at: iso(end),
-              duration_minutes: r.minutes, hours: Math.max(1, Math.round(r.minutes / 60)), category: cat,
-              price: priceWithPackage(cat, r.minutes, tariffs, pkgPrices),
-              status: 'confirmed', source: 'admin', confirmed_at: nowIso, confirmed_by: admin.id,
-              customer_note: `Excel bron: ${r.text}`.slice(0, 300),
-            };
-            const [row] = await insertBookings([payload], nextCode);
-            st.day.push(row);
-            for (const k of r.keys) {
-              if (!work[k]) continue;
-              work[k].b = String(row.id); work[k].s = iso(start); work[k].m = r.minutes; delete work[k].e;
-            }
-            created.push({ key: r.keys[0], id: String(row.id), code: row.pickup_code || null, name: user.full_name,
-              phone: user.phone || r.phone, instructor: ins.name, start: iso(start), minutes: r.minutes, category: cat });
-          } catch (e: any) {
-            fail(r, humanError(e));
-          }
-        }
-      }
-
-      /* 5. Raqamsiz bo'lib qolgan kataklarda eski bron havolasi qolmasin */
-      const runKeys = new Set(matched.flatMap((m) => m.run.keys));
-      for (const c of created) runKeys.add(c.key);
-      for (const r of toCreate) for (const k of r.keys) if (work[k]?.b) runKeys.add(k);
-      for (const k of changed) {
-        const c = work[k];
-        if (c && c.b && !runKeys.has(k) && !lockedReason(st, st.byId.get(c.b))) { delete c.b; delete c.s; delete c.m; }
-      }
-
-      /* 6. Yozish: faqat tegilgan kataklar — boshqa xodimning shu paytdagi o'zgarishi saqlanib qoladi */
-      const touchedKeys = new Set<string>([...changed, ...toCreate.flatMap((r) => r.keys), ...matched.flatMap((m) => m.run.keys)]);
-      for (const id of cancelled) for (const k of st.refs.get(id) || []) touchedKeys.add(k);
-      if (touchedKeys.size) {
-        const fresh = await loadSheet(date);
-        for (const k of touchedKeys) {
-          const c = work[k];
-          if (c && c.t) fresh.cells[k] = c; else delete fresh.cells[k];
-        }
-        fresh.updated_at = nowIso;
-        fresh.updated_by = me.login;
-        await writeSheet(date, fresh);
-      }
-
-      await deps.audit(admin.id, 'BOOKING_SHEET_SAVED', 'admin_settings', `booking_sheet:${date}`, null, {
-        date, by: me.login, role: me.role, cells: changed.size,
-        created: created.map((c) => ({ code: c.code, phone: c.phone, instructor: c.instructor, start: c.start, minutes: c.minutes })),
-        cancelled, errors: errors.slice(0, 50),
-      });
-
+      const result = await applySheetChanges({ date, changes, actor: { login: me.login, role: me.role }, adminUser: deps.adminUser, audit: deps.audit });
       const after = await loadState(date);
       return {
         ok: true, ...view(after, me),
-        result: { saved: changed.size, created, cancelled: cancelled.length, errors },
+        result: { saved: result.saved, created: result.created, cancelled: result.cancelled, errors: result.errors },
       };
     } catch (e: any) {
       return reply.code(e?.statusCode ?? 500).send({ ok: false, error: e?.message || 'Excel bron saqlanmadi' });

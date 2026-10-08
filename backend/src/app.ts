@@ -7,6 +7,7 @@ import { registerBookingRoutes } from './booking-routes.js';
 import { registerInstructorRoutes } from './instructor-routes.js';
 import { registerInstructorRegistrationRoutes } from './instructor-registration-routes.js';
 import { handleInstructorStart } from './instructor-start.js';
+import { handleInstructorSheetMessage } from './instructor-sheet-bot.js';
 import { registerAdminPasswordRoutes, guard as requireAdmin, guardAdmin, guardDesk, currentStaff, adminUser, audit, peekStaff, operatorMayCall } from './admin-password-routes.js';
 import { registerContentRoutes } from './content-routes.js';
 import { registerCourseRoutes } from './courses-routes.js';
@@ -205,6 +206,12 @@ app.post('/api/telegram/instructor/webhook', async (request, reply) => {
   const chatId = Number(message?.chat?.id);
   if (!INSTRUCTOR_BOT_TOKEN) return reply.code(503).send({ ok: false, error: 'Instructor bot is not configured' });
   if (Number.isSafeInteger(chatId) && chatId > 0 && /^\/start(?:@\w+)?(?:\s.*)?$/i.test(text)) await handleInstructorStart(INSTRUCTOR_BOT_TOKEN, chatId, { id: chatId, first_name: message?.from?.first_name, last_name: message?.from?.last_name, username: message?.from?.username }, INSTRUCTOR_MINI_APP_URL);
+  /* Instruktor botga «901234567 14:00» yozsa — shu instruktorga bron (Excel bron ustuniga).
+     Faqat shaxsiy chat; Telegram qayta yubormasligi uchun xato bo'lsa ham 200. */
+  else if (Number.isSafeInteger(chatId) && chatId > 0 && text && Number(message?.from?.id) === chatId) {
+    try { await handleInstructorSheetMessage(INSTRUCTOR_BOT_TOKEN, chatId, chatId, text); }
+    catch (e) { request.log.error({ err: e }, 'instructor bot booking failed'); }
+  }
   return { ok: true };
 });
 app.post('/api/telegram/admin/webhook', async (request, reply) => handleTelegramWebhook(request, reply, ADMIN_BOT_TOKEN, ADMIN_MINI_APP_URL, 'admin'));

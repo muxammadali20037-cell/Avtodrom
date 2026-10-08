@@ -11,7 +11,8 @@ export async function handleInstructorStart(token: string, chatId: number, user:
   const status = await instructorRegistrationStatus(user);
   if (status.status === 'APPROVED') return telegramApi(token, 'sendMessage', {
     chat_id: chatId,
-    text: '✅ Arizangiz tasdiqlangan. Instructor paneliga kirishingiz mumkin.',
+    text: '✅ Arizangiz tasdiqlangan. Instructor paneliga kirishingiz mumkin.\n\n📝 Bron yozish: mijoz raqami va vaqtni shu yerga yozing, masalan <code>901234567 14:00</code> yoki <code>ertaga 901234567 15-17</code>. Bekor qilish: <code>bekor 14:00</code>. Jadvalingiz: <code>bugun</code> / <code>ertaga</code>.',
+    parse_mode: 'HTML',
     reply_markup: { inline_keyboard: [[{ text: '👨‍🏫 Instructor panelini ochish', web_app: { url: registrationUrl(miniAppUrl) } }]] }
   });
   if (status.status === 'PENDING') return telegramApi(token, 'sendMessage', {
