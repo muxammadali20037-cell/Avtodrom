@@ -749,6 +749,7 @@ button.tr:active{background:var(--card-2)}
 }
 
 /* ---------- ISH GRAFIGI ---------- */
+.schtab td.sx{background:#eef0f4;color:#3d4360;font-weight:700;font-size:11px;padding:0 5px;box-shadow:inset 3px 0 0 #8a90a2;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:56px}
 .schtab td.so{background:repeating-linear-gradient(135deg,#ece6f8 0 6px,#f7f4fd 6px 12px);color:#6b5a97;text-align:center;font-weight:700;font-size:11px}
 .in-grafik{width:40px;height:40px;border-radius:12px;box-shadow:none;background:var(--accent-soft);color:var(--accent);margin-left:auto}
 .in-grafik + .sw{margin-left:6px}
@@ -827,6 +828,49 @@ button.tr:active{background:var(--card-2)}
 .wp-save.on .tx b{color:var(--warn)}
 @media (min-width:960px){.wp-save{bottom:16px}}
 @media (max-width:420px){.wp-quick{grid-template-columns:1fr 1fr}.wp-quick .btn{grid-column:span 2;width:100%}.wp-save .tx small{display:none}}
+
+/* ---------- EXCEL BRON — Excel'dagidek jadval: ustun instruktor, qator soat ---------- */
+.xb-bar{display:flex;align-items:center;gap:8px 10px;flex-wrap:wrap;background:var(--card);border-radius:14px;box-shadow:var(--shadow);padding:8px 12px;margin-bottom:10px;min-height:48px;font-size:13.5px;line-height:1.35}
+.xb-addr{font-size:12.5px;white-space:nowrap;padding:4px 9px;border-radius:9px;background:var(--accent-soft);color:var(--accent)}
+.xb-info{flex:1 1 260px;min-width:0}
+.xb-bar .btn{width:auto;min-height:36px;padding:0 12px;font-size:13.5px}
+.xb-wrap{position:relative;overflow:auto;border-radius:14px;background:var(--card);box-shadow:var(--shadow);max-height:calc(100vh - 330px);min-height:320px;-webkit-overflow-scrolling:touch;outline:0;overscroll-behavior:contain}
+.xb-wrap:focus-visible{box-shadow:var(--shadow),inset 0 0 0 2px var(--accent)}
+table.xb{border-collapse:separate;border-spacing:0;font-size:12.5px;table-layout:fixed;user-select:none;-webkit-user-select:none}
+.xb th,.xb td{border-right:1px solid #cfd5e1;border-bottom:1px solid #cfd5e1;padding:0 7px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.xb thead th{position:sticky;z-index:2;text-align:center}
+.xb thead tr:nth-child(1) th{top:0;height:24px}
+.xb thead tr:nth-child(2) th{top:24px;height:30px}
+.xb thead tr:nth-child(3) th{top:54px;height:24px}
+.xb th.xb-grp{background:#2b2f8f;color:#fff;font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;text-align:left;overflow:visible}
+.xb th.xb-grp span{position:sticky;left:70px;display:inline-block;padding:0 6px}
+.xb th.xb-nm{font-weight:850;font-size:12px;text-transform:uppercase;color:#141833;max-width:136px}
+.xb th.xb-ph{font-weight:750;font-size:11.5px;color:#30364f;font-variant-numeric:tabular-nums}
+.xb th.xb-h{position:sticky;left:0;z-index:3;width:62px;min-width:62px;max-width:62px;background:#e5484d;color:#fff;font-weight:850;text-align:center;font-variant-numeric:tabular-nums;height:32px}
+.xb th.xb-h.past{background:#f0a6a8}
+.xb thead th.xb-corner{top:0;z-index:5;height:78px;background:#c62f35;font-size:11px;line-height:1.15;white-space:normal}
+.xb td.xc{position:relative;width:136px;min-width:136px;max-width:136px;height:32px;background:var(--cb,#fff);cursor:cell;font-weight:650;color:#141833}
+.xb td.xc .xt{display:block;overflow:hidden;text-overflow:ellipsis}
+.xb td.xc.tg .xt{padding-right:46px}
+.xb td.xc .xg{position:absolute;right:3px;top:50%;transform:translateY(-50%);font-style:normal;font-size:9.5px;font-weight:800;padding:1px 4px;border-radius:6px;background:rgba(20,24,51,.10);color:#3d4360;max-width:52px;overflow:hidden;text-overflow:ellipsis;letter-spacing:-.01em}
+.xb td.xc .xg.bron{background:#2b2f8f;color:#fff}
+.xb td.xc.sb{box-shadow:inset 3px 0 0 #2b2f8f}
+.xb td.xc.sn{box-shadow:inset 3px 0 0 #8a90a2}
+.xb td.xc.ob{background:#fde2e4;color:#8a1c24}
+.xb td.xc.ow{background:#e4e7ee;color:#555d70;text-align:center;font-weight:750}
+.xb td.xc.of{background:repeating-linear-gradient(135deg,#ece6f8 0 6px,#f7f4fd 6px 12px);color:#6b5a97;text-align:center;font-weight:750}
+.xb td.xc.dirty{background:#fff7d6;box-shadow:inset 0 0 0 2px #e0a100}
+.xb td.xc.err{box-shadow:inset 0 0 0 2px #d14343}
+.xb td.xc.err .xt{color:#a32020}
+.xb td.xc.past{opacity:.55}
+.xb td.xc.ro{cursor:not-allowed}
+.xb td.xc.sel::after{content:'';position:absolute;inset:0;background:rgba(43,47,143,.13);pointer-events:none}
+.xb td.xc.act::after{background:rgba(43,47,143,.05);box-shadow:inset 0 0 0 2px #2b2f8f}
+.xb-ed{position:absolute;z-index:6;margin:0;border:2px solid #2b2f8f;border-radius:0;padding:0 7px;font-size:13px;font-weight:650;background:#fff;color:#141833;outline:0;box-shadow:0 6px 18px rgba(16,20,48,.22)}
+@media (max-width:759px){.xb td.xc{width:122px;min-width:122px;max-width:122px;font-size:12px}.xb th.xb-nm{max-width:122px}.xb-wrap{max-height:calc(100vh - 300px)}.xb th.xb-h{width:52px;min-width:52px;max-width:52px}.xb th.xb-grp span{left:58px}}
+#xbSave{position:sticky;bottom:calc(var(--nav-h) + var(--sb) + 10px);z-index:40}
+#xbSave .wp-save{position:static;margin-top:12px}
+@media (min-width:960px){#xbSave{bottom:16px}}
 </style>
 </head>
 <body>
@@ -949,6 +993,7 @@ const IC = {
   edit: '<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/>',
   wait: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5h4"/>',
   steer: '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="2.4"/><path d="M12 14.4V21M9.7 11.2L3.4 9.6M14.3 11.2l6.3-1.6"/>',
+  sheet: '<rect x="3.5" y="4" width="17" height="16" rx="2"/><path d="M3.5 9.3h17M3.5 14.6h17M9.3 4v16"/>',
   grid: '<rect x="4" y="4" width="6.5" height="6.5" rx="1.6"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.6"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.6"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.6"/>',
 };
 const I = (n, s = 22, w = 1.9) => `<svg viewBox="0 0 24 24" width="${s}" height="${s}" fill="none" stroke="currentColor" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${IC[n] || ''}</svg>`;
@@ -1273,6 +1318,7 @@ const ROUTES = {
   report:      { t: 'Kassa hisoboti', roles: ['cashier', 'admin'], render: () => vReport(), live: () => { if (perLive(RP, 400)) loadReport(true); } },
   insrep:      { t: 'Instruktorlar hisoboti', roles: ['cashier', 'admin'], render: a => vInsRep(a), live: a => { if (perLive(IR)) { if (a) loadIrDetail(true); else loadInsRep(true); } }, parent: a => a ? 'insrep' : 'home' },
   schedule:    { t: 'Instruktorlar jadvali', roles: ALL, wide: true, render: () => vSchedule(), live: () => loadSchedule(true) },
+  xbron:       { t: 'Excel bron', roles: ALL, wide: true, render: () => vXbron(), live: () => xbLoad(true) },
   bookings:    { t: 'Bronlar', roles: ['operator', 'admin'], render: a => vBookings(a), live: () => loadBookings(true) },
   manual:      { t: 'Qo‘lda bron', roles: ['operator', 'admin'], focus: true, render: () => vManual(), live: () => wzLive(MB) },
   chat:        { t: 'Mijozlar chati', roles: ['operator', 'admin'], render: a => vChat(a), live: a => chatLive(a), parent: a => a ? 'chat' : 'home' },
@@ -1365,10 +1411,10 @@ function sideDef(){
   const G = [{ items: [['home', 'Bosh sahifa', 'home']] }];
   if (canKassa()) G.push({ title: isCashier() ? `Kassa ${S.reg?.r?.code || ''}` : 'Kassa', reg: isAdmin(), items: [
     ['issue', 'Chek chiqarish', 'receipt'], ['receipts', 'Cheklar', 'list', 'receipts'], ['live', 'Jarayonda', 'play', 'live'], ['report', 'Kassa hisoboti', 'chart'],
-    ...(isCashier() ? [['insrep', 'Instruktorlar hisoboti', 'steer'], ['schedule', 'Instruktorlar jadvali', 'cal']] : [])] });
+    ...(isCashier() ? [['insrep', 'Instruktorlar hisoboti', 'steer'], ['schedule', 'Instruktorlar jadvali', 'cal'], ['xbron', 'Excel bron', 'sheet']] : [])] });
   if (canDesk()) G.push({ title: 'Bronlar', items: [
     ['bookings/new', 'Yangi bronlar', 'bell', 'pending'], ['bookings/cancels', 'Bekor so‘rovlari', 'ban', 'cancels'], ['bookings/all', 'Barcha bronlar', 'list'],
-    ['manual', 'Qo‘lda bron', 'phone'], ['schedule', 'Instruktorlar jadvali', 'cal'], ['chat', 'Mijozlar chati', 'chat', 'chat']] });
+    ['xbron', 'Excel bron', 'sheet'], ['manual', 'Qo‘lda bron', 'phone'], ['schedule', 'Instruktorlar jadvali', 'cal'], ['chat', 'Mijozlar chati', 'chat', 'chat']] });
   if (isAdmin()) G.push({ title: 'Boshqaruv', items: [
     ['analytics', 'Hisobot va tahlil', 'chart'], ['insrep', 'Instruktorlar hisoboti', 'steer'], ['retention', 'O‘quvchini qaytarish', 'refresh'], ['instructors', 'Instruktorlar', 'users', 'apps'], ['grafik', 'Ish grafigi', 'clock'], ['prices', 'Narxlar va ish vaqti', 'tag'],
     ['staff', 'Xodimlar', 'key'], ['!/admin/full', 'Kengaytirilgan panel', 'ext']] });
@@ -1641,6 +1687,7 @@ function vHome(){
       ${tile('receipts', 'receipt', 'Bugungi cheklar', 'qayta chop etish', { id: 'receipts', act: 'rctoday' })}
       ${tile('live', 'play', 'Jarayonda', 'hozir haydayotganlar', { id: 'live', cls: 'b' })}
       ${tile('schedule', 'cal', 'Jadval', 'kim bo‘sh, kim band', { cls: 'g' })}
+      ${tile('xbron', 'sheet', 'Excel bron', 'adminlar yozgan bronlar', { cls: 'b' })}
       ${tile('report', 'chart', 'Hisobot', 'naqd, karta, jami', { cls: 'o' })}
       ${tile('insrep', 'steer', 'Instruktorlar hisoboti', 'kim nechta o‘quvchi haydadi')}
     </div>`;
@@ -1651,6 +1698,7 @@ function vHome(){
       ${tile('bookings/new', 'bell', 'Yangi bronlar', 'tasdiqlash yoki rad etish', { id: 'pending' })}
       ${tile('bookings/cancels', 'ban', 'Bekor so‘rovlari', 'mijoz bekor qilmoqchi', { id: 'cancels', cls: 'o' })}
       ${tile('chat', 'chat', 'Mijozlar chati', 'savollarga javob', { id: 'chat', cls: 'b' })}
+      ${tile('xbron', 'sheet', 'Excel bron', 'soat jadvaliga yozing — bron', { cls: 'b' })}
       ${tile('schedule', 'cal', 'Jadval', 'bo‘sh vaqtni bosing — bron', { cls: 'g' })}
       ${tile('bookings/all', 'list', 'Barcha bronlar', 'qidirish, holatini o‘zgartirish')}
     </div>`;
@@ -1663,6 +1711,7 @@ function vHome(){
       ${tile('bookings/cancels', 'ban', 'Bekor so‘rovlari', 'mijoz bekor qilmoqchi', { id: 'cancels', cls: 'o' })}
       ${tile('chat', 'chat', 'Mijozlar chati', 'savollarga javob', { id: 'chat', cls: 'b' })}
       ${tile('live', 'play', 'Jarayonda', 'hozir haydayotganlar', { id: 'live', cls: 'b' })}
+      ${tile('xbron', 'sheet', 'Excel bron', 'soat jadvaliga yozing — bron', { cls: 'b' })}
       ${tile('schedule', 'cal', 'Jadval', 'instruktorlar bandligi', { cls: 'g' })}
       ${tile('receipts', 'receipt', 'Cheklar', 'kassa cheklari', { id: 'receipts' })}
     </div>
@@ -4283,6 +4332,483 @@ ACT.wpsave = async el => {
   } catch (e) { fail(e); }
   finally { busyBtn(el, false); }
 };
+/* =========================================================================
+   EXCEL BRON — adminlar o'rgangan Excel jadvali, panelning o'zida
+   Ustun — instruktor (ismi, telefoni), qator — soat 6:00 … 21:00.
+   Katakka yozing va «Saqlash»ni bosing:
+     · telefon raqam — haqiqiy bron (kod bilan), kassa uni raqam yoki kod
+       bo'yicha topadi; bir ustunda ketma-ket soatlarga bir xil raqam —
+       bitta uzun bron;
+     · raqamsiz yozuv (BAND, ism, izoh) — shu soat band, Mini App, operator
+       va kassa u vaqtga bron qila olmaydi.
+   Klaviatura xuddi Excel'dagidek: strelkalar, Enter, Tab, Delete, F2,
+   Ctrl+C / Ctrl+V (Excel'dan nusxa olib qo'yish), Ctrl+Z, Ctrl+S.
+   Kassa jadvalni faqat ko'radi.
+   ========================================================================= */
+const XB = { date: kToday(), d: null, seq: 0, drafts: {}, sel: null, anchor: null, edit: null, undo: [], saving: false };
+const XB_PAL = ['#fde047', '#86efac', '#cbd5e1', '#fdba74', '#93c5fd', '#a5b4fc', '#f9a8d4', '#5eead4', '#c4b5fd', '#fcd34d', '#7dd3fc', '#bef264'];
+const XB_SRC = { app: 'Mini App', admin: 'Qo‘lda bron', walk_in: 'Kassa', school: 'Avtoshkola' };
+const XB_TAG = { app: 'App', admin: 'Qo‘lda', walk_in: 'Kassa', school: 'Maktab' };
+const xbDigits = p => String(p || '').replace(/\D/g, '').slice(-9);
+const xbTint = (hex, k = 0.32) => {
+  const n = parseInt(hex.slice(1), 16), mix = c => Math.round(c * k + 255 * (1 - k));
+  return `rgb(${mix(n >> 16 & 255)},${mix(n >> 8 & 255)},${mix(n & 255)})`;
+};
+/** Server bilan bir xil qoida: «994188549», «99-313-56-26», «50 150 05 08», «+998 90 …» */
+function xbPhone(text){
+  const s = String(text || ''), g = [...s.matchAll(/\d+/g)].map(m => ({ d: m[0], a: m.index, z: m.index + m[0].length }));
+  const runs = []; let cur = [];
+  g.forEach((x, i) => { if (i && !/^[\s\-.()]{1,3}$/.test(s.slice(g[i - 1].z, x.a))) { runs.push(cur); cur = []; } cur.push(x.d); });
+  if (cur.length) runs.push(cur);
+  for (const run of runs) for (let i = 0; i < run.length; i++) {
+    let d = '', local = null;
+    for (let j = i; j < run.length; j++) { d += run[j]; if (d.length === 9 && !local) local = d; if (d.length === 12 && d.startsWith('998')) return '+' + d; if (d.length > 12) break; }
+    if (local) return '+998' + local;
+  }
+  return null;
+}
+const xbShortPhone = p => { const m = /(\d{2})(\d{3})(\d{2})(\d{2})$/.exec(String(p || '').replace(/\D/g, '')); return m ? `${m[1]} ${m[2]} ${m[3]} ${m[4]}` : String(p || ''); };
+const xbDr = () => (XB.drafts[XB.date] = XB.drafts[XB.date] || {});
+const xbDirtyN = () => Object.keys(XB.drafts[XB.date] || {}).length;
+const xbAllDirty = () => Object.values(XB.drafts).reduce((a, x) => a + Object.keys(x || {}).length, 0);
+const xbKey = (r, c) => `${XB.d.instructors[c].id}|${String(XB.d.hours[r]).padStart(2, '0')}`;
+const xbSrv = key => XB.d?.cells?.[key] || null;
+const xbSrvText = key => { const c = xbSrv(key); return c && (c.k === 'sheet' || c.k === 'note') ? c.t || '' : ''; };
+const xbText = key => { const d = (XB.drafts[XB.date] || {})[key]; return d ? d.t : xbSrvText(key); };
+const xbEndMs = r => atTk(XB.d.date, pad(XB.d.hours[r]) + ':00').getTime() + 3600e3;
+const xbPast = r => xbEndMs(r) <= Date.now();
+function xbCanEdit(r, c){
+  if (!XB.d?.can_edit || xbPast(r)) return false;
+  const s = xbSrv(xbKey(r, c));
+  return !(s && s.lock);
+}
+
+function vXbron(){
+  const t = kToday();
+  $('view').innerHTML = `<div class="view">
+    <div class="sch-tools">
+      <div class="chips grow" style="margin:0;padding:2px 0 4px">${dayChips(XB.date, 'xbday', [[t, 'Bugun'], [dayAdd(t, 1), 'Ertaga'], [dayAdd(t, 2), 'Indinga']])}</div>
+      <button class="btn btn-white btn-sm" data-act="xbxl">${I('dl', 18)} Excel</button>
+      <button class="btn btn-white btn-sm" data-act="xbhelp">${I('eye', 18)} Qoidalar</button>
+    </div>
+    <div class="sec-h" style="margin:4px 2px 10px"><h2 id="xbTitle">${esc(dayTitle(XB.date))}</h2>
+      <span><button class="icon-btn" data-act="xbmove" data-v="-1" aria-label="Oldingi kun" style="display:inline-grid;width:38px;height:38px">${I('back', 18)}</button>
+      <button class="icon-btn" data-act="xbmove" data-v="1" aria-label="Keyingi kun" style="display:inline-grid;width:38px;height:38px">${I('chev', 18)}</button></span></div>
+    <div id="xbNote"></div>
+    <div id="xbGrid">${skel(4)}</div>
+    <div class="legend"><span><i style="background:#fff;box-shadow:inset 0 0 0 1px #c9cfdb"></i>Bo‘sh</span>
+      <span><i style="background:#dbe4ff;box-shadow:inset 3px 0 0 #2b2f8f"></i>Raqam — bron (kod)</span>
+      <span><i style="background:#eef0f4;box-shadow:inset 3px 0 0 #8a90a2"></i>Yozuv — band</span>
+      <span><i style="background:#fde2e4"></i>Mini App / boshqa bron</span>
+      <span><i style="background:#e4e7ee"></i>Instruktor yopgan</span>
+      <span><i style="background:repeating-linear-gradient(135deg,#e9e3f7 0 3px,#f6f3fc 3px 6px)"></i>Dam (grafik)</span>
+      <span><i style="background:#fff7d6;box-shadow:inset 0 0 0 2px #e0a100"></i>Saqlanmagan</span>
+      <span><i style="background:#fff;box-shadow:inset 0 0 0 2px #d14343"></i>Xato</span></div>
+    <div id="xbSave"></div></div>`;
+  bindDatePick();
+  if (XB.d && XB.d.date === XB.date) xbPaint();
+  xbLoad();
+}
+async function xbLoad(silent = false){
+  if (!$('xbGrid')) return;
+  if (silent && (XB.edit || XB.saving)) return;
+  const seq = ++XB.seq, date = XB.date;
+  try{
+    const d = await api('/api/admin/booking-sheet?date=' + date);
+    if (seq !== XB.seq || date !== XB.date || !$('xbGrid')) return;
+    if (silent && (XB.edit || XB.saving)) return;
+    XB.d = d;
+    xbPaint();
+  }catch(e){ if (seq === XB.seq && $('xbGrid') && !silent) $('xbGrid').innerHTML = `<div class="note err">${esc(e.message)}</div>`; }
+}
+function xbGroups(){
+  const out = [];
+  for (const i of XB.d.instructors) { const l = out[out.length - 1]; if (l && l.g === i.group) l.n++; else out.push({ g: i.group, n: 1 }); }
+  return out;
+}
+/** Katak ko'rinishi: klasslar, rang, izoh va ichi */
+function xbCellParts(r, c){
+  const key = xbKey(r, c), s = xbSrv(key), dr = (XB.drafts[XB.date] || {})[key];
+  const past = xbPast(r), col = XB_PAL[c % XB_PAL.length];
+  const cls = ['xc'];
+  let inner = '', bg = xbTint(col, 0.22);
+  if (dr) {
+    cls.push('dirty');
+    const ph = dr.t ? xbPhone(dr.t) : null;
+    inner = dr.t ? `<span class="xt">${esc(dr.t)}</span><i class="xg ${ph ? 'bron' : ''}">${ph ? 'bron' : 'band'}</i>` : `<span class="xt muted">o‘chiriladi</span>`;
+  } else if (s && (s.k === 'sheet' || s.k === 'note')) {
+    const live = s.k === 'sheet';
+    cls.push(live ? 'sb' : 'sn');
+    if (s.e) cls.push('err');
+    if (s.lock) cls.push('lk');
+    const tag = live ? `<i class="xg bron">${esc(s.bk?.code || 'bron')}${s.bk?.paid ? ' ✓' : ''}</i>`
+      : s.bk && s.bk.status === 'cancelled' ? '<i class="xg">bekor</i>' : '';
+    inner = `<span class="xt">${esc(s.t)}</span>${tag}`;
+  } else if (s && s.k === 'bk') {
+    cls.push('ob', 'lk');
+    const b = s.bk;
+    inner = `<span class="xt">${esc(b.phone ? xbDigits(b.phone) : b.name)}</span><i class="xg">${esc(XB_TAG[b.src] || 'Bron')}</i>`;
+  } else if (s && s.k === 'own') { cls.push('ow', 'lk'); inner = '<span class="xt">yopiq</span>'; }
+  else if (s && s.k === 'off') { cls.push('of', 'lk'); inner = '<span class="xt">dam</span>'; }
+  if (inner.includes('class="xg')) cls.push('tg');
+  if (past) cls.push('past');
+  if (XB.d.can_edit && !xbCanEdit(r, c)) cls.push('ro');
+  const sel = XB.sel, an = XB.anchor || sel;
+  if (sel) {
+    const r0 = Math.min(sel.r, an.r), r1 = Math.max(sel.r, an.r), c0 = Math.min(sel.c, an.c), c1 = Math.max(sel.c, an.c);
+    if (r >= r0 && r <= r1 && c >= c0 && c <= c1) cls.push('sel');
+    if (sel.r === r && sel.c === c) cls.push('act');
+  }
+  return { cls, bg, title: s?.e || '', inner };
+}
+function xbCellHtml(r, c){
+  const p = xbCellParts(r, c);
+  return `<td class="${p.cls.join(' ')}" data-r="${r}" data-c="${c}" style="--cb:${p.bg}"${p.title ? ` title="${esc(p.title)}"` : ''}>${p.inner}</td>`;
+}
+const xbTd = (r, c) => $('xbTab')?.tBodies[0]?.rows[r]?.cells[c + 1] || null;
+/** Kataklarni JOYIDA yangilaydi — DOM tuguni almashmaydi, shuning uchun
+    bosish / ikki marta bosish (telefonda — yana bosish) buzilmaydi. */
+function xbPatch(keys = null){
+  const tab = $('xbTab'); if (!tab || !XB.d) return;
+  tab.querySelectorAll('td.xc').forEach(td => {
+    const r = Number(td.dataset.r), c = Number(td.dataset.c);
+    if (keys && !keys.has(xbKey(r, c))) return;
+    const p = xbCellParts(r, c), cls = p.cls.join(' ');
+    if (td.className !== cls) td.className = cls;
+    if (td._h !== p.inner) { td.innerHTML = p.inner; td._h = p.inner; }
+    if ((td.title || '') !== p.title) td.title = p.title;
+  });
+}
+/** Tanlovni belgilaydi (faqat klasslar) */
+function xbMarkSel(){
+  const tab = $('xbTab'); if (!tab) return;
+  tab.querySelectorAll('td.xc.sel, td.xc.act').forEach(td => td.classList.remove('sel', 'act'));
+  const R = xbRange(); if (!R) return;
+  for (let r = R.r0; r <= R.r1; r++) for (let c = R.c0; c <= R.c1; c++) xbTd(r, c)?.classList.add('sel');
+  xbTd(XB.sel.r, XB.sel.c)?.classList.add('act');
+}
+function xbTableHtml(){
+  const d = XB.d, cols = d.instructors;
+  const groups = xbGroups().map(g => `<th class="xb-grp" colspan="${g.n}"><span>${esc(g.g)} toifa</span></th>`).join('');
+  const names = cols.map((i, c) => `<th class="xb-nm" style="background:${XB_PAL[c % XB_PAL.length]}" title="${esc(i.name)}${i.active ? '' : ' (faol emas)'}">${esc(i.name)}</th>`).join('');
+  const phones = cols.map((i, c) => `<th class="xb-ph" style="background:${xbTint(XB_PAL[c % XB_PAL.length], 0.6)}">${esc(i.phone ? xbShortPhone(i.phone) : '—')}</th>`).join('');
+  const body = d.hours.map((h, r) => `<tr><th class="xb-h ${xbPast(r) ? 'past' : ''}">${h}:00</th>${cols.map((_, c) => xbCellHtml(r, c)).join('')}</tr>`).join('');
+  return `<thead><tr><th class="xb-h xb-corner" rowspan="3">${esc(dayTitle(d.date).split(',')[0])}</th>${groups}</tr><tr>${names}</tr><tr>${phones}</tr></thead><tbody>${body}</tbody>`;
+}
+const xbShape = () => [XB.d.date, XB.d.can_edit, XB.d.hours.join(','), XB.d.instructors.map(i => i.id + ':' + i.name + ':' + i.phone + ':' + i.group).join(',')].join('|');
+function xbPaint(){
+  const d = XB.d; if (!d || !$('xbGrid')) return;
+  $('xbTitle').textContent = dayTitle(d.date);
+  $('xbNote').innerHTML = !d.can_edit
+    ? `<div class="note info" style="margin-bottom:10px">${isCashier() ? 'Kassa jadvalni ko‘radi. Yozish — admin va operator. Bronni bosing — kod va mijoz chiqadi.' : 'O‘tgan kun — faqat ko‘rish.'}</div>` : '';
+  if (!d.instructors.length) { $('xbGrid').innerHTML = emptyHtml('users', 'Faol instruktor yo‘q', 'Instruktorlar bo‘limida faollashtiring.'); xbSaveBar(); return; }
+  if (XB.sel && (XB.sel.r >= d.hours.length || XB.sel.c >= d.instructors.length)) { XB.sel = null; XB.anchor = null; }
+  let wrap = $('xbWrap');
+  if (!wrap) {
+    $('xbGrid').innerHTML = `<div class="xb-bar" id="xbBar"></div><div class="xb-wrap" id="xbWrap" tabindex="0"><table class="xb" id="xbTab"></table><input id="xbEd" class="xb-ed hidden" autocomplete="off" spellcheck="false" maxlength="80"></div>`;
+    wrap = $('xbWrap');
+    xbBind(wrap);
+    $('xbTab').innerHTML = xbTableHtml();
+    if (d.date === kToday()) {
+      const r = d.hours.findIndex(h => h >= Number(nowHM().slice(0, 2)) - 1);
+      if (r > 0) wrap.scrollTop = Math.max(0, r * 32 - 8);
+    }
+  } else if ($('xbTab').dataset.shape === xbShape()) {
+    /* Jonli yangilanish: ustun va qatorlar o'sha — kataklar joyida yangilanadi */
+    xbPatch();
+    $('xbTab').querySelectorAll('tbody th.xb-h').forEach((th, r) => th.classList.toggle('past', xbPast(r)));
+  } else $('xbTab').innerHTML = xbTableHtml();
+  $('xbTab').dataset.shape = xbShape();
+  xbBar(); xbSaveBar();
+}
+/** Tanlangan katak haqida — «formula qatori» */
+function xbBar(){
+  const el = $('xbBar'); if (!el || !XB.d) return;
+  const sel = XB.sel;
+  if (!sel) { el.innerHTML = `<span class="muted">${XB.d.can_edit ? 'Katakni tanlang va yozing: telefon raqam — bron, BAND yoki ism — band. Excel’dan nusxa olib qo‘yish (Ctrl+V) ham ishlaydi.' : 'Katakni bosing — bron ma’lumoti shu yerda chiqadi.'}</span>`; return; }
+  const ins = XB.d.instructors[sel.c], h = XB.d.hours[sel.r], key = xbKey(sel.r, sel.c), s = xbSrv(key), dr = (XB.drafts[XB.date] || {})[key];
+  const addr = `<b class="xb-addr">${esc(ins.name)} · ${h}:00–${h + 1}:00</b>`;
+  let info = '', btn = '';
+  const bkLine = b => {
+    const nm = b.name && !/^Mijoz \+?998/.test(b.name) ? `${esc(b.name)} · ` : '';
+    return `${b.code ? `<b>${esc(b.code)}</b> · ` : ''}${nm}${b.phone ? `<a class="tel" href="${telHref(b.phone)}">${esc(b.phone)}</a> · ` : ''}${esc(fmtDur(b.min))} · ${stPill(b.status)}${b.paid ? ' <span class="pill ok">to‘langan</span>' : ''}`;
+  };
+  const payBtn = b => canKassa() && b && b.code && !b.paid && ['pending', 'confirmed'].includes(b.status)
+    ? `<button class="btn btn-soft btn-sm" data-act="schpay" data-code="${esc(b.code)}">${I('receipt', 16)} Kassada to‘lash</button>` : '';
+  if (dr) {
+    const ph = dr.t ? xbPhone(dr.t) : null;
+    info = dr.t ? `<span class="pill warn">saqlanmagan</span> «${esc(dr.t)}» → ${ph ? `saqlansa <b>bron</b> bo‘ladi (${esc(ph)})` : 'saqlansa soat <b>band</b> bo‘ladi'}`
+      : `<span class="pill warn">saqlanmagan</span> katak o‘chiriladi${s?.k === 'sheet' ? ' — <b>bron bekor qilinadi</b>' : ''}`;
+  } else if (s && s.k === 'sheet') { info = `Excel bron: ${bkLine(s.bk)}${s.lock ? ' · <span class="muted">o‘zgartirib bo‘lmaydi</span>' : ''}`; btn = payBtn(s.bk); }
+  else if (s && s.k === 'note') {
+    info = s.e ? `<span class="bad-t">Bron yaratilmadi: ${esc(s.e)}</span> — soat band turibdi`
+      : s.bk && s.bk.status === 'cancelled' ? `«${esc(s.t)}» — bron bekor qilingan (${esc(s.bk.code || '')}), soat bo‘sh. Qayta yozing — yangi bron bo‘ladi.`
+      : `«${esc(s.t)}» — bronsiz, soat band. Mini App bu soatni ko‘rsatmaydi.`;
+    if (s.fb) info += ` · Shu soatda yana: ${bkLine(s.fb)}`;
+  } else if (s && s.k === 'bk') { info = `${esc(XB_SRC[s.bk.src] || 'Bron')}: ${bkLine(s.bk)}`; btn = payBtn(s.bk); }
+  else if (s && s.k === 'own') info = 'Instruktor bu soatni o‘zi yopgan.';
+  else if (s && s.k === 'off') info = 'Ish grafigi bo‘yicha instruktor bu vaqtda ishlamaydi.';
+  else info = xbPast(sel.r) ? '<span class="muted">O‘tgan vaqt</span>' : XB.d.can_edit ? '<span class="muted">Bo‘sh — yozing: telefon raqam yoki BAND / ism</span>' : '<span class="muted">Bo‘sh</span>';
+  el.innerHTML = `${addr}<span class="xb-info">${info}</span>${btn}`;
+}
+function xbSaveBar(){
+  const el = $('xbSave'); if (!el) return;
+  const n = xbDirtyN();
+  if (!XB.d?.can_edit && !n) { el.innerHTML = ''; return; }
+  const other = xbAllDirty() - n;
+  el.innerHTML = `<div class="wp-save ${n ? 'on' : ''}"><div class="wp-save-in">
+    <span class="tx"><b>${n ? `${n} ta katak saqlanmagan` : 'Hammasi saqlangan'}</b><small>${n ? 'Saqlang — raqamli kataklar bron bo‘ladi, qolganlari band' : XB.d?.updated_by ? `Oxirgi saqlagan: ${esc(XB.d.updated_by)}${XB.d.updated_at ? ', ' + esc(whenText(XB.d.updated_at)) : ''}` : 'Katakka yozing — Ctrl+S yoki «Saqlash»'}${other ? ` · boshqa kunlarda yana ${other} ta` : ''}</small></span>
+    ${n ? `<button class="btn btn-soft" data-act="xbreset">Bekor</button>` : ''}
+    <button class="btn btn-primary" data-act="xbsave" ${n && !XB.saving ? '' : 'disabled'}>${XB.saving ? '<span class="spin"></span>' : I('check', 19, 2.4)} Saqlash</button></div></div>`;
+}
+
+/* ---------- tanlash va tahrirlash ---------- */
+function xbSelect(r, c, extend = false){
+  const d = XB.d; if (!d) return;
+  r = Math.max(0, Math.min(d.hours.length - 1, r)); c = Math.max(0, Math.min(d.instructors.length - 1, c));
+  if (!extend || !XB.sel) XB.anchor = { r, c };
+  else if (!XB.anchor) XB.anchor = { ...XB.sel };
+  XB.sel = { r, c };
+  xbMarkSel();
+  xbBar();
+  const td = xbTd(r, c);
+  if (td) {
+    /* Katak yopishqoq sarlavha va soat ustuni ostida qolmasin */
+    const w = $('xbWrap'), head = $('xbTab').tHead.offsetHeight, left = $('xbTab').querySelector('th.xb-h').offsetWidth;
+    if (td.offsetTop - head < w.scrollTop) w.scrollTop = td.offsetTop - head;
+    else if (td.offsetTop + td.offsetHeight > w.scrollTop + w.clientHeight) w.scrollTop = td.offsetTop + td.offsetHeight - w.clientHeight;
+    if (td.offsetLeft - left < w.scrollLeft) w.scrollLeft = td.offsetLeft - left;
+    else if (td.offsetLeft + td.offsetWidth > w.scrollLeft + w.clientWidth) w.scrollLeft = td.offsetLeft + td.offsetWidth - w.clientWidth;
+  }
+}
+function xbRange(){
+  const s = XB.sel, a = XB.anchor || s; if (!s) return null;
+  return { r0: Math.min(s.r, a.r), r1: Math.max(s.r, a.r), c0: Math.min(s.c, a.c), c1: Math.max(s.c, a.c) };
+}
+/** Kataklarga yozadi (qoralama). list: [{ r, c, t }]. Yozib bo'lmaydiganlari tashlab o'tiladi. */
+function xbSet(list, quiet = false){
+  const dr = xbDr(), step = [];
+  let skipped = 0;
+  for (const { r, c, t: raw } of list) {
+    if (!xbCanEdit(r, c)) { skipped++; continue; }
+    const key = xbKey(r, c), t = String(raw ?? '').replace(/\s+/g, ' ').trim().slice(0, 80);
+    if (t === xbText(key)) continue;
+    step.push({ key, before: dr[key] ? { ...dr[key] } : null });
+    const srv = xbSrvText(key);
+    if (t === srv) delete dr[key];
+    else dr[key] = { t, prev: dr[key] ? dr[key].prev : srv };
+  }
+  if (step.length) { XB.undo.push({ date: XB.date, step }); if (XB.undo.length > 100) XB.undo.shift(); }
+  if (!Object.keys(dr).length) delete XB.drafts[XB.date];
+  if (skipped && !quiet) toast(`${skipped} ta katakka yozib bo‘lmaydi (bron, yopiq, dam yoki o‘tgan vaqt)`, true);
+  xbPatch(new Set(step.map(x => x.key))); xbBar(); xbSaveBar();
+  return step.length;
+}
+function xbUndo(){
+  const u = XB.undo.pop(); if (!u) return toast('Qaytaradigan amal yo‘q');
+  if (u.date !== XB.date) { XB.undo.push(u); return toast('Bu amal boshqa kunda — o‘sha kunni oching', true); }
+  const dr = xbDr();
+  for (const { key, before } of u.step.reverse()) { if (before) dr[key] = before; else delete dr[key]; }
+  if (!Object.keys(dr).length) delete XB.drafts[XB.date];
+  xbPatch(new Set(u.step.map(x => x.key))); xbBar(); xbSaveBar();
+}
+function xbEdit(initial = null){
+  const s = XB.sel; if (!s) return;
+  if (!xbCanEdit(s.r, s.c)) {
+    const c = xbSrv(xbKey(s.r, s.c));
+    if (XB.d.can_edit) toast(xbPast(s.r) ? 'Bu soat o‘tib ketgan' : c?.lock === 'bk' ? 'Bu soatda boshqa bron bor — avval uni bekor qiling' : c?.lock === 'own' ? 'Instruktor bu soatni o‘zi yopgan' : c?.lock === 'off' ? 'Ish grafigi bo‘yicha dam' : 'To‘langan yoki boshlangan bron — o‘zgartirib bo‘lmaydi', true);
+    return;
+  }
+  const td = xbTd(s.r, s.c), ed = $('xbEd');
+  if (!td || !ed) return;
+  XB.edit = { r: s.r, c: s.c, typed: initial !== null };
+  const tab = $('xbTab');
+  ed.style.left = (td.offsetLeft + tab.offsetLeft) + 'px'; ed.style.top = (td.offsetTop + tab.offsetTop) + 'px';
+  ed.style.width = Math.max(td.offsetWidth, 150) + 'px'; ed.style.height = td.offsetHeight + 'px';
+  ed.value = initial !== null ? initial : xbText(xbKey(s.r, s.c));
+  ed.classList.remove('hidden');
+  ed.focus({ preventScroll: true });
+  const n = ed.value.length; ed.setSelectionRange(n, n);
+}
+function xbCommit(move = null){
+  const e = XB.edit, ed = $('xbEd'); if (!e || !ed) return;
+  XB.edit = null;
+  const v = ed.value;
+  ed.classList.add('hidden'); ed.value = '';
+  xbSet([{ r: e.r, c: e.c, t: v }]);
+  $('xbWrap')?.focus({ preventScroll: true });
+  if (move) xbSelect(e.r + move[0], e.c + move[1]);
+}
+function xbCancel(){
+  const ed = $('xbEd'); XB.edit = null;
+  if (ed) { ed.classList.add('hidden'); ed.value = ''; }
+  $('xbWrap')?.focus({ preventScroll: true });
+}
+function xbBind(wrap){
+  let downAt = null;
+  wrap.addEventListener('mousedown', e => {
+    const td = e.target.closest('td.xc'); if (!td || e.target.id === 'xbEd') return;
+    if (XB.edit) xbCommit();
+    const r = Number(td.dataset.r), c = Number(td.dataset.c);
+    const again = XB.sel && XB.sel.r === r && XB.sel.c === c && !e.shiftKey;
+    e.preventDefault();
+    wrap.focus({ preventScroll: true });
+    xbSelect(r, c, e.shiftKey);
+    downAt = again ? { r, c } : null;
+  });
+  /* Telefon: tanlangan katakni yana bossangiz — yozish */
+  wrap.addEventListener('click', e => {
+    const td = e.target.closest('td.xc'); if (!td || !downAt) return;
+    if (Number(td.dataset.r) === downAt.r && Number(td.dataset.c) === downAt.c && matchMedia('(pointer:coarse)').matches) xbEdit();
+    downAt = null;
+  });
+  wrap.addEventListener('dblclick', e => { if (e.target.closest('td.xc')) xbEdit(); });
+  wrap.addEventListener('keydown', e => {
+    if (e.target.id === 'xbEd') return;
+    if (!XB.d) return;
+    const s = XB.sel || { r: 0, c: 0 }, mod = e.ctrlKey || e.metaKey;
+    const mv = { ArrowUp: [-1, 0], ArrowDown: [1, 0], ArrowLeft: [0, -1], ArrowRight: [0, 1] }[e.key];
+    if (mv) { e.preventDefault(); if (!XB.sel) return xbSelect(0, 0); return xbSelect(s.r + mv[0], s.c + mv[1], e.shiftKey); }
+    if (e.key === 'Tab') { e.preventDefault(); return xbSelect(s.r, s.c + (e.shiftKey ? -1 : 1)); }
+    if (e.key === 'Enter') { e.preventDefault(); if (!XB.sel) return xbSelect(0, 0); return e.shiftKey ? xbSelect(s.r - 1, s.c) : xbEdit(); }
+    if (e.key === 'F2') { e.preventDefault(); return xbEdit(); }
+    if (e.key === 'Escape' && XB.anchor && (XB.anchor.r !== s.r || XB.anchor.c !== s.c)) { e.preventDefault(); return xbSelect(s.r, s.c); }
+    if (e.key === 'Delete' || e.key === 'Backspace') {
+      e.preventDefault();
+      const R = xbRange(); if (!R) return;
+      const list = [];
+      for (let r = R.r0; r <= R.r1; r++) for (let c = R.c0; c <= R.c1; c++) list.push({ r, c, t: '' });
+      return xbSet(list, list.length > 1);
+    }
+    if (mod && (e.key === 'z' || e.key === 'Z' || e.key === 'я')) { e.preventDefault(); return xbUndo(); }
+    if (mod && (e.key === 's' || e.key === 'S' || e.key === 'ы')) { e.preventDefault(); return ACT.xbsave(); }
+    if (!mod && !e.altKey && e.key.length === 1 && XB.sel) { e.preventDefault(); return xbEdit(e.key); }
+  });
+  const ed = $('xbEd');
+  ed.addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); return xbCommit([e.shiftKey ? -1 : 1, 0]); }
+    if (e.key === 'Tab') { e.preventDefault(); return xbCommit([0, e.shiftKey ? -1 : 1]); }
+    if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); return xbCancel(); }
+    if ((e.key === 'ArrowUp' || e.key === 'ArrowDown') || (XB.edit?.typed && (e.key === 'ArrowLeft' || e.key === 'ArrowRight'))) {
+      e.preventDefault();
+      const mv = { ArrowUp: [-1, 0], ArrowDown: [1, 0], ArrowLeft: [0, -1], ArrowRight: [0, 1] }[e.key];
+      return xbCommit(mv);
+    }
+    if ((e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'S')) { e.preventDefault(); xbCommit(); return ACT.xbsave(); }
+  });
+  ed.addEventListener('blur', () => { if (XB.edit) xbCommit(); });
+}
+/* Nusxa olish / qo'yish — Excel bilan almashish (tab bilan ajratilgan matn) */
+document.addEventListener('copy', e => {
+  if (S.routeName !== 'xbron' || XB.edit || document.activeElement !== $('xbWrap')) return;
+  const R = xbRange(); if (!R || !XB.d) return;
+  const rows = [];
+  for (let r = R.r0; r <= R.r1; r++) {
+    const line = [];
+    for (let c = R.c0; c <= R.c1; c++) { const k = xbKey(r, c), s = xbSrv(k); line.push(xbText(k) || (s?.k === 'bk' ? (s.bk.phone || s.bk.name) : '')); }
+    rows.push(line.join('\t'));
+  }
+  e.clipboardData.setData('text/plain', rows.join('\r\n'));
+  e.preventDefault();
+  toast(R.r0 === R.r1 && R.c0 === R.c1 ? 'Nusxa olindi' : `${(R.r1 - R.r0 + 1) * (R.c1 - R.c0 + 1)} ta katakdan nusxa olindi`);
+});
+document.addEventListener('paste', e => {
+  if (S.routeName !== 'xbron' || XB.edit || document.activeElement !== $('xbWrap')) return;
+  if (!XB.d?.can_edit) return toast('Bu kunga yozib bo‘lmaydi', true);
+  const R = xbRange(); if (!R) return;
+  const txt = (e.clipboardData || window.clipboardData).getData('text');
+  e.preventDefault();
+  const grid = String(txt || '').replace(/\r\n?/g, '\n').replace(/\n$/, '').split('\n').map(l => l.split('\t'));
+  const list = [];
+  if (grid.length === 1 && grid[0].length === 1) {
+    for (let r = R.r0; r <= R.r1; r++) for (let c = R.c0; c <= R.c1; c++) list.push({ r, c, t: grid[0][0] });
+  } else {
+    grid.forEach((line, i) => line.forEach((t, j) => {
+      const r = R.r0 + i, c = R.c0 + j;
+      if (r < XB.d.hours.length && c < XB.d.instructors.length) list.push({ r, c, t });
+    }));
+  }
+  const n = xbSet(list, true);
+  const skipped = list.filter(x => !xbCanEdit(x.r, x.c)).length;
+  toast(`${n} ta katak qo‘yildi${skipped ? ` · ${skipped} tasi o‘tkazib yuborildi (bron, yopiq, dam yoki o‘tgan vaqt)` : ''} — saqlashni unutmang`);
+});
+window.addEventListener('beforeunload', e => { if (xbAllDirty()) { e.preventDefault(); e.returnValue = ''; } });
+
+/* ---------- tugmalar ---------- */
+ACT.xbday = el => { if (XB.edit) xbCommit(); XB.date = el.dataset.v; XB.d = null; XB.sel = null; XB.anchor = null; vXbron(); };
+ACT.xbmove = el => ACT.xbday({ dataset: { v: dayAdd(XB.date, Number(el.dataset.v)) } });
+ACT.xbreset = async () => {
+  const n = xbDirtyN(); if (!n) return;
+  if (!(await ask({ title: 'O‘zgarishlarni bekor qilasizmi?', text: `${n} ta katakdagi saqlanmagan yozuv o‘chadi.`, ok: 'Bekor qilish', danger: true }))) return;
+  delete XB.drafts[XB.date]; XB.undo = XB.undo.filter(u => u.date !== XB.date);
+  xbPaint();
+};
+ACT.xbsave = async () => {
+  if (XB.edit) xbCommit();
+  const dr = XB.drafts[XB.date] || {}, keys = Object.keys(dr);
+  if (!keys.length || XB.saving) return;
+  XB.saving = true; xbSaveBar();
+  const date = XB.date;
+  try{
+    const d = await post('/api/admin/booking-sheet', { date, changes: keys.map(key => ({ key, t: dr[key].t, prev: dr[key].prev })) }, 'PUT');
+    delete XB.drafts[date]; XB.undo = XB.undo.filter(u => u.date !== date);
+    if (XB.date === date) XB.d = d;
+    XB.saving = false;
+    if (XB.date === date) xbPaint();
+    const res = d.result || {}, cr = res.created || [], er = res.errors || [];
+    const msg = [cr.length ? `${cr.length} ta bron yaratildi` : '', res.cancelled ? `${res.cancelled} ta bron bekor qilindi` : '', `${res.saved || 0} ta katak saqlandi`].filter(Boolean).join(' · ');
+    if (er.length) xbResult(d, cr, er); else toast(msg);
+    SCHC.clear(); refreshCounts();
+  }catch(e){ XB.saving = false; xbSaveBar(); fail(e); }
+};
+/** Saqlash natijasi: xatolar (va shu safar yaratilgan bronlar) */
+function xbResult(d, cr, er){
+  const where = key => { const [id, hh] = String(key).split('|'); const i = d.instructors.find(x => String(x.id) === id); return `${i ? i.name : 'Instruktor'} · ${Number(hh)}:00`; };
+  openSheet(`<h3>Saqlandi, lekin ${er.length} ta katakda muammo</h3>
+    <p class="lead">Quyidagi kataklar uchun bron yaratilmadi yoki yozilmadi. Katak jadvalda qizil chiziq bilan belgilangan.</p>
+    <div class="list">${er.map(x => `<div class="row"><span class="tx"><b>${esc(where(x.key))}</b><small class="bad-t">${esc(x.error)}</small></span></div>`).join('')}</div>
+    ${cr.length ? `<div class="sec-h" style="margin-top:14px"><h2>Yaratilgan bronlar</h2></div><div class="list">${cr.map(b => `<div class="row"><span class="tx"><b>${esc(b.code || '—')} · ${esc(b.name)}</b><small>${esc(b.instructor)} · ${esc(hm(b.start))} · ${esc(fmtDur(b.minutes))} · ${esc(b.category)} toifa</small></span></div>`).join('')}</div>` : ''}
+    <button class="btn btn-primary" style="margin-top:14px" data-act="sheetx">Tushunarli</button>`);
+}
+ACT.xbhelp = () => openSheet(`<h3>Excel bron — qoidalar</h3>
+  <div class="list">
+    <div class="row"><span class="tx"><b>Telefon raqam → haqiqiy bron</b><small>«994188549», «99-313-56-26», «50 150 05 08» — hammasi taniladi. Bron tasdiqlangan holda, kod bilan yaratiladi. Kassa mijozni raqami yoki kodi bo‘yicha topadi.</small></span></div>
+    <div class="row"><span class="tx"><b>Ketma-ket soatlar → bitta bron</b><small>Bir instruktorga 11:00 va 12:00 ga bir xil raqam — 11:00–13:00 bitta 2 soatlik bron.</small></span></div>
+    <div class="row"><span class="tx"><b>Toifa va yarim soat</b><small>«947372906/C» — C toifa. Yozilmasa — instruktorning toifasi (B). «/30 MIN» — 30 daqiqalik bron, soat baribir band.</small></span></div>
+    <div class="row"><span class="tx"><b>Raqamsiz yozuv → faqat band</b><small>BAND, ism yoki izoh — bron emas, lekin shu soatga Mini App, operator va kassa bron qila olmaydi.</small></span></div>
+    <div class="row"><span class="tx"><b>O‘chirish yoki raqamni almashtirish</b><small>Eski bron bekor qilinadi. To‘langan yoki boshlangan bronni o‘zgartirib bo‘lmaydi.</small></span></div>
+    <div class="row"><span class="tx"><b>Klaviatura</b><small>Strelkalar, Enter — yozish/pastga, Tab — o‘ngga, Delete — o‘chirish, Ctrl+C / Ctrl+V — Excel’dan nusxa, Ctrl+Z — qaytarish, Ctrl+S — saqlash. Telefonda: katakni ikki marta bosing.</small></span></div>
+    <div class="row"><span class="tx"><b>Kim nima qiladi</b><small>Admin va operator yozadi, kassa faqat ko‘radi. Mini App bronlari jadvalda qizil, o‘zgartirib bo‘lmaydi.</small></span></div>
+  </div>`);
+ACT.xbxl = () => {
+  const d = XB.d; if (!d) return toast('Jadval hali yuklanmadi', true);
+  const cols = d.instructors, n = cols.length, rows = [], merges = [];
+  rows.push({ h: 24, cells: [{ v: `Excel bron — ${dayTitle(d.date)}`, s: 1 }] }); merges.push(`A1:${XL.col(n)}1`);
+  const g = [{ v: 'Soat', s: 2 }]; let ci = 1;
+  for (const x of xbGroups()) { g[ci] = { v: `${x.g} toifa`, s: 2 }; for (let k = 1; k < x.n; k++) g[ci + k] = { v: '', s: 2 }; if (x.n > 1) merges.push(`${XL.col(ci)}2:${XL.col(ci + x.n - 1)}2`); ci += x.n; }
+  rows.push({ h: 18, cells: g });
+  rows.push({ h: 20, cells: [{ v: '', s: 2 }, ...cols.map(i => ({ v: i.name.toUpperCase(), s: 2 }))] });
+  rows.push({ h: 18, cells: [{ v: '', s: 13 }, ...cols.map(i => ({ v: i.phone ? xbShortPhone(i.phone) : '', s: 13 }))] });
+  merges.push('A2:A4');
+  d.hours.forEach((h, r) => {
+    const cells = [{ v: `${h}:00`, s: 13 }];
+    cols.forEach((_, c) => {
+      const k = xbKey(r, c), s = xbSrv(k), t = xbText(k);
+      if (t) cells.push({ v: t + (s?.k === 'sheet' && s.bk?.code ? `  (${s.bk.code})` : ''), s: s?.k === 'sheet' ? 5 : 12 });
+      else if (s?.k === 'bk') cells.push({ v: `${s.bk.phone ? xbShortPhone(s.bk.phone) : s.bk.name} · ${XB_SRC[s.bk.src] || 'Bron'}${s.bk.code ? ' (' + s.bk.code + ')' : ''}`, s: 5 });
+      else if (s?.k === 'own') cells.push({ v: 'yopiq', s: 9 });
+      else if (s?.k === 'off') cells.push({ v: 'dam', s: 9 });
+      else cells.push({ v: '', s: 12 });
+    });
+    rows.push({ h: 22, cells });
+  });
+  const blob = XL.book([{ name: 'Excel bron', rows, merges, cols: [8, ...Array(n).fill(17)], freeze: { x: 1, y: 4 } }]);
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = `excel-bron-${d.date}.xlsx`;
+  document.body.appendChild(a); a.click();
+  setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1500);
+  toast('Excel fayl yuklab olindi');
+};
 
 /* =========================================================================
    INSTRUKTORLAR JADVALI — kim qachon bo'sh, kim band
@@ -4310,7 +4836,7 @@ function vSchedule(){
     <div id="schGrid" style="margin-top:12px">${skel(4)}</div>
     <div class="legend"><span><i style="background:#ecfdf3;box-shadow:inset 0 0 0 1px #9be3b5"></i>Bo‘sh — bosing</span><span><i style="background:#fde2e4"></i>Tasdiqlangan</span>
       <span><i style="background:#fff1c2"></i>Kutilmoqda</span><span><i style="background:#dbe5ff"></i>Jarayonda</span><span><i style="background:#e5e7eb"></i>Tugagan</span>
-      <span><i style="background:#ffe4cc"></i>Kelmagan</span><span><i style="background:#e4e7ee"></i>Yopiq</span><span><i style="background:repeating-linear-gradient(135deg,#e9e3f7 0 3px,#f6f3fc 3px 6px)"></i>Ishlamaydi (grafik)</span></div></div>`;
+      <span><i style="background:#ffe4cc"></i>Kelmagan</span><span><i style="background:#e4e7ee"></i>Yopiq</span><span><i style="background:#eef0f4;box-shadow:inset 3px 0 0 #8a90a2"></i>Excel bron (band)</span><span><i style="background:repeating-linear-gradient(135deg,#e9e3f7 0 3px,#f6f3fc 3px 6px)"></i>Ishlamaydi (grafik)</span></div></div>`;
   bindDatePick();
   if (SCH.d && SCH.d.date === SCH.date) paintSchedule();
   loadSchedule();
@@ -4345,7 +4871,8 @@ function schModel(){
       for (const x of bk) { const ov = Math.min(e, Date.parse(x.end_at)) - Math.max(s, Date.parse(x.start_at)); if (ov > bestOv) { best = x; bestOv = ov; } }
       if (best) return { kind: 'b', key: 'b' + best.id, b: best, s, e };
       const blk = bl.find(x => Date.parse(x.start_at) < e && Date.parse(x.end_at) > s);
-      if (blk) return blk.off ? { kind: 'o', key: 'o' + blk.start_at, s, e } : { kind: 'k', key: 'k' + blk.start_at, s, e };
+      if (blk) return blk.off ? { kind: 'o', key: 'o' + blk.start_at, s, e }
+        : blk.sheet ? { kind: 'x', key: 'x' + blk.start_at, s, e, text: blk.text || '' } : { kind: 'k', key: 'k' + blk.start_at, s, e };
       return { kind: e <= now ? 'p' : 'f', key: '', s, e };
     });
     const spans = [];
@@ -4381,6 +4908,7 @@ function paintSchedule(){
         return `<td ${w} class="sb ${st.c}" data-act="schbk" data-id="${esc(c.b.id)}"><div><b>${esc(c.b.customer_name)}</b><small>${esc(hm(c.b.start_at))}–${esc(hm(c.b.end_at))}${c.b.package ? ` · paket ${esc(c.b.package.n)}/${esc(c.b.package.of)}` : ''}${c.b.is_paid ? ' · ✓' : ''}</small></div></td>`;
       }
       if (c.kind === 'k') return `<td ${w} class="sk" title="Instruktor bu vaqtni yopgan">yopiq</td>`;
+      if (c.kind === 'x') return `<td ${w} class="sx" data-act="schx" title="Excel bron: ${esc(c.text)}">${esc(c.text)}</td>`;
       if (c.kind === 'o') return `<td ${w} class="so" title="Ish grafigi bo‘yicha ishlamaydi">${c.n * M.step >= 60 ? 'dam' : ''}</td>`;
       if (c.kind === 'p') return `<td class="sp"></td>`;
       return `<td class="sf" data-act="schfree" data-id="${esc(r.ins.id)}" data-t="${c.s}" title="${esc(r.ins.name)} · ${esc(hm(new Date(c.s)))} — bo‘sh"></td>`;
@@ -4439,6 +4967,8 @@ ACT.schbk = el => {
     ${canDesk() && b.status === 'pending' ? `<div class="btn-row"><button class="btn btn-danger" data-act="bkst" data-id="${esc(b.id)}" data-v="rejected">Rad etish</button><button class="btn btn-green" data-act="bkst" data-id="${esc(b.id)}" data-v="confirmed">${I('check', 18, 2.4)} Tasdiqlash</button></div>` : ''}
     ${canKassa() && !b.is_paid && ['pending', 'confirmed'].includes(b.status) && b.pickup_code ? `<button class="btn btn-soft" style="margin-top:10px" data-act="schpay" data-code="${esc(b.pickup_code)}">${I('receipt', 18)} Kassada to‘lash</button>` : ''}`);
 };
+/* Excel bron katagi — o'sha kunning Excel bron sahifasi */
+ACT.schx = () => { XB.date = SCH.date; XB.d = null; XB.sel = null; XB.anchor = null; go('xbron'); };
 /* Jadvaldan kassaga: bron kodi bilan qidiruv tayyor bo'ladi */
 ACT.schpay = el => { closeSheet(); CO_reset(); CO.q = el.dataset.code; go('issue'); setTimeout(() => wzSearch(CO), 50); };
 
@@ -4584,6 +5114,7 @@ ACT.schxl = () => {
       let cell;
       if (c.kind === 'b') cell = { v: `${c.b.customer_name} · ${hm(c.b.start_at)}–${hm(c.b.end_at)}${c.b.package ? ` · paket ${c.b.package.n}/${c.b.package.of}` : ''}`, s: STY[c.b.status] || 5 };
       else if (c.kind === 'k') cell = { v: 'Yopiq', s: 9 };
+      else if (c.kind === 'x') cell = { v: `Excel: ${c.text}`, s: 9 };
       else if (c.kind === 'o') cell = { v: 'Dam (grafik)', s: 9 };
       else if (c.kind === 'p') cell = { v: '', s: 10 };
       else cell = { v: '', s: 4 };
