@@ -177,8 +177,15 @@ export async function makeHarness(): Promise<Harness> {
       return { ok: true, status: 200, text: async () => JSON.stringify(payload), headers: H } as any;
     }
 
+    /* Instruktor arizasi holati (RPC): instructor_applications dan */
+    if (url.includes('/rest/v1/rpc/get_instructor_registration_status')) {
+      const tgId = Number(body?.p_telegram_user_id);
+      const a = (db.instructor_applications || []).find((x: any) => Number(x.telegram_user_id) === tgId);
+      const out = a ? [{ status: a.status, first_name: a.first_name || '', last_name: a.last_name || '', rejection_reason: a.rejection_reason ?? null }] : [];
+      return { ok: true, status: 200, text: async () => JSON.stringify(out), json: async () => out, headers: H } as any;
+    }
     const m = /\/rest\/v1\/([a-z_]+)(\?.*)?$/.exec(url);
-    if (!m) return { ok: true, status: 200, text: async () => '[]', headers: H } as any;
+    if (!m) return { ok: true, status: 200, text: async () => '[]', json: async () => [], headers: H } as any;
 
     /* Supabase kabi: so'rovda "null" yoki "undefined" matni UUID
        o'rnida kelsa 400 qaytaramiz. Shunday bug qaytib kelsa,

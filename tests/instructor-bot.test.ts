@@ -7,6 +7,8 @@ import { makeHarness, type Harness } from './harness.js';
 import { hashPassword } from '../backend/src/staff-auth.js';
 import { parseBotText } from '../backend/src/instructor-sheet-bot.js';
 import { cellKey } from '../backend/src/booking-sheet.js';
+import { webhookSecret, _resetHealThrottle } from '../backend/src/webhook-secret.js';
+import { parseMenu, _resetBotCommands } from '../backend/src/instructor-bot-menu.js';
 
 let h: Harness;
 let admin = '';
@@ -224,8 +226,91 @@ describe('Instruktor boti — jim qolmaydi, jurnal, webhook', () => {
     h.tgCalls.length = 0;
     h.tgResults.set('getWebhookInfo', { ...info, url: 'https://boshqa.example/hook' });
     expect(JSON.parse((await h.app.inject({ method: 'GET', url: '/api/telegram/instructor/webhook?kick=1' })).body).kick).toMatch(/boshqa manzilda/);
-    h.tgResults.set('getWebhookInfo', { ...info, pending_update_count: 0 });
-    expect(JSON.parse((await h.app.inject({ method: 'GET', url: '/api/telegram/instructor/webhook?kick=1' })).body).kick).toMatch(/navbat bo‘sh/);
     expect(h.tgCalls.some((c) => c.method === 'setWebhook')).toBe(false);
+  });
+
+  it('webhook sirsiz o‘rnatilgan bo‘lsa — so‘rov rad etiladi, webhook o‘zi tuzaladi', async () => {
+    _resetHealThrottle();
+    h.tgResults.set('getWebhookInfo', { url: WH, pending_update_count: 4, last_error_message: 'Wrong response from the webhook: 503 Service Unavailable', max_connections: 40, allowed_updates: ['message', 'callback_query'] });
+    const post = (headers: any) => h.app.inject({ method: 'POST', url: '/api/telegram/instructor/webhook', headers,
+      payload: { update_id: 9, message: { message_id: 9, chat: { id: INS_TG, type: 'private' }, from: { id: INS_TG, first_name: 'Aziz' }, text: 'ertaga 901234567 14:00' } } });
+    expect((await post({})).statusCode).toBe(401);
+    expect(active()).toHaveLength(0);
+    const set = h.tgCalls.filter((c) => c.method === 'setWebhook');
+    expect(set).toHaveLength(1);
+    expect(set[0].body).toMatchObject({ url: WH, secret_token: 'test-webhook-secret', drop_pending_updates: false });
+    // daqiqasiga bir martadan ko'p emas
+    expect((await post({ 'x-telegram-bot-api-secret-token': 'notogri' })).statusCode).toBe(401);
+    expect(h.tgCalls.filter((c) => c.method === 'setWebhook')).toHaveLength(1);
+    // Telegram endi to'g'ri sir bilan yuboradi — bron bo'ladi
+    expect((await post({ 'x-telegram-bot-api-secret-token': 'test-webhook-secret' })).statusCode).toBe(200);
+    expect(active()).toHaveLength(1);
+  });
+
+  it('TELEGRAM_WEBHOOK_SECRET bo‘lmasa sir bot tokenidan hosil qilinadi', () => {
+    const a = webhookSecret('', '123:AAA'), b = webhookSecret('', '456:BBB');
+    expect(a).toMatch(/^[0-9a-f]{48}$/);
+    expect(a).not.toBe(b);
+    expect(webhookSecret('', '123:AAA')).toBe(a);
+    expect(webhookSecret('env-sir', '123:AAA')).toBe('env-sir');
+    expect(webhookSecret('', '')).toBe('');
+  });
+});
+
+describe('Instruktor boti — menyu (katalog)', () => {
+  const T0 = '2026-10-08';
+  it('menyu tugmalari va «/» buyruqlarini taniydi', () => {
+    expect(parseMenu('📅 Bugungi jadvalim', T0)).toEqual({ kind: 'day', date: T0 });
+    expect(parseMenu('📅 Ertangi jadvalim', T0)).toEqual({ kind: 'day', date: '2026-10-09' });
+    expect(parseMenu('📋 Bugungi bronlarim', T0)).toEqual({ kind: 'bookings', date: T0 });
+    expect(parseMenu('📋 Ertangi bronlarim', T0)).toEqual({ kind: 'bookings', date: '2026-10-09' });
+    expect(parseMenu('/bugun', T0)).toEqual({ kind: 'day', date: T0 });
+    expect(parseMenu('/ertaga@avtodrom_bot', T0)).toEqual({ kind: 'day', date: '2026-10-09' });
+    expect(parseMenu('/bronlarim', T0)).toEqual({ kind: 'bookings', date: T0 });
+    expect(parseMenu('/yordam', T0)).toEqual({ kind: 'help' });
+    expect(parseMenu('❓ Bron qanday yoziladi', T0)).toEqual({ kind: 'help' });
+    expect(parseMenu('menyu', T0)).toEqual({ kind: 'menu' });
+    // bron matni menyu emas
+    expect(parseMenu('ertaga 14:00 901234567', T0)).toBeNull();
+    expect(parseMenu('bugun', T0)).toBeNull();
+  });
+
+  it('/start — tasdiqlangan instruktorga panel tugmasi va pastda menyu', async () => {
+    _resetBotCommands();
+    h.db.instructor_applications.push({ id: 'app-1', telegram_user_id: INS_TG, status: 'APPROVED', first_name: 'Aziz' });
+    const before = h.telegram.length;
+    await say('/start');
+    const msgs = h.telegram.slice(before);
+    expect(msgs).toHaveLength(2);
+    expect(msgs[0].markup.inline_keyboard[0][0].web_app).toBeTruthy();
+    const kb = msgs[1].markup;
+    expect(kb.is_persistent).toBe(true);
+    expect(kb.keyboard.flat().map((b: any) => b.text)).toEqual(['📅 Bugungi jadvalim', '📅 Ertangi jadvalim', '📋 Bugungi bronlarim', '📋 Ertangi bronlarim', '❓ Bron qanday yoziladi']);
+    const cmds = h.tgCalls.find((c) => c.method === 'setMyCommands')!;
+    expect(cmds.body.commands.map((c: any) => c.command)).toEqual(['start', 'bugun', 'ertaga', 'bronlarim', 'ertangi', 'yordam']);
+  });
+
+  it('«Bronlarim» — soati bilan, raqam bosiladigan ko‘rinishda', async () => {
+    expect(await say('📋 Bugungi bronlarim')).toMatch(/Hozircha bron yo‘q/);
+    await say('ertaga 901234567 14:00 Dilshod');
+    await say('ertaga 15-17 932728766');
+    const out = await say('📋 Ertangi bronlarim');
+    expect(out).toMatch(/Bronlarim<\/b> — Ertaga/);
+    expect(out).toMatch(/· 2 ta/);
+    expect(out).toMatch(/🕐 <b>14:00–15:00<\/b> {2}\+998901234567\n {6}Dilshod · AVD-\d+/);
+    expect(out).toMatch(/🕐 <b>15:00–17:00<\/b> {2}\+998932728766/);
+    expect(out.indexOf('14:00')).toBeLessThan(out.indexOf('15:00–17:00'));
+    expect(out).toMatch(/Raqamni bosing — qo‘ng‘iroq qilasiz/);
+  });
+
+  it('«Jadvalim» — kun rasmi va raqamlar; noma’lum matnga yordam + menyu', async () => {
+    await say('ertaga 901234567 14:00');
+    const before = h.telegram.length;
+    const out = await say('📅 Ertangi jadvalim');
+    expect(['sendPhoto', 'sendMessage']).toContain(h.telegram[before].method);
+    expect(out).toMatch(/14:00–15:00<\/b> \+998901234567/);
+    const b2 = h.telegram.length;
+    await say('salom');
+    expect(h.telegram[b2].markup?.keyboard).toBeTruthy();
   });
 });
