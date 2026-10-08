@@ -82,6 +82,16 @@ An approved instructor can write to the **instructor bot** in a private chat, an
 
 The bot never overwrites a non-empty cell, and if the booking cannot be created (schedule, category, conflict) nothing is written. Cells written by the bot show `Bot · <instructor>` in Excel bron. The instructor bot webhook must point to `/api/telegram/instructor/webhook` (check with `GET /api/telegram/instructor/webhook`).
 
+### Instructor's own students in the bot
+
+Each instructor gets only **their own column** of the sheet in the instructor bot — an Excel-style picture (PNG drawn with `@resvg/resvg-js`, font Carlito in `backend/assets/fonts`, OFL) with the list of students underneath, phone numbers as `+998…` so a tap starts a call (`backend/src/instructor-notify.ts`):
+- **20:00** — tomorrow's students, **07:00** — today's (only instructors who have someone that day; once per day, marker `instructor_digest:<kind>:<date>`; driven by the reminders cron and the panels' tick);
+- after every **Excel bron save** — what changed for that instructor (new booking, cancelled, BAND/note added or removed) plus the updated picture;
+- **manual booking** (operator) and **kassa walk-in** — an immediate "new booking" message;
+- on request — the instructor writes `bugun`, `ertaga` or `12.10`.
+
+If the picture cannot be drawn, the same list is sent as text. `vercel.json` includes `backend/assets/**` in the functions.
+
 ## No-deposit policy
 
 Deposits are not required for booking creation. Instead the system uses:
