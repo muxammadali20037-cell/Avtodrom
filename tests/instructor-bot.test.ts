@@ -314,3 +314,46 @@ describe('Instruktor boti — menyu (katalog)', () => {
     expect(h.telegram[b2].markup?.keyboard).toBeTruthy();
   });
 });
+
+describe('Instruktor boti — kirill yozuvi', () => {
+  const T0 = '2026-10-08', D1 = '2026-10-09';
+  const p = (t: string) => parseBotText(t, T0) as any;
+  it('o‘zbekcha kirillda yozilgan bron, bekor va ro‘yxat', () => {
+    expect(p('эртага 14:00 901234567')).toMatchObject({ kind: 'book', date: D1, h0: 14, h1: 15, phone: '+998901234567' });
+    expect(p('Эртага соат 14 да 901234567')).toMatchObject({ kind: 'book', date: D1, h0: 14 });
+    expect(p('эртага 15 дан 17 гача 901234567')).toMatchObject({ kind: 'book', h0: 15, h1: 17, name: null });
+    expect(p('тушдан кейин 3 901234567')).toMatchObject({ kind: 'book', h0: 15, name: null });
+    expect(p('эртага ярим соат 14:00 901234567')).toMatchObject({ kind: 'book', h0: 14, half: true, name: null });
+    expect(p('Дилшод ака 901234567 эртага 14 ёзиб қўй')).toMatchObject({ kind: 'book', name: 'Дилшод' });
+    expect(p('эртага 901234567/С 9:00')).toMatchObject({ kind: 'book', cat: 'C' });
+    expect(p('бекор 14:00')).toMatchObject({ kind: 'cancel', h0: 14 });
+    expect(p('Бекор қилиш эртага 14:00')).toMatchObject({ kind: 'cancel', date: D1, h0: 14 });
+    expect(p('бекор 901234567')).toMatchObject({ kind: 'cancel', phone: '+998901234567', anyDay: true });
+    expect(p('жадвал')).toEqual({ kind: 'list', date: T0 });
+    expect(p('эртага рўйхат')).toEqual({ kind: 'list', date: D1 });
+  });
+  it('ruscha ham', () => {
+    expect(p('завтра с 15 до 17 901234567')).toMatchObject({ kind: 'book', date: D1, h0: 15, h1: 17 });
+    expect(p('вечером в 6 901234567 завтра')).toMatchObject({ kind: 'book', date: D1, h0: 18 });
+    expect(p('отмена 14:00')).toMatchObject({ kind: 'cancel', h0: 14 });
+  });
+  it('menyu kirillda', () => {
+    expect(parseMenu('📅 Бугунги жадвалим', T0)).toEqual({ kind: 'day', date: T0 });
+    expect(parseMenu('эртанги бронларим', T0)).toEqual({ kind: 'bookings', date: D1 });
+    expect(parseMenu('ёрдам', T0)).toEqual({ kind: 'help' });
+  });
+  it('kirillda yozilgan bron botda ishlaydi', async () => {
+    expect(await say('эртага соат 14 да 901234567 Дилшод')).toMatch(/Bron qilindi/);
+    expect(active()).toHaveLength(1);
+    expect(await say('бекор эртага 14:00')).toMatch(/Bekor qilindi/);
+    expect(active()).toHaveLength(0);
+  });
+});
+
+describe('Instruktor boti — o‘chirilgan profil', () => {
+  it('admin o‘chirgan instruktorga sababini aytadi', async () => {
+    h.db.instructor_profiles.find((x: any) => x.id === 'ip-1').is_available = false;
+    expect(await say('📋 Bugungi bronlarim')).toMatch(/Profilingiz hozir faol emas/);
+    expect(await say('ertaga 901234567 14:00', 555001)).toMatch(/faqat tasdiqlangan instruktorlar/);
+  });
+});
