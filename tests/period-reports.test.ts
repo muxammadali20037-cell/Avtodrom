@@ -94,7 +94,10 @@ describe('Instruktorlar hisoboti — oraliq (12 dan 28 gacha)', () => {
     expect(i1.school).toMatchObject({ lessons: 2, students: 2 });
     expect(i1.paid).toMatchObject({ lessons: 2, students: 2, revenue: 550000 });
     expect(i1.no_show).toBe(1);
-    expect(i1.revenue).toBe(675000);          // kelmagan, lekin to'langan ham tushum
+    /* Hisob URILGAN CHEK bo'yicha: kelmagan bronning puli instruktorga
+       yozilmaydi — u «urilmagan cheklar»da (kassadagi pul) ko'rinadi. */
+    expect(i1.revenue).toBe(550000);
+    expect(r.body.totals.unscanned).toEqual({ receipts: 1, amount: 125000 });
     expect(i1.minutes).toBe(240);
     expect(i1.work_days).toBe(4);
     expect(i2.students).toBe(1);
@@ -141,7 +144,8 @@ describe('Instruktorlar hisoboti — oraliq (12 dan 28 gacha)', () => {
     const i1 = r.body.instructors.find((x: any) => x.id === 'ip-1');
     expect(i1.paid.lessons).toBe(1);                  // 20-sentabrdagi P2 darsi yo'q
     expect(i1.paid.revenue).toBe(250000);
-    expect(i1.revenue).toBe(375000);
+    expect(i1.revenue).toBe(250000);                  // kelmaganniki — urilmagan chek
+    expect(r.body.totals.unscanned).toEqual({ receipts: 1, amount: 125000 });
     expect(i1.school.lessons).toBe(2);
     const r2 = await rep(kassa2, range);
     const j1 = r2.body.instructors.find((x: any) => x.id === 'ip-1');

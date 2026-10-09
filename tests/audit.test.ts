@@ -224,7 +224,9 @@ describe('Bronni qayta ochish va hisobot tafsilotlari', () => {
     seedOctober();
     const r = await h.call('GET', '/api/admin/instructor-control/ip-1?from=2026-10-01&to=2026-10-31', { cookie: admin });
     expect(r.status).toBe(200);
-    expect(r.body.summary.cash).toBe(250000 + 300000 + 150000 + 250000);   // p6: bron bekor, pul qaytarilmagan — kassada
+    /* Instruktor hisobi URILGAN CHEK bo'yicha: p6 (bron bekor, pul qaytarilmagan)
+       instruktorniki emas — u kassa «Cheklar»ida va «urilmagan cheklar»da. */
+    expect(r.body.summary.cash).toBe(250000 + 300000 + 150000);
     expect(r.body.summary.card).toBe(200000 + 250000);
     expect(r.body.summary.revenue).toBe(r.body.summary.cash + r.body.summary.card);
   });

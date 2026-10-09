@@ -625,7 +625,13 @@ describe('Instruktor paneli', () => {
       bk('b-noshow', '2026-09-07T06:00:00.000Z', { status: 'no_show' }),
       bk('b-other',  '2026-09-06T08:00:00.000Z', { instructor_id: 'ip-2' }),     // boshqa instruktor
       bk('b-out',    '2026-09-10T20:00:00.000Z'),                                 // Toshkent: 11-sent 01:00
+      bk('b-nocheck', '2026-09-08T06:00:00.000Z'),                                // chek yo'q — dars hisoblanmaydi
     );
+    /* Hisob URILGAN CHEK bo'yicha: pullik darslarning kassa cheki bor */
+    for (const id of ['b-paid', 'b-late', 'b-other', 'b-out']) {
+      h.db.payments.push({ id: `pay-${id}`, booking_id: id, customer_id: 'u-mijoz', amount: 250000, method: 'cash', status: 'paid',
+        receipt_code: `AVD-260906-${id.slice(2, 7).toUpperCase().padEnd(5, 'X')}`, register_id: null, paid_at: h.db.bookings.find((b: any) => b.id === id).start_at });
+    }
   });
 
   it('hisob-kitob: dan–gacha, avtoshkola va pullik alohida, soat bilan', async () => {
@@ -633,8 +639,9 @@ describe('Instruktor paneli', () => {
     expect(r.status).toBe(200);
     const s = r.body.summary;
     expect(s.school).toMatchObject({ lessons: 1, completed: 1, minutes: 60 });
-    expect(s.paid).toMatchObject({ lessons: 2, completed: 1, in_progress: 1, minutes: 90 });
-    expect(s.minutes).toBe(150);
+    /* Soat — urilgan chekdagi vaqt (ketayotgan dars ham: vaqti tugaganda o'zi yopiladi) */
+    expect(s.paid).toMatchObject({ lessons: 2, completed: 1, in_progress: 1, minutes: 150 });
+    expect(s.minutes).toBe(210);
     expect(s.no_show).toBe(1);
     const ids = r.body.rows.map((x: any) => x.id).sort();
     expect(ids).toEqual(['b-late', 'b-noshow', 'b-paid', 'b-school']);
