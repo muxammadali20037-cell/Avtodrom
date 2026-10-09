@@ -4877,8 +4877,8 @@ ACT.xbsave = async () => {
     const res = d.result || {}, cr = res.created || [], er = res.errors || [];
     const msg = [cr.length ? `${cr.length} ta bron yaratildi` : '', res.cancelled ? `${res.cancelled} ta bron bekor qilindi` : '', `${res.saved || 0} ta katak saqlandi`,
       res.notified ? `${res.notified} ta instruktorga botda xabar ketdi` : '',
-      res.group === 'updated' ? 'guruhdagi rasm yangilandi' : ''].filter(Boolean).join(' · ');
-    if (res.group === 'stale') XB.stale[date] = true; else if (res.group === 'updated') delete XB.stale[date];
+      String(res.group || '').startsWith('sent') ? 'guruhga o‘zgargan instruktor jadvali ketdi' : res.group === 'updated' ? 'guruhdagi rasm yangilandi' : ''].filter(Boolean).join(' · ');
+    if (/stale/.test(String(res.group || ''))) XB.stale[date] = true; else if (res.group) delete XB.stale[date];
     if (XB.date === date) xbSaveBar();
     if (er.length) xbResult(d, cr, er); else toast(msg);
     SCHC.clear(); refreshCounts();
@@ -4903,7 +4903,7 @@ ACT.xbhelp = () => openSheet(`<h3>Excel bron — qoidalar</h3>
     <div class="row"><span class="tx"><b>Klaviatura</b><small>Strelkalar, Enter — yozish/pastga, Tab — o‘ngga, Delete — o‘chirish, Ctrl+C / Ctrl+V — Excel’dan nusxa, Ctrl+Z — qaytarish, Ctrl+S — saqlash. Telefonda: katakni ikki marta bosing.</small></span></div>
     <div class="row"><span class="tx"><b>Instruktor boti</b><small>Instruktor o‘z botiga «901234567 14:00» yoki «ertaga 901234567 15-17» deb yozsa, bot o‘sha instruktor ustuniga bron qiladi va kodni javob qiladi. Bunday kataklarda «yozgan: Bot · …» ko‘rinadi.</small></span></div>
     <div class="row"><span class="tx"><b>Instruktorga xabar</b><small>Saqlaganingizda har instruktorga botda faqat o‘z ustuni keladi: nima o‘zgargani (yangi bron, bekor, BAND), Excel ko‘rinishidagi rasm va ostida bosib qo‘ng‘iroq qilinadigan raqamlar. Kechqurun 20:00 da ertangi, ertalab 7:00 da bugungi ro‘yxat o‘zi boradi.</small></span></div>
-    <div class="row"><span class="tx"><b>Guruhga tashlash</b><small>Saqlagandan keyin «Guruhga tashlash» — bot barcha instruktorlarning bronlarini tiniq, qalin rasm qilib guruhga tashlaydi (instruktor ko‘p bo‘lsa — bir nechta rasm). Rasm ostida «📋 Jadvalni ochish» — telefonda eng yangi holat, raqamni bosib qo‘ng‘iroq. Keyin saqlasangiz, guruhdagi rasm o‘zi yangilanadi; 20:00 da ertangi kun o‘zi ketadi. Guruhni ulash — «Guruh» tugmasi, rasmni oldindan ko‘rish — «Rasm».</small></span></div>
+    <div class="row"><span class="tx"><b>Guruhga tashlash</b><small>Saqlagandan keyin «Guruhga tashlash» — bot barcha instruktorlarning bronlarini tiniq, qalin rasm qilib guruhga tashlaydi (instruktor ko‘p bo‘lsa — bir nechta rasm). Rasm ostida «📋 Jadvalni ochish» — telefonda eng yangi holat, raqamni bosib qo‘ng‘iroq. Har saqlashda guruhga o‘zgargan instruktorning jadvali (o‘zgargan soatlar ramkada) o‘zi ketadi, to‘liq rasm esa joyida yangilanadi; instruktor botga bron yozsa ham shunday. 20:00 da ertangi kun o‘zi ketadi. Guruhni ulash — «Guruh» tugmasi, rasmni oldindan ko‘rish — «Rasm».</small></span></div>
     <div class="row"><span class="tx"><b>Kim nima qiladi</b><small>Admin va operator yozadi, kassa faqat ko‘radi. Mini App bronlari jadvalda qizil, o‘zgartirib bo‘lmaydi.</small></span></div>
   </div>`);
 /** Excel fayl: admin sahifadagidek — har instruktor ustuni o'z rangida, qalin va aniq */
@@ -4979,7 +4979,7 @@ function xsLinked(){
   const g = XS.g;
   openSheet(`<h3>Guruh</h3>
     <p class="lead">Ulangan guruh: <b>${esc(g.title || String(g.chat_id))}</b></p>
-    <div class="note info" style="font-size:13.5px">«Guruhga tashlash» — <b>${esc(dayTitle(XB.date))}</b> bo‘yicha barcha instruktorlarning bronlari tiniq rasm bo‘lib guruhga boradi, ostida «📋 Jadvalni ochish» tugmasi (telefonda eng yangi holat).<br><br>Keyin «Saqlash» bosilsa, guruhdagi rasm o‘zi yangilanadi. Har kuni 20:00 da ertangi kun o‘zi ketadi.</div>
+    <div class="note info" style="font-size:13.5px">«Guruhga tashlash» — <b>${esc(dayTitle(XB.date))}</b> bo‘yicha barcha instruktorlarning bronlari tiniq rasm bo‘lib guruhga boradi, ostida «📋 Jadvalni ochish» tugmasi (telefonda eng yangi holat).<br><br>Har «Saqlash»da guruhga faqat o‘zgargan instruktorning jadvali yangi xabar bo‘lib ketadi (o‘zgargan soatlar ramkada), to‘liq rasm esa joyida yangilanadi. Har kuni 20:00 da ertangi kun o‘zi ketadi.</div>
     <div class="btn-row" style="margin-top:14px">
       <button class="btn btn-soft" data-act="xsprev">${I('img', 18)} Rasmni ko‘rish</button>
       <button class="btn btn-primary" data-act="xssend">${I('send', 18)} Guruhga tashlash</button></div>
