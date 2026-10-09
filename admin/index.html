@@ -2227,7 +2227,7 @@ async function loadIns(W){
     if (!W.ins && W.pref?.ins && ids.has(String(W.pref.ins))) W.ins = free.find(i => String(i.id) === String(W.pref.ins));
   }catch(e){ if (seq !== W.insSeq) return; W.insErr = e.message; W.insRes = { free: [], busy: [] }; }
   if (ONE(W)) {
-    if (!W.ins && W.insRes?.free?.length) { W.ins = W.insRes.free[0]; W.insAuto = true; }
+    if (!W.ins && !W.noIns && W.insRes?.free?.length) { W.ins = W.insRes.free[0]; W.insAuto = true; }
     if (S.routeName === 'issue' && CO === W) coPaintIns();
     return;
   }
@@ -2421,10 +2421,10 @@ ACT.wzissue = async el => {
   } else {
     const course = courseFor(W.cat);
     if (!course) return toast(`${W.cat} toifa uchun mashg‘ulot topilmadi (Kengaytirilgan panel → Mashg‘ulotlar)`, true);
-    if (!W.ins) return toast('Instruktorni tanlang', true);
     if (W.sess.some(x => !x.t)) return toast('Vaqtni tanlang', true);
     const at = W.sess.map(sessAt);
-    Object.assign(body, { full_name: W.name, phone: W.phone, customer_id: W.customer?.id || null, instructor_id: W.ins.id,
+    /* Instruktor ixtiyoriy — tanlanmasa chekni kim ursa, dars o'shaniki */
+    Object.assign(body, { full_name: W.name, phone: W.phone, customer_id: W.customer?.id || null, instructor_id: W.ins?.id || null,
       course_id: course.id, start_at: at[0].toISOString() });
     if (isPkg(W)) { body.duration_minutes = PKG_MIN; body.sessions = W.sess.map((x, i) => ({ start_at: at[i].toISOString(), minutes: x.m })); }
     if (W.krug) { body.krug = true; body.duration_minutes = W.min; }
@@ -2537,9 +2537,7 @@ function coMissing(W){
   if (nm.length < 2) out.push(['cust', 'Mijozning ismini yozing']);
   if (!W.cat) out.push(['cat', 'Toifani tanlang']);
   W.sess.forEach((x, i) => { if (i && !x.t) out.push(['time', `${i + 1}-mashg‘ulot vaqtini tanlang`]); });
-  if (coReady(W) && !W.insRes) out.push(['ins', 'Bo‘sh instruktorlar tekshirilmoqda…']);
-  else if (coReady(W) && W.insRes && !W.insRes.free.length && !W.ins) out.push(['ins', W.sess.length > 1 ? 'Hamma mashg‘ulotda bo‘sh instruktor yo‘q — keyingi kunlarni o‘zgartiring' : 'Hozir bo‘sh instruktor yo‘q — bo‘shashini kuting']);
-  else if (!W.ins) out.push(['ins', 'Instruktorni tanlang']);
+  /* Instruktor IXTIYORIY: tanlanmasa — chekni qaysi instruktor ursa, dars o'shaniki */
   return out;
 }
 function coScrollTo(s){ const el = $('co-' + s); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
@@ -2645,18 +2643,19 @@ function coInsBody(W){
   if (W.insErr) return `<div class="note err">${esc(W.insErr)}</div>`;
   const when = W.sess.length > 1 ? `${W.sess.length} ta mashg‘ulotning hammasida` : `Hozir (${nowHM()})`;
   let h = `<div class="muted" style="font-size:12.5px;margin:0 2px 8px">${esc(when)} · ${r.free.length} ta bo‘sh${W.insAuto && W.ins ? ' · bittasi avtomatik tanlandi, boshqasini bosib almashtiring' : ''}</div>`;
+  h += `<div class="co-opts" style="margin-bottom:8px">${coOpt({ act: 'coins', v: 'none', lt: I('receipt', 18), cls: 'ins', t: 'Instruktorsiz',
+      s: 'Chekni qaysi instruktor ursa — dars o‘shaniki', on: !W.ins })}</div>`;
   h += r.free.length ? `<div class="co-opts">${r.free.map(i => coOpt({ act: 'coins', v: i.id, lt: esc(ini(i.name)), cls: 'ins', t: esc(i.name),
       s: `${i.rating ? `★ ${Number(i.rating).toFixed(1)} · ` : ''}${esc((i.categories || []).join(', '))} toifa`, rt: '<span class="pill ok">bo‘sh</span>', on: String(W.ins?.id) === String(i.id) })).join('')}</div>`
-    : `<div class="note warn">${W.sess.length > 1 ? `Hamma mashg‘ulotda ${esc(W.cat)} toifa bo‘yicha bo‘sh instruktor yo‘q — keyingi kunlarni o‘zgartiring.` : `Hozir ${esc(W.cat)} toifa bo‘yicha bo‘sh instruktor yo‘q. Quyida — kim qachon bo‘shaydi; bo‘shaganda chek chiqaring.`}</div>`;
+    : `<div class="note warn">${W.sess.length > 1 ? `Hamma mashg‘ulotda ${esc(W.cat)} toifa bo‘yicha bo‘sh instruktor yo‘q — chekni instruktorsiz chiqarsa bo‘ladi.` : `Hozir ${esc(W.cat)} toifa bo‘yicha bo‘sh instruktor yo‘q — chekni instruktorsiz chiqaring, bo‘shagan instruktor uradi.`}</div>`;
   if (r.busy.length) h += `<div class="co-opts" style="margin-top:8px">${r.busy.map(i => coOpt({ act: 'coins', v: i.id, lt: esc(ini(i.name)), cls: 'ins', t: esc(i.name),
       s: i.other ? 'boshqa mashg‘ulot vaqtida band' : i.off ? (i.free_at ? `ishlamaydi · ${esc(hm(i.free_at))} dan ishlaydi` : 'bu vaqtda ishlamaydi (grafik)') : i.blocked ? 'bu vaqtni yopgan' : i.free_at ? `${esc(hm(i.free_at))} da bo‘shaydi` : 'band', rt: '<span class="pill bad">band</span>', dis: true })).join('')}</div>`;
   return h;
 }
 function coInsSec(W){
   /* Hech kim bo'sh bo'lmasa ro'yxat o'zi OCHILMAYDI — qatorda sariq yozuv; bosilsa kim qachon bo'shashi ko'rinadi */
-  const none = !W.ins && W.insRes && coReady(W) && !W.insRes.free.length;
-  const val = W.ins ? W.ins.name : none ? (W.sess.length > 1 ? 'hammasida bo‘sh yo‘q' : 'hozir bo‘sh yo‘q — bosing') : '';
-  return coSel('ins', 5, 'Instruktor', val, !!W.ins, () => `<div id="coInsBody">${coInsBody(W)}</div>`, none);
+  const val = W.ins ? W.ins.name : 'Instruktorsiz — kim ursa';
+  return coSel('ins', 5, 'Instruktor (ixtiyoriy)', val, true, () => `<div id="coInsBody">${coInsBody(W)}</div>`, false);
 }
 function coPaySec(W){
   const b = W.booking, auto = autoPrice(W), total = totalOf(W), un = pkgUnpaid(W);
@@ -2689,7 +2688,7 @@ function coSide(W){
       row('Davomiylik', W.min ? esc(coDurLabel(W)) : '', 'dur'),
       row('Vaqt', `Hozir, <span class="co-now-t">${esc(nowHM())}</span>`, 'now'),
       ...(W.sess.length > 1 ? [row('Keyingi', W.sess.slice(1).every(x => x.t) ? W.sess.slice(1).map(x => esc(sessText(x))).join('<br>') : '', 'time')] : []),
-      row('Instruktor', esc(W.ins?.name || ''), 'ins')];
+      row('Instruktor', esc(W.ins?.name || 'kim ursa'), 'ins')];
   return `<aside class="wz-side" id="coSide"><div class="side-card"><h3>${b ? 'Bron bo‘yicha to‘lov' : 'Chek'}</h3>
     <div class="side-rows">${rows.join('')}${row('To‘lov', { cash: 'Naqd', card: 'Karta', mixed: 'Naqd + karta' }[W.pay], 'pay')}</div>
     <div class="side-total"><span>To‘lanadi</span><b id="sideTotal">${nf(totalOf(W))} so‘m</b></div>
@@ -2915,8 +2914,10 @@ function coAfterTime(W){
 }
 ACT.cotime = el => { const W = CO; if (!(W.si >= 1)) return; Object.assign(W.sess[W.si], { day: W.day, t: el.dataset.v, now: false }); coAfterTime(W); };
 ACT.coins = el => {
-  const W = CO, i = W.insRes?.free.find(x => String(x.id) === el.dataset.v); if (!i) return;
-  W.ins = i; W.insAuto = false;
+  const W = CO;
+  if (el.dataset.v === 'none') { W.ins = null; W.insAuto = false; W.noIns = true; coDone(W, 'ins', []); return; }
+  const i = W.insRes?.free.find(x => String(x.id) === el.dataset.v); if (!i) return;
+  W.ins = i; W.insAuto = false; W.noIns = false;
   coDone(W, 'ins', []);
 };
 ACT.coscroll = el => coScrollTo(el.dataset.s);
@@ -3650,7 +3651,9 @@ function paintInsRep(){
       <div class="kpi"><span>Avtoshkola</span><b class="ok-t">${nf(sc.lessons)} dars</b><small>${nf(sc.students)} o‘quvchi · ${hrsTxt(sc.minutes)} soat</small></div>
       <div class="kpi"><span>Pullik</span><b style="color:var(--accent)">${nf(pd.lessons)} dars</b><small>${nf(pd.students)} o‘quvchi · ${hrsTxt(pd.minutes)} soat</small></div>
       <div class="kpi"><span>Tushum</span><b>${nf(t.revenue)}</b><small>naqd ${nf(t.cash)} · karta ${nf(t.card)}</small></div>
-      <div class="kpi"><span>Kelmadi</span><b>${nf(t.no_show)}</b><small>${nf(t.cancelled)} bekor qilingan</small></div></div>
+      <div class="kpi"><span>Kelmadi</span><b>${nf(t.no_show)}</b><small>${nf(t.cancelled)} bekor qilingan</small></div>
+      ${t.unscanned ? `<div class="kpi"><span>Urilmagan cheklar</span><b${t.unscanned.receipts ? ' style="color:var(--warn,#b45309)"' : ''}>${nf(t.unscanned.receipts)} ta</b><small>${nf(t.unscanned.amount)} so‘m — hali hech bir instruktor urmagan</small></div>` : ''}</div>
+    <div class="note info" style="margin-top:10px;font-size:13px">Hisob <b>urilgan chek</b> bo‘yicha: dars — chekni urgan instruktorniki, kuni — chek urilgan kun.${t.transferred_in ? ` ${nf(t.transferred_in)} ta chekni bron egasi emas, boshqa instruktor urgan.` : ''}</div>
     ${perDays(IR) > 1 && (d.days || []).some(x => x.lessons) ? `<div class="card" style="margin-top:12px"><div class="sec-h"><h2>${perDays(IR) > 62 ? 'Oylar' : 'Kunlar'} bo‘yicha darslar</h2></div>${stackBars(d.days, IR)}</div>` : ''}
     <div class="sec"><div class="sec-h"><h2>Instruktorlar · ${nf((d.instructors || []).length)}</h2><button class="link xl-btn" data-act="irxl">${I('dl', 17)} Excel</button></div>
       <div class="search">${I('search', 20)}<input class="input" id="irQ" placeholder="Ism yoki mashina raqami" value="${esc(IR.q)}" autocomplete="off"></div>
@@ -3701,7 +3704,7 @@ function irDays(rows){
     const x = m.get(k);
     x.sum += Number(r.amount) || 0;
     if (r.status === 'no_show') x.noshow++;
-    if (irAtt(r)) { if (r.school) x.school++; else x.paid++; x.st.add(r.customer_id || 'x' + r.id); if (r.status === 'completed') x.min += Number(r.duration_minutes) || 0; }
+    if (irAtt(r)) { if (r.school) x.school++; else x.paid++; x.st.add(r.customer_id || 'x' + r.id); x.min += Number(r.duration_minutes) || 0; }
   }
   return [...m.values()].filter(x => x.school || x.paid || x.sum || x.noshow).sort((a, b) => a.day.localeCompare(b.day));
 }
@@ -3747,7 +3750,7 @@ function paintIrTab(){
       const k = ymdOf(new Date(r.start_at));
       if (multi && k !== last) { last = k; html += `<div class="grp"><b>${esc(dayText(k, true))}</b></div>`; }
       html += `<div class="row"><span class="ic" style="width:52px;font-size:13.5px">${esc(hm(r.start_at))}</span>
-        <span class="tx"><b>${esc(r.customer?.full_name || 'Mijoz')}</b><small>${r.school ? '<span class="pill ok">Avtoshkola</span>' : '<span class="pill acc">Pullik</span>'} ${stPill(r.status)} ${esc(fmtDur(r.duration_minutes))}</small></span>
+        <span class="tx"><b>${esc(r.customer?.full_name || 'Mijoz')}</b><small>${r.school ? '<span class="pill ok">Avtoshkola</span>' : '<span class="pill acc">Pullik</span>'} ${stPill(r.status)} ${esc(fmtDur(r.duration_minutes))}${r.transferred_from ? ` · <span class="pill">↪ ${esc(r.transferred_from)} broni</span>` : ''}</small></span>
         <span class="rt">${r.amount ? nf(r.amount) : '—'}<small>${esc(r.receipt_code || r.school_receipt_code || '')}</small></span></div>`;
     }
     const more = list.length - shown.length;
