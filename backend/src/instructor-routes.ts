@@ -58,7 +58,7 @@ async function getCustomer(customerId: string) {
 type NotifyStatus = BookingEvent;
 
 /** Mijozga (va DB notifications'ga) chiroyli xabar yuboradi. */
-async function notifyBookingStatus(booking: any, status: NotifyStatus) {
+export async function notifyBookingStatus(booking: any, status: NotifyStatus) {
   try {
     const customerId = booking?.customer_id;
     if (!customerId) return;
@@ -138,48 +138,11 @@ export async function registerInstructorRoutes(
     }
   });
 
-  app.post('/api/instructor/bookings/:id/arrived', async (request, reply) => {
-    try {
-      const tgUser = await authenticate(request);
-      const profile = await profileForTelegram(tgUser);
-      const instructor = await approvedInstructor(profile);
-      if (!profile || !instructor) return reply.code(403).send({ ok: false, error: 'Instructor tasdiqlanmagan' });
-      const id = String((request.params as any).id);
-      const booking = await getOwnedBooking(id, String(instructor.id));
-      if (!booking) return reply.code(404).send({ ok: false, error: 'Bron topilmadi yoki bu instruktorga biriktirilmagan' });
-
-      /* Bir vaqtda bitta dars. Bazada ham unique indeks bor —
-         bu tekshiruv tushunarli xabar berish uchun. */
-      const active = (await supabaseRest<any[]>('bookings', {
-        query: `?instructor_id=eq.${q(String(instructor.id))}&status=eq.in_progress&select=id,customer_id&limit=1`,
-      }))[0];
-      if (active && String(active.id) !== String(id)) {
-        const who = active.customer_id
-          ? (await supabaseRest<any[]>('users', {
-              query: `?id=eq.${q(String(active.customer_id))}&select=full_name&limit=1`,
-            }).catch(() => []))[0]?.full_name
-          : null;
-        return reply.code(409).send({
-          ok: false,
-          error: `Avvalgi dars yakunlanmagan${who ? ` (${who})` : ''}. Avval uni yakunlang.`,
-        });
-      }
-
-      const rows = await supabaseRest<any[]>('rpc/instructor_mark_arrived', { method: 'POST', body: JSON.stringify({ p_booking_id: id, p_instructor_id: instructor.id }) });
-      const updated = Array.isArray(rows) ? rows[0] : rows;
-      await notifyBookingStatus(updated || booking, 'in_progress');
-      return { ok: true, booking: updated || booking };
-    } catch (e) {
-      const message = e instanceof Error ? e.message : 'KELDI amalini bajarib bo‘lmadi';
-      if (/bookings_one_active_lesson/i.test(message)) {
-        return reply.code(409).send({ ok: false, error: 'Avvalgi dars yakunlanmagan. Avval uni yakunlang.' });
-      }
-      if (/BOOKING_NOT_FOUND/i.test(message)) return reply.code(404).send({ ok: false, error: 'Bron topilmadi yoki bu instruktorga biriktirilmagan' });
-      if (/BOOKING_NOT_CONFIRMED/i.test(message)) return reply.code(409).send({ ok: false, error: 'KELDI faqat tasdiqlangan bron uchun mumkin.' });
-      return reply.code(400).send({ ok: false, error: message });
-    }
-  });
-
+  /* «KELDI» (chek urmasdan darsni boshlash) OLIB TASHLANDI: dars faqat
+     kassa chekini urib boshlanadi — hisob-kitob urilgan chek bo'yicha
+     (lesson-ledger.ts). Eski panel tugmani bossa — tushunarli javob. */
+  app.post('/api/instructor/bookings/:id/arrived', async (_request, reply) =>
+    reply.code(410).send({ ok: false, error: 'Darsni boshlash uchun mijozning chekini skanerlang (📷 Chekni skanerlash).', scan_required: true }));
   app.post('/api/instructor/bookings/:id/departed', async (request, reply) => {
     try {
       const tgUser = await authenticate(request);
@@ -444,45 +407,41 @@ export async function registerInstructorRoutes(
         return reply.code(400).send({ ok: false, error: 'Oraliq 1 yildan oshmasin' });
       }
 
-      const bookings: any[] = [];
-      for (let offset = 0; offset < 10000; offset += 1000) {
-        const chunk = await supabaseRest<any[]>('bookings', {
-          query:
-            `?instructor_id=eq.${q(String(instructor.id))}` +
-            `&start_at=gte.${q(from.toISOString())}&start_at=lt.${q(to.toISOString())}` +
-            `&select=*&order=start_at.asc&limit=1000&offset=${offset}`,
-        });
-        bookings.push(...chunk);
-        if (chunk.length < 1000) break;
-      }
-
-      const uids = [...new Set(bookings.map((b) => b.customer_id).filter(Boolean).map(String))];
-      const cids = [...new Set(bookings.map((b) => b.course_id).filter(Boolean).map(String))];
-      const { selectIn } = await import('./rest-chunks.js');
-      const [users, courses] = await Promise.all([
-        selectIn<any>('users', 'id', uids, 'id,full_name,phone'),
-        selectIn<any>('courses', 'id', cids, 'id,name,duration_minutes'),
+      /* HISOB URILGAN CHEK BO'YICHA (admin va kassa bilan bir xil manba):
+         shu instruktor URGAN cheklar, kuni — chek urilgan kun. */
+      const { loadLedger, pageAll } = await import('./lesson-ledger.js');
+      const [ledger, others] = await Promise.all([
+        loadLedger({ from, to, instructorId: String(instructor.id) }),
+        pageAll<any>('bookings',
+          `?instructor_id=eq.${q(String(instructor.id))}&status=in.(pending,confirmed,no_show,cancelled,rejected)` +
+          `&start_at=gte.${q(from.toISOString())}&start_at=lt.${q(to.toISOString())}&select=*&order=start_at.asc,id.asc`),
       ]);
+      const { selectIn } = await import('./rest-chunks.js');
+      const uids = [...new Set([...ledger.rows.map((r) => r.customer_id), ...others.map((b) => b.customer_id)].filter(Boolean).map(String))];
+      const users = await selectIn<any>('users', 'id', uids, 'id,full_name,phone');
       const um = new Map(users.map((u) => [String(u.id), u]));
-      const cm = new Map(courses.map((c) => [String(c.id), c]));
+      const cust = (id: any) => { const u = id ? um.get(String(id)) : null; return u ? { full_name: u.full_name, phone: u.phone } : null; };
 
-      const rows = bookings.map((b) => {
-        const c = cm.get(String(b.course_id));
-        const u = um.get(String(b.customer_id));
-        return {
-          id: b.id,
-          start_at: b.start_at || b.booking_date,
-          status: String(b.status || ''),
-          school: isSchoolLesson(b),
-          category: b.category || null,
-          minutes: lessonMinutes(b, c),
-          course: c?.name || null,
-          customer_id: b.customer_id ? String(b.customer_id) : null,
-          customer: u ? { full_name: u.full_name, phone: u.phone } : null,
-        };
-      });
+      const lessons = ledger.rows.map((r) => ({
+        id: r.booking_id,
+        start_at: r.scanned_at,                   // chek urilgan (dars boshlangan) vaqt
+        status: r.status,
+        school: r.school,
+        category: r.category,
+        minutes: r.minutes,
+        course: r.course_id ? ledger.courses.get(r.course_id)?.name || null : null,
+        customer_id: r.customer_id,
+        customer: cust(r.customer_id),
+        transferred: !!r.from_instructor_id,
+      }));
+      const rest = others.map((b) => ({
+        id: b.id, start_at: b.start_at || b.booking_date, status: String(b.status || ''), school: isSchoolLesson(b),
+        category: b.category || null, minutes: lessonMinutes(b), course: null,
+        customer_id: b.customer_id ? String(b.customer_id) : null, customer: cust(b.customer_id), transferred: false,
+      }));
+      const rows = [...lessons, ...rest].sort((x, y) => String(x.start_at).localeCompare(String(y.start_at)));
 
-      const attended = rows.filter((r) => r.status === 'in_progress' || r.status === 'completed');
+      const attended = lessons;
       const uniq = (list: any[]) => new Set(list.map((r) => r.customer_id || `x${r.id}`)).size;
       const group = (list: any[]) => {
         const done = list.filter((r) => r.status === 'completed');
@@ -490,27 +449,28 @@ export async function registerInstructorRoutes(
           lessons: list.length,
           completed: done.length,
           in_progress: list.length - done.length,
-          minutes: done.reduce((a, r) => a + r.minutes, 0),
+          minutes: list.reduce((a, r) => a + r.minutes, 0),
           students: uniq(list),
         };
       };
       const school = group(attended.filter((r) => r.school));
       const paid = group(attended.filter((r) => !r.school));
 
-      // Kunma-kun: qaysi kuni nechta dars, necha daqiqa
+      // Kunma-kun: qaysi kuni nechta dars, necha daqiqa (chek urilgan kun)
       const byDay = new Map<string, { date: string; school: number; paid: number; minutes: number }>();
       for (const r of attended) {
         const day = tashkentYmd(r.start_at);
         if (!byDay.has(day)) byDay.set(day, { date: day, school: 0, paid: 0, minutes: 0 });
         const x = byDay.get(day)!;
         if (r.school) x.school++; else x.paid++;
-        if (r.status === 'completed') x.minutes += r.minutes;
+        x.minutes += r.minutes;
       }
 
       const MAX_ROWS = 600;
       return {
         ok: true,
         from: fromY, to: toY,
+        basis: 'scanned_receipts',
         summary: {
           lessons: attended.length,
           completed: school.completed + paid.completed,
@@ -518,6 +478,7 @@ export async function registerInstructorRoutes(
           minutes: school.minutes + paid.minutes,
           students: uniq(attended),
           school, paid,
+          transferred_in: lessons.filter((r) => r.transferred).length,
           no_show: rows.filter((r) => r.status === 'no_show').length,
           cancelled: rows.filter((r) => r.status === 'cancelled' || r.status === 'rejected').length,
           upcoming: rows.filter((r) => r.status === 'pending' || r.status === 'confirmed').length,

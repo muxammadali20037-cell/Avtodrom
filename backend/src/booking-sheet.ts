@@ -202,6 +202,29 @@ export async function writeSheet(day: string, sheet: Sheet): Promise<void> {
   }
 }
 
+/**
+ * Bron boshqa instruktorga o'tganda (chekni boshqasi urdi) — Excel bron
+ * jadvalida ham katak eski instruktor ustunidan yangisiga ko'chadi.
+ * Yangi ustunda o'sha soat band bo'lsa, eski katak shunchaki olib tashlanadi
+ * (bron baribir yangi instruktor ustunida «bron» bo'lib ko'rinadi).
+ */
+export async function moveSheetBooking(day: string, bookingId: string, toIns: string, by: string): Promise<number> {
+  const sheet = await loadSheet(day);
+  let moved = 0;
+  const at = new Date().toISOString();
+  for (const [k, c] of Object.entries(sheet.cells)) {
+    if (c.b !== String(bookingId)) continue;
+    const p = parseKey(k);
+    if (!p || p.ins === String(toIns)) continue;
+    delete sheet.cells[k];
+    const nk = cellKey(String(toIns), p.h);
+    if (!sheet.cells[nk]) { const { bi: _bi, ...rest } = c; sheet.cells[nk] = { ...rest, by, at }; }
+    moved++;
+  }
+  if (moved) { sheet.updated_at = at; sheet.updated_by = by; await writeSheet(day, sheet); }
+  return moved;
+}
+
 /* ---------------- band vaqtlar ---------------- */
 
 /**

@@ -22,6 +22,7 @@ import { registerMediaRoutes } from './media-routes.js';
 import { registerAdminBotRoutes, sendAdminChatInfo } from './admin-bot-routes.js';
 import { registerScheduleRoutes } from './schedule-routes.js';
 import { registerBookingSheetRoutes } from './booking-sheet-routes.js';
+import { registerSheetShareRoutes, handleGroupMessage } from './sheet-share.js';
 
 const app = Fastify({ logger: true });
 
@@ -134,6 +135,7 @@ await registerShiftRoutes(app, requireAdmin, adminUser, audit);
 /* Instruktorlar ish grafigi — faqat administrator */
 await registerScheduleRoutes(app, guardAdmin, adminUser, audit);
 await registerBookingSheetRoutes(app, { currentStaff, guardDesk, adminUser, audit });
+await registerSheetShareRoutes(app, { currentStaff, guardDesk });
 await registerAdminBotRoutes(app);
 
 // IMPORTANT: admin-password-routes.ts is the single owner of the canonical
@@ -252,6 +254,13 @@ app.post('/api/telegram/instructor/webhook', async (request, reply) => {
   if (Number.isSafeInteger(chatId) && chatId > 0 && /^\/start(?:@\w+)?(?:\s.*)?$/i.test(text)) await handleInstructorStart(INSTRUCTOR_BOT_TOKEN, chatId, { id: chatId, first_name: message?.from?.first_name, last_name: message?.from?.last_name, username: message?.from?.username }, INSTRUCTOR_MINI_APP_URL);
   /* Instruktor botga «901234567 14:00» yozsa — shu instruktorga bron (Excel bron ustuniga).
      Faqat shaxsiy chat; Telegram qayta yubormasligi uchun xato bo'lsa ham 200. */
+  /* GURUHDAN: faqat «/ulash 123456» — Excel bron havolasi keladigan guruhni ulash */
+  else if (Number.isSafeInteger(chatId) && chatId < 0 && text.startsWith('/')) {
+    try {
+      const answer = await handleGroupMessage({ id: chatId, title: message?.chat?.title, type: message?.chat?.type }, text);
+      if (answer) await telegramApi(INSTRUCTOR_BOT_TOKEN, 'sendMessage', { chat_id: chatId, text: answer }).catch(() => {});
+    } catch (e) { request.log.error({ err: e }, 'group link failed'); }
+  }
   else if (Number.isSafeInteger(chatId) && chatId > 0 && text && Number(message?.from?.id) === chatId) {
     const t0 = Date.now(), replies: string[] = [];
     let error: string | null = null;
@@ -324,6 +333,9 @@ async function runReminders(request: any, reply: any) {
     /* Instruktorlarga kunlik ro'yxat: 20:00 dan ertangi, 07:00 dan bugungi */
     const { runInstructorDigest } = await import('./instructor-notify.js');
     const digest = await runInstructorDigest().catch((e) => ({ ran: false, error: e instanceof Error ? e.message : String(e) }));
+    /* 20:00 dan keyin — guruhga ertangi Excel bron havolasi */
+    const { runSheetGroupEvening } = await import('./sheet-share.js');
+    await runSheetGroupEvening().catch((e) => console.error('sheet group evening failed:', e));
     return { ok: true, ...result, digest };
   } catch (e) {
     return reply.code(500).send({ ok: false, error: e instanceof Error ? e.message : 'Reminder run failed' });

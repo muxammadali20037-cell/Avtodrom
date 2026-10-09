@@ -737,6 +737,10 @@ export async function registerBookingRoutes(
       }
 
       if (user.role === 'instructor') {
+        /* Dars FAQAT kassa chekini urib boshlanadi (hisob urilgan chek bo'yicha) */
+        if (String(body.status) === 'in_progress') {
+          return reply.code(410).send({ ok: false, error: 'Darsni boshlash uchun mijozning chekini skanerlang.', scan_required: true });
+        }
         const ip = await instructorProfileForUser(String(user.id), false);
         if (!ip || String(current[0].instructor_id) !== String(ip.id)) {
           return reply.code(403).send({ ok: false, error: 'Bu bron sizga biriktirilmagan' });

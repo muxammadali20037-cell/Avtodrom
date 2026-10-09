@@ -384,9 +384,12 @@ export async function runRemindersNow(source: string, nowMs = Date.now()) {
     checked: 0, closed: 0, no_show: 0, cancelled: 0, notified: 0, skipped: 0,
     details: [`kechikkanlarni yopish xatosi: ${e instanceof Error ? e.message : e}`],
   }));
+  /* Chek urilgandan keyin to'langan vaqt o'tgan darslar — avtomatik yopiladi */
+  const { finishDueLessons } = await import('./lesson-ledger.js');
+  const fin = await finishDueLessons(nowMs).catch((e) => ({ checked: 0, closed: 0, details: [`darslarni yopish xatosi: ${e instanceof Error ? e.message : e}`] }));
   const r = await sendDueReminders(nowMs, cfg);
   await recordRun(source, r, late);
-  return { ...r, late_closed: late.closed, late };
+  return { ...r, late_closed: late.closed, late, lessons_finished: fin.closed, finish: fin };
 }
 
 let lastTickAt = 0;
@@ -407,6 +410,8 @@ export async function tickReminders(source: string, minGapMs = 60_000) {
     /* Instruktorlarga kunlik ro'yxat (kuniga bir marta; cron bo'lmasa ham ochiq panellar yetkazadi) */
     const { runInstructorDigest } = await import('./instructor-notify.js');
     await runInstructorDigest(now).catch((e) => console.error('instructor digest failed:', e));
+    const { runSheetGroupEvening } = await import('./sheet-share.js');
+    await runSheetGroupEvening(now).catch((e) => console.error('sheet group evening failed:', e));
     return { ran: true, sent: r.sent, checked: r.checked, failed: r.failed, late_closed: r.late_closed };
   } finally {
     tickRunning = null;

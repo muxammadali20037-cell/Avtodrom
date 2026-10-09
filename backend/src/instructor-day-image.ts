@@ -52,7 +52,7 @@ export function dayImageSvg(d: DayImage): string {
   /* qatorlar */
   d.rows.forEach((r, i) => {
     const y = TITLE + HEAD + i * ROW, k = KIND[r.kind];
-    const op = r.past ? ' opacity="0.55"' : '';
+    const op = r.past ? ' opacity="0.7"' : '';
     out.push(`<g${op}>`);
     out.push(`<rect x="0" y="${y}" width="${HC}" height="${ROW}" fill="${r.past ? '#f0a6a8' : '#e5484d'}"/>`);
     out.push(`<text x="${HC / 2}" y="${y + 30}" font-size="21" font-weight="700" fill="#ffffff" text-anchor="middle">${r.h}:00</text>`);
@@ -95,7 +95,7 @@ function fonts(): string[] {
   return fontFiles;
 }
 
-/** PNG (1080 px eni). Chizib bo'lmasa — null. */
+/** PNG (1440 px eni — ikki barobar, tiniq). Chizib bo'lmasa — null. */
 export async function renderDayPng(d: DayImage): Promise<Uint8Array | null> {
   try {
     const mod: any = await import('@resvg/resvg-js');
@@ -103,7 +103,7 @@ export async function renderDayPng(d: DayImage): Promise<Uint8Array | null> {
     if (!Resvg) return null;
     const r = new Resvg(dayImageSvg(d), {
       font: { fontFiles: fonts(), loadSystemFonts: false, defaultFontFamily: 'Carlito' },
-      fitTo: { mode: 'width', value: 1080 },
+      fitTo: { mode: 'width', value: 1440 },
     });
     return r.render().asPng();
   } catch (e) {

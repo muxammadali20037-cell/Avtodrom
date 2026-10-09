@@ -500,6 +500,45 @@ export async function applySheetChanges(o: ApplyOpts): Promise<ApplyResult> {
   return { saved: changed.size, created, cancelled: cancelled.length, cancelledIds: cancelled, errors, events };
 }
 
+/**
+ * OCHIQ HAVOLA uchun jadval (guruhdagi «📋 Jadvalni ochish»): faqat o'qish.
+ * Ichki id'lar va kim yozgani o'rniga — telefonda ko'rish uchun kerakli
+ * minimum: instruktor, soat, katak matni, mijoz ismi/raqami, kod, holat.
+ */
+export async function publicSheetData(date: string) {
+  const st = await loadState(date);
+  const shown = st.instructors.filter((i) => i.shown);
+  const cells: Record<string, any> = {};
+  let band = 0;
+  const used = new Set<string>(), bronIds = new Set<string>();
+  for (const i of shown) {
+    for (const h of SHEET_HOURS) {
+      const c = cellInfo(st, i.id, h);
+      const o: any = c.out;
+      if (!o) continue;
+      const b = o.bk || null;
+      const x: any = { k: o.k };
+      if (o.t) x.t = o.t;
+      if (b) {
+        x.name = b.name || null; x.phone = b.phone || null; x.code = b.code || null; x.status = b.status || null;
+        x.min = b.min || null; x.paid = !!b.paid; x.src = b.src || null; x.start = b.start; x.end = b.end; x.cat = b.cat || null;
+      }
+      cells[c.key] = x;
+      /* ko'p soatlik bron bitta sanaladi */
+      if (o.k === 'sheet' || o.k === 'bk') { bronIds.add(b ? String(b.id) : c.key); used.add(i.id); }
+      else if (o.k === 'note') { band++; used.add(i.id); }
+    }
+  }
+  const bron = bronIds.size;
+  return {
+    date: st.date, now: new Date().toISOString(), hours: SHEET_HOURS,
+    updated_at: st.sheet.updated_at || null,
+    instructors: shown.map(({ id, name, phone, categories, group, active }) => ({ id, name, phone, categories, group, active })),
+    cells,
+    stats: { instructors: shown.length, busy_instructors: used.size, bron, band },
+  };
+}
+
 export async function registerBookingSheetRoutes(app: FastifyInstance, deps: Deps) {
   app.get('/api/admin/booking-sheet', async (req: any, reply: any) => {
     try {
@@ -532,10 +571,19 @@ export async function registerBookingSheetRoutes(app: FastifyInstance, deps: Dep
         const { notifySheetSave } = await import('./instructor-notify.js');
         notified = (await notifySheetSave(date, result.events)).sent;
       } catch (e) { console.error('sheet notify failed:', e); }
+      /* Guruhda o'sha kun rasmi bo'lsa — joyida yangilanadi. Yangi rasmni
+         admin «Guruhga tashlash» tugmasi bilan o'zi yuboradi. */
+      let group: string | null = null;
+      if (result.saved) {
+        try {
+          const { refreshGroupPost } = await import('./sheet-share.js');
+          group = await refreshGroupPost(date, me.login);
+        } catch (e) { console.error('sheet group refresh failed:', e); group = 'stale'; }
+      }
       const after = await loadState(date);
       return {
         ok: true, ...view(after, me),
-        result: { saved: result.saved, created: result.created, cancelled: result.cancelled, errors: result.errors, notified },
+        result: { saved: result.saved, created: result.created, cancelled: result.cancelled, errors: result.errors, notified, group },
       };
     } catch (e: any) {
       return reply.code(e?.statusCode ?? 500).send({ ok: false, error: e?.message || 'Excel bron saqlanmadi' });

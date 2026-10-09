@@ -26,7 +26,7 @@ export const MAX_SESSIONS = 5;
 const PKG = 'pack:';
 const PKGB = 'packb:';
 /** admin_settings ro'yxatida ko'rsatilmaydigan tizim kalitlari */
-export const SYSTEM_KEY_PREFIXES = [PKG, PKGB, 'instructor_busy:', 'instructor_schedule:', 'booking_sheet:', 'instructor_digest:', 'instructor_bot_log'];
+export const SYSTEM_KEY_PREFIXES = [PKG, PKGB, 'instructor_busy:', 'instructor_schedule:', 'booking_sheet:', 'instructor_digest:', 'instructor_bot_log', 'sheet_group'];
 
 type Cat = 'A' | 'B' | 'C';
 const CATS: Cat[] = ['A', 'B', 'C'];
@@ -129,7 +129,11 @@ export async function sessionConflict(instructorId: string, customerId: string |
   if (!sessions.length) return null;
   const from = sessions[0].start.toISOString();
   const to = sessions[sessions.length - 1].end.toISOString();
-  const who = customerId
+  /* Instruktor tanlanmagan (kassada bronsiz chek) — faqat mijoz bandligi */
+  if (!instructorId && !customerId) return null;
+  const who = !instructorId
+    ? `&customer_id=eq.${q(String(customerId))}`
+    : customerId
     ? `&or=(instructor_id.eq.${q(instructorId)},customer_id.eq.${q(customerId)})`
     : `&instructor_id=eq.${q(instructorId)}`;
   const rows = await supabaseRest<any[]>('bookings', {
@@ -139,13 +143,13 @@ export async function sessionConflict(instructorId: string, customerId: string |
   for (const s of sessions) {
     const hit = (rows || []).filter((b) => Date.parse(b.start_at) < s.end.getTime() && Date.parse(b.end_at) > s.start.getTime());
     const label = `${TZ_DAY(s.start).slice(5).split('-').reverse().join('.')} ${HM(s.start)}`;
-    if (hit.some((b) => String(b.instructor_id) === String(instructorId))) {
+    if (instructorId && hit.some((b) => String(b.instructor_id) === String(instructorId))) {
       return `Instruktor ${label} da band. Boshqa vaqt yoki instruktorni tanlang.`;
     }
     if (customerId && hit.some((b) => String(b.customer_id) === String(customerId))) {
       return `Mijozda ${label} da boshqa bron bor.`;
     }
-    const blk = await instructorBlockedAt(instructorId, s.start, s.end);
+    const blk = instructorId ? await instructorBlockedAt(instructorId, s.start, s.end) : null;
     if (blk) return blockedMessage(blk);
   }
   return null;
@@ -302,7 +306,7 @@ export async function createPackage(o: {
   const of = o.sessions.length;
   const payloads = o.sessions.map((s, i) => ({
     customer_id: o.customerId,
-    instructor_id: o.instructorId,
+    instructor_id: o.instructorId || null,
     course_id: o.courseId,
     booking_date: s.start.toISOString(),
     start_at: s.start.toISOString(),

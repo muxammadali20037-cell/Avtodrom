@@ -220,6 +220,22 @@ export async function notifySheetSave(date: string, events: Map<string, SheetEve
   return { sent };
 }
 
+/** Bron boshqa instruktorga o'tdi (chekni u urdi) — eski egasiga xabar */
+export async function notifyBookingTransferred(booking: any, fromIns: string, toName: string) {
+  const token = TOKEN();
+  if (!token) return;
+  const chat = (await instructorChats([fromIns])).get(String(fromIns));
+  if (!chat) return;
+  const u = (await selectIn<any>('users', 'id', [booking.customer_id], 'id,full_name,phone'))[0];
+  const text = [
+    `🔁 <b>Bron boshqa instruktorga o‘tdi</b>`,
+    `📅 ${esc(dayTitle(tashkentYmdOf(Date.parse(booking.start_at))))}, ${hm(booking.start_at)}–${hm(booking.end_at)}${booking.pickup_code ? ` · ${esc(booking.pickup_code)}` : ''}`,
+    `👤 ${esc(realName(u?.full_name) || 'Mijoz')}${u?.phone ? ` · ${tel(u.phone)}` : ''}`,
+    `Chekni <b>${esc(toName)}</b> urdi — dars va hisob unga yozildi. Bu vaqtingiz bo‘shadi.`,
+  ].join('\n');
+  await telegramApi(token, 'sendMessage', { chat_id: chat, text, parse_mode: 'HTML' });
+}
+
 /** Qo'lda bron yoki kassa orqali yangi bron — instruktorga darhol */
 export async function notifyInstructorNewBooking(bookings: any[], source: 'manual' | 'kassa') {
   const token = TOKEN();

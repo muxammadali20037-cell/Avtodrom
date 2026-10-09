@@ -9,6 +9,8 @@ import { readRegisterToken, ownRegisterFromToken, reportScope, openShiftId, pric
 import { bookingSearchFilter } from './booking-search.js';
 import { loadBlocks, overlapping, instructorBlockedAt, blockedMessage } from './instructor-blocks.js';
 import { tashkentYmdOf } from './instructor-schedule.js';
+import { recordScan } from './lesson-ledger.js';
+import { moveSheetBooking } from './booking-sheet.js';
 import {
   PACKAGE_MINUTES, loadPackagePrices, priceWithPackage, packagePriceOf, parseSessions, sessionConflict, createPackage,
   packagesFor, packageOf, type Session,
@@ -230,6 +232,40 @@ async function findSchoolBooking(code: string) {
     query: `?customer_note=like.*${q(code)}*&select=*&order=created_at.desc&limit=1`,
   }).catch(() => []);
   return byNote[0] || null;
+}
+
+/** Chekdagi toifa: bronda yozilgani, bo'lmasa mashg'ulotniki, bo'lmasa B (narx ham B bo'yicha) */
+async function bookingCategory(booking: any): Promise<string> {
+  const own = String(booking?.category || '').toUpperCase();
+  if (/^[ABC]$/.test(own)) return own;
+  if (booking?.course_id) {
+    const c = (await supabaseRest<any[]>('courses', { query: `?id=eq.${q(String(booking.course_id))}&select=category&limit=1` }).catch(() => []))[0];
+    const cc = String(c?.category || '').toUpperCase();
+    if (/^[ABC]$/.test(cc)) return cc;
+  }
+  return 'B';
+}
+/** Boshqa instruktorga yozilgan chekni urish mumkinmi (toifa mosligi). Mumkin bo'lsa — null. */
+async function transferProblem(ip: any, booking: any): Promise<string | null> {
+  const cat = await bookingCategory(booking);
+  const cats: string[] = (Array.isArray(ip?.categories) && ip.categories.length ? ip.categories : ['B']).map((c: any) => String(c).toUpperCase());
+  return cats.includes(cat) ? null : `Bu chek ${cat} toifa uchun — siz ${cats.join(', ')} toifani o‘rgatasiz. ${cat} toifa instruktori ursin.`;
+}
+/** Chek urishga ruxsat: tasdiqlangan, faol, bloklanmagan instruktor */
+function scannerProblem(user: any, ip: any): string | null {
+  if (!user || !ip) return 'Instruktor topilmadi';
+  if (String(user.role || '') !== 'instructor') return 'Faqat instruktor chek ura oladi';
+  if (user.is_blocked === true || user.is_active === false) return 'Profilingiz faol emas — admin bilan bog‘laning';
+  if (ip.is_verified === false) return 'Instruktor tasdiqlanmagan';
+  return null;
+}
+async function instructorNameOf(profileId: string): Promise<string | null> {
+  try {
+    const ip = (await supabaseRest<any[]>('instructor_profiles', { query: `?id=eq.${q(profileId)}&select=user_id&limit=1` }))[0];
+    if (!ip?.user_id) return null;
+    const u = (await supabaseRest<any[]>('users', { query: `?id=eq.${q(String(ip.user_id))}&select=full_name&limit=1` }))[0];
+    return u?.full_name || null;
+  } catch { return null; }
 }
 
 /** Instruktorning avtoshkola darsi uchun bron yaratadi. */
@@ -1177,7 +1213,8 @@ export async function registerCashierRoutes(
            kerak bo'lsa — bu bron: operator «Qo'lda bron» qiladi. */
         const start = new Date();
         if (fullName.length < 2) return reply.code(400).send({ ok: false, error: 'Ism familiyani kiriting' });
-        if (!instructorId) return reply.code(400).send({ ok: false, error: 'Instruktor tanlanmagan' });
+        /* Instruktor IXTIYORIY: tanlanmasa ham chek chiqadi — chekni qaysi
+           instruktor ursa, dars o'shaniki bo'ladi. */
         if (!courseId) return reply.code(400).send({ ok: false, error: 'Mashg‘ulot tanlanmagan' });
 
         /* 5 soat — paket (faqat B toifa): bir kunda yoki bir necha kunga bo'lingan.
@@ -1196,7 +1233,7 @@ export async function registerCashierRoutes(
           if ('error' in parsed) return reply.code(400).send({ ok: false, error: parsed.error });
           sessions = parsed.sessions;
         }
-        for (const s of sessions) {
+        if (instructorId) for (const s of sessions) {
           const blk = await instructorBlockedAt(instructorId, s.start, s.end);
           if (blk) return reply.code(409).send({ ok: false, error: blockedMessage(blk) });
         }
@@ -1237,7 +1274,7 @@ export async function registerCashierRoutes(
           targets = [(await supabaseRest<any[]>('bookings', {
             method: 'POST', headers: { Prefer: 'return=representation' },
             body: JSON.stringify({
-              customer_id: customer.id, instructor_id: instructorId, course_id: courseId,
+              customer_id: customer.id, instructor_id: instructorId || null, course_id: courseId,
               booking_date: start.toISOString(), start_at: start.toISOString(),
               end_at: new Date(start.getTime() + minutes * 60000).toISOString(),
               duration_minutes: minutes, category: b.category || null,
@@ -1488,9 +1525,8 @@ export async function registerCashierRoutes(
             query: `?user_id=eq.${q(String(user.id))}&select=*&limit=1`,
           }))[0]
         : null;
-      if (!ip || ip.is_verified === false) {
-        return reply.code(403).send({ ok: false, error: 'Instruktor tasdiqlanmagan' });
-      }
+      const who = scannerProblem(user, ip);
+      if (who) return reply.code(403).send({ ok: false, error: who });
 
       const raw = String((request.body as any)?.code || '').trim().toUpperCase();
       // QR dan to'liq URL kelishi ham mumkin — faqat kodni ajratamiz
@@ -1535,22 +1571,32 @@ export async function registerCashierRoutes(
 
       const booking = (await supabaseRest<any[]>('bookings', { query: `?id=eq.${q(String(payment.booking_id))}&select=*&limit=1` }))[0];
       if (!booking) return reply.code(404).send({ ok: false, error: 'Bron topilmadi' });
-      if (String(booking.instructor_id) !== String(ip.id)) {
-        return reply.code(403).send({ ok: false, error: 'Bu bron boshqa instruktorga biriktirilgan' });
+
+      /* CHEKNI ISTALGAN INSTRUKTOR URA OLADI. Bron boshqasiga yozilgan
+         bo'lsa — urgan instruktorga o'tadi (darsni u o'tadi, pul ham
+         uning hisobotiga). Faqat toifa mos bo'lishi shart. */
+      const mine = String(booking.instructor_id || '') === String(ip.id);
+      const status = String(booking.status);
+      const bad = mine ? null : await transferProblem(ip, booking);
+      if (bad) return reply.code(409).send({ ok: false, error: bad });
+      const fromName = !mine && booking.instructor_id ? await instructorNameOf(String(booking.instructor_id)) : null;
+      if (status === 'in_progress' && !mine) {
+        return reply.code(409).send({ ok: false, error: `Bu chek bilan dars allaqachon boshlangan${fromName ? ` (${fromName})` : ''}` });
       }
 
       const m = await loadMaps([booking]);
       const shaped = shape(booking, m);
-      const status = String(booking.status);
 
       return {
         ok: true,
         booking: shaped,
         // Frontend shu bo'yicha qaysi tugmani ko'rsatishni hal qiladi
         can_start: status === 'confirmed',
-        can_finish: status === 'in_progress',
+        can_finish: status === 'in_progress' && mine,
         already: ['completed', 'no_show', 'cancelled', 'rejected'].includes(status) ? status : null,
         receipt_code: code,
+        /* Bron boshqa instruktorga yozilgan (yoki instruktorsiz) — urilsa dars sizga o'tadi */
+        transfer_from: status === 'confirmed' && !mine ? (fromName || '') : null,
       };
     } catch (e: any) {
       return reply.code(e?.statusCode ?? 400).send({ ok: false, error: e?.message || 'Skanerlash amalga oshmadi' });
@@ -1565,7 +1611,9 @@ export async function registerCashierRoutes(
       const ip = user
         ? (await supabaseRest<any[]>('instructor_profiles', { query: `?user_id=eq.${q(String(user.id))}&select=*&limit=1` }))[0]
         : null;
-      if (!ip) return reply.code(403).send({ ok: false, error: 'Instruktor topilmadi' });
+      /* Chekni urgan bronni o'ziga oladi — faqat tasdiqlangan, faol instruktor */
+      const who = scannerProblem(user, ip);
+      if (who) return reply.code(403).send({ ok: false, error: who });
 
       const rawStart = String((request.body as any)?.code || '').trim().toUpperCase();
       const code = /AVD-\d{6}-[0-9A-Z]{5}/.test(rawStart)
@@ -1638,10 +1686,13 @@ export async function registerCashierRoutes(
           });
         }
 
-        /* attendance_verifications ga yozmaymiz: bu jadval customer_id,
-           telegram_user_id va token_epoch ni majburiy talab qiladi,
-           bizda ular yo'q. Skaner izi bookings.school_receipt_code va
-           avtodrom12 dagi scanned_by_name da qoladi. */
+        /* Chek urilgani — hisobot uchun (yozilmasa ham dars baribir
+           hisobotda: avtoshkola broni faqat chek urilganda yaratiladi). */
+        await recordScan({
+          booking, scannerUserId: user?.id ? String(user.id) : null, scannerTelegramId: Number(tgUser.id),
+          instructorId: String(ip.id), instructorName: insName, receiptCode: code, school: true,
+          minutes: Number(booking?.duration_minutes) || mins,
+        }).catch((e) => console.error('[school-receipt] attendance write failed:', e?.message || e));
 
         return { ok: true, school_lesson: true, booking: shapeSchool(rec, code, booking), note: note || null };
       }
@@ -1651,7 +1702,7 @@ export async function registerCashierRoutes(
 
       const booking = (await supabaseRest<any[]>('bookings', { query: `?id=eq.${q(String(payment.booking_id))}&select=*&limit=1` }))[0];
       if (!booking) return reply.code(404).send({ ok: false, error: 'Bron topilmadi' });
-      if (String(booking.instructor_id) !== String(ip.id)) return reply.code(403).send({ ok: false, error: 'Bu bron sizga tegishli emas' });
+      const mine = String(booking.instructor_id || '') === String(ip.id);
       if (String(booking.status) !== 'confirmed') {
         const st = String(booking.status);
         /* Mijoz kech qoldi — bron avtomatik yopilgan. Instruktor nima
@@ -1663,6 +1714,8 @@ export async function registerCashierRoutes(
           : `Bron holati "${st}" — boshlab bo‘lmaydi`;
         return reply.code(409).send({ ok: false, error: why, status: st });
       }
+      const bad = mine ? null : await transferProblem(ip, booking);
+      if (bad) return reply.code(409).send({ ok: false, error: bad });
 
       /* Oldingi dars yakunlanmagan bo'lsa yangisini boshlab bo'lmaydi.
          Bazada ham unique indeks bor — bu yerdagi tekshiruv shunchaki
@@ -1683,19 +1736,85 @@ export async function registerCashierRoutes(
         });
       }
 
+      /* Boshqa instruktorning broni: shu vaqtda urgan instruktorning
+         o'zida boshqa bron bo'lsa — o'tkazib bo'lmaydi (bazada ham taqiq bor). */
+      const fromId = !mine && booking.instructor_id ? String(booking.instructor_id) : null;
+      if (!mine) {
+        const clash = (await supabaseRest<any[]>('bookings', {
+          query: `?instructor_id=eq.${q(String(ip.id))}&id=neq.${q(String(booking.id))}&status=not.in.(cancelled,rejected)` +
+                 `&start_at=lt.${q(String(booking.end_at))}&end_at=gt.${q(String(booking.start_at))}&select=id,start_at&limit=1`,
+        }))[0];
+        if (clash) {
+          return reply.code(409).send({ ok: false, error: `Sizda ${fmtWhen(clash.start_at)} da boshqa bron bor — bu chekni ura olmaysiz. Boshqa instruktor ursin.` });
+        }
+      }
+
+      const insName = String(user?.full_name || '').trim() || null;
+      const minutes = Number(booking.duration_minutes) > 0 ? Number(booking.duration_minutes)
+        : Math.max(15, Math.round((Date.parse(booking.end_at) - Date.parse(booking.start_at)) / 60000)) || 60;
+
       const now = new Date().toISOString();
-      const rows = await supabaseRest<any[]>('bookings', {
-        method: 'PATCH', headers: { Prefer: 'return=representation' }, query: `?id=eq.${q(String(booking.id))}`,
-        body: JSON.stringify({ status: 'in_progress', arrived_at: booking.arrived_at || now, updated_at: now }),
-      });
+      let rows: any[] = [];
+      try {
+        rows = await supabaseRest<any[]>('bookings', {
+          method: 'PATCH', headers: { Prefer: 'return=representation' },
+          query: `?id=eq.${q(String(booking.id))}&status=eq.confirmed`,
+          body: JSON.stringify({
+            status: 'in_progress', arrived_at: now, updated_at: now,
+            ...(mine ? {} : { instructor_id: ip.id, ...(insName ? { instructor_name: insName } : {}) }),
+          }),
+        });
+      } catch (e: any) {
+        if (/no_instructor_overlap/i.test(String(e?.message || ''))) {
+          return reply.code(409).send({ ok: false, error: 'Sizda shu vaqtda boshqa bron bor — bu chekni ura olmaysiz.' });
+        }
+        throw e;
+      }
+      if (!rows.length) return reply.code(409).send({ ok: false, error: 'Bron holati o‘zgardi — chekni qayta skanerlang.' });
 
-      // Kelganlik yozuvi — o'zgartirib bo'lmaydi (DB trigger himoyalaydi)
-      await supabaseRest('attendance_verifications', {
-        method: 'POST',
-        body: JSON.stringify({ booking_id: booking.id, method: 'qr', scanned_by: user?.id ?? null, receipt_code: code }),
-      }).catch((e) => console.error('attendance write failed:', e));
+      /* Chek urilgani yoziladi — hisobot shundan tuziladi (o'zgartirib
+         bo'lmaydigan yozuv, bitta bronga bitta). Yozilmasa dars ORTGA
+         qaytariladi: aks holda dars hech kimning hisobotiga tushmasdi. */
+      try {
+        await recordScan({
+          booking, scannerUserId: user?.id ? String(user.id) : null, scannerTelegramId: Number(tgUser.id),
+          instructorId: String(ip.id), instructorName: insName, receiptCode: code, payment,
+          fromInstructorId: fromId, minutes,
+        });
+      } catch (e: any) {
+        const msg = String(e?.message || '');
+        /* Bu bronga avval ham chek urilgan (bron qayta ochilgan) — yozuv bor, yetarli */
+        if (!/duplicate key|23505/i.test(msg)) {
+          console.error('[scan] attendance write failed:', msg);
+          await supabaseRest('bookings', {
+            method: 'PATCH', query: `?id=eq.${q(String(booking.id))}&status=eq.in_progress`,
+            body: JSON.stringify({
+              status: 'confirmed', arrived_at: booking.arrived_at || null, updated_at: new Date().toISOString(),
+              ...(mine ? {} : { instructor_id: booking.instructor_id ?? null, instructor_name: booking.instructor_name ?? null }),
+            }),
+          }).catch((err) => console.error('[scan] revert failed:', err));
+          return reply.code(500).send({ ok: false, error: 'Chek yozilmadi — qayta urinib ko‘ring.', detail: msg.slice(0, 300) });
+        }
+      }
 
-      return { ok: true, booking: rows[0] ?? booking };
+      /* Bron boshqa instruktordan o'tdi: Excel bron katagi, unga xabar, audit */
+      let fromName: string | null = null;
+      if (fromId) {
+        fromName = await instructorNameOf(fromId);
+        const day = tashkentYmdOf(Date.parse(booking.start_at));
+        await moveSheetBooking(day, String(booking.id), String(ip.id), `Chek: ${insName || 'instruktor'}`).catch((e) => console.error('sheet move failed:', e));
+        await supabaseRest('admin_audit_logs', {
+          method: 'POST', headers: { Prefer: 'return=minimal' },
+          body: JSON.stringify({
+            admin_id: null, action: 'BOOKING_TRANSFERRED_BY_SCAN', entity_type: 'bookings', entity_id: booking.id,
+            old_data: { instructor_id: fromId }, new_data: { instructor_id: ip.id, receipt_code: code },
+          }),
+        }).catch(() => {});
+        const { notifyBookingTransferred } = await import('./instructor-notify.js');
+        await notifyBookingTransferred(booking, fromId, insName || 'boshqa instruktor').catch(() => {});
+      }
+
+      return { ok: true, booking: rows[0] ?? booking, transferred_from: fromId ? (fromName || '') : null };
     } catch (e: any) {
       const msg = String(e?.message || '');
       if (/bookings_one_active_lesson/i.test(msg)) {
