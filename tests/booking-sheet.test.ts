@@ -290,3 +290,92 @@ describe('Excel bron — bron va band vaqt', () => {
     expect(JSON.stringify(st.body)).not.toContain('booking_sheet');
   });
 });
+
+describe('Excel bron — bekor qilish va ko‘chirish (tugmalar)', () => {
+  const cancel = (key: string, cookie = admin, d = day) => h.call('POST', '/api/admin/booking-sheet-cancel', { cookie, payload: { date: d, key } });
+  const move = (key: string, to: { date: string; ins: string; h: number }, cookie = admin, d = day) =>
+    h.call('POST', '/api/admin/booking-sheet-move', { cookie, payload: { date: d, key, to_date: to.date, to_ins: to.ins, to_h: to.h } });
+  const sheetOf = (d: string) => h.db.admin_settings.find((x: any) => x.key === `booking_sheet:${d}`)?.value?.cells || {};
+
+  it('«Kelmagan» bron: katakni o‘chirib bo‘lmaydi, lekin «Bekor qilish» ishlaydi — katak tozalanadi', async () => {
+    await save({ [K('ip-1', 14)]: '901234567', [K('ip-1', 15)]: '901234567' });
+    const b = active()[0];
+    expect(b.duration_minutes).toBe(120);
+    b.status = 'no_show';
+    const del = await save({ [K('ip-1', 15)]: '' });
+    expect(del.body.result.errors[0].error).toMatch(/Kelmagan/);
+    const r = await cancel(K('ip-1', 15));
+    expect(r.status).toBe(200);
+    expect(b.status).toBe('cancelled');
+    expect(b.cancellation_reason).toMatch(/Excel bron: bekor qilindi/);
+    expect(sheetOf(day)[K('ip-1', 14)]).toBeUndefined();
+    expect(sheetOf(day)[K('ip-1', 15)]).toBeUndefined();
+    expect(r.body.cells[K('ip-1', 14)]).toBeUndefined();                       // javobdagi jadvalda ham bo'sh
+    expect(h.db.admin_audit_logs.some((a: any) => a.action === 'BOOKING_SHEET_CANCEL')).toBe(true);
+  });
+
+  it('to‘langan bronni bekor qilib bo‘lmaydi; kassa ham qila olmaydi', async () => {
+    await save({ [K('ip-1', 10)]: '901234567' });
+    const b = active()[0];
+    expect((await cancel(K('ip-1', 10), kassa)).status).toBe(403);
+    h.db.payments.push({ id: 'p1', booking_id: b.id, status: 'paid', amount: 250000 });
+    const r = await cancel(K('ip-1', 10));
+    expect(r.status).toBe(409);
+    expect(r.body.error).toMatch(/to‘langan/);
+    expect(b.status).toBe('confirmed');
+  });
+
+  it('boshqa kun, soat va instruktorga ko‘chirish — eskisi bekor, yangisi tasdiqlangan, kataklar ko‘chadi', async () => {
+    await save({ [K('ip-1', 10)]: '901234567 Bekzod', [K('ip-1', 11)]: '901234567 Bekzod' });
+    const old = active()[0];
+    const d2 = ymd(3);
+    const r = await move(K('ip-1', 11), { date: d2, ins: 'ip-2', h: 14 }, operator);
+    expect(r.status).toBe(200);
+    expect(old.status).toBe('cancelled');
+    expect(old.cancellation_reason).toMatch(/^Ko‘chirildi → AVD-\d+ .* 14:00 \(Komila Sobirova\)$/);
+    const nb = h.db.bookings.find((b: any) => b.id === r.body.result.created.id);
+    expect(nb).toMatchObject({ status: 'confirmed', instructor_id: 'ip-2', duration_minutes: 120, start_at: at('14:00', d2), category: 'B' });
+    expect(nb.customer_id).toBe(old.customer_id);
+    expect(sheetOf(d2)[K('ip-2', 14)].t).toBe('901234567 Bekzod');
+    expect(sheetOf(d2)[K('ip-2', 15)].t).toBe('901234567 Bekzod');
+    expect(sheetOf(day)[K('ip-1', 10)]).toBeUndefined();
+  });
+
+  it('o‘sha kuni o‘z vaqtiga ustma-ust ko‘chirish ham bo‘ladi (10:00 → 11:00)', async () => {
+    await save({ [K('ip-1', 10)]: '901234567', [K('ip-1', 11)]: '901234567' });
+    const r = await move(K('ip-1', 10), { date: day, ins: 'ip-1', h: 11 });
+    expect(r.status).toBe(200);
+    const a = active();
+    expect(a).toHaveLength(1);
+    expect(a[0]).toMatchObject({ start_at: at('11:00'), duration_minutes: 120 });
+    expect(r.body.cells[K('ip-1', 10)]).toBeUndefined();
+    expect(r.body.cells[K('ip-1', 12)].k).toBe('sheet');
+  });
+
+  it('band joyga ko‘chirilmaydi va eski bron joyida qoladi', async () => {
+    await save({ [K('ip-1', 10)]: '901234567', [K('ip-2', 14)]: 'BAND' });
+    const old = active()[0];
+    let r = await move(K('ip-1', 10), { date: day, ins: 'ip-2', h: 14 });
+    expect(r.status).toBe(409);
+    expect(r.body.error).toMatch(/14:00 band/);
+    expect(old.status).toBe('confirmed');
+    /* boshqa bron bor (katak yozuvsiz) — yaratib bo'lmaydi → qaytariladi */
+    h.db.bookings.push({ id: 'b-app', customer_id: 'u-cust', instructor_id: 'ip-2', status: 'confirmed', source: 'app', start_at: at('16:00'), end_at: at('17:00'), duration_minutes: 60, category: 'B', pickup_code: 'AVD-7001' });
+    r = await move(K('ip-1', 10), { date: day, ins: 'ip-2', h: 16 });
+    expect(r.status).toBe(409);
+    expect(old.status).toBe('confirmed');
+    expect(old.cancelled_at ?? null).toBeNull();
+    expect(sheetOf(day)[K('ip-1', 10)].t).toBe('901234567');
+    expect(sheetOf(day)[K('ip-1', 10)].b).toBe(String(old.id));
+  });
+
+  it('Mini App bronini ham ko‘chirsa bo‘ladi (Excel katagi yo‘q)', async () => {
+    h.db.bookings.push({ id: 'b-app', customer_id: 'u-cust', instructor_id: 'ip-2', status: 'confirmed', source: 'app', start_at: at('09:00'), end_at: at('10:00'), duration_minutes: 60, category: 'C', pickup_code: 'AVD-7002' });
+    const r = await move(K('ip-2', 9), { date: day, ins: 'ip-2', h: 17 });
+    expect(r.status).toBe(200);
+    expect(h.db.bookings.find((b: any) => b.id === 'b-app').status).toBe('cancelled');
+    const nb = h.db.bookings.find((b: any) => b.id === r.body.result.created.id);
+    expect(nb).toMatchObject({ customer_id: 'u-cust', start_at: at('17:00'), category: 'C', status: 'confirmed' });
+    expect(sheetOf(day)[K('ip-2', 17)].t).toBe('901119999/C Ali Mijoz');
+  });
+});
