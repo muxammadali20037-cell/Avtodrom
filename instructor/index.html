@@ -705,7 +705,8 @@ function card(b, opts = {}){
 
   let acts = '';
   if (st === 'pending')     acts = `<div class="note" style="margin:12px 15px 15px">⏳ Kassada tasdiqlanadi — mijoz kelganda chekni skanerlang</div>`;
-  if (st === 'confirmed')   acts = `<div class="acts"><button class="btn go" data-a="arrived" data-id="${esc(b.id)}">🚗 Mijoz keldi — boshlash</button><button class="btn bad sm" data-a="no-show" data-id="${esc(b.id)}">🚫 Mijoz kelmadi</button></div>`;
+  /* Dars FAQAT chek urilganda boshlanadi («KELDI» tugmasi olib tashlandi) */
+  if (st === 'confirmed')   acts = `<div class="acts"><button class="btn go" data-a="scan" data-id="${esc(b.id)}">📷 Chekni skanerlash</button><button class="btn bad sm" data-a="no-show" data-id="${esc(b.id)}">🚫 Mijoz kelmadi</button></div>`;
   if (st === 'in_progress') acts = `<div class="acts"><button class="btn ok" data-a="departed" data-id="${esc(b.id)}">🏁 Darsni yakunlash</button></div>`;
 
   return `<article class="bk ${isNow ? 'now' : ''}">
@@ -729,7 +730,7 @@ function card(b, opts = {}){
   </article>`;
 }
 function bind(root){
-  root.querySelectorAll('[data-a]').forEach(b => b.onclick = () => act(b.dataset.a, b.dataset.id));
+  root.querySelectorAll('[data-a]').forEach(b => b.onclick = () => b.dataset.a === 'scan' ? $('scanBtn').click() : act(b.dataset.a, b.dataset.id));
   root.querySelectorAll('[data-rem]').forEach(b => b.onclick = () => remind(b.dataset.rem, b));
   tickCountdowns();   /* yangi chizilgan taymerlar bir soniya «--:--» bo'lib turmasin */
 }
@@ -825,8 +826,7 @@ function renderBookings(){
 
 /* Amal tasdig'i */
 const CONFIRM = {
-  arrived:  { t:'Mijoz keldimi?',        x:'Dars boshlangan deb belgilanadi.', b:'🚗 Ha, boshlash', c:'go' },
-  departed: { t:'Darsni yakunlaysizmi?', x:'Dars soati hisob-kitobga qo‘shiladi.', b:'🏁 Yakunlash', c:'ok' },
+  departed: { t:'Darsni yakunlaysizmi?', x:'Chekdagi vaqt tugaganda dars o‘zi ham yopiladi.', b:'🏁 Yakunlash', c:'ok' },
   'no-show':{ t:'Mijoz kelmadimi?',      x:'Bu holat hisobotda qayd etiladi.', b:'🚫 Kelmadi', c:'bad' },
 };
 function act(a, id){
@@ -1073,9 +1073,9 @@ function renderCalc(){
     <div class="sub" style="margin:4px 2px 0;font-weight:800">${esc(period)}</div>
     <div class="big3">
       <div class="tile sc"><div class="ic">🎓</div><div class="tx"><span>Avtoshkola</span>
-        <b>${esc(sc.lessons || 0)} ta dars</b><em>${esc(fmtDur(sc.minutes || 0))} haydadi${sc.in_progress ? ` · ${esc(sc.in_progress)} ta tugallanmagan` : ''}</em></div></div>
+        <b>${esc(sc.lessons || 0)} ta dars</b><em>${esc(fmtDur(sc.minutes || 0))} haydadi${sc.in_progress ? ` · ${esc(sc.in_progress)} ta ketmoqda` : ''}</em></div></div>
       <div class="tile pd"><div class="ic">💵</div><div class="tx"><span>Pullik (platniy)</span>
-        <b>${esc(pd.lessons || 0)} ta dars</b><em>${esc(fmtDur(pd.minutes || 0))} haydadi${pd.in_progress ? ` · ${esc(pd.in_progress)} ta tugallanmagan` : ''}</em></div></div>
+        <b>${esc(pd.lessons || 0)} ta dars</b><em>${esc(fmtDur(pd.minutes || 0))} haydadi${pd.in_progress ? ` · ${esc(pd.in_progress)} ta ketmoqda` : ''}</em></div></div>
       <div class="tile all"><div class="ic">⏱</div><div class="tx"><span>Jami haydagan</span>
         <b>${esc(hoursNum(s.minutes || 0))} soat</b><em>${esc(s.lessons || 0)} ta dars · ${esc(fmtDur(s.minutes || 0))}</em></div></div>
     </div>
@@ -1084,7 +1084,8 @@ function renderCalc(){
       <div><span>Kelmagan</span><b style="color:var(--red)">${esc(s.no_show || 0)}</b></div>
       <div><span>Kutilmoqda</span><b>${esc(s.upcoming || 0)}</b></div>
     </div>
-    ${s.in_progress ? `<div class="alert a-warn">${esc(s.in_progress)} ta dars «Yakunlash» bosilmagan — ular soatga qo‘shilmaydi. Bronlarim bo‘limidan yakunlang.</div>` : ''}
+    ${s.in_progress ? `<div class="alert a-info">${esc(s.in_progress)} ta dars hozir ketmoqda — chekdagi vaqt tugaganda o‘zi yopiladi.</div>` : ''}
+    <div class="sub" style="margin:8px 2px 0;font-size:12.5px">Hisob siz <b>urgan cheklar</b> bo‘yicha: chek urilgan kun va chekdagi vaqt.${s.transferred_in ? ` ${esc(s.transferred_in)} ta chek boshqa instruktor bronidan o‘tgan.` : ''}</div>
     ${days.length > 1 ? `<div class="card"><b style="font-size:14px">Kunma-kun</b>
       <table class="days" style="margin-top:8px">
         <tr><th>Kun</th><th>Shkola</th><th>Pullik</th><th>Soat</th></tr>
@@ -1172,9 +1173,12 @@ function showScanResult(d, code){
   const phone = String(b.customer?.phone || '').replace(/[^+\d]/g, '');
   const when = school ? 'Hozir' : hhmm(b.start_at || b.booking_date);
   let action = '', hint = '';
+  if (d.transfer_from !== null && d.transfer_from !== undefined && d.can_start) hint = `<div class="alert a-info" style="margin:12px 0">${d.transfer_from
+    ? `Bu bron <b>${esc(d.transfer_from)}</b> ga yozilgan edi. Chekni ursangiz — dars va hisob <b>sizga</b> o‘tadi.`
+    : 'Kassada instruktor tanlanmagan. Chekni ursangiz — dars <b>sizga</b> yoziladi.'}</div>`;
   if (d.can_start)       action = `<button class="btn ok" id="scStart">${school ? '🎓 Darsni boshlash' : '🚗 Darsni boshlash'}</button>`;
   else if (d.can_finish) action = `<button class="btn ok" id="scFinish">🏁 Darsni yakunlash</button>`;
-  else if (d.already)    hint = `<div class="alert a-info" style="margin:12px 0">Bu bron holati: <b>${esc(ST[d.already] || d.already)}</b></div>`;
+  else if (d.already)    hint += `<div class="alert a-info" style="margin:12px 0">Bu bron holati: <b>${esc(ST[d.already] || d.already)}</b></div>`;
   sheet(`
     <div class="scanres">
       <span class="pill p-${esc(b.status || 'confirmed')}">${esc(ST[b.status] || b.status || '')}</span>
@@ -1208,7 +1212,7 @@ async function startFromScan(code){
         <div class="acts" style="padding:0"><button class="btn go" id="snOk">Tushunarli</button></div>`);
       $('snOk').onclick = closeSheet; return;
     }
-    closeSheet(); toast('Dars boshlandi');
+    closeSheet(); toast(d && d.transferred_from !== null && d.transferred_from !== undefined ? 'Dars boshlandi — bron sizga o‘tdi' : 'Dars boshlandi');
   } catch (e) {
     if (btn) { btn.disabled = false; btn.textContent = '🚗 Darsni boshlash'; }
     if (/yakunlanmagan/i.test(String(e.message))) {
