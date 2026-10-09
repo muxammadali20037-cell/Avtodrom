@@ -836,38 +836,56 @@ button.tr:active{background:var(--card-2)}
 .xb-bar .btn{width:auto;min-height:36px;padding:0 12px;font-size:13.5px}
 .xb-wrap{position:relative;overflow:auto;border-radius:14px;background:var(--card);box-shadow:var(--shadow);max-height:calc(100vh - 330px);min-height:320px;-webkit-overflow-scrolling:touch;outline:0;overscroll-behavior:contain}
 .xb-wrap:focus-visible{box-shadow:var(--shadow),inset 0 0 0 2px var(--accent)}
-table.xb{border-collapse:separate;border-spacing:0;font-size:12.5px;table-layout:fixed;user-select:none;-webkit-user-select:none}
-.xb th,.xb td{border-right:1px solid #cfd5e1;border-bottom:1px solid #cfd5e1;padding:0 7px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* Excel bron — tiniq, qalin: katta shrift, to'q matn, aniq panjara */
+table.xb{border-collapse:separate;border-spacing:0;font-size:14.5px;table-layout:fixed;user-select:none;-webkit-user-select:none}
+.xb th,.xb td{border-right:1px solid #a3acbf;border-bottom:1px solid #a3acbf;padding:0 8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .xb thead th{position:sticky;z-index:2;text-align:center}
-.xb thead tr:nth-child(1) th{top:0;height:24px}
-.xb thead tr:nth-child(2) th{top:24px;height:30px}
-.xb thead tr:nth-child(3) th{top:54px;height:24px}
-.xb th.xb-grp{background:#2b2f8f;color:#fff;font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;text-align:left;overflow:visible}
-.xb th.xb-grp span{position:sticky;left:70px;display:inline-block;padding:0 6px}
-.xb th.xb-nm{font-weight:850;font-size:12px;text-transform:uppercase;color:#141833;max-width:136px}
-.xb th.xb-ph{font-weight:750;font-size:11.5px;color:#30364f;font-variant-numeric:tabular-nums}
-.xb th.xb-h{position:sticky;left:0;z-index:3;width:62px;min-width:62px;max-width:62px;background:#e5484d;color:#fff;font-weight:850;text-align:center;font-variant-numeric:tabular-nums;height:32px}
-.xb th.xb-h.past{background:#f0a6a8}
-.xb thead th.xb-corner{top:0;z-index:5;height:78px;background:#c62f35;font-size:11px;line-height:1.15;white-space:normal}
-.xb td.xc{position:relative;width:136px;min-width:136px;max-width:136px;height:32px;background:var(--cb,#fff);cursor:cell;font-weight:650;color:#141833}
-.xb td.xc .xt{display:block;overflow:hidden;text-overflow:ellipsis}
-.xb td.xc.tg .xt{padding-right:46px}
-.xb td.xc .xg{position:absolute;right:3px;top:50%;transform:translateY(-50%);font-style:normal;font-size:9.5px;font-weight:800;padding:1px 4px;border-radius:6px;background:rgba(20,24,51,.10);color:#3d4360;max-width:52px;overflow:hidden;text-overflow:ellipsis;letter-spacing:-.01em}
+.xb thead tr:nth-child(1) th{top:0;height:28px}
+.xb thead tr:nth-child(2) th{top:28px;height:36px}
+.xb thead tr:nth-child(3) th{top:64px;height:28px}
+.xb th.xb-grp{background:#2b2f8f;color:#fff;font-size:12.5px;font-weight:900;letter-spacing:.07em;text-transform:uppercase;text-align:left;overflow:visible}
+.xb th.xb-grp span{position:sticky;left:78px;display:inline-block;padding:0 6px}
+.xb th.xb-nm{font-weight:900;font-size:14px;text-transform:uppercase;color:#05081a;max-width:156px;letter-spacing:.01em}
+.xb th.xb-ph{font-weight:800;font-size:13.5px;color:#10142e;font-variant-numeric:tabular-nums}
+.xb th.xb-h{position:sticky;left:0;z-index:3;width:70px;min-width:70px;max-width:70px;background:#e5484d;color:#fff;font-weight:900;font-size:15.5px;text-align:center;font-variant-numeric:tabular-nums;height:42px;border-bottom-color:#f6b3b5}
+.xb th.xb-h.past{background:#ee9497}
+.xb thead th.xb-corner{top:0;z-index:5;height:92px;background:#c62f35;font-size:12.5px;font-weight:900;line-height:1.15;white-space:normal}
+.xb td.xc{position:relative;width:156px;min-width:156px;max-width:156px;height:42px;background:var(--cb,#fff);cursor:cell;font-weight:800;font-size:15px;color:#05081a;font-variant-numeric:tabular-nums;letter-spacing:.005em}
+.xb td.xc .xt{display:block;overflow:hidden;text-overflow:ellipsis;line-height:17px}
+.xb td.xc .xs{display:block;overflow:hidden;text-overflow:ellipsis;font-size:11px;font-weight:800;line-height:13px;color:#2a3150;letter-spacing:0}
+.xb td.xc.cont{border-bottom-color:transparent}
+.xb .gs{border-left:4px solid #05081a}
+.xb-q{display:flex;align-items:center;flex-wrap:wrap;gap:6px;flex:1 1 100%;padding-top:4px;border-top:1px dashed var(--line)}
+.xb-q .ql{font-size:12px;font-weight:800;color:var(--hint);text-transform:uppercase;letter-spacing:.05em;margin:0 2px 0 6px}
+.xb-q .ql:first-child{margin-left:0}
+.xb-q .qb{min-height:32px;padding:0 12px;border-radius:9px;font-weight:800;font-size:13.5px;background:var(--card-2);color:var(--text);border:1px solid var(--line);cursor:pointer}
+.xb-q .qb.on{background:#2b2f8f;color:#fff;border-color:#2b2f8f}
+.xb-q .qb:disabled{cursor:default;opacity:1}
+.xb-q .qb:disabled:not(.on){opacity:.5}
+.xb-q.muted{font-size:12.5px;font-weight:600;color:var(--hint)}
+.xb td.xc.tg .xt{padding-right:62px}
+.xb td.xc .xg{position:absolute;right:4px;top:50%;transform:translateY(-50%);font-style:normal;font-size:11px;font-weight:900;padding:2px 5px;border-radius:6px;background:rgba(20,24,51,.14);color:#1f2440;max-width:64px;overflow:hidden;text-overflow:ellipsis;letter-spacing:-.01em}
 .xb td.xc .xg.bron{background:#2b2f8f;color:#fff}
-.xb td.xc.sb{box-shadow:inset 3px 0 0 #2b2f8f}
-.xb td.xc.sn{box-shadow:inset 3px 0 0 #8a90a2}
-.xb td.xc.ob{background:#fde2e4;color:#8a1c24}
-.xb td.xc.ow{background:#e4e7ee;color:#555d70;text-align:center;font-weight:750}
-.xb td.xc.of{background:repeating-linear-gradient(135deg,#ece6f8 0 6px,#f7f4fd 6px 12px);color:#6b5a97;text-align:center;font-weight:750}
-.xb td.xc.dirty{background:#fff7d6;box-shadow:inset 0 0 0 2px #e0a100}
-.xb td.xc.err{box-shadow:inset 0 0 0 2px #d14343}
+.xb td.xc.sb{box-shadow:inset 5px 0 0 #2b2f8f}
+.xb td.xc.sn{background:#dfe3ec;color:#141a33;box-shadow:inset 5px 0 0 #5b6378}
+.xb td.xc.ob{box-shadow:inset 5px 0 0 #d92d35}
+.xb td.xc.ow{background:#e4e7ee;color:#4b5368;text-align:center;font-weight:800}
+.xb td.xc.of{background:repeating-linear-gradient(135deg,#ebe4fa 0 6px,#f7f4fd 6px 12px);color:#5e4d8f;text-align:center;font-weight:800}
+.xb td.xc.dirty{background:#fff2c2;box-shadow:inset 0 0 0 2.5px #d99700}
+.xb td.xc.err{box-shadow:inset 0 0 0 2.5px #d14343}
 .xb td.xc.err .xt{color:#a32020}
-.xb td.xc.past{opacity:.55}
+.xb td.xc.past .xt,.xb td.xc.past .xg{opacity:.62}
+.xb td.xc.past{background-image:linear-gradient(rgba(240,242,247,.55),rgba(240,242,247,.55))}
 .xb td.xc.ro{cursor:not-allowed}
 .xb td.xc.sel::after{content:'';position:absolute;inset:0;background:rgba(43,47,143,.13);pointer-events:none}
-.xb td.xc.act::after{background:rgba(43,47,143,.05);box-shadow:inset 0 0 0 2px #2b2f8f}
-.xb-ed{position:absolute;z-index:6;margin:0;border:2px solid #2b2f8f;border-radius:0;padding:0 7px;font-size:13px;font-weight:650;background:#fff;color:#141833;outline:0;box-shadow:0 6px 18px rgba(16,20,48,.22)}
-@media (max-width:759px){.xb td.xc{width:122px;min-width:122px;max-width:122px;font-size:12px}.xb th.xb-nm{max-width:122px}.xb-wrap{max-height:calc(100vh - 300px)}.xb th.xb-h{width:52px;min-width:52px;max-width:52px}.xb th.xb-grp span{left:58px}}
+.xb td.xc.act::after{background:rgba(43,47,143,.05);box-shadow:inset 0 0 0 2.5px #2b2f8f}
+.xb-ed{position:absolute;z-index:6;margin:0;border:2.5px solid #2b2f8f;border-radius:0;padding:0 8px;font-size:15px;font-weight:800;background:#fff;color:#05081a;outline:0;box-shadow:0 6px 18px rgba(16,20,48,.22)}
+@media (max-width:759px){.xb td.xc{width:134px;min-width:134px;max-width:134px;font-size:14px}.xb th.xb-nm{max-width:134px;font-size:13px}.xb-wrap{max-height:calc(100vh - 300px)}.xb th.xb-h{width:58px;min-width:58px;max-width:58px;font-size:14px}.xb th.xb-grp span{left:64px}.xb td.xc .xg{display:none}.xb td.xc.tg .xt{padding-right:0}}
+#xbSave .wp-save-in .btn-group{background:#16a34a;border-color:#16a34a;color:#fff}
+#xbSave .wp-save-in .btn-group:disabled{opacity:.6}
+#xbSave .xs-short{display:none}
+@media (max-width:560px){#xbSave .xs-long{display:none}#xbSave .xs-short{display:inline}#xbSave .wp-save .btn{padding:0 12px}}
+.xs-prev{display:block;width:100%;height:auto;border-radius:10px;box-shadow:0 0 0 1px var(--line);margin:8px 0;background:#fff}
 #xbSave{position:sticky;bottom:calc(var(--nav-h) + var(--sb) + 10px);z-index:40}
 #xbSave .wp-save{position:static;margin-top:12px}
 @media (min-width:960px){#xbSave{bottom:16px}}
@@ -986,6 +1004,7 @@ const IC = {
   ban: '<circle cx="12" cy="12" r="9"/><path d="M6 6l12 12"/>',
   play: '<circle cx="12" cy="12" r="9"/><path d="M10 8.5l5 3.5-5 3.5z"/>',
   send: '<path d="M4 12l16-8-6 16-2.5-6.5z"/>',
+  img: '<rect x="3" y="4" width="18" height="16" rx="2.5"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5-5-9 9"/>',
   eye: '<path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',
   refresh: '<path d="M20 11a8 8 0 10-2.3 5.7M20 4v7h-7"/>',
   star: '<path d="M12 3l2.8 5.7 6.2.9-4.5 4.4 1 6.2L12 17.3 6.5 20.2l1-6.2L3 9.6l6.2-.9z"/>',
@@ -4348,7 +4367,7 @@ ACT.wpsave = async el => {
    Ctrl+C / Ctrl+V (Excel'dan nusxa olib qo'yish), Ctrl+Z, Ctrl+S.
    Kassa jadvalni faqat ko'radi.
    ========================================================================= */
-const XB = { date: kToday(), d: null, seq: 0, drafts: {}, sel: null, anchor: null, edit: null, undo: [], saving: false };
+const XB = { date: kToday(), d: null, seq: 0, drafts: {}, sel: null, anchor: null, edit: null, undo: [], saving: false, posting: false, stale: {} };
 const XB_PAL = ['#fde047', '#86efac', '#cbd5e1', '#fdba74', '#93c5fd', '#a5b4fc', '#f9a8d4', '#5eead4', '#c4b5fd', '#fcd34d', '#7dd3fc', '#bef264'];
 const XB_SRC = { app: 'Mini App', admin: 'Qo‘lda bron', walk_in: 'Kassa', school: 'Avtoshkola' };
 const XB_TAG = { app: 'App', admin: 'Qo‘lda', walk_in: 'Kassa', school: 'Maktab' };
@@ -4371,6 +4390,22 @@ function xbPhone(text){
   return null;
 }
 const xbShortPhone = p => { const m = /(\d{2})(\d{3})(\d{2})(\d{2})$/.exec(String(p || '').replace(/\D/g, '')); return m ? `${m[1]} ${m[2]} ${m[3]} ${m[4]}` : String(p || ''); };
+/* ---- davomiylik va toifa: katak matnidan o'qish va yozish (server bilan bir xil qoida) ---- */
+const XB_HALF_RX = /\s*\/?\s*30\s*(?:min|мин|daq|дак|дақ)[\p{L}.]*/giu;
+const XB_CAT_RX = /(?:\s*\/\s*|\s+|^)([ABCАВС])(?:\s*(?:toifa|тоифа))?(?=$|[\s/])/giu;
+const xbDefCat = ins => (ins?.categories || []).includes('B') ? 'B' : (ins?.categories || [])[0] || 'B';
+const xbIsHalf = t => /(?:^|\D)30\s*(?:min|мин|daq|дак|дақ)/iu.test(String(t || ''));
+function xbCatOf(t, ins){
+  const m = /(?:^|[^\p{L}\p{N}])([ABCАВС])(?=$|[^\p{L}\p{N}])/u.exec(String(t || '').toUpperCase());
+  return m ? ({ 'А': 'A', 'В': 'B', 'С': 'C' }[m[1]] || m[1]) : xbDefCat(ins);
+}
+const xbBaseText = t => String(t || '').replace(XB_HALF_RX, ' ').replace(XB_CAT_RX, ' ').replace(/[\s/]+$/, '').replace(/\s+/g, ' ').trim();
+const xbCompose = (base, cat, half, ins) => `${base}${cat && cat !== xbDefCat(ins) ? '/' + cat : ''}${half ? '/30 MIN' : ''}`;
+const xbDurTxt = min => !min || min === 60 ? '' : min < 60 ? `${min} daq` : `${Math.round(min / 6) / 10} soat`;
+/** Toifa guruhi rangi: A — to'q sariq, B — ko'k, C — yashil, aralash — binafsha (guruh rasmi va Excel faylda ham shunday) */
+const xbGroupColor = g => { const s = String(g || '').toUpperCase().replace(/\s+/g, ''); return s === 'A' ? '#c2410c' : s === 'B' ? '#2b2f8f' : s === 'C' ? '#047857' : '#6d28d9'; };
+/** Toifa guruhining birinchi ustuni (chap tomonida qalin chiziq) */
+const xbGroupStart = c => c > 0 && XB.d.instructors[c].group !== XB.d.instructors[c - 1].group;
 const xbDr = () => (XB.drafts[XB.date] = XB.drafts[XB.date] || {});
 const xbDirtyN = () => Object.keys(XB.drafts[XB.date] || {}).length;
 const xbAllDirty = () => Object.values(XB.drafts).reduce((a, x) => a + Object.keys(x || {}).length, 0);
@@ -4391,7 +4426,8 @@ function vXbron(){
   $('view').innerHTML = `<div class="view">
     <div class="sch-tools">
       <div class="chips grow" style="margin:0;padding:2px 0 4px">${dayChips(XB.date, 'xbday', [[t, 'Bugun'], [dayAdd(t, 1), 'Ertaga'], [dayAdd(t, 2), 'Indinga']])}</div>
-      <button class="btn btn-primary btn-sm" data-act="xbshare">${I('send', 18)} Guruhga</button>
+      <button class="btn btn-white btn-sm" data-act="xsprev">${I('img', 18)} Rasm</button>
+      <button class="btn btn-white btn-sm" data-act="xbshare">${I('send', 18)} Guruh</button>
       <button class="btn btn-white btn-sm" data-act="xbxl">${I('dl', 18)} Excel</button>
       <button class="btn btn-white btn-sm" data-act="xbhelp">${I('eye', 18)} Qoidalar</button>
     </div>
@@ -4400,10 +4436,10 @@ function vXbron(){
       <button class="icon-btn" data-act="xbmove" data-v="1" aria-label="Keyingi kun" style="display:inline-grid;width:38px;height:38px">${I('chev', 18)}</button></span></div>
     <div id="xbNote"></div>
     <div id="xbGrid">${skel(4)}</div>
-    <div class="legend"><span><i style="background:#fff;box-shadow:inset 0 0 0 1px #c9cfdb"></i>Bo‘sh</span>
-      <span><i style="background:#dbe4ff;box-shadow:inset 3px 0 0 #2b2f8f"></i>Raqam — bron (kod)</span>
-      <span><i style="background:#eef0f4;box-shadow:inset 3px 0 0 #8a90a2"></i>Yozuv — band</span>
-      <span><i style="background:#fde2e4"></i>Mini App / boshqa bron</span>
+    <div class="legend"><span><i style="background:#fff;box-shadow:inset 0 0 0 1px #a3acbf"></i>Bo‘sh</span>
+      <span><i style="background:#fde047;box-shadow:inset 4px 0 0 #2b2f8f"></i>Raqam — bron (instruktor rangida)</span>
+      <span><i style="background:#dfe3ec;box-shadow:inset 4px 0 0 #5b6378"></i>Yozuv — band</span>
+      <span><i style="background:#93c5fd;box-shadow:inset 4px 0 0 #d92d35"></i>Mini App / boshqa bron (qizil chiziq)</span>
       <span><i style="background:#e4e7ee"></i>Instruktor yopgan</span>
       <span><i style="background:repeating-linear-gradient(135deg,#e9e3f7 0 3px,#f6f3fc 3px 6px)"></i>Dam (grafik)</span>
       <span><i style="background:#fff7d6;box-shadow:inset 0 0 0 2px #e0a100"></i>Saqlanmagan</span>
@@ -4436,25 +4472,35 @@ function xbCellParts(r, c){
   const past = xbPast(r), col = XB_PAL[c % XB_PAL.length];
   const cls = ['xc'];
   let inner = '', bg = xbTint(col, 0.22);
+  const ins = XB.d.instructors[c];
   if (dr) {
     cls.push('dirty');
     const ph = dr.t ? xbPhone(dr.t) : null;
-    inner = dr.t ? `<span class="xt">${esc(dr.t)}</span><i class="xg ${ph ? 'bron' : ''}">${ph ? 'bron' : 'band'}</i>` : `<span class="xt muted">o‘chiriladi</span>`;
+    /* saqlansa nima bo'ladi: bron · toifa · davomiylik */
+    const run = ph ? xbRun(r, c) : null;
+    const dur = !ph ? '' : xbIsHalf(dr.t) ? ' · 30 daq' : run && run.n > 1 ? ` · ${run.n} soat` : ' · 1 soat';
+    inner = dr.t ? `<span class="xt">${esc(dr.t)}</span><span class="xs">${ph ? `bron · ${esc(xbCatOf(dr.t, ins))} toifa${dur}` : 'band'}</span>` : `<span class="xt muted">o‘chiriladi</span>`;
   } else if (s && (s.k === 'sheet' || s.k === 'note')) {
     const live = s.k === 'sheet';
     cls.push(live ? 'sb' : 'sn');
+    if (live) bg = xbTint(col, 0.9);              // bron — instruktor rangining to'q tusi (Excel fayl va guruh rasmidagidek)
     if (s.e) cls.push('err');
     if (s.lock) cls.push('lk');
-    const tag = live ? `<i class="xg bron">${esc(s.bk?.code || 'bron')}${s.bk?.paid ? ' ✓' : ''}</i>`
-      : s.bk && s.bk.status === 'cancelled' ? '<i class="xg">bekor</i>' : '';
-    inner = `<span class="xt">${esc(s.t)}</span>${tag}`;
+    const b = s.bk;
+    const sub = live ? [b?.code || 'bron', b?.cat ? `${b.cat} toifa` : '', xbDurTxt(b?.min), b?.paid ? '✓' : ''].filter(Boolean).join(' · ')
+      : b && b.status === 'cancelled' ? 'bekor qilingan' : '';
+    inner = `<span class="xt">${esc(s.t)}</span>${sub ? `<span class="xs">${esc(sub)}</span>` : ''}`;
   } else if (s && s.k === 'bk') {
     cls.push('ob', 'lk');
+    bg = xbTint(col, 0.9);
     const b = s.bk;
-    inner = `<span class="xt">${esc(b.phone ? xbDigits(b.phone) : b.name)}</span><i class="xg">${esc(XB_TAG[b.src] || 'Bron')}</i>`;
+    const sub = [XB_TAG[b.src] || 'Bron', b.cat ? `${b.cat} toifa` : '', xbDurTxt(b.min), b.paid ? '✓' : ''].filter(Boolean).join(' · ');
+    inner = `<span class="xt">${esc(b.phone ? xbDigits(b.phone) : b.name)}</span><span class="xs">${esc(sub)}</span>`;
   } else if (s && s.k === 'own') { cls.push('ow', 'lk'); inner = '<span class="xt">yopiq</span>'; }
   else if (s && s.k === 'off') { cls.push('of', 'lk'); inner = '<span class="xt">dam</span>'; }
   if (inner.includes('class="xg')) cls.push('tg');
+  if (xbSameNext(r, c)) cls.push('cont');           // keyingi soat — o'sha bron: oradagi chiziq yo'q, bitta katakdek
+  if (xbGroupStart(c)) cls.push('gs');
   if (past) cls.push('past');
   if (XB.d.can_edit && !xbCanEdit(r, c)) cls.push('ro');
   const sel = XB.sel, an = XB.anchor || sel;
@@ -4464,6 +4510,24 @@ function xbCellParts(r, c){
     if (sel.r === r && sel.c === c) cls.push('act');
   }
   return { cls, bg, title: s?.e || '', inner };
+}
+/** Katak qaysi bronga tegishli (ketma-ket soatlarni bitta qilib ko'rsatish uchun) */
+function xbIdent(r, c){
+  if (r < 0 || r >= XB.d.hours.length) return null;
+  const key = xbKey(r, c), dr = (XB.drafts[XB.date] || {})[key];
+  if (dr) { const ph = dr.t ? xbPhone(dr.t) : null; return ph ? 'p:' + ph : null; }
+  const s = xbSrv(key);
+  if (s && (s.k === 'sheet' || s.k === 'bk') && s.bk?.id) return 'b:' + s.bk.id;
+  return null;
+}
+const xbSameNext = (r, c) => { const a = xbIdent(r, c); return !!a && a === xbIdent(r + 1, c); };
+/** Tanlangan katak turgan bron qatori: bir xil raqamli ketma-ket kataklar */
+function xbRun(r, c){
+  const ph = xbPhone(xbText(xbKey(r, c))); if (!ph) return null;
+  const same = rr => rr >= 0 && rr < XB.d.hours.length && xbPhone(xbText(xbKey(rr, c))) === ph;
+  let r0 = r; while (same(r0 - 1)) r0--;
+  let r1 = r; while (same(r1 + 1)) r1++;
+  return { r0, n: r1 - r0 + 1, ph };
 }
 function xbCellHtml(r, c){
   const p = xbCellParts(r, c);
@@ -4493,9 +4557,10 @@ function xbMarkSel(){
 }
 function xbTableHtml(){
   const d = XB.d, cols = d.instructors;
-  const groups = xbGroups().map(g => `<th class="xb-grp" colspan="${g.n}"><span>${esc(g.g)} toifa</span></th>`).join('');
-  const names = cols.map((i, c) => `<th class="xb-nm" style="background:${XB_PAL[c % XB_PAL.length]}" title="${esc(i.name)}${i.active ? '' : ' (faol emas)'}">${esc(i.name)}</th>`).join('');
-  const phones = cols.map((i, c) => `<th class="xb-ph" style="background:${xbTint(XB_PAL[c % XB_PAL.length], 0.6)}">${esc(i.phone ? xbShortPhone(i.phone) : '—')}</th>`).join('');
+  const groups = xbGroups().map((g, gi) => `<th class="xb-grp${gi ? ' gs' : ''}" colspan="${g.n}" style="background:${xbGroupColor(g.g)}"><span>${esc(g.g)} toifa</span></th>`).join('');
+  const gs = c => xbGroupStart(c) ? ' gs' : '';
+  const names = cols.map((i, c) => `<th class="xb-nm${gs(c)}" style="background:${XB_PAL[c % XB_PAL.length]}" title="${esc(i.name)}${i.active ? '' : ' (faol emas)'} — ${esc(i.group)} toifa">${esc(i.name)}</th>`).join('');
+  const phones = cols.map((i, c) => `<th class="xb-ph${gs(c)}" style="background:${xbTint(XB_PAL[c % XB_PAL.length], 0.6)}">${esc(i.phone ? xbShortPhone(i.phone) : '—')}</th>`).join('');
   const body = d.hours.map((h, r) => `<tr><th class="xb-h ${xbPast(r) ? 'past' : ''}">${h}:00</th>${cols.map((_, c) => xbCellHtml(r, c)).join('')}</tr>`).join('');
   return `<thead><tr><th class="xb-h xb-corner" rowspan="3">${esc(dayTitle(d.date).split(',')[0])}</th>${groups}</tr><tr>${names}</tr><tr>${phones}</tr></thead><tbody>${body}</tbody>`;
 }
@@ -4515,7 +4580,7 @@ function xbPaint(){
     $('xbTab').innerHTML = xbTableHtml();
     if (d.date === kToday()) {
       const r = d.hours.findIndex(h => h >= Number(nowHM().slice(0, 2)) - 1);
-      if (r > 0) wrap.scrollTop = Math.max(0, r * 32 - 8);
+      if (r > 0) wrap.scrollTop = Math.max(0, r * 42 - 8);
     }
   } else if ($('xbTab').dataset.shape === xbShape()) {
     /* Jonli yangilanish: ustun va qatorlar o'sha — kataklar joyida yangilanadi */
@@ -4555,17 +4620,35 @@ function xbBar(){
   else info = xbPast(sel.r) ? '<span class="muted">O‘tgan vaqt</span>' : XB.d.can_edit ? '<span class="muted">Bo‘sh — yozing: telefon raqam yoki BAND / ism</span>' : '<span class="muted">Bo‘sh</span>';
   /* Kim yozgan: xodim logini yoki «Bot · Instruktor» (instruktor botiga yozgan) */
   if (!dr && s && (s.k === 'sheet' || s.k === 'note') && s.by) info += ` <span class="muted">· yozgan: ${esc(s.by)}</span>`;
-  el.innerHTML = `${addr}<span class="xb-info">${info}</span>${btn}`;
+  el.innerHTML = `${addr}<span class="xb-info">${info}</span>${btn}${xbQuick(sel)}`;
+}
+/** Tez tanlash: davomiylik (30 daq · 1/2/3 soat) va toifa (instruktor o'rgatadiganlari; hozirgisi tanlangan) */
+function xbQuick(sel){
+  if (!XB.d?.can_edit || !xbCanEdit(sel.r, sel.c)) return '';
+  const ins = XB.d.instructors[sel.c], run = xbRun(sel.r, sel.c);
+  if (!run) return `<span class="xb-q muted">Raqam yozing — keyin vaqt (30 daq, 1–3 soat) va toifani tugma bilan tanlaysiz</span>`;
+  const first = xbText(xbKey(run.r0, sel.c)), half = xbIsHalf(first), cat = xbCatOf(first, ins);
+  const cur = half ? '30' : String(run.n);
+  const durs = [['30', '30 daq'], ['1', '1 soat'], ['2', '2 soat'], ['3', '3 soat']]
+    .map(([v, t]) => `<button class="qb ${cur === v ? 'on' : ''}" data-act="xbdur" data-v="${v}">${t}</button>`).join('');
+  const cats = (ins.categories && ins.categories.length ? ins.categories : ['B'])
+    .map(k => `<button class="qb ${cat === k ? 'on' : ''}" data-act="xbcat" data-v="${esc(k)}" ${ins.categories.length < 2 ? 'disabled title="Instruktor faqat shu toifani o‘rgatadi"' : ''}>${esc(k)}</button>`).join('');
+  return `<span class="xb-q"><span class="ql">Vaqt</span>${durs}<span class="ql">Toifa</span>${cats}</span>`;
 }
 function xbSaveBar(){
   const el = $('xbSave'); if (!el) return;
   const n = xbDirtyN();
   if (!XB.d?.can_edit && !n) { el.innerHTML = ''; return; }
-  const other = xbAllDirty() - n;
+  const other = xbAllDirty() - n, stale = XB.stale[XB.date];
+  const sub = n ? 'Saqlang — raqamli kataklar bron bo‘ladi, qolganlari band'
+    : stale ? '<b style="display:inline;color:var(--warn)">Guruhdagi rasm eski</b> — «Guruhga tashlash»ni bosing'
+    : XB.d?.updated_by ? `Oxirgi saqlagan: ${esc(XB.d.updated_by)}${XB.d.updated_at ? ', ' + esc(whenText(XB.d.updated_at)) : ''}` : 'Katakka yozing — Ctrl+S yoki «Saqlash»';
+  /* «Guruhga tashlash» — barcha instruktorlarning bronlari tiniq rasm bo'lib guruhga (saqlanmagan bo'lsa — avval saqlaydi) */
+  const grp = XB.d?.can_edit ? `<button class="btn btn-group" data-act="xbpost" ${XB.saving || XB.posting ? 'disabled' : ''} title="Barcha instruktorlarning bronlari tiniq rasm bo‘lib guruhga boradi">${XB.posting ? '<span class="spin"></span>' : I('send', 19)} <span class="xs-long">${n ? 'Saqlab, guruhga tashlash' : 'Guruhga tashlash'}</span><span class="xs-short">Guruhga</span></button>` : '';
   el.innerHTML = `<div class="wp-save ${n ? 'on' : ''}"><div class="wp-save-in">
-    <span class="tx"><b>${n ? `${n} ta katak saqlanmagan` : 'Hammasi saqlangan'}</b><small>${n ? 'Saqlang — raqamli kataklar bron bo‘ladi, qolganlari band' : XB.d?.updated_by ? `Oxirgi saqlagan: ${esc(XB.d.updated_by)}${XB.d.updated_at ? ', ' + esc(whenText(XB.d.updated_at)) : ''}` : 'Katakka yozing — Ctrl+S yoki «Saqlash»'}${other ? ` · boshqa kunlarda yana ${other} ta` : ''}</small></span>
+    <span class="tx"><b>${n ? `${n} ta katak saqlanmagan` : 'Hammasi saqlangan'}</b><small>${sub}${other ? ` · boshqa kunlarda yana ${other} ta` : ''}</small></span>
     ${n ? `<button class="btn btn-soft" data-act="xbreset">Bekor</button>` : ''}
-    <button class="btn btn-primary" data-act="xbsave" ${n && !XB.saving ? '' : 'disabled'}>${XB.saving ? '<span class="spin"></span>' : I('check', 19, 2.4)} Saqlash</button></div></div>`;
+    <button class="btn btn-primary" data-act="xbsave" ${n && !XB.saving ? '' : 'disabled'}>${XB.saving ? '<span class="spin"></span>' : I('check', 19, 2.4)} Saqlash</button>${grp}</div></div>`;
 }
 
 /* ---------- tanlash va tahrirlash ---------- */
@@ -4607,7 +4690,7 @@ function xbSet(list, quiet = false){
   if (step.length) { XB.undo.push({ date: XB.date, step }); if (XB.undo.length > 100) XB.undo.shift(); }
   if (!Object.keys(dr).length) delete XB.drafts[XB.date];
   if (skipped && !quiet) toast(`${skipped} ta katakka yozib bo‘lmaydi (bron, yopiq, dam yoki o‘tgan vaqt)`, true);
-  xbPatch(new Set(step.map(x => x.key))); xbBar(); xbSaveBar();
+  xbPatch(); xbBar(); xbSaveBar();                  // hammasi: qo'shni kataklarning «davomi» ham yangilanadi
   return step.length;
 }
 function xbUndo(){
@@ -4616,7 +4699,7 @@ function xbUndo(){
   const dr = xbDr();
   for (const { key, before } of u.step.reverse()) { if (before) dr[key] = before; else delete dr[key]; }
   if (!Object.keys(dr).length) delete XB.drafts[XB.date];
-  xbPatch(new Set(u.step.map(x => x.key))); xbBar(); xbSaveBar();
+  xbPatch(); xbBar(); xbSaveBar();
 }
 function xbEdit(initial = null){
   const s = XB.sel; if (!s) return;
@@ -4743,6 +4826,36 @@ window.addEventListener('beforeunload', e => { if (xbAllDirty()) { e.preventDefa
 /* ---------- tugmalar ---------- */
 ACT.xbday = el => { if (XB.edit) xbCommit(); XB.date = el.dataset.v; XB.d = null; XB.sel = null; XB.anchor = null; vXbron(); };
 ACT.xbmove = el => ACT.xbday({ dataset: { v: dayAdd(XB.date, Number(el.dataset.v)) } });
+/** «30 daq / 1 / 2 / 3 soat» — bron qatorini cho'zadi yoki qisqartiradi (keyingi soatlarga o'sha raqam yoziladi) */
+ACT.xbdur = el => {
+  const s = XB.sel; if (!s || !XB.d?.can_edit) return;
+  if (XB.edit) xbCommit();
+  const run = xbRun(s.r, s.c); if (!run) return toast('Avval telefon raqam yozing', true);
+  const ins = XB.d.instructors[s.c], first = xbText(xbKey(run.r0, s.c));
+  const half = el.dataset.v === '30', n = half ? 1 : Number(el.dataset.v);
+  for (let i = 1; i < n; i++) {
+    const r = run.r0 + i;
+    if (r >= XB.d.hours.length) return toast(`${n} soat sig‘maydi — kun oxiri`, true);
+    const t = xbText(xbKey(r, s.c));
+    if (!xbCanEdit(r, s.c) || (t && xbPhone(t) !== run.ph)) return toast(`${XB.d.hours[r]}:00 band — ${n} soat sig‘maydi`, true);
+  }
+  const text = xbCompose(xbBaseText(first), xbCatOf(first, ins), half, ins), list = [];
+  for (let i = 0; i < Math.max(n, run.n); i++) list.push({ r: run.r0 + i, c: s.c, t: i < n ? text : '' });
+  xbSet(list);
+  $('xbWrap')?.focus({ preventScroll: true });
+};
+/** Toifa: bron qatorining hamma kataklariga (instruktor o'rgatmaydigan toifa — yo'q) */
+ACT.xbcat = el => {
+  const s = XB.sel; if (!s || !XB.d?.can_edit) return;
+  if (XB.edit) xbCommit();
+  const run = xbRun(s.r, s.c); if (!run) return toast('Avval telefon raqam yozing', true);
+  const ins = XB.d.instructors[s.c], cat = el.dataset.v;
+  if (!(ins.categories || []).includes(cat)) return toast(`${ins.name} ${cat} toifani o‘rgatmaydi`, true);
+  const list = [];
+  for (let i = 0; i < run.n; i++) { const r = run.r0 + i, t = xbText(xbKey(r, s.c)); list.push({ r, c: s.c, t: xbCompose(xbBaseText(t), cat, xbIsHalf(t), ins) }); }
+  xbSet(list);
+  $('xbWrap')?.focus({ preventScroll: true });
+};
 ACT.xbreset = async () => {
   const n = xbDirtyN(); if (!n) return;
   if (!(await ask({ title: 'O‘zgarishlarni bekor qilasizmi?', text: `${n} ta katakdagi saqlanmagan yozuv o‘chadi.`, ok: 'Bekor qilish', danger: true }))) return;
@@ -4764,7 +4877,9 @@ ACT.xbsave = async () => {
     const res = d.result || {}, cr = res.created || [], er = res.errors || [];
     const msg = [cr.length ? `${cr.length} ta bron yaratildi` : '', res.cancelled ? `${res.cancelled} ta bron bekor qilindi` : '', `${res.saved || 0} ta katak saqlandi`,
       res.notified ? `${res.notified} ta instruktorga botda xabar ketdi` : '',
-      res.group === 'updated' ? 'guruhdagi havola yangilandi' : res.group === 'posted' ? 'guruhga havola yuborildi' : ''].filter(Boolean).join(' · ');
+      res.group === 'updated' ? 'guruhdagi rasm yangilandi' : ''].filter(Boolean).join(' · ');
+    if (res.group === 'stale') XB.stale[date] = true; else if (res.group === 'updated') delete XB.stale[date];
+    if (XB.date === date) xbSaveBar();
     if (er.length) xbResult(d, cr, er); else toast(msg);
     SCHC.clear(); refreshCounts();
   }catch(e){ XB.saving = false; xbSaveBar(); fail(e); }
@@ -4782,38 +4897,66 @@ ACT.xbhelp = () => openSheet(`<h3>Excel bron — qoidalar</h3>
   <div class="list">
     <div class="row"><span class="tx"><b>Telefon raqam → haqiqiy bron</b><small>«994188549», «99-313-56-26», «50 150 05 08» — hammasi taniladi. Bron tasdiqlangan holda, kod bilan yaratiladi. Kassa mijozni raqami yoki kodi bo‘yicha topadi.</small></span></div>
     <div class="row"><span class="tx"><b>Ketma-ket soatlar → bitta bron</b><small>Bir instruktorga 11:00 va 12:00 ga bir xil raqam — 11:00–13:00 bitta 2 soatlik bron.</small></span></div>
-    <div class="row"><span class="tx"><b>Toifa va yarim soat</b><small>«947372906/C» — C toifa. Yozilmasa — instruktorning toifasi (B). «/30 MIN» — 30 daqiqalik bron, soat baribir band.</small></span></div>
+    <div class="row"><span class="tx"><b>Vaqt va toifa — tugma bilan</b><small>Raqamli katakni tanlang — yuqorida «30 daq · 1 soat · 2 soat · 3 soat» va toifa tugmalari chiqadi (instruktor o‘rgatadigan toifalar, hozirgisi belgilangan). 2 soat bosilsa keyingi soatga ham o‘sha raqam yoziladi — bitta 2 soatlik bron. Qo‘lda ham bo‘ladi: «947372906/C» — C toifa, «/30 MIN» — 30 daqiqa. Yozilmasa — instruktorning toifasi (B bo‘lsa B).</small></span></div>
     <div class="row"><span class="tx"><b>Raqamsiz yozuv → faqat band</b><small>BAND, ism yoki izoh — bron emas, lekin shu soatga Mini App, operator va kassa bron qila olmaydi.</small></span></div>
     <div class="row"><span class="tx"><b>O‘chirish yoki raqamni almashtirish</b><small>Eski bron bekor qilinadi. To‘langan yoki boshlangan bronni o‘zgartirib bo‘lmaydi.</small></span></div>
     <div class="row"><span class="tx"><b>Klaviatura</b><small>Strelkalar, Enter — yozish/pastga, Tab — o‘ngga, Delete — o‘chirish, Ctrl+C / Ctrl+V — Excel’dan nusxa, Ctrl+Z — qaytarish, Ctrl+S — saqlash. Telefonda: katakni ikki marta bosing.</small></span></div>
     <div class="row"><span class="tx"><b>Instruktor boti</b><small>Instruktor o‘z botiga «901234567 14:00» yoki «ertaga 901234567 15-17» deb yozsa, bot o‘sha instruktor ustuniga bron qiladi va kodni javob qiladi. Bunday kataklarda «yozgan: Bot · …» ko‘rinadi.</small></span></div>
     <div class="row"><span class="tx"><b>Instruktorga xabar</b><small>Saqlaganingizda har instruktorga botda faqat o‘z ustuni keladi: nima o‘zgargani (yangi bron, bekor, BAND), Excel ko‘rinishidagi rasm va ostida bosib qo‘ng‘iroq qilinadigan raqamlar. Kechqurun 20:00 da ertangi, ertalab 7:00 da bugungi ro‘yxat o‘zi boradi.</small></span></div>
-    <div class="row"><span class="tx"><b>Guruhga havola</b><small>«Guruhga» tugmasi — instruktorlar guruhiga bot «📋 Jadvalni ochish» tugmali xabar tashlaydi. Telefonda Excel shart emas: bosilsa jadval sahifasi ochiladi, instruktorni tanlab ko‘radi, raqamni bosib qo‘ng‘iroq qiladi. Saqlaganda xabar o‘zi yangilanadi, har kuni 20:00 da ertangi kun o‘zi ketadi.</small></span></div>
+    <div class="row"><span class="tx"><b>Guruhga tashlash</b><small>Saqlagandan keyin «Guruhga tashlash» — bot barcha instruktorlarning bronlarini tiniq, qalin rasm qilib guruhga tashlaydi (instruktor ko‘p bo‘lsa — bir nechta rasm). Rasm ostida «📋 Jadvalni ochish» — telefonda eng yangi holat, raqamni bosib qo‘ng‘iroq. Keyin saqlasangiz, guruhdagi rasm o‘zi yangilanadi; 20:00 da ertangi kun o‘zi ketadi. Guruhni ulash — «Guruh» tugmasi, rasmni oldindan ko‘rish — «Rasm».</small></span></div>
     <div class="row"><span class="tx"><b>Kim nima qiladi</b><small>Admin va operator yozadi, kassa faqat ko‘radi. Mini App bronlari jadvalda qizil, o‘zgartirib bo‘lmaydi.</small></span></div>
   </div>`);
+/** Excel fayl: admin sahifadagidek — har instruktor ustuni o'z rangida, qalin va aniq */
 ACT.xbxl = () => {
   const d = XB.d; if (!d) return toast('Jadval hali yuklanmadi', true);
   const cols = d.instructors, n = cols.length, rows = [], merges = [];
-  rows.push({ h: 24, cells: [{ v: `Excel bron — ${dayTitle(d.date)}`, s: 1 }] }); merges.push(`A1:${XL.col(n)}1`);
-  const g = [{ v: 'Soat', s: 2 }]; let ci = 1;
-  for (const x of xbGroups()) { g[ci] = { v: `${x.g} toifa`, s: 2 }; for (let k = 1; k < x.n; k++) g[ci + k] = { v: '', s: 2 }; if (x.n > 1) merges.push(`${XL.col(ci)}2:${XL.col(ci + x.n - 1)}2`); ci += x.n; }
-  rows.push({ h: 18, cells: g });
-  rows.push({ h: 20, cells: [{ v: '', s: 2 }, ...cols.map(i => ({ v: i.name.toUpperCase(), s: 2 }))] });
-  rows.push({ h: 18, cells: [{ v: '', s: 13 }, ...cols.map(i => ({ v: i.phone ? xbShortPhone(i.phone) : '', s: 13 }))] });
+  const hx = (hex, k) => { const v = parseInt(hex.slice(1), 16), m = c => Math.round(c * k + 255 * (1 - k)).toString(16).padStart(2, '0'); return m(v >> 16 & 255) + m(v >> 8 & 255) + m(v & 255); };
+  const colr = c => XB_PAL[c % XB_PAL.length];
+  const INK = '05081A', SEP = { left: '05081A', lstyle: 'thick' };
+  const gsep = c => (xbGroupStart(c) ? SEP : {});
+  /* sarlavha va toifa (har toifa o'z rangida, guruhlar orasida qalin chiziq) */
+  rows.push({ h: 30, cells: [{ v: `Excel bron — ${dayTitle(d.date)}`, st: { bold: true, size: 16, color: '1B1E66', grid: 'FFFFFF' } }] }); merges.push(`A1:${XL.col(n)}1`);
+  const g = [{ v: 'Soat', st: { fill: 'C62F35', bold: true, size: 13, color: 'FFFFFF', align: 'center' } }]; let ci = 1;
+  for (const x of xbGroups()) {
+    for (let k = 0; k < x.n; k++) g[ci + k] = { v: k ? '' : `${x.g} toifa`.toUpperCase(), st: { fill: xbGroupColor(x.g).slice(1), bold: true, size: 12, color: 'FFFFFF', align: 'center', ...gsep(ci + k - 1) } };
+    if (x.n > 1) merges.push(`${XL.col(ci)}2:${XL.col(ci + x.n - 1)}2`); ci += x.n;
+  }
+  rows.push({ h: 22, cells: g });
+  rows.push({ h: 34, cells: [{ v: '', st: { fill: 'C62F35' } }, ...cols.map((i, c) => ({ v: i.name.toUpperCase(), st: { fill: colr(c).slice(1), bold: true, size: 12, color: INK, align: 'center', wrap: true, ...gsep(c) } }))] });
+  rows.push({ h: 22, cells: [{ v: '', st: { fill: 'C62F35' } }, ...cols.map((i, c) => ({ v: i.phone ? xbShortPhone(i.phone) : '', st: { fill: hx(colr(c), 0.6), bold: true, size: 12, color: INK, align: 'center', ...gsep(c) } }))] });
   merges.push('A2:A4');
-  d.hours.forEach((h, r) => {
-    const cells = [{ v: `${h}:00`, s: 13 }];
-    cols.forEach((_, c) => {
-      const k = xbKey(r, c), s = xbSrv(k), t = xbText(k);
-      if (t) cells.push({ v: t + (s?.k === 'sheet' && s.bk?.code ? `  (${s.bk.code})` : ''), s: s?.k === 'sheet' ? 5 : 12 });
-      else if (s?.k === 'bk') cells.push({ v: `${s.bk.phone ? xbShortPhone(s.bk.phone) : s.bk.name} · ${XB_SRC[s.bk.src] || 'Bron'}${s.bk.code ? ' (' + s.bk.code + ')' : ''}`, s: 5 });
-      else if (s?.k === 'own') cells.push({ v: 'yopiq', s: 9 });
-      else if (s?.k === 'off') cells.push({ v: 'dam', s: 9 });
-      else cells.push({ v: '', s: 12 });
-    });
-    rows.push({ h: 22, cells });
+  const R0 = rows.length;                                   // 1-soat qatori indeksi (0 dan)
+  const grid = d.hours.map(() => []);
+  d.hours.forEach((h, r) => { grid[r][0] = { v: `${h}:00`, st: { fill: 'E5484D', bold: true, size: 14, color: 'FFFFFF', align: 'center', grid: 'F3A3A6' } }; });
+  /* har ustun: ketma-ket soatlardagi bitta bron — bitta birlashgan katak */
+  cols.forEach((ins, c) => {
+    const tint = hx(colr(c), 0.14), strong = hx(colr(c), 0.9);
+    const cell = (r, v, st) => { grid[r][c + 1] = { v, st: { bold: true, size: 12, color: INK, wrap: true, indent: 1, ...gsep(c), ...st } }; };
+    let r = 0;
+    while (r < d.hours.length) {
+      const k = xbKey(r, c), s = xbSrv(k), t = xbText(k), id = xbIdent(r, c);
+      let m = 1;
+      if (id) while (r + m < d.hours.length && xbIdent(r + m, c) === id) m++;
+      const b = s?.bk, range = m > 1 ? `\n${d.hours[r]}:00–${d.hours[r] + m}:00 · ${m} soat` : '';
+      const meta = (src) => [src, b?.code, b?.cat ? `${b.cat} toifa` : '', m === 1 ? xbDurTxt(b?.min) : '', b?.paid ? 'to‘langan' : ''].filter(Boolean).join(' · ');
+      if (t && s?.k === 'sheet') cell(r, `${t}\n${meta('')}${range}`, { fill: strong, left: '2B2F8F' });
+      else if (t) cell(r, t, { fill: 'E2E5EC', left: '5B6378', color: '1F2440' });
+      else if (s?.k === 'bk') cell(r, `${b.phone ? xbShortPhone(b.phone) : b.name}\n${meta(XB_TAG[b.src] || 'Bron')}${range}`, { fill: strong, left: 'D92D35' });
+      else if (s?.k === 'own') cell(r, 'yopiq', { fill: 'E4E7EE', color: '4B5368', align: 'center' });
+      else if (s?.k === 'off') cell(r, 'dam', { fill: 'ECE7F8', color: '5E4D8F', align: 'center', bold: false });
+      else grid[r][c + 1] = { v: '', st: { fill: tint, ...gsep(c) } };
+      if (m > 1 && (t || s?.k === 'bk')) {
+        for (let i = 1; i < m; i++) grid[r + i][c + 1] = { v: '', st: grid[r][c + 1].st };
+        merges.push(`${XL.col(c + 1)}${R0 + r + 1}:${XL.col(c + 1)}${R0 + r + m}`);
+      } else m = 1;
+      r += m;
+    }
   });
-  const blob = XL.book([{ name: 'Excel bron', rows, merges, cols: [8, ...Array(n).fill(17)], freeze: { x: 1, y: 4 } }]);
+  grid.forEach(cells => rows.push({ h: 38, cells }));
+  rows.push({ h: 8, cells: [] });
+  rows.push({ h: 20, cells: [{ v: 'Har instruktor o‘z rangida; toifalar orasida qalin chiziq. Bron: raqam, kod, toifa, davomiylik (2 soatlik bron — bitta katta katak). Chap chiziq: ko‘k — Excel bron, qizil — Mini App / kassa. Kulrang — band (BAND, ism).', st: { size: 11, color: '4B5368', grid: 'FFFFFF' } }] });
+  merges.push(`A${rows.length}:${XL.col(n)}${rows.length}`);
+  const blob = XL.book([{ name: 'Excel bron', rows, merges, cols: [9, ...Array(n).fill(29)], freeze: { x: 1, y: 4 } }]);
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob); a.download = `excel-bron-${d.date}.xlsx`;
   document.body.appendChild(a); a.click();
@@ -4821,11 +4964,11 @@ ACT.xbxl = () => {
   toast('Excel fayl yuklab olindi');
 };
 
-/* ---------- GURUHGA HAVOLA ----------
-   Telefonda Excel ochilmaydi, skrinshot mayda — guruhga instruktor boti
-   «📋 Jadvalni ochish» tugmali xabar tashlaydi. Bosilsa telefonda jadval
-   sahifasi ochiladi (har doim eng yangi holat). Saqlaganda xabar o'zi
-   yangilanadi, har kuni 20:00 da ertangi kun o'zi boradi. */
+/* ---------- GURUHGA TASHLASH ----------
+   Telefonda Excel ochilmaydi, skrinshot mayda va xira — instruktor boti
+   guruhga jadvalning TINIQ RASMINI tashlaydi (faqat bronli instruktorlar,
+   katta qalin shrift) va «📋 Jadvalni ochish» tugmasini. Saqlaganda
+   guruhdagi rasm o'zi yangilanadi, 20:00 da ertangi kun o'zi boradi. */
 const XS = { g: null, bot: null, link: '', code: null, poll: 0 };
 async function xsLoad(){
   const r = await api(`/api/admin/sheet-group?date=${encodeURIComponent(XB.date)}`);
@@ -4834,15 +4977,16 @@ async function xsLoad(){
 }
 function xsLinked(){
   const g = XS.g;
-  openSheet(`<h3>Guruhga havola</h3>
-    <p class="lead">Guruh: <b>${esc(g.title || String(g.chat_id))}</b></p>
-    <div class="note info" style="font-size:13.5px">Guruhga <b>${esc(dayTitle(XB.date))}</b> jadvali havola bo‘lib boradi. Bosganlar telefonda jadvalni ko‘radi — instruktorni tanlab, raqamni bosib qo‘ng‘iroq qiladi. Sahifa har doim eng yangi holatni ko‘rsatadi.<br><br>«Saqlash» bosilganda guruhdagi xabar o‘zi yangilanadi, har kuni 20:00 da ertangi kun o‘zi ketadi.</div>
+  openSheet(`<h3>Guruh</h3>
+    <p class="lead">Ulangan guruh: <b>${esc(g.title || String(g.chat_id))}</b></p>
+    <div class="note info" style="font-size:13.5px">«Guruhga tashlash» — <b>${esc(dayTitle(XB.date))}</b> bo‘yicha barcha instruktorlarning bronlari tiniq rasm bo‘lib guruhga boradi, ostida «📋 Jadvalni ochish» tugmasi (telefonda eng yangi holat).<br><br>Keyin «Saqlash» bosilsa, guruhdagi rasm o‘zi yangilanadi. Har kuni 20:00 da ertangi kun o‘zi ketadi.</div>
     <div class="btn-row" style="margin-top:14px">
-      <button class="btn btn-soft" data-act="xscopy">${I('ext', 18)} Havolani nusxalash</button>
-      <button class="btn btn-primary" data-act="xssend">${I('send', 18)} Guruhga yuborish</button></div>
+      <button class="btn btn-soft" data-act="xsprev">${I('img', 18)} Rasmni ko‘rish</button>
+      <button class="btn btn-primary" data-act="xssend">${I('send', 18)} Guruhga tashlash</button></div>
     <div class="btn-row" style="margin-top:8px">
-      <a class="btn btn-white" href="${esc(XS.link)}" target="_blank" rel="noopener">${I('eye', 18)} Sahifani ochish</a>
-      <button class="btn btn-white" data-act="xsunlink">Boshqa guruhga ulash</button></div>`);
+      <a class="btn btn-white" href="${esc(XS.link)}" target="_blank" rel="noopener">${I('ext', 18)} Sahifani ochish</a>
+      <button class="btn btn-white" data-act="xscopy">Havolani nusxalash</button></div>
+    <button class="btn btn-white" data-act="xsunlink" style="margin-top:8px">Boshqa guruhga ulash</button>`);
 }
 async function xsLinkFlow(){
   const r = await post('/api/admin/sheet-group-code', {});
@@ -4872,10 +5016,37 @@ ACT.xscheck = async () => { try { await xsLoad(); if (XS.g) { clearInterval(XS.p
 function xsCmd(){ return `/ulash${XS.bot ? '@' + XS.bot : ''} ${XS.code}`; }
 ACT.xscopycode = () => { try { navigator.clipboard.writeText(xsCmd()); toast('Nusxalandi'); } catch (e) { toast('Nusxalab bo‘lmadi', true); } };
 ACT.xscopy = () => { try { navigator.clipboard.writeText(XS.link); toast('Havola nusxalandi'); } catch (e) { toast('Nusxalab bo‘lmadi', true); } };
-ACT.xssend = async el => {
-  busyBtn(el, true, 'Yuborilmoqda');
-  try { await post('/api/admin/sheet-share', { date: XB.date }); closeSheet(); toast('Guruhga yuborildi ✅'); }
-  catch(e){ fail(e); busyBtn(el, false); }
+ACT.xssend = async () => { closeSheet(); await ACT.xbpost(); };
+/** Saqlab (kerak bo'lsa), barcha bronlarni tiniq rasm qilib guruhga tashlaydi */
+ACT.xbpost = async () => {
+  if (XB.posting || XB.saving || !XB.d?.can_edit) return;
+  if (XB.edit) xbCommit();
+  const date = XB.date;
+  if (xbDirtyN()) { await ACT.xbsave(); if (xbDirtyN() || XB.date !== date) return; }
+  XB.posting = true; xbSaveBar();
+  try {
+    const r = await post('/api/admin/sheet-share', { date });
+    delete XB.stale[date];
+    toast(r.images > 1 ? `Guruhga tashlandi ✅ — ${r.images} ta rasm` : r.images ? 'Guruhga tashlandi ✅' : 'Guruhga tashlandi ✅ — bron yo‘q, havola ketdi');
+  } catch (e) {
+    if (e.status === 409) { try { await xsLoad(); await xsLinkFlow(); } catch (e2) { fail(e2); } }
+    else fail(e);
+  } finally { XB.posting = false; xbSaveBar(); }
+};
+/** Guruhga boradigan rasm(lar)ni oldindan ko'rish va yuklab olish */
+ACT.xsprev = async el => {
+  busyBtn(el, true);
+  const date = XB.date;
+  try {
+    const first = await api(`/api/admin/sheet-image?date=${encodeURIComponent(date)}&i=0`);
+    if (!first.count) { toast('Bu kunda bron yoki band yozuv yo‘q — rasm chizilmaydi', true); return; }
+    const imgs = [first.image];
+    for (let i = 1; i < first.count; i++) imgs.push((await api(`/api/admin/sheet-image?date=${encodeURIComponent(date)}&i=${i}`)).image);
+    openSheet(`<h3>Guruhga boradigan rasm${first.count > 1 ? ` — ${first.count} ta` : ''}</h3>
+      <p class="lead">${esc(dayTitle(date))}: bronli instruktorlar va soatlar. Rasmni bosing — yuklab olinadi.</p>
+      ${imgs.map((src, i) => `<a href="${src}" download="excel-bron-${date}${first.count > 1 ? '-' + (i + 1) : ''}.png"><img class="xs-prev" src="${src}" alt="${i + 1}-rasm"></a>`).join('')}
+      ${XB.d?.can_edit ? `<button class="btn btn-primary" data-act="xssend" style="margin-top:6px">${I('send', 18)} Guruhga tashlash</button>` : ''}`);
+  } catch (e) { fail(e); } finally { busyBtn(el, false); }
 };
 ACT.xsunlink = async () => {
   if (!(await ask({ title: 'Boshqa guruhga ulaysizmi?', text: 'Hozirgi guruhga endi havola bormaydi. Keyin yangi guruhda kod yozasiz.', ok: 'Ha, uzish', danger: true }))) return;
@@ -5137,7 +5308,31 @@ const XL = (() => {
 </cellXfs>
 <cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles>
 </styleSheet>`;
+  /* Erkin uslub: katakda { v, st: { fill:'FDE047', bold:true, size:12, color:'05081A', align:'center', wrap:true, left:'2B2F8F' } }.
+     Bir xil uslublar bitta xf bo'ladi; indekslar 18 dan keyin qo'shiladi (eski s=1…17 o'zgarmaydi). */
+  function withDyn(sheets){
+    const list = [], seen = new Map();
+    for (const sh of sheets) for (const r of sh.rows || []) for (const c of r.cells || []) {
+      if (!c || !c.st) continue;
+      const k = JSON.stringify(c.st);
+      if (!seen.has(k)) { seen.set(k, 18 + list.length); list.push(c.st); }
+      c.s = seen.get(k);
+    }
+    if (!list.length) return STYLES;
+    const hex = v => String(v || '').replace('#', '').toUpperCase();
+    const fonts = list.map(t => `<font>${t.bold ? '<b/>' : ''}<sz val="${t.size || 11}"/><color rgb="FF${hex(t.color || '000000')}"/><name val="Calibri"/><family val="2"/></font>`).join('');
+    const fills = list.map(t => t.fill ? `<fill><patternFill patternType="solid"><fgColor rgb="FF${hex(t.fill)}"/><bgColor indexed="64"/></patternFill></fill>` : '<fill><patternFill patternType="none"/></fill>').join('');
+    const line = c => `style="thin"><color rgb="FF${hex(c)}"/>`;
+    const borders = list.map(t => `<border><left ${t.left ? `style="${t.lstyle || 'thick'}"><color rgb="FF${hex(t.left)}"/>` : line(t.grid || '8E97AB')}</left><right ${line(t.grid || '8E97AB')}</right><top ${line(t.grid || '8E97AB')}</top><bottom ${line(t.grid || '8E97AB')}</bottom><diagonal/></border>`).join('');
+    const xfs = list.map((t, i) => `<xf numFmtId="0" fontId="${6 + i}" fillId="${11 + i}" borderId="${2 + i}" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="${t.align || 'left'}" vertical="center"${t.wrap ? ' wrapText="1"' : ''}${t.indent ? ` indent="${t.indent}"` : ''}/></xf>`).join('');
+    return STYLES
+      .replace('<fonts count="6">', `<fonts count="${6 + list.length}">`).replace('</fonts>', fonts + '</fonts>')
+      .replace('<fills count="11">', `<fills count="${11 + list.length}">`).replace('</fills>', fills + '</fills>')
+      .replace('<borders count="2">', `<borders count="${2 + list.length}">`).replace('</borders>', borders + '</borders>')
+      .replace('<cellXfs count="18">', `<cellXfs count="${18 + list.length}">`).replace('</cellXfs>', xfs + '</cellXfs>');
+  }
   function book(sheets){
+    const styles = withDyn(sheets);
     const files = [
       { name: '[Content_Types].xml', data: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>${sheets.map((_, i) => `<Override PartName="/xl/worksheets/sheet${i + 1}.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>`).join('')}</Types>` },
@@ -5147,7 +5342,7 @@ const XL = (() => {
 <workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets>${sheets.map((s, i) => `<sheet name="${x(s.name)}" sheetId="${i + 1}" r:id="rId${i + 1}"/>`).join('')}</sheets></workbook>` },
       { name: 'xl/_rels/workbook.xml.rels', data: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">${sheets.map((_, i) => `<Relationship Id="rId${i + 1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet${i + 1}.xml"/>`).join('')}<Relationship Id="rId${sheets.length + 1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>` },
-      { name: 'xl/styles.xml', data: STYLES },
+      { name: 'xl/styles.xml', data: styles },
       ...sheets.map((s, i) => ({ name: `xl/worksheets/sheet${i + 1}.xml`, data: sheet(s) })),
     ];
     return zip(files);
