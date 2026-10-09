@@ -4391,6 +4391,7 @@ function vXbron(){
   $('view').innerHTML = `<div class="view">
     <div class="sch-tools">
       <div class="chips grow" style="margin:0;padding:2px 0 4px">${dayChips(XB.date, 'xbday', [[t, 'Bugun'], [dayAdd(t, 1), 'Ertaga'], [dayAdd(t, 2), 'Indinga']])}</div>
+      <button class="btn btn-primary btn-sm" data-act="xbshare">${I('send', 18)} Guruhga</button>
       <button class="btn btn-white btn-sm" data-act="xbxl">${I('dl', 18)} Excel</button>
       <button class="btn btn-white btn-sm" data-act="xbhelp">${I('eye', 18)} Qoidalar</button>
     </div>
@@ -4762,7 +4763,8 @@ ACT.xbsave = async () => {
     if (XB.date === date) xbPaint();
     const res = d.result || {}, cr = res.created || [], er = res.errors || [];
     const msg = [cr.length ? `${cr.length} ta bron yaratildi` : '', res.cancelled ? `${res.cancelled} ta bron bekor qilindi` : '', `${res.saved || 0} ta katak saqlandi`,
-      res.notified ? `${res.notified} ta instruktorga botda xabar ketdi` : ''].filter(Boolean).join(' · ');
+      res.notified ? `${res.notified} ta instruktorga botda xabar ketdi` : '',
+      res.group === 'updated' ? 'guruhdagi havola yangilandi' : res.group === 'posted' ? 'guruhga havola yuborildi' : ''].filter(Boolean).join(' · ');
     if (er.length) xbResult(d, cr, er); else toast(msg);
     SCHC.clear(); refreshCounts();
   }catch(e){ XB.saving = false; xbSaveBar(); fail(e); }
@@ -4786,6 +4788,7 @@ ACT.xbhelp = () => openSheet(`<h3>Excel bron — qoidalar</h3>
     <div class="row"><span class="tx"><b>Klaviatura</b><small>Strelkalar, Enter — yozish/pastga, Tab — o‘ngga, Delete — o‘chirish, Ctrl+C / Ctrl+V — Excel’dan nusxa, Ctrl+Z — qaytarish, Ctrl+S — saqlash. Telefonda: katakni ikki marta bosing.</small></span></div>
     <div class="row"><span class="tx"><b>Instruktor boti</b><small>Instruktor o‘z botiga «901234567 14:00» yoki «ertaga 901234567 15-17» deb yozsa, bot o‘sha instruktor ustuniga bron qiladi va kodni javob qiladi. Bunday kataklarda «yozgan: Bot · …» ko‘rinadi.</small></span></div>
     <div class="row"><span class="tx"><b>Instruktorga xabar</b><small>Saqlaganingizda har instruktorga botda faqat o‘z ustuni keladi: nima o‘zgargani (yangi bron, bekor, BAND), Excel ko‘rinishidagi rasm va ostida bosib qo‘ng‘iroq qilinadigan raqamlar. Kechqurun 20:00 da ertangi, ertalab 7:00 da bugungi ro‘yxat o‘zi boradi.</small></span></div>
+    <div class="row"><span class="tx"><b>Guruhga havola</b><small>«Guruhga» tugmasi — instruktorlar guruhiga bot «📋 Jadvalni ochish» tugmali xabar tashlaydi. Telefonda Excel shart emas: bosilsa jadval sahifasi ochiladi, instruktorni tanlab ko‘radi, raqamni bosib qo‘ng‘iroq qiladi. Saqlaganda xabar o‘zi yangilanadi, har kuni 20:00 da ertangi kun o‘zi ketadi.</small></span></div>
     <div class="row"><span class="tx"><b>Kim nima qiladi</b><small>Admin va operator yozadi, kassa faqat ko‘radi. Mini App bronlari jadvalda qizil, o‘zgartirib bo‘lmaydi.</small></span></div>
   </div>`);
 ACT.xbxl = () => {
@@ -4816,6 +4819,67 @@ ACT.xbxl = () => {
   document.body.appendChild(a); a.click();
   setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1500);
   toast('Excel fayl yuklab olindi');
+};
+
+/* ---------- GURUHGA HAVOLA ----------
+   Telefonda Excel ochilmaydi, skrinshot mayda — guruhga instruktor boti
+   «📋 Jadvalni ochish» tugmali xabar tashlaydi. Bosilsa telefonda jadval
+   sahifasi ochiladi (har doim eng yangi holat). Saqlaganda xabar o'zi
+   yangilanadi, har kuni 20:00 da ertangi kun o'zi boradi. */
+const XS = { g: null, bot: null, link: '', code: null, poll: 0 };
+async function xsLoad(){
+  const r = await api(`/api/admin/sheet-group?date=${encodeURIComponent(XB.date)}`);
+  XS.g = r.group || null; XS.bot = r.bot || null; XS.link = r.link || '';
+  return r;
+}
+function xsLinked(){
+  const g = XS.g;
+  openSheet(`<h3>Guruhga havola</h3>
+    <p class="lead">Guruh: <b>${esc(g.title || String(g.chat_id))}</b></p>
+    <div class="note info" style="font-size:13.5px">Guruhga <b>${esc(dayTitle(XB.date))}</b> jadvali havola bo‘lib boradi. Bosganlar telefonda jadvalni ko‘radi — instruktorni tanlab, raqamni bosib qo‘ng‘iroq qiladi. Sahifa har doim eng yangi holatni ko‘rsatadi.<br><br>«Saqlash» bosilganda guruhdagi xabar o‘zi yangilanadi, har kuni 20:00 da ertangi kun o‘zi ketadi.</div>
+    <div class="btn-row" style="margin-top:14px">
+      <button class="btn btn-soft" data-act="xscopy">${I('ext', 18)} Havolani nusxalash</button>
+      <button class="btn btn-primary" data-act="xssend">${I('send', 18)} Guruhga yuborish</button></div>
+    <div class="btn-row" style="margin-top:8px">
+      <a class="btn btn-white" href="${esc(XS.link)}" target="_blank" rel="noopener">${I('eye', 18)} Sahifani ochish</a>
+      <button class="btn btn-white" data-act="xsunlink">Boshqa guruhga ulash</button></div>`);
+}
+async function xsLinkFlow(){
+  const r = await post('/api/admin/sheet-group-code', {});
+  XS.code = r.code; XS.bot = r.bot || XS.bot;
+  openSheet(`<h3>Guruhni ulash</h3>
+    <div class="list">
+      <div class="row"><span class="tx"><b>1. Botni guruhga qo‘shing</b><small>Instruktorlar guruhiga ${XS.bot ? `<b>@${esc(XS.bot)}</b>` : 'instruktor botini'} a’zo qilib qo‘shing.</small></span></div>
+      <div class="row"><span class="tx"><b>2. Guruhda shuni yozing</b><small>15 daqiqa amal qiladi</small></span></div>
+    </div>
+    <div class="code-big" style="text-align:center;font-size:${XS.bot ? 21 : 30}px;font-weight:800;letter-spacing:.04em;margin:10px 0;user-select:all;overflow-wrap:anywhere">${esc(xsCmd())}</div>
+    <div class="btn-row"><button class="btn btn-soft" data-act="xscopycode">${I('ext', 18)} Nusxalash</button>
+      <button class="btn btn-primary" data-act="xscheck">Ulandimi? Tekshirish</button></div>
+    <p class="muted" style="font-size:12.5px;margin-top:10px">Bot «✅ Guruh ulandi» deb javob beradi. Shundan keyin bu oyna o‘zi yangilanadi.</p>`, () => { clearInterval(XS.poll); XS.poll = 0; });
+  clearInterval(XS.poll);
+  XS.poll = setInterval(async () => {
+    try { await xsLoad(); if (XS.g) { clearInterval(XS.poll); XS.poll = 0; toast('Guruh ulandi ✅'); xsLinked(); } } catch (e) {}
+  }, 4000);
+}
+ACT.xbshare = async el => {
+  busyBtn(el, true);
+  try { await xsLoad(); if (XS.g) xsLinked(); else await xsLinkFlow(); }
+  catch(e){ fail(e); }
+  finally { busyBtn(el, false); }
+};
+ACT.xscheck = async () => { try { await xsLoad(); if (XS.g) { clearInterval(XS.poll); XS.poll = 0; toast('Guruh ulandi ✅'); xsLinked(); } else toast('Hali ulanmagan — guruhda kodni yozing', true); } catch(e){ fail(e); } };
+// «/ulash@bot KOD» — guruhda bir nechta bot bo'lsa ham buyruq aynan shu botga yetadi
+function xsCmd(){ return `/ulash${XS.bot ? '@' + XS.bot : ''} ${XS.code}`; }
+ACT.xscopycode = () => { try { navigator.clipboard.writeText(xsCmd()); toast('Nusxalandi'); } catch (e) { toast('Nusxalab bo‘lmadi', true); } };
+ACT.xscopy = () => { try { navigator.clipboard.writeText(XS.link); toast('Havola nusxalandi'); } catch (e) { toast('Nusxalab bo‘lmadi', true); } };
+ACT.xssend = async el => {
+  busyBtn(el, true, 'Yuborilmoqda');
+  try { await post('/api/admin/sheet-share', { date: XB.date }); closeSheet(); toast('Guruhga yuborildi ✅'); }
+  catch(e){ fail(e); busyBtn(el, false); }
+};
+ACT.xsunlink = async () => {
+  if (!(await ask({ title: 'Boshqa guruhga ulaysizmi?', text: 'Hozirgi guruhga endi havola bormaydi. Keyin yangi guruhda kod yozasiz.', ok: 'Ha, uzish', danger: true }))) return;
+  try { await api('/api/admin/sheet-group', { method: 'DELETE' }); XS.g = null; await xsLinkFlow(); } catch(e){ fail(e); }
 };
 
 /* =========================================================================
