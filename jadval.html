@@ -1,0 +1,247 @@
+<!doctype html>
+<html lang="uz">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#2b2f8f">
+<title>Excel bron — jadval</title>
+<style>
+  :root{
+    --bg:#f3f4f8; --card:#fff; --ink:#141833; --muted:#6b7188; --line:#e3e6ee;
+    --brand:#2b2f8f; --brand-ink:#fff; --hour:#e5484d; --head:#fde047;
+    --bron:#fff7c2; --bron-ink:#141833; --app:#fde2e4; --app-ink:#8a1c24;
+    --band:#eef0f4; --band-ink:#30364f; --off:#f1eefa; --off-ink:#6b5a97;
+    --ok:#15803d; --chip:#e8eaf4;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg:#0f1220; --card:#181c2e; --ink:#eef0f8; --muted:#9aa1b8; --line:#2a2f45;
+      --brand:#4b51c9; --head:#c9a800; --bron:#3b3410; --bron-ink:#fff6c7; --app:#3d1c20; --app-ink:#ffc9cd;
+      --band:#262b40; --band-ink:#d4d8e8; --off:#2a2440; --off-ink:#c9bdf0; --ok:#4ade80; --chip:#262b40;
+    }
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;-webkit-text-size-adjust:100%}
+  a{color:inherit}
+  .top{background:var(--brand);color:var(--brand-ink);padding:14px 16px 16px;position:sticky;top:0;z-index:20;box-shadow:0 2px 10px rgba(0,0,0,.15)}
+  .top small{opacity:.75;font-size:12px;letter-spacing:.06em;font-weight:700}
+  .top h1{margin:2px 0 4px;font-size:21px;line-height:1.2}
+  .top .upd{font-size:13px;opacity:.85;display:flex;align-items:center;gap:6px}
+  .dot{width:8px;height:8px;border-radius:50%;background:#4ade80;display:inline-block;box-shadow:0 0 0 3px rgba(74,222,128,.25)}
+  .wrap{max-width:900px;margin:0 auto;padding:12px 16px 40px}
+  .stats{display:flex;gap:8px;flex-wrap:wrap;margin:2px 0 12px}
+  .stat{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:8px 12px;font-size:14px}
+  .stat b{font-size:17px}
+  .search{width:100%;padding:12px 14px;font-size:16px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--ink);outline:none}
+  .search:focus{border-color:var(--brand)}
+  .seg{display:flex;background:var(--chip);border-radius:12px;padding:4px;margin:12px 0}
+  .seg button{flex:1;border:0;background:transparent;color:var(--ink);font:inherit;font-weight:700;font-size:15px;padding:9px;border-radius:9px;cursor:pointer}
+  .seg button.on{background:var(--card);box-shadow:0 1px 4px rgba(0,0,0,.12)}
+  .chips{display:flex;gap:8px;overflow-x:auto;padding:2px 0 10px;margin:0 -16px;padding-left:16px;padding-right:16px;scrollbar-width:none}
+  .chips::-webkit-scrollbar{display:none}
+  .chip{flex:none;border:1px solid var(--line);background:var(--card);color:var(--ink);font:inherit;font-size:14px;font-weight:600;padding:7px 12px;border-radius:999px;cursor:pointer;white-space:nowrap}
+  .chip.on{background:var(--brand);border-color:var(--brand);color:#fff}
+  .chip i{font-style:normal;opacity:.7;margin-left:4px}
+  .ins{background:var(--card);border:1px solid var(--line);border-radius:16px;margin:0 0 12px;overflow:hidden}
+  .ins-h{background:var(--head);color:#141833;padding:11px 14px;display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+  .ins-h b{font-size:17px;text-transform:uppercase;letter-spacing:.01em;display:block}
+  .ins-h a{font-size:15px;text-decoration:none;font-weight:600}
+  .ins-h .cnt{font-size:13px;font-weight:700;background:rgba(0,0,0,.08);border-radius:999px;padding:3px 9px;white-space:nowrap}
+  .row{display:flex;align-items:stretch;border-top:1px solid var(--line);min-height:52px}
+  .row .t{flex:none;width:76px;background:var(--hour);color:#fff;font-weight:800;font-size:16px;display:flex;flex-direction:column;justify-content:center;align-items:center;line-height:1.15}
+  .row .t small{font-weight:600;font-size:11.5px;opacity:.9}
+  .row .c{flex:1;padding:8px 12px;display:flex;flex-direction:column;justify-content:center;gap:2px;min-width:0}
+  .row.bron .c{background:var(--bron);color:var(--bron-ink)}
+  .row.app .c{background:var(--app);color:var(--app-ink)}
+  .row.band .c{background:var(--band);color:var(--band-ink)}
+  .row.past{opacity:.55}
+  .tel{font-size:19px;font-weight:800;text-decoration:none;letter-spacing:.01em}
+  .tel::before{content:"📞 ";font-size:15px}
+  .sub{font-size:13.5px;opacity:.85;overflow:hidden;text-overflow:ellipsis}
+  .pill{display:inline-block;font-size:11.5px;font-weight:800;border-radius:6px;padding:1px 6px;margin-left:6px;vertical-align:2px;background:rgba(0,0,0,.1)}
+  .pill.ok{background:var(--ok);color:#fff}
+  .free{padding:10px 14px;font-size:13.5px;color:var(--muted);border-top:1px solid var(--line)}
+  .empty{padding:14px;color:var(--muted);font-size:14.5px}
+  .grid-wrap{overflow:auto;border:1px solid var(--line);border-radius:14px;background:var(--card);max-height:calc(100vh - 230px);-webkit-overflow-scrolling:touch}
+  table{border-collapse:separate;border-spacing:0;font-size:14px}
+  th,td{border-right:1px solid var(--line);border-bottom:1px solid var(--line);padding:6px 8px;min-width:132px;max-width:170px;vertical-align:top;text-align:left}
+  thead th{position:sticky;top:0;background:var(--head);color:#141833;z-index:2;font-size:13px;text-transform:uppercase}
+  thead th small{display:block;text-transform:none;font-weight:600;font-size:12px}
+  td.h,th.h{position:sticky;left:0;min-width:58px;width:58px;background:var(--hour);color:#fff;font-weight:800;text-align:center;z-index:1}
+  thead th.h{z-index:3}
+  td.bron{background:var(--bron);color:var(--bron-ink)}
+  td.app{background:var(--app);color:var(--app-ink)}
+  td.band{background:var(--band);color:var(--band-ink)}
+  td.off{background:repeating-linear-gradient(-45deg,var(--off),var(--off) 6px,transparent 6px,transparent 11px);color:var(--off-ink);font-size:12px}
+  td a{font-weight:800;text-decoration:none}
+  td small{display:block;opacity:.8;font-size:12px}
+  .msg{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:22px;text-align:center;margin-top:30px}
+  .msg b{display:block;font-size:18px;margin-bottom:6px}
+  .foot{color:var(--muted);font-size:12.5px;text-align:center;margin-top:18px}
+  .skel{height:90px;border-radius:16px;background:linear-gradient(90deg,var(--card),var(--chip),var(--card));background-size:200% 100%;animation:sh 1.2s infinite;margin-bottom:12px}
+  @keyframes sh{0%{background-position:200% 0}100%{background-position:-200% 0}}
+</style>
+</head>
+<body>
+<header class="top">
+  <small>TASH INDEX AVTODROM · EXCEL BRON</small>
+  <h1 id="title">Jadval</h1>
+  <div class="upd"><span class="dot"></span><span id="upd">yuklanmoqda…</span></div>
+</header>
+<main class="wrap">
+  <div id="app"><div class="skel"></div><div class="skel"></div><div class="skel"></div></div>
+  <div class="foot">Sahifa har 30 soniyada o‘zi yangilanadi — har doim eng so‘nggi holat.</div>
+</main>
+<script>
+(function () {
+  'use strict';
+  var P = new URLSearchParams(location.search);
+  var D = P.get('d') || '', K = P.get('k') || '';
+  var S = { data: null, view: 'ins', ins: 'all', q: '', err: null };
+  try { var v = localStorage.getItem('jadval.view'); if (v === 'grid' || v === 'ins') S.view = v; } catch (e) {}
+  var app = document.getElementById('app');
+
+  function esc(v) { return String(v == null ? '' : v).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  function digits(v) { return String(v || '').replace(/\D/g, ''); }
+  function telOf(v) { var d = digits(v); return d.length >= 9 ? '+998' + d.slice(-9) : ''; }
+  function pretty(v) { var d = digits(v).slice(-9); return d.length === 9 ? '+998 ' + d.slice(0, 2) + ' ' + d.slice(2, 5) + ' ' + d.slice(5, 7) + ' ' + d.slice(7) : String(v || ''); }
+  function phoneInText(t) { var m = String(t || '').replace(/[\s()\-.]/g, '').match(/(?:\+?998)?(\d{9})(?!\d)/); return m ? m[1] : ''; }
+  function hh(h) { return (h < 10 ? '0' : '') + h + ':00'; }
+  function hmOf(iso) { try { return new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Tashkent', hour: '2-digit', minute: '2-digit' }).format(new Date(iso)); } catch (e) { return ''; } }
+  function key(id, h) { return id + '|' + (h < 10 ? '0' : '') + h; }
+  function nowH() { try { return Number(new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Tashkent', hour: '2-digit', hour12: false }).format(new Date())) % 24; } catch (e) { return -1; } }
+  function todayYmd() { try { return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Tashkent' }).format(new Date()); } catch (e) { return ''; } }
+
+  /* Katak → ko'rinish */
+  function cellView(c) {
+    if (!c) return null;
+    var ph = c.phone || phoneInText(c.t);
+    var kind = c.k === 'bk' ? 'app' : c.k === 'sheet' ? 'bron' : c.k === 'note' ? 'band' : c.k === 'off' || c.k === 'own' ? 'off' : 'band';
+    var name = c.name && !/^Mijoz \+?998/.test(c.name) ? c.name : '';
+    var tags = [];
+    if (c.paid) tags.push('<span class="pill ok">to‘langan</span>');
+    if (c.k === 'bk') tags.push('<span class="pill">' + (c.src === 'app' ? 'Mini App' : c.src === 'walk_in' ? 'kassa' : 'bron') + '</span>');
+    if (c.min && c.min < 60) tags.push('<span class="pill">' + c.min + ' daq</span>');
+    var text = c.k === 'note' ? (c.t || 'band') : c.k === 'off' ? 'dam (grafik)' : c.k === 'own' ? 'yopiq' : '';
+    return { kind: kind, phone: ph, name: name, code: c.code || '', tags: tags.join(''), text: text, id: (c.code || '') + '|' + ph, start: c.start, end: c.end };
+  }
+
+  function matches(ins, d) {
+    var q = S.q.trim().toLowerCase(); if (!q) return true;
+    var qd = digits(q);
+    if (String(ins.name).toLowerCase().indexOf(q) >= 0) return true;
+    if (qd.length >= 3 && digits(ins.phone).indexOf(qd) >= 0) return true;
+    for (var i = 0; i < d.hours.length; i++) {
+      var c = d.cells[key(ins.id, d.hours[i])]; if (!c) continue;
+      if (qd.length >= 3 && (digits(c.phone).indexOf(qd) >= 0 || digits(c.t).indexOf(qd) >= 0)) return true;
+      if ((c.name || '').toLowerCase().indexOf(q) >= 0 || (c.t || '').toLowerCase().indexOf(q) >= 0 || (c.code || '').toLowerCase().indexOf(q) >= 0) return true;
+    }
+    return false;
+  }
+
+  function countOf(ins, d) {
+    var bron = {}, band = 0;
+    d.hours.forEach(function (h) { var c = d.cells[key(ins.id, h)]; if (!c) return;
+      if (c.k === 'sheet' || c.k === 'bk') bron[(c.code || '') + '|' + (c.phone || c.t)] = 1; else if (c.k === 'note') band++; });
+    return { bron: Object.keys(bron).length, band: band };
+  }
+
+  function renderIns(d) {
+    var isToday = d.date === todayYmd(), nh = nowH();
+    var list = d.instructors.filter(function (i) { return (S.ins === 'all' || S.ins === i.id) && matches(i, d); });
+    if (!list.length) return '<div class="msg"><b>Topilmadi</b>Qidiruvni o‘zgartiring.</div>';
+    return list.map(function (ins) {
+      var n = countOf(ins, d), rows = [], free = [];
+      var i = 0;
+      while (i < d.hours.length) {
+        var h = d.hours[i], c = cellView(d.cells[key(ins.id, h)]);
+        if (!c || c.kind === 'off') { if (!c) free.push(h); i++; continue; }
+        var j = i + 1;
+        while (j < d.hours.length) { var c2 = cellView(d.cells[key(ins.id, d.hours[j])]); if (!c2 || c2.kind !== c.kind || c2.id !== c.id || c.kind === 'band') break; j++; }
+        var past = isToday && d.hours[j - 1] < nh;
+        var time = j - i > 1 ? hh(h) + '<small>' + hh(d.hours[j - 1] + 1) + ' gacha</small>' : hh(h);
+        var body = c.kind === 'band'
+          ? '<div style="font-weight:700">' + esc(c.text) + '</div>' + (c.phone ? '<a class="tel" href="tel:' + telOf(c.phone) + '">' + esc(pretty(c.phone)) + '</a>' : '')
+          : (c.phone ? '<a class="tel" href="tel:' + telOf(c.phone) + '">' + esc(pretty(c.phone)) + '</a>' : '<div style="font-weight:700">Mijoz</div>') +
+            '<div class="sub">' + esc([c.name, c.code].filter(Boolean).join(' · ')) + c.tags + '</div>';
+        rows.push('<div class="row ' + c.kind + (past ? ' past' : '') + '"><div class="t">' + time + '</div><div class="c">' + body + '</div></div>');
+        i = j;
+      }
+      var freeTxt = free.length ? 'Bo‘sh: ' + ranges(free) : '';
+      return '<section class="ins" id="ins-' + esc(ins.id) + '"><div class="ins-h"><div><b>' + esc(ins.name) + '</b>' +
+        (ins.phone ? '<a href="tel:' + telOf(ins.phone) + '">' + esc(pretty(ins.phone)) + '</a>' : '') +
+        '</div><span class="cnt">' + n.bron + ' bron' + (n.band ? ' · ' + n.band + ' band' : '') + '</span></div>' +
+        (rows.length ? rows.join('') : '<div class="empty">Hozircha yozuv yo‘q</div>') +
+        (freeTxt && rows.length ? '<div class="free">' + esc(freeTxt) + '</div>' : '') + '</section>';
+    }).join('');
+  }
+  function ranges(hs) {
+    var out = [], s = hs[0], p = hs[0];
+    for (var i = 1; i <= hs.length; i++) {
+      var h = hs[i];
+      if (h === p + 1) { p = h; continue; }
+      out.push(s + '–' + (p + 1)); s = h; p = h;
+    }
+    return out.join(', ');
+  }
+
+  function renderGrid(d) {
+    var list = d.instructors.filter(function (i) { return (S.ins === 'all' || S.ins === i.id) && matches(i, d); });
+    if (!list.length) return '<div class="msg"><b>Topilmadi</b>Qidiruvni o‘zgartiring.</div>';
+    var head = '<tr><th class="h">Soat</th>' + list.map(function (i) {
+      return '<th>' + esc(i.name) + (i.phone ? '<small>' + esc(pretty(i.phone)) + '</small>' : '') + '</th>'; }).join('') + '</tr>';
+    var body = d.hours.map(function (h) {
+      return '<tr><td class="h">' + hh(h) + '</td>' + list.map(function (i) {
+        var c = cellView(d.cells[key(i.id, h)]);
+        if (!c) return '<td></td>';
+        if (c.kind === 'off') return '<td class="off">' + esc(c.text) + '</td>';
+        if (c.kind === 'band') return '<td class="band"><b>' + esc(c.text) + '</b></td>';
+        return '<td class="' + c.kind + '">' + (c.phone ? '<a href="tel:' + telOf(c.phone) + '">' + esc(pretty(c.phone).replace('+998 ', '')) + '</a>' : '<b>Mijoz</b>') +
+          (c.name || c.code ? '<small>' + esc([c.name, c.code].filter(Boolean).join(' · ')) + '</small>' : '') + '</td>';
+      }).join('') + '</tr>';
+    }).join('');
+    return '<div class="grid-wrap"><table><thead>' + head + '</thead><tbody>' + body + '</tbody></table></div>';
+  }
+
+  function render() {
+    var d = S.data;
+    if (S.err && !d) { app.innerHTML = '<div class="msg"><b>Jadval ochilmadi</b>' + esc(S.err) + '</div>'; return; }
+    if (!d) return;
+    document.getElementById('title').textContent = d.title || d.date;
+    var st = d.stats || {};
+    var chips = '<div class="chips"><button class="chip ' + (S.ins === 'all' ? 'on' : '') + '" data-ins="all">Hammasi<i>' + d.instructors.length + '</i></button>' +
+      d.instructors.map(function (i) { var n = countOf(i, d); return '<button class="chip ' + (S.ins === i.id ? 'on' : '') + '" data-ins="' + esc(i.id) + '">' + esc(i.name.split(' ')[0]) + '<i>' + (n.bron + n.band) + '</i></button>'; }).join('') + '</div>';
+    var focus = document.activeElement && document.activeElement.id === 'q';
+    app.innerHTML =
+      '<div class="stats"><div class="stat"><b>' + (st.bron || 0) + '</b> bron</div>' + (st.band ? '<div class="stat"><b>' + st.band + '</b> band</div>' : '') +
+      '<div class="stat"><b>' + (st.busy_instructors || 0) + '</b> / ' + (st.instructors || 0) + ' instruktorda yozuv</div></div>' +
+      '<input class="search" id="q" type="search" inputmode="search" placeholder="Qidirish: instruktor, mijoz, raqam yoki kod" value="' + esc(S.q) + '" autocomplete="off">' +
+      '<div class="seg"><button data-view="ins" class="' + (S.view === 'ins' ? 'on' : '') + '">👤 Instruktorlar</button><button data-view="grid" class="' + (S.view === 'grid' ? 'on' : '') + '">▦ Jadval (Excel)</button></div>' +
+      chips + '<div id="list">' + (S.view === 'grid' ? renderGrid(d) : renderIns(d)) + '</div>';
+    var q = document.getElementById('q');
+    q.oninput = function () { S.q = q.value; document.getElementById('list').innerHTML = S.view === 'grid' ? renderGrid(d) : renderIns(d); };
+    if (focus) { q.focus(); try { q.setSelectionRange(q.value.length, q.value.length); } catch (e) {} }
+    app.querySelectorAll('[data-view]').forEach(function (b) { b.onclick = function () { S.view = b.getAttribute('data-view'); try { localStorage.setItem('jadval.view', S.view); } catch (e) {} render(); }; });
+    app.querySelectorAll('[data-ins]').forEach(function (b) { b.onclick = function () { S.ins = b.getAttribute('data-ins'); render(); window.scrollTo({ top: 0, behavior: 'smooth' }); }; });
+  }
+
+  function load() {
+    if (!D || !K) { S.err = 'Havola to‘liq emas — guruhdagi xabardagi tugmani bosing.'; render(); return; }
+    fetch('/api/sheet-view?d=' + encodeURIComponent(D) + '&k=' + encodeURIComponent(K), { cache: 'no-store' })
+      .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
+      .then(function (x) {
+        if (!x.ok || !x.j.ok) { S.err = (x.j && x.j.error) || 'Xatolik'; S.data = null; render(); return; }
+        S.err = null; S.data = x.j;
+        document.getElementById('upd').textContent = 'Yangilandi: ' + hmOf(x.j.now) + (x.j.updated_at ? ' · admin saqlagan: ' + hmOf(x.j.updated_at) : '');
+        var y = window.scrollY; render(); window.scrollTo(0, y);
+      })
+      .catch(function () { if (!S.data) { S.err = 'Internet aloqasini tekshiring.'; render(); } else document.getElementById('upd').textContent = 'Aloqa yo‘q — oxirgi holat ko‘rsatilmoqda'; });
+  }
+  load();
+  setInterval(function () { if (!document.hidden && !(document.activeElement && document.activeElement.id === 'q')) load(); }, 30000);
+  document.addEventListener('visibilitychange', function () { if (!document.hidden) load(); });
+})();
+</script>
+</body>
+</html>
