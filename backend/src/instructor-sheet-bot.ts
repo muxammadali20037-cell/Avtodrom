@@ -306,6 +306,7 @@ export async function handleInstructorSheetMessage(token: string, chatId: number
       changes: [...keys].map((k) => ({ key: k, t: '', prev: byKey.get(k)?.sc?.t || '' })),
     });
     if (res.errors.length) { await send(token, chatId, `⚠️ ${htmlEsc(res.errors[0].error)}`); return true; }
+    await groupAfter(cmd.date, res.events, actor.login);
     const hours = [...keys].map((k) => byKey.get(k)!.h).sort((a, b) => a - b);
     await send(token, chatId, `🗑 Bekor qilindi: ${dayText(cmd.date, today)}, ${hText(hours[0])}–${hText(hours[hours.length - 1] + 1)}${res.cancelled ? ' — bron bekor bo‘ldi, vaqt yana bo‘sh.' : '.'}`);
     return true;
@@ -345,6 +346,7 @@ export async function handleInstructorSheetMessage(token: string, chatId: number
     await send(token, chatId, `⚠️ Bron qilinmadi: ${htmlEsc(res.errors[0]?.error || 'nomaʼlum xato')}`);
     return true;
   }
+  await groupAfter(cmd.date, res.events, actor.login);
   const end = Date.parse(b.start) + b.minutes * 60000;
   const fmt = (ms: number) => new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Tashkent', hour: '2-digit', minute: '2-digit' }).format(new Date(ms));
   await send(token, chatId, [
@@ -356,6 +358,14 @@ export async function handleInstructorSheetMessage(token: string, chatId: number
     `Bekor qilish: <code>bekor ${hText(cmd.h0)}</code>`,
   ].join('\n'));
   return true;
+}
+
+/** Instruktor botga yozgan bron/bekor ham guruhga boradi (xato bo'lsa bot javobi buzilmaydi) */
+async function groupAfter(date: string, events: any, by: string) {
+  try {
+    const { afterSheetSave } = await import('./sheet-share.js');
+    await afterSheetSave(date, events, by);
+  } catch (e) { console.error('bot → group failed:', e); }
 }
 
 /* ------------------------------------------------------------------ */

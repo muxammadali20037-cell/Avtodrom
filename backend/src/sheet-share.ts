@@ -2,6 +2,7 @@ import crypto from 'node:crypto';
 import type { FastifyInstance } from 'fastify';
 import { supabaseRest } from './supabase.js';
 import { tashkentYmdOf, addDaysYmd } from './instructor-schedule.js';
+import type { SheetEvent } from './booking-sheet-routes.js';
 
 /**
  * EXCEL BRON — GURUHGA TINIQ RASM + HAVOLA
@@ -264,6 +265,65 @@ export async function refreshGroupPost(date: string, by?: string | null): Promis
   } else return 'stale';
   await setSetting(MSG_PREFIX + date, { ...prev, at: new Date().toISOString(), by: by || prev.by }).catch(() => {});
   return 'updated';
+}
+
+/**
+ * HAR SAQLASHDA (admin Excel bron yoki instruktor boti): guruhga YANGI xabar —
+ * faqat o'zgargan instruktor(lar)ning o'sha kungi jadvali (tiniq rasm, o'zgargan
+ * kataklar to'q sariq ramkada) va izohda nima o'zgargani. Foydalanuvchi
+ * so'rovi: «har yangilanganda guruhga o'sha yangilangan instruktorniki borsin».
+ */
+export async function postSheetChanges(date: string, events: Map<string, SheetEvent>, by?: string | null): Promise<'sent' | null> {
+  if (!TOKEN()) return null;
+  const ids = [...events.entries()].filter(([, e]) => e.created.length || e.cancelled.length || e.notes.length).map(([id]) => id);
+  if (!ids.length) return null;
+  const g = await getSheetGroup();
+  if (!g) return null;
+  const { publicSheetData } = await import('./booking-sheet-routes.js');
+  const { dayTitle } = await import('./instructor-notify.js');
+  const { buildSheetParts, renderSheetPngs } = await import('./sheet-image.js');
+  const d = await publicSheetData(date);
+  const name = new Map(d.instructors.map((i) => [String(i.id), i.name]));
+  const hourOf = (iso: string) => Number(new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Tashkent', hour: '2-digit', hour12: false }).format(new Date(iso))) % 24;
+  const span = (start: string, minutes: number) => `${hm(Date.parse(start))}–${hm(Date.parse(start) + minutes * 60000)}`;
+  const ph = (p?: string | null) => { const m = /(\d{2})(\d{3})(\d{2})(\d{2})$/.exec(String(p || '').replace(/\D/g, '')); return m ? `${m[1]} ${m[2]} ${m[3]} ${m[4]}` : ''; };
+  const marks: Record<string, number[]> = {};
+  const lines: string[] = [];
+  for (const id of ids) {
+    const e = events.get(id)!, hs = new Set<number>(), out: string[] = [];
+    for (const c of e.created) {
+      for (let h = hourOf(c.start); h < hourOf(c.start) + Math.max(1, Math.ceil(c.minutes / 60)); h++) hs.add(h);
+      out.push(`✅ ${span(c.start, c.minutes)} ${ph(c.phone)}${c.category ? ` · ${esc(c.category)}` : ''}${c.minutes !== 60 ? ` · ${c.minutes < 60 ? `${c.minutes} daq` : `${c.minutes / 60} soat`}` : ''}`);
+    }
+    for (const c of e.cancelled) {
+      for (let h = hourOf(c.start); h < hourOf(c.start) + Math.max(1, Math.ceil(c.minutes / 60)); h++) hs.add(h);
+      out.push(`❌ ${span(c.start, c.minutes)} bekor`);
+    }
+    for (const n of e.notes) { hs.add(n.h); out.push(n.removed ? `🔓 ${n.h}:00 bo‘shadi` : `📌 ${n.h}:00 «${esc(n.text)}»`); }
+    marks[id] = [...hs];
+    lines.push(`👤 <b>${esc(name.get(id) || 'Instruktor')}</b>: ${out.join('; ')}`);
+  }
+  const title = dayTitle(date);
+  const parts = buildSheetParts(d, { title, line: `O‘zgardi: ${ids.map((id) => name.get(id) || '').filter(Boolean).join(', ')}`, at: `${hm(Date.now())} holati`, only: ids, marks });
+  const pngs = await renderSheetPngs(parts);
+  let caption = [`✏️ <b>Jadval yangilandi</b> — ${esc(title)}`, ...lines, `🕘 ${hm(Date.now())}${by ? ` (${esc(by)})` : ''}`].join('\n');
+  if (caption.length > 1000) caption = caption.slice(0, 990) + '…';
+  const reply_markup = { inline_keyboard: [[{ text: '📋 Butun jadvalni ochish', url: sheetLinkUrl(date) }]] };
+  let { r } = await sendPost(g.chat_id, { title, caption, reply_markup, pngs });
+  const moved = Number(r?.parameters?.migrate_to_chat_id);
+  if (!r?.ok && Number.isSafeInteger(moved) && moved) {
+    await setSetting(GROUP_KEY, { ...g, chat_id: moved });
+    ({ r } = await sendPost(moved, { title, caption, reply_markup, pngs }));
+  }
+  return r?.ok ? 'sent' : null;
+}
+
+/** Saqlashdan keyin guruh: o'zgarish xabari + o'sha kun rasmi joyida yangilanadi */
+export async function afterSheetSave(date: string, events: Map<string, SheetEvent>, by?: string | null): Promise<string | null> {
+  if (!(await getSheetGroup())) return null;
+  const sent = await postSheetChanges(date, events, by).catch((e) => { console.error('sheet changes post failed:', e); return null; });
+  const refreshed = await refreshGroupPost(date, by).catch(() => 'stale' as const);
+  return sent ? (refreshed === 'stale' ? 'sent+stale' : 'sent') : refreshed;
 }
 
 /** Har kuni 20:00 dan keyin — ertangi kun havolasi (kuniga bir marta) */

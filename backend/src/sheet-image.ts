@@ -33,6 +33,8 @@ export type SheetPart = {
   title: string; line: string; part: string; footer: string;
   cols: Array<{ name: string; phone: string; color: string; group: string }>;
   hours: number[]; past: number[]; blocks: SheetBlock[];
+  /** o'zgargan kataklar (to'q sariq ramka) */
+  marks?: Array<{ col: number; h: number }>;
 };
 
 /* Admin paneldagi Excel bron ustun ranglari bilan bir xil */
@@ -81,8 +83,15 @@ function label(c: SheetCell): { kind: BlockKind; id: string; main: string; sub: 
  * Jadval → rasm qismlari. Yozuvi yo'q kun — [] (bot matn yuboradi).
  * nowMs — bugungi o'tgan soatlar och rangda.
  */
-export function buildSheetParts(d: SheetData, o: { title: string; line: string; at: string; nowMs?: number; maxCols?: number }): SheetPart[] {
+export function buildSheetParts(d: SheetData, o: {
+  title: string; line: string; at: string; nowMs?: number; maxCols?: number;
+  /** faqat shu instruktorlar (yozuvi qolmagan bo'lsa ham ustuni chiqadi) — «o'zgardi» xabari uchun */
+  only?: string[];
+  /** o'zgargan soatlar: instruktor id → soatlar (ramka bilan belgilanadi) */
+  marks?: Record<string, number[]>;
+}): SheetPart[] {
   const maxCols = o.maxCols || MAX_COLS;
+  const only = o.only ? new Set(o.only.map(String)) : null;
   /* har instruktor uchun bloklar (ketma-ket bir xil yozuv — bitta blok) */
   const perIns = d.instructors.map((ins, idx) => {
     const blocks: Array<Omit<SheetBlock, 'col'> & { id: string }> = [];
@@ -96,12 +105,14 @@ export function buildSheetParts(d: SheetData, o: { title: string; line: string; 
     }
     const real = blocks.filter((b) => b.kind === 'bron' || b.kind === 'app' || b.kind === 'band');
     return { ins, color: PAL[idx % PAL.length], blocks, real };
-  }).filter((x) => x.real.length);
+  }).filter((x) => (only ? only.has(String(x.ins.id)) : x.real.length));
   if (!perIns.length) return [];
 
-  /* soatlar: birinchi yozuvdan oxirgisigacha (hamma rasmda bir xil) */
-  const h0 = Math.min(...perIns.flatMap((x) => x.real.map((b) => b.h0)));
-  const h1 = Math.max(...perIns.flatMap((x) => x.real.map((b) => b.h1)));
+  /* soatlar: birinchi yozuvdan oxirgisigacha (hamma rasmda bir xil); o'zgargan soatlar ham ko'rinsin */
+  const edges = perIns.flatMap((x) => [...x.real.map((b) => [b.h0, b.h1]), ...((o.marks || {})[x.ins.id] || []).map((h) => [h, h + 1])]);
+  if (!edges.length) edges.push([8, 18]);
+  const h0 = Math.min(...edges.map((e) => e[0]));
+  const h1 = Math.max(...edges.map((e) => e[1]));
   const hours = d.hours.filter((h) => h >= h0 && h < h1);
   const nowMs = o.nowMs ?? Date.now();
   const past = hours.filter((h) => h < 23 && Date.parse(`${d.date}T${pad(h + 1)}:00+05:00`) <= nowMs);
@@ -128,10 +139,11 @@ export function buildSheetParts(d: SheetData, o: { title: string; line: string; 
         .map((b) => ({ ...b, h0: Math.max(b.h0, h0), h1: Math.min(b.h1, h1) }))
         .filter((b) => b.h1 > b.h0)
         .map(({ id: _id, ...b }) => ({ ...b, col }))),
+      marks: chunk.flatMap((x, col) => ((o.marks || {})[x.ins.id] || []).filter((h) => h >= h0 && h < h1).map((h) => ({ col, h }))),
     });
   }
-  /* bronsiz instruktorlar — oxirgi rasm ostida */
-  const free = d.instructors.filter((i) => !perIns.some((x) => x.ins.id === i.id)).map((i) => i.name.split(/\s+/)[0]);
+  /* bronsiz instruktorlar — oxirgi rasm ostida (to'liq jadvalda) */
+  const free = only ? [] : d.instructors.filter((i) => !perIns.some((x) => x.ins.id === i.id)).map((i) => i.name.split(/\s+/)[0]);
   if (free.length) parts[parts.length - 1].footer = `${o.at} · Bronsiz: ${free.join(', ')}`;
   return parts;
 }
@@ -149,7 +161,7 @@ const KIND: Record<BlockKind, { bg: string; bar: string; fg: string; sub: string
 export function sheetPartSvg(p: SheetPart): string {
   const n = p.cols.length;
   const HC = 116, TITLE = 100, GRP = 36, HEAD = 84, ROW = 74, FOOT = 58;
-  const CW = n <= 2 ? 360 : n === 3 ? 310 : n === 4 ? 262 : 232;
+  const CW = n === 1 ? 560 : n === 2 ? 400 : n === 3 ? 310 : n === 4 ? 262 : 232;
   const W = HC + n * CW, top = TITLE + GRP + HEAD, H = top + p.hours.length * ROW + FOOT;
   const o: string[] = [];
   o.push(`<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" font-family="Carlito">`);
@@ -157,9 +169,12 @@ export function sheetPartSvg(p: SheetPart): string {
 
   /* sarlavha */
   o.push(`<rect width="${W}" height="${TITLE}" fill="#23277a"/>`);
-  o.push(`<text x="26" y="52" font-size="38" font-weight="700" fill="#ffffff">${xml(fit(p.title, W - 260, 38, 0.5))}</text>`);
-  o.push(`<text x="26" y="84" font-size="23" font-weight="700" fill="#dfe1ff">${xml(fit(p.line, W - 200, 23, 0.5))}</text>`);
-  o.push(`<text x="${W - 24}" y="40" font-size="17" font-weight="700" fill="#b9bcf5" text-anchor="end" letter-spacing="1.5">TASH INDEX AVTODROM</text>`);
+  /* tor rasmda (1–2 ustun) brend yozuvi yo'q, sarlavha shrifti sig'guncha kichrayadi */
+  const wide = W >= 900, troom = W - (wide ? 260 : 150);
+  const ts = Math.max(26, Math.min(38, Math.floor(troom / (p.title.length * 0.5))));
+  o.push(`<text x="26" y="52" font-size="${ts}" font-weight="700" fill="#ffffff">${xml(fit(p.title, troom, ts, 0.5))}</text>`);
+  o.push(`<text x="26" y="84" font-size="23" font-weight="700" fill="#dfe1ff">${xml(fit(p.line, W - (wide ? 200 : 150), 23, 0.5))}</text>`);
+  if (wide) o.push(`<text x="${W - 24}" y="40" font-size="17" font-weight="700" fill="#b9bcf5" text-anchor="end" letter-spacing="1.5">TASH INDEX AVTODROM</text>`);
   if (p.part) {
     o.push(`<rect x="${W - 24 - 92}" y="54" width="92" height="36" rx="18" fill="#fde047"/>`);
     o.push(`<text x="${W - 24 - 46}" y="80" font-size="23" font-weight="700" fill="#141833" text-anchor="middle">${xml(p.part)}</text>`);
@@ -245,6 +260,18 @@ export function sheetPartSvg(p: SheetPart): string {
   /* toifa guruhlari orasida qalin chiziq — A, B, C ustunlari alohida ko'rinadi */
   for (let i = 1; i < n; i++) if (p.cols[i].group !== p.cols[i - 1].group) {
     o.push(`<rect x="${HC + i * CW - 3}" y="${TITLE}" width="6" height="${GRP + HEAD + p.hours.length * ROW}" fill="#05081a"/>`);
+  }
+
+  /* o'zgargan kataklar — to'q sariq ramka */
+  /* ketma-ket soatlar — bitta ramka */
+  const mk = [...(p.marks || [])].map((m) => ({ col: m.col, r: p.hours.indexOf(m.h) })).filter((m) => m.r >= 0)
+    .sort((a, b) => a.col - b.col || a.r - b.r);
+  for (let i = 0; i < mk.length;) {
+    let j = i;
+    while (j + 1 < mk.length && mk[j + 1].col === mk[i].col && mk[j + 1].r === mk[j].r + 1) j++;
+    const x = HC + mk[i].col * CW, y = top + mk[i].r * ROW, hh = (mk[j].r - mk[i].r + 1) * ROW;
+    o.push(`<rect x="${x + 3}" y="${y + 3}" width="${CW - 6}" height="${hh - 6}" fill="none" stroke="#f97316" stroke-width="6" rx="4"/>`);
+    i = j + 1;
   }
 
   /* izoh */

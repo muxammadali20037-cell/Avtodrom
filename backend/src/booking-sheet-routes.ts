@@ -571,14 +571,14 @@ export async function registerBookingSheetRoutes(app: FastifyInstance, deps: Dep
         const { notifySheetSave } = await import('./instructor-notify.js');
         notified = (await notifySheetSave(date, result.events)).sent;
       } catch (e) { console.error('sheet notify failed:', e); }
-      /* Guruhda o'sha kun rasmi bo'lsa — joyida yangilanadi. Yangi rasmni
-         admin «Guruhga tashlash» tugmasi bilan o'zi yuboradi. */
+      /* Guruhga: o'zgargan instruktor(lar) jadvali yangi xabar bo'lib ketadi,
+         o'sha kunning to'liq rasmi bo'lsa — joyida yangilanadi */
       let group: string | null = null;
       if (result.saved) {
         try {
-          const { refreshGroupPost } = await import('./sheet-share.js');
-          group = await refreshGroupPost(date, me.login);
-        } catch (e) { console.error('sheet group refresh failed:', e); group = 'stale'; }
+          const { afterSheetSave } = await import('./sheet-share.js');
+          group = await afterSheetSave(date, result.events, me.login);
+        } catch (e) { console.error('sheet group post failed:', e); group = 'stale'; }
       }
       const after = await loadState(date);
       return {
