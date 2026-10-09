@@ -17,6 +17,8 @@ import {
  *
  *   GET /api/admin/booking-sheet?date=YYYY-MM-DD — admin, operator, kassa (kassa faqat ko'radi)
  *   PUT /api/admin/booking-sheet { date, changes: [{ key, t, prev }] } — admin va operator
+ *   POST /api/admin/booking-sheet-cancel { date, key, reason? } — katakdagi bronni bekor qilish
+ *   POST /api/admin/booking-sheet-move { date, key, to_date, to_ins, to_h } — bronni boshqa kun/soat/instruktorga
  *
  * Saqlashda har bir o'zgargan katak tekshiriladi (`prev` — xodim ko'rgan eski
  * matn; boshqa xodim o'zgartirib ulgurgan bo'lsa katak yozilmaydi). Raqamli
@@ -116,7 +118,7 @@ const LOCK_MSG: Record<string, string> = {
   paid: 'Bu bron to‘langan — katakni o‘zgartirib bo‘lmaydi. Bronni «Bronlar» bo‘limida ko‘ring.',
   in_progress: 'Dars boshlangan — katakni o‘zgartirib bo‘lmaydi.',
   completed: 'Dars tugagan — katakni o‘zgartirib bo‘lmaydi.',
-  no_show: 'Bron «Kelmagan» deb yopilgan — katakni o‘zgartirib bo‘lmaydi.',
+  no_show: 'Bron «Kelmagan» deb yopilgan — katakni o‘chirib bo‘lmaydi. Katakni tanlang va «Ko‘chirish» yoki «Bekor qilish» tugmasini bosing.',
   bk: 'Bu soatda boshqa bron bor (Mini App, qo‘lda bron yoki kassa). Avval o‘sha bronni bekor qiling.',
   own: 'Instruktor bu soatni o‘zi yopgan.',
   off: 'Ish grafigi bo‘yicha instruktor bu vaqtda ishlamaydi.',
@@ -500,6 +502,127 @@ export async function applySheetChanges(o: ApplyOpts): Promise<ApplyResult> {
   return { saved: changed.size, created, cancelled: cancelled.length, cancelledIds: cancelled, errors, events };
 }
 
+
+/* ------------------------------------------------------------------ */
+/* BEKOR QILISH VA KO'CHIRISH (katakdagi bron — Excel, Mini App, kassa)  */
+/* ------------------------------------------------------------------ */
+/** Bekor qilsa / ko'chirsa bo'ladigan holatlar. «Kelmagan» ham — mijoz qo'ng'iroq qilib boshqa kunga so'rasa */
+const MOVABLE = ['pending', 'confirmed', 'no_show'];
+const MOVE_MSG: Record<string, string> = {
+  paid: 'Bu bron to‘langan — avval kassada pulini qaytaring (chekni bekor qiling), keyin bekor qiling.',
+  in_progress: 'Dars boshlangan — bekor qilib ham, ko‘chirib ham bo‘lmaydi.',
+  completed: 'Dars tugagan — bekor qilib ham, ko‘chirib ham bo‘lmaydi.',
+  cancelled: 'Bu bron allaqachon bekor qilingan.',
+};
+function cellBooking(st: State, key: string): { b: any; keys: string[]; err?: string } | null {
+  const p = parseKey(key);
+  if (!p || !st.insMap.has(p.ins)) return null;
+  const info = cellInfo(st, p.ins, p.h);
+  const b = info.own && info.own.status !== 'cancelled' ? info.own : info.foreign;
+  if (!b) return null;
+  const keys = [...(st.refs.get(String(b.id)) || [])];
+  const status = String(b.status);
+  const err = st.paid.has(String(b.id)) ? MOVE_MSG.paid : !MOVABLE.includes(status) ? (MOVE_MSG[status] || 'Bu bronni o‘zgartirib bo‘lmaydi') : undefined;
+  return { b, keys, err };
+}
+type ActionOpts = { actor: SheetActor; adminUser: Deps['adminUser']; audit: Deps['audit'] };
+const evOf = (): SheetEvent => ({ created: [], cancelled: [], notes: [] });
+
+/** Bronni bekor qiladi va uning Excel kataklarini tozalaydi (o'tgan soatlarnikini ham — bu ataylab qilingan amal) */
+export async function cancelCellBooking(date: string, key: string, reason: string, o: ActionOpts) {
+  const st = await loadState(date);
+  const cb = cellBooking(st, key);
+  if (!cb) throw Object.assign(new Error('Bu katakda bron yo‘q'), { statusCode: 404 });
+  if (cb.err) throw Object.assign(new Error(cb.err), { statusCode: 409 });
+  const admin = await o.adminUser();
+  const nowIso = iso(Date.now());
+  const rows = await supabaseRest<any[]>('bookings', {
+    method: 'PATCH', headers: { Prefer: 'return=representation' },
+    query: `?id=eq.${q(String(cb.b.id))}&status=in.(${MOVABLE.join(',')})`,
+    body: JSON.stringify({ status: 'cancelled', cancelled_at: nowIso, cancelled_by: admin.id, cancellation_reason: reason.slice(0, 300), updated_at: nowIso }),
+  });
+  if (!rows?.length) throw Object.assign(new Error('Bron holati o‘zgargan — sahifani yangilang'), { statusCode: 409 });
+  if (cb.keys.length) {
+    const fresh = await loadSheet(date);
+    for (const k of cb.keys) delete fresh.cells[k];
+    fresh.updated_at = nowIso; fresh.updated_by = o.actor.login;
+    await writeSheet(date, fresh);
+  }
+  const u = st.users.get(String(cb.b.customer_id));
+  await o.audit(admin.id, 'BOOKING_SHEET_CANCEL', 'bookings', String(cb.b.id), { status: cb.b.status },
+    { status: 'cancelled', reason, by: o.actor.login, date, code: cb.b.pickup_code || null, cells: cb.keys });
+  const events = new Map<string, SheetEvent>([[String(cb.b.instructor_id), evOf()]]);
+  events.get(String(cb.b.instructor_id))!.cancelled.push({ start: cb.b.start_at, minutes: durOf(cb.b), phone: u?.phone || null, name: u?.full_name || 'Mijoz', code: cb.b.pickup_code || null });
+  return { booking: { ...cb.b, ...rows[0] }, prev: cb.b, cells: cb.keys, oldCells: Object.fromEntries(cb.keys.map((k) => [k, st.sheet.cells[k]])), events };
+}
+
+/**
+ * Ko'chirish: avval eski bron bekor qilinadi (yangi vaqt eski bilan ustma-ust
+ * tushsa ham to'qnashmasin), keyin yangi kun/soat/instruktorga Excel bron
+ * yoziladi. Yangisi yaratilmasa — eskisi holatiga qaytariladi.
+ */
+export async function moveCellBooking(date: string, key: string, to: { date: string; ins: string; h: number }, o: ActionOpts) {
+  const st = await loadState(date);
+  const cb = cellBooking(st, key);
+  if (!cb) throw Object.assign(new Error('Bu katakda bron yo‘q'), { statusCode: 404 });
+  if (cb.err) throw Object.assign(new Error(cb.err), { statusCode: 409 });
+  const b = cb.b, min = durOf(b);
+  if (min !== 30 && min % 60) throw Object.assign(new Error(`Bu bron ${min} daqiqalik — Excel bronda faqat 30 daqiqa yoki butun soat. «Bronlar» bo‘limida o‘zgartiring.`), { statusCode: 400 });
+  const n = min === 30 ? 1 : min / 60;
+  if (!SHEET_HOURS.includes(to.h) || !SHEET_HOURS.includes(to.h + n - 1)) throw Object.assign(new Error('Bu soatga sig‘maydi (jadval 6:00–22:00)'), { statusCode: 400 });
+  const u = st.users.get(String(b.customer_id));
+  const digits = String(u?.phone || '').replace(/\D/g, '').slice(-9);
+  if (digits.length !== 9) throw Object.assign(new Error('Mijozning telefon raqami yo‘q — ko‘chirib bo‘lmaydi'), { statusCode: 400 });
+  const dst = to.date === date ? st : await loadState(to.date);
+  const ins = dst.insMap.get(to.ins);
+  if (!ins) throw Object.assign(new Error('Instruktor topilmadi'), { statusCode: 404 });
+  const cat = String(b.category || '').toUpperCase() || 'B';
+  const def = ins.categories.includes('B') ? 'B' : ins.categories[0] || 'B';
+  if (!ins.categories.includes(cat)) throw Object.assign(new Error(`${ins.name} ${cat} toifani o‘rgatmaydi`), { statusCode: 400 });
+  const realName = u?.full_name && !/^Mijoz\b/i.test(u.full_name) ? ` ${u.full_name}` : '';
+  const text = `${digits}${cat !== def ? '/' + cat : ''}${min === 30 ? '/30 MIN' : ''}${realName}`.slice(0, 80);
+  const keys = Array.from({ length: n }, (_, i) => cellKey(to.ins, to.h + i));
+  const own = new Set(cb.keys);
+  for (const k of keys) {
+    const t = dst.sheet.cells[k]?.t || '';
+    if (t && !(to.date === date && own.has(k))) throw Object.assign(new Error(`${Number(k.split('|')[1])}:00 band: «${t}»`), { statusCode: 409 });
+  }
+  /* 1) eski bron bekor */
+  const old = await cancelCellBooking(date, key, 'Ko‘chirilmoqda', o);
+  /* 2) yangi joyga yozish */
+  let res: ApplyResult | null = null;
+  try {
+    res = await applySheetChanges({
+      date: to.date, actor: o.actor, adminUser: o.adminUser, audit: o.audit, strict: true, notePrefix: 'Excel bron (ko‘chirildi)',
+      changes: keys.map((k) => ({ key: k, t: text, prev: to.date === date && own.has(k) ? '' : (dst.sheet.cells[k]?.t || '') })),
+    });
+  } catch (e) { res = null; console.error('move: create failed', e); }
+  const made = res?.created?.[0];
+  if (!made) {
+    /* qaytarish: eski bron holati va kataklari */
+    const nowIso = iso(Date.now());
+    await supabaseRest('bookings', {
+      method: 'PATCH', query: `?id=eq.${q(String(b.id))}&status=eq.cancelled`,
+      body: JSON.stringify({ status: b.status, cancelled_at: null, cancelled_by: null, cancellation_reason: null, updated_at: nowIso }),
+    }).catch((e) => console.error('move: restore failed', e));
+    if (old.cells.length) {
+      const fresh = await loadSheet(date);
+      for (const [k, c] of Object.entries(old.oldCells)) if (c) fresh.cells[k] = c as SheetCell;
+      await writeSheet(date, fresh).catch(() => {});
+    }
+    throw Object.assign(new Error(`Ko‘chirilmadi: ${res?.errors?.[0]?.error || 'yangi bron yaratilmadi'}`), { statusCode: 409 });
+  }
+  const when = `${to.date.slice(8, 10)}.${to.date.slice(5, 7)} ${String(to.h).padStart(2, '0')}:00`;
+  await supabaseRest('bookings', {
+    method: 'PATCH', query: `?id=eq.${q(String(b.id))}`,
+    body: JSON.stringify({ cancellation_reason: `Ko‘chirildi → ${made.code || ''} ${when} (${ins.name})`.trim().slice(0, 300) }),
+  }).catch(() => {});
+  const admin = await o.adminUser();
+  await o.audit(admin.id, 'BOOKING_SHEET_MOVE', 'bookings', String(b.id), { date, start: b.start_at, instructor: String(b.instructor_id), code: b.pickup_code || null },
+    { to_date: to.date, to_h: to.h, instructor: to.ins, new_id: made.id, new_code: made.code, by: o.actor.login });
+  return { old: old.booking, created: made, srcEvents: old.events, dstEvents: res!.events };
+}
+
 /**
  * OCHIQ HAVOLA uchun jadval (guruhdagi «📋 Jadvalni ochish»): faqat o'qish.
  * Ichki id'lar va kim yozgani o'rniga — telefonda ko'rish uchun kerakli
@@ -539,6 +662,12 @@ export async function publicSheetData(date: string) {
   };
 }
 
+/** O'zgarishdan keyin: instruktorlarga botda xabar va guruhga (xato bo'lsa javob buzilmaydi) */
+async function afterChange(date: string, events: Map<string, SheetEvent>, by: string) {
+  try { const { notifySheetSave } = await import('./instructor-notify.js'); await notifySheetSave(date, events); } catch (e) { console.error('sheet notify failed:', e); }
+  try { const { afterSheetSave } = await import('./sheet-share.js'); await afterSheetSave(date, events, by); } catch (e) { console.error('sheet group failed:', e); }
+}
+
 export async function registerBookingSheetRoutes(app: FastifyInstance, deps: Deps) {
   app.get('/api/admin/booking-sheet', async (req: any, reply: any) => {
     try {
@@ -548,6 +677,55 @@ export async function registerBookingSheetRoutes(app: FastifyInstance, deps: Dep
       return { ok: true, ...view(await loadState(date), me) };
     } catch (e: any) {
       return reply.code(e?.statusCode ?? 500).send({ ok: false, error: e?.message || 'Excel bron yuklanmadi' });
+    }
+  });
+
+  /* Katakdagi bronni bekor qilish (Kelmagan ham — mijoz boshqa kunga so'rasa) */
+  app.post('/api/admin/booking-sheet-cancel', async (req: any, reply: any) => {
+    try {
+      const me = await deps.guardDesk(req);
+      const b = req.body || {};
+      const date = String(b.date || ''), key = String(b.key || '');
+      if (!YMD.test(date) || !parseKey(key)) return reply.code(400).send({ ok: false, error: 'Katak noto‘g‘ri' });
+      const actor = { login: me.login, role: me.role };
+      const reason = String(b.reason || '').trim();
+      const r = await cancelCellBooking(date, key, `Excel bron: bekor qilindi${reason ? ` — ${reason}` : ''}`, { actor, adminUser: deps.adminUser, audit: deps.audit });
+      await afterChange(date, r.events, me.login);
+      const { notifyBookingStatus } = await import('./instructor-routes.js');
+      await notifyBookingStatus(r.booking, 'cancelled');
+      return { ok: true, ...view(await loadState(date), me), result: { cancelled: String(r.booking.id), code: r.booking.pickup_code || null } };
+    } catch (e: any) {
+      return reply.code(e?.statusCode ?? 500).send({ ok: false, error: e?.message || 'Bekor qilinmadi' });
+    }
+  });
+
+  /* Bronni boshqa kun / soat / instruktorga ko'chirish */
+  app.post('/api/admin/booking-sheet-move', async (req: any, reply: any) => {
+    try {
+      const me = await deps.guardDesk(req);
+      const b = req.body || {};
+      const date = String(b.date || ''), key = String(b.key || ''), toDate = String(b.to_date || ''), toIns = String(b.to_ins || '');
+      const toH = Number(b.to_h);
+      const today = tashkentYmdOf(Date.now());
+      if (!YMD.test(date) || !parseKey(key) || !YMD.test(toDate) || !toIns || !Number.isInteger(toH)) return reply.code(400).send({ ok: false, error: 'Ma’lumot noto‘g‘ri' });
+      if (toDate < today) return reply.code(400).send({ ok: false, error: 'O‘tgan kunga ko‘chirib bo‘lmaydi' });
+      if (toDate > addDaysYmd(today, 60)) return reply.code(400).send({ ok: false, error: 'Ko‘pi bilan 60 kun oldinga' });
+      const actor = { login: me.login, role: me.role };
+      const r = await moveCellBooking(date, key, { date: toDate, ins: toIns, h: toH }, { actor, adminUser: deps.adminUser, audit: deps.audit });
+      /* instruktor(lar)ga va guruhga: eski joy — bekor, yangi joy — yangi bron */
+      if (toDate === date) {
+        const all = new Map(r.srcEvents);
+        for (const [id, e] of r.dstEvents) { const x = all.get(id) || evOf(); x.created.push(...e.created); x.cancelled.push(...e.cancelled); x.notes.push(...e.notes); all.set(id, x); }
+        await afterChange(date, all, me.login);
+      } else {
+        await afterChange(date, r.srcEvents, me.login);
+        await afterChange(toDate, r.dstEvents, me.login);
+      }
+      const nb = (await supabaseRest<any[]>('bookings', { query: `?id=eq.${q(String(r.created.id))}&select=*&limit=1` }).catch(() => []))[0];
+      if (nb) { const { notifyBookingStatus } = await import('./instructor-routes.js'); await notifyBookingStatus(nb, 'confirmed'); }
+      return { ok: true, ...view(await loadState(date), me), result: { moved: String(r.old.id), created: r.created } };
+    } catch (e: any) {
+      return reply.code(e?.statusCode ?? 500).send({ ok: false, error: e?.message || 'Ko‘chirilmadi' });
     }
   });
 

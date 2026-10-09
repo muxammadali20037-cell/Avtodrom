@@ -135,6 +135,7 @@ export const OPERATOR_ALLOWED: RegExp[] = [
   // Excel bron → guruhga havola
   /^(GET|DELETE) \/api\/admin\/sheet-group$/,
   /^GET \/api\/admin\/sheet-image$/,
+  /^POST \/api\/admin\/booking-sheet-(cancel|move)$/,
   /^(POST) \/api\/admin\/(sheet-group-code|sheet-share)$/,
   // Mijozlar chati
   /^(GET) \/api\/admin\/support$/,
