@@ -410,6 +410,8 @@ export async function tickReminders(source: string, minGapMs = 60_000) {
     /* Instruktorlarga kunlik ro'yxat (kuniga bir marta; cron bo'lmasa ham ochiq panellar yetkazadi) */
     const { runInstructorDigest } = await import('./instructor-notify.js');
     await runInstructorDigest(now).catch((e) => console.error('instructor digest failed:', e));
+    const { runSheetGroupEvening } = await import('./sheet-share.js');
+    await runSheetGroupEvening(now).catch((e) => console.error('sheet group evening failed:', e));
     return { ran: true, sent: r.sent, checked: r.checked, failed: r.failed, late_closed: r.late_closed };
   } finally {
     tickRunning = null;
