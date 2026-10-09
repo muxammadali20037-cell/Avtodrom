@@ -175,23 +175,50 @@ describe('Guruhga tashlash — tiniq rasm', () => {
     expect(msg.markup.inline_keyboard[0][0].url).toBe(sheetLinkUrl(d));
   });
 
-  it('saqlaganda: guruhga o‘zi tashlamaydi; rasm bo‘lsa — joyida yangilanadi', async () => {
+  it('har saqlashda: guruhga faqat o‘zgargan instruktor jadvali (yangi xabar); to‘liq rasm joyida yangilanadi', async () => {
     const d = ymd(1);
     await linkGroup();
+    h.tgResults.set('sendPhoto', { message_id: 90 });
     let s = await h.call('PUT', '/api/admin/booking-sheet', { cookie: admin, payload: { date: d, changes: [{ key: cellKey('ip-1', 9), t: 'BAND', prev: '' }] } });
     expect(s.status).toBe(200);
-    expect(s.body.result.group).toBeNull();
-    expect(groupMsgs().filter((m) => m.method !== 'sendMessage' || !/ulandi/.test(m.text))).toHaveLength(0);
+    expect(s.body.result.group).toBe('sent');
+    const ch = groupMsgs().pop()!;
+    expect(ch.method).toBe('sendPhoto');
+    expect(ch.text).toMatch(/Jadval yangilandi/);
+    expect(ch.text).toMatch(/Aziz Karimov<\/b>: 📌 9:00 «BAND»/);
+    expect(ch.text).not.toMatch(/Komila/);
+    expect(ch.markup.inline_keyboard[0][0].url).toBe(sheetLinkUrl(d));
+    /* «Guruhga tashlash» — to'liq jadval (91) */
     h.tgResults.set('sendPhoto', { message_id: 91 });
     await h.call('POST', '/api/admin/sheet-share', { cookie: admin, payload: { date: d } });
     h.tgCalls.length = 0;
     s = await h.call('PUT', '/api/admin/booking-sheet', { cookie: operator, payload: { date: d, changes: [{ key: cellKey('ip-2', 9), t: 'BAND', prev: '' }] } });
-    expect(s.body.result.group).toBe('updated');
+    expect(s.body.result.group).toBe('sent');
     const ed = h.tgCalls.find((c) => c.method === 'editMessageMedia')!;
     expect(ed.body).toMatchObject({ chat_id: GROUP, message_id: 91, files: 1 });
     expect(ed.body.text).toMatch(/2 ta band/);
-    expect(ed.body.reply_markup.inline_keyboard[0][0].url).toBe(sheetLinkUrl(d));
-    expect(h.tgCalls.some((c) => /^send/.test(c.method) && c.body.chat_id === GROUP)).toBe(false);
+    const sent = h.tgCalls.filter((c) => c.method === 'sendPhoto' && c.body.chat_id === GROUP);
+    expect(sent).toHaveLength(1);
+    expect(sent[0].body.text).toMatch(/Komila Sobirova<\/b>: 📌 9:00/);
+    expect(sent[0].body.text).not.toMatch(/Aziz/);
+  });
+
+  it('instruktor botga bron yozsa ham guruhga boradi', async () => {
+    await linkGroup();
+    h.db.instructor_applications = h.db.instructor_applications || [];
+    h.db.instructor_applications.push({ telegram_user_id: 880001, status: 'APPROVED', first_name: 'Aziz' });
+    const before = groupMsgs().length;
+    const r = await h.app.inject({
+      method: 'POST', url: '/api/telegram/instructor/webhook',
+      headers: { 'x-telegram-bot-api-secret-token': 'test-webhook-secret' },
+      payload: { update_id: 9, message: { message_id: 9, chat: { id: 880001, type: 'private' }, from: { id: 880001, first_name: 'Aziz' }, text: 'ertaga 14:00 901234567' } },
+    });
+    expect(r.statusCode).toBe(200);
+    const g = groupMsgs().slice(before);
+    expect(g.length).toBeGreaterThanOrEqual(1);
+    expect(g[0].text).toMatch(/Jadval yangilandi/);
+    expect(g[0].text).toMatch(/Aziz Karimov<\/b>: ✅ 14:00–15:00 90 123 45 67 · B/);
+    expect(g[0].text).toMatch(/Bot · Aziz Karimov/);
   });
 
   it('rasmni oldindan ko‘rish — PNG (faqat admin va operator)', async () => {
