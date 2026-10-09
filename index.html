@@ -883,7 +883,7 @@ const RU = /*RU*/{
   "tanlanmagan": "не выбрано",
   "Bu kunda boshqa mashg‘ulot tanlangan": "На этот день уже выбрано другое занятие",
   "Avval instruktorni tanlamoqchiman": "Хочу сначала выбрать инструктора",
-  "Farqi yo‘q — hamma bo‘sh vaqtlarni ko‘rish": "Не важно — показать всё свободное время",
+  "Avval vaqtni tanlash": "Сначала выбрать время",
   "Bu toifa bo‘yicha hozircha instruktor yo‘q. Boshqa toifani tanlang yoki adminga yozing.": "По этой категории пока нет инструкторов. Выберите другую категорию или напишите администратору.",
   "{d} bo‘sh vaqt qolmadi": "{d}: свободного времени нет",
   "Boshqa kunni tanlang yoki boshqa instruktorni ko‘ring.": "Выберите другой день или посмотрите другого инструктора.",
@@ -897,10 +897,7 @@ const RU = /*RU*/{
   "Tanlangan hamma kunlarda bo‘sh bitta instruktor topilmadi.": "Не нашлось инструктора, свободного во все выбранные дни.",
   "Bu vaqtda bo‘sh instruktor qolmadi.": "На это время свободных инструкторов не осталось.",
   "Boshqa vaqtni tanlash": "Выбрать другое время",
-  "Farqi yo‘q": "Не важно",
-  "Eng yuqori baholangan bo‘sh instruktor": "Свободный инструктор с самым высоким рейтингом",
   "Instruktorni tanlang": "Выберите инструктора",
-  "Farqi yo‘q — vaqt bo‘yicha tanlash": "Не важно — выбрать по времени",
   "Telefon raqamingiz — admin siz bilan bog‘lanadi": "Ваш номер телефона — администратор свяжется с вами",
   "Izoh (ixtiyoriy)": "Комментарий (необязательно)",
   "Masalan: birinchi marta haydayman": "Например: еду впервые",
@@ -2338,7 +2335,7 @@ function stepTime() {
     <div id="times"></div>
     ${B.mode === 'time'
       ? `<button class="switch-link" data-act="wzmode" data-v="ins">${ico('user', 19)} ${T('Avval instruktorni tanlamoqchiman')}</button>`
-      : `<button class="switch-link" data-act="wzmode" data-v="time">${ico('clock', 19)} ${T('Farqi yo‘q — hamma bo‘sh vaqtlarni ko‘rish')}</button>`}`;
+      : `<button class="switch-link" data-act="wzmode" data-v="time">${ico('clock', 19)} ${T('Avval vaqtni tanlash')}</button>`}`;
 }
 /** Shu vaqtda mijozning o'zida boshqa faol bron bormi */
 function mineAt(date, time, minutes) {
@@ -2394,9 +2391,6 @@ function stepIns() {
       <p class="wz-sub">${B.pkg ? N(free.length, 'Paketning hamma kunlarida bo‘sh — {n} ta instruktor', ['Свободен во все дни пакета — {n} инструктор', 'Свободны во все дни пакета — {n} инструктора', 'Свободны во все дни пакета — {n} инструкторов'])
         : N(free.length, '{w} da bo‘sh — {n} ta instruktor', ['{w} — свободен {n} инструктор', '{w} — свободны {n} инструктора', '{w} — свободны {n} инструкторов'], { w: `${esc(dayName(B.date, false))}, ${esc(B.time)}` })}</p>
       <div class="opt-list">
-        ${free.length > 1 ? `<button class="opt" data-act="wzins" data-v="auto">
-          <span class="lt solid">${ico('check', 26, 2.6)}</span>
-          <span class="tx"><b>${T('Farqi yo‘q')}</b><small>${T('Eng yuqori baholangan bo‘sh instruktor')}</small></span>${ico('chev', 18)}</button>` : ''}
         ${free.map(insOpt).join('')}
       </div>`;
   }
@@ -2404,7 +2398,7 @@ function stepIns() {
   return `<h1 class="wz-h">${T('Instruktorni tanlang')}</h1>
     <p class="wz-sub">${esc(opt.cat ? T('{c} toifa', { c: opt.cat }) : opt.title)} · ${N(list.length, '{n} ta instruktor. Keyin uning bo‘sh vaqtlari chiqadi.', ['{n} инструктор. Затем появится его свободное время.', '{n} инструктора. Затем появится свободное время выбранного.', '{n} инструкторов. Затем появится свободное время выбранного.'])}</p>
     <div class="opt-list">${list.map(insOpt).join('')}</div>
-    <button class="switch-link" data-act="wzmode" data-v="time">${ico('clock', 19)} ${T('Farqi yo‘q — vaqt bo‘yicha tanlash')}</button>`;
+    <button class="switch-link" data-act="wzmode" data-v="time">${ico('clock', 19)} ${T('Avval vaqtni tanlash')}</button>`;
 }
 
 function stepConfirm() {
@@ -3016,8 +3010,10 @@ document.addEventListener('click', e => {
       if (B.pkg) { pkgPickTime(v); break; }
       B.time = v; advance(); break;
     case 'wzins':
-      if (v === 'auto') { const best = (B.pkg ? pkgAllFree(catInstructors()) : freeFor(B.time)).sort(byRating)[0]; if (!best) break; B.ins = String(best.id); B.auto = true; }
-      else { if (B.mode === 'ins' && B.ins !== v) B.time = ''; B.ins = v; B.auto = false; }
+      /* «Farqi yo‘q» (avtomatik tanlash) olib tashlandi — mijoz instruktorni o'zi tanlaydi */
+      if (v === 'auto') break;
+      if (B.mode === 'ins' && B.ins !== v) B.time = '';
+      B.ins = v; B.auto = false;
       haptic.tap(); markOn(el.closest('.opt') || el); advance(); break;
     case 'wzmode':
       haptic.tap(); B.mode = v; B.ins = ''; B.auto = false; B.insLocked = false; B.time = '';
