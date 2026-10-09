@@ -155,7 +155,15 @@ export async function makeHarness(): Promise<Harness> {
     if (typeof o.body === 'string') { try { body = JSON.parse(o.body); } catch { body = null; } }
     /* Rasm (sendPhoto) — multipart: chat_id va caption ni yozib qo'yamiz */
     if (typeof FormData !== 'undefined' && o.body instanceof FormData) {
-      body = { chat_id: Number(o.body.get('chat_id')), text: String(o.body.get('caption') || ''), parse_mode: o.body.get('parse_mode') || undefined, photo: !!o.body.get('photo') };
+      const f = o.body as FormData, js = (k: string) => { const v = f.get(k); try { return v == null ? undefined : JSON.parse(String(v)); } catch { return undefined; } };
+      const media = js('media');
+      const first = Array.isArray(media) ? media[0] : media;
+      const files = [...f.values()].filter((v: any) => typeof v === 'object' && v && 'size' in v).length;
+      body = {
+        chat_id: Number(f.get('chat_id')), message_id: f.get('message_id') ? Number(f.get('message_id')) : undefined,
+        text: String(f.get('caption') || first?.caption || ''), parse_mode: f.get('parse_mode') || first?.parse_mode || undefined,
+        reply_markup: js('reply_markup'), media, photo: !!f.get('photo'), files,
+      };
     }
     const H = new Map<string, string>();
 

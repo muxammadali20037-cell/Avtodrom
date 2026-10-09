@@ -10,6 +10,7 @@ import { makeHarness, type Harness } from './harness.js';
 import { hashPassword } from '../backend/src/staff-auth.js';
 import { sheetLinkToken, sheetLinkUrl, checkSheetLink, runSheetGroupEvening } from '../backend/src/sheet-share.js';
 import { cellKey } from '../backend/src/booking-sheet.js';
+import { buildSheetParts, sheetPartSvg } from '../backend/src/sheet-image.js';
 
 let h: Harness;
 let admin = '', operator = '', kassa = '';
@@ -103,48 +104,146 @@ describe('Guruhni ulash', () => {
   });
 });
 
-describe('Guruhga yuborish', () => {
-  it('tugma: guruhga «📋 Jadvalni ochish» tugmali xabar', async () => {
+describe('Guruhga tashlash — tiniq rasm', () => {
+  const band = (d: string, ins: string, hr: number, t = 'BAND') => {
+    let row = h.db.admin_settings.find((x: any) => x.key === `booking_sheet:${d}`);
+    if (!row) { row = { key: `booking_sheet:${d}`, value: { cells: {} } }; h.db.admin_settings.push(row); }
+    row.value.cells[cellKey(ins, hr)] = { t };
+  };
+  const groupMsgs = () => h.telegram.filter((m) => m.chat === GROUP);
+
+  it('bitta rasm: tugma rasmning o‘zida, izohda kun va bronlar soni', async () => {
     const d = ymd(1);
     expect((await h.call('POST', '/api/admin/sheet-share', { cookie: admin, payload: { date: d } })).status).toBe(409);   // ulanmagan
     await linkGroup();
-    h.tgResults.set('sendMessage', { message_id: 77, chat: { id: GROUP } });
+    band(d, 'ip-1', 10); band(d, 'ip-1', 11); band(d, 'ip-2', 12, 'Dilshod 901234567');
+    h.tgResults.set('sendPhoto', { message_id: 77, chat: { id: GROUP } });
     const r = await h.call('POST', '/api/admin/sheet-share', { cookie: admin, payload: { date: d } });
     expect(r.status).toBe(200);
-    const msg = h.telegram.filter((m) => m.chat === GROUP).pop()!;
-    expect(msg.text).toMatch(/Excel bron — Ertaga/);
+    expect(r.body.images).toBe(1);
+    const msg = groupMsgs().pop()!;
+    expect(msg.method).toBe('sendPhoto');
+    expect(msg.text).toMatch(/Ertaga, /);
+    expect(msg.text).toMatch(/📋 3 ta band · 2 instruktor/);         // bron yo'q — «0 ta bron» yozilmaydi
     expect(msg.markup.inline_keyboard[0][0]).toMatchObject({ text: '📋 Jadvalni ochish', url: sheetLinkUrl(d) });
-    expect(h.db.admin_settings.find((x: any) => x.key === `sheet_group_msg:${d}`).value).toMatchObject({ message_id: 77, chat_id: GROUP });
+    expect(h.db.admin_settings.find((x: any) => x.key === `sheet_group_msg:${d}`).value).toMatchObject({ chat_id: GROUP, photos: [77] });
   });
 
-  it('saqlaganda: o‘sha kun xabari yangilanadi (yangi xabar emas)', async () => {
+  it('qayta tashlansa — yangi rasm, eskisi guruhdan o‘chadi', async () => {
     const d = ymd(1);
     await linkGroup();
-    h.tgResults.set('sendMessage', { message_id: 91, chat: { id: GROUP } });
-    // birinchi saqlash — xabar yo'q edi → yangi
+    band(d, 'ip-1', 10);
+    h.tgResults.set('sendPhoto', { message_id: 77 });
+    await h.call('POST', '/api/admin/sheet-share', { cookie: admin, payload: { date: d } });
+    h.tgResults.set('sendPhoto', { message_id: 78 });
+    h.tgCalls.length = 0;
+    await h.call('POST', '/api/admin/sheet-share', { cookie: operator, payload: { date: d } });
+    expect(h.tgCalls.find((c) => c.method === 'deleteMessages')?.body).toMatchObject({ chat_id: GROUP, message_ids: [77] });
+    expect(h.db.admin_settings.find((x: any) => x.key === `sheet_group_msg:${d}`).value.photos).toEqual([78]);
+  });
+
+  it('instruktor ko‘p — albom (har rasmda ≤5 ustun) va alohida tugmali xabar', async () => {
+    const d = ymd(1);
+    await linkGroup();
+    for (let i = 3; i <= 8; i++) {
+      h.db.users.push({ id: `u-ins${i}`, full_name: `Instruktor ${i}`, phone: `+99890111440${i}`, role: 'instructor', is_active: true, is_blocked: false });
+      h.db.instructor_profiles.push({ id: `ip-${i}`, user_id: `u-ins${i}`, is_verified: true, is_available: true, categories: ['B'] });
+    }
+    for (let i = 1; i <= 8; i++) band(d, `ip-${i}`, 9 + (i % 3));
+    h.tgResults.set('sendMediaGroup', [{ message_id: 201 }, { message_id: 202 }]);
+    h.tgResults.set('sendMessage', { message_id: 203 });
+    const r = await h.call('POST', '/api/admin/sheet-share', { cookie: admin, payload: { date: d } });
+    expect(r.body.images).toBe(2);                         // 8 ta → 4 + 4
+    const album = h.tgCalls.find((c) => c.method === 'sendMediaGroup')!;
+    expect(album.body.files).toBe(2);
+    expect(album.body.media.map((m: any) => m.media)).toEqual(['attach://p0', 'attach://p1']);
+    expect(album.body.text).toMatch(/8 instruktor/);
+    const btn = groupMsgs().pop()!;
+    expect(btn.method).toBe('sendMessage');
+    expect(btn.markup.inline_keyboard[0][0].url).toBe(sheetLinkUrl(d));
+    expect(h.db.admin_settings.find((x: any) => x.key === `sheet_group_msg:${d}`).value).toMatchObject({ photos: [201, 202], button_id: 203 });
+  });
+
+  it('bron yo‘q kun — rasm emas, havolali matn', async () => {
+    const d = ymd(2);
+    await linkGroup();
+    const r = await h.call('POST', '/api/admin/sheet-share', { cookie: admin, payload: { date: d } });
+    expect(r.body.images).toBe(0);
+    const msg = groupMsgs().pop()!;
+    expect(msg.method).toBe('sendMessage');
+    expect(msg.text).toMatch(/Hozircha bron yo‘q/);
+    expect(msg.markup.inline_keyboard[0][0].url).toBe(sheetLinkUrl(d));
+  });
+
+  it('saqlaganda: guruhga o‘zi tashlamaydi; rasm bo‘lsa — joyida yangilanadi', async () => {
+    const d = ymd(1);
+    await linkGroup();
     let s = await h.call('PUT', '/api/admin/booking-sheet', { cookie: admin, payload: { date: d, changes: [{ key: cellKey('ip-1', 9), t: 'BAND', prev: '' }] } });
     expect(s.status).toBe(200);
-    expect(s.body.result.group).toBe('posted');
-    // ikkinchi saqlash — tahrirlanadi
+    expect(s.body.result.group).toBeNull();
+    expect(groupMsgs().filter((m) => m.method !== 'sendMessage' || !/ulandi/.test(m.text))).toHaveLength(0);
+    h.tgResults.set('sendPhoto', { message_id: 91 });
+    await h.call('POST', '/api/admin/sheet-share', { cookie: admin, payload: { date: d } });
     h.tgCalls.length = 0;
     s = await h.call('PUT', '/api/admin/booking-sheet', { cookie: operator, payload: { date: d, changes: [{ key: cellKey('ip-2', 9), t: 'BAND', prev: '' }] } });
     expect(s.body.result.group).toBe('updated');
-    const ed = h.tgCalls.find((c) => c.method === 'editMessageText')!;
-    expect(ed.body).toMatchObject({ chat_id: GROUP, message_id: 91 });
+    const ed = h.tgCalls.find((c) => c.method === 'editMessageMedia')!;
+    expect(ed.body).toMatchObject({ chat_id: GROUP, message_id: 91, files: 1 });
     expect(ed.body.text).toMatch(/2 ta band/);
-    expect(h.tgCalls.some((c) => c.method === 'sendMessage' && c.body.chat_id === GROUP)).toBe(false);
+    expect(ed.body.reply_markup.inline_keyboard[0][0].url).toBe(sheetLinkUrl(d));
+    expect(h.tgCalls.some((c) => /^send/.test(c.method) && c.body.chat_id === GROUP)).toBe(false);
+  });
+
+  it('rasmni oldindan ko‘rish — PNG (faqat admin va operator)', async () => {
+    const d = ymd(1);
+    band(d, 'ip-1', 10);
+    const r = await h.call('GET', `/api/admin/sheet-image?date=${d}`, { cookie: operator });
+    expect(r.status).toBe(200);
+    expect(r.body.count).toBe(1);
+    expect(r.body.image).toMatch(/^data:image\/png;base64,iVBOR/);
+    expect((await h.call('GET', `/api/admin/sheet-image?date=${d}`, { cookie: kassa })).status).toBe(403);
   });
 
   it('20:00 dan keyin ertangi kun bir marta ketadi', async () => {
     await linkGroup();
     const d = ymd(1);
-    const at20 = (h: number) => Date.parse(`${ymd(0)}T${String(h).padStart(2, '0')}:10:00+05:00`);
+    const at20 = (hh: number) => Date.parse(`${ymd(0)}T${String(hh).padStart(2, '0')}:10:00+05:00`);
     expect((await runSheetGroupEvening(at20(19))).ran).toBe(false);
-    const n0 = h.telegram.filter((m) => m.chat === GROUP).length;
+    const n0 = groupMsgs().length;
     expect((await runSheetGroupEvening(at20(20))).ran).toBe(true);
     expect((await runSheetGroupEvening(at20(21))).ran).toBe(false);
-    const sent = h.telegram.filter((m) => m.chat === GROUP).slice(n0);
+    const sent = groupMsgs().slice(n0);
     expect(sent).toHaveLength(1);
     expect(sent[0].markup.inline_keyboard[0][0].url).toBe(sheetLinkUrl(d));
+  });
+});
+
+describe('Rasm: toifa va davomiylik', () => {
+  const ins = (id: string, group: string) => ({ id, name: `Ins ${id}`, phone: '+998901112233', group });
+  const K = (id: string, h: number) => `${id}|${String(h).padStart(2, '0')}`;
+  const d = {
+    date: '2026-10-10', hours: [6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21],
+    instructors: [ins('a1', 'A'), ins('a2', 'A'), ins('b1', 'B'), ins('b2', 'B'), ins('c1', 'B, C')],
+    cells: {
+      [K('a1', 10)]: { k: 'sheet', t: '994188549', phone: '+998994188549', code: 'AVD-1', cat: 'A', min: 120 },
+      [K('a1', 11)]: { k: 'sheet', t: '994188549', phone: '+998994188549', code: 'AVD-1', cat: 'A', min: 120 },
+      [K('a2', 12)]: { k: 'sheet', t: '977737646/30 MIN', phone: '+998977737646', code: 'AVD-2', cat: 'A', min: 30 },
+      [K('b1', 9)]: { k: 'bk', phone: '+998901234502', code: 'AVD-3', cat: 'B', src: 'app', min: 60 },
+      [K('c1', 14)]: { k: 'sheet', t: '901112233/C', phone: '+998901112233', code: 'AVD-4', cat: 'C', min: 60 },
+    },
+    stats: { instructors: 5, busy_instructors: 4, bron: 4, band: 0 },
+  };
+  it('A toifa alohida rasmda; 2 soat — bitta blok; toifa, 30 daq ko‘rinadi', () => {
+    const parts = buildSheetParts(d as any, { title: 'Ertaga', line: '4 ta bron', at: '09:00 holati', nowMs: Date.parse('2026-10-09T09:00:00+05:00') });
+    expect(parts.map((p) => p.cols.map((c) => c.group))).toEqual([['A', 'A'], ['B', 'B, C']]);
+    const two = parts[0].blocks.find((b) => b.main === '99 418 85 49')!;
+    expect([two.h0, two.h1]).toEqual([10, 12]);
+    expect(two.sub).toMatch(/^A toifa · AVD-1/);
+    expect(parts[0].blocks.find((b) => b.main === '97 773 76 46')!.sub).toMatch(/^A toifa · 30 daq/);
+    expect(parts[1].blocks.find((b) => b.main === '90 111 22 33')!.sub).toMatch(/^C toifa/);
+    const svg = sheetPartSvg(parts[0]);
+    expect(svg).toContain('10:00–12:00 · 2 soat');
+    expect(svg).toContain('#c2410c');                                        // A toifa sarlavhasi o'z rangida
+    expect(sheetPartSvg(parts[1])).toContain('#6d28d9');                     // «B, C» — aralash guruh
   });
 });

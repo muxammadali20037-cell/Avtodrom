@@ -87,6 +87,15 @@ describe('Excel bron — matnni o‘qish', () => {
     expect(nameFrom('Дурдона 901234567')).toBe('Дурдона');
     expect(nameFrom('901234567 band')).toBeNull();
   });
+  it('tugmalar yozadigan matn: «/C/30 MIN» — toifa ham, yarim soat ham, raqam ham o‘qiladi', () => {
+    for (const t of ['901112233/C/30 MIN', 'Dilshod 901112233/C/30 MIN']) {
+      expect(parsePhone(t)).toBe('+998901112233');
+      expect(parseCategory(t)).toBe('C');
+      expect(parseHalf(t)).toBe(true);
+    }
+    expect(parseCategory('901112233/30 MIN')).toBeNull();     // toifa yozilmasa — instruktorniki
+    expect(nameFrom('Dilshod 901112233/C/30 MIN')).toBe('Dilshod');
+  });
   it('ketma-ket soatlarda bir xil raqam — bitta bron', () => {
     const c = (h: number, phone: string, half = false) => ({ h, key: K('ip-1', h), phone, cat: null, half, text: phone });
     const runs = buildRuns([c(11, '+998932417301'), c(12, '+998932417301'), c(14, '+998932417301'), c(15, '+998977737646', true)]);
