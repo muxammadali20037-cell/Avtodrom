@@ -92,6 +92,32 @@ Each instructor gets only **their own column** of the sheet in the instructor bo
 
 If the picture cannot be drawn, the same list is sent as text. `vercel.json` includes `backend/assets/**` in the functions.
 
+## Receipts are the source of truth (chek = hisob)
+
+- A lesson starts **only** by scanning the kassa receipt in the instructor panel
+  (`POST /api/instructor/scan/start`). The old "KELDI" start-without-receipt
+  endpoint returns `410`.
+- **Any instructor can scan any receipt.** If the booking belonged to another
+  instructor (or the kassa issued it without an instructor), the booking moves
+  to the scanning instructor: `instructor_id` changes, the Excel bron cell moves
+  to the new column, the previous instructor gets a bot message, and an audit row
+  `BOOKING_TRANSFERRED_BY_SCAN` is written. Category must match; the scanner must
+  not have another booking in that time range.
+- Each scan writes one immutable `attendance_verifications` row (UNIQUE per
+  booking) with a `verification_snapshot` (from-instructor, amount, minutes).
+  If that write fails, the lesson start is rolled back.
+- The lesson closes **automatically** when the paid time on the receipt is over
+  (`arrived_at + duration`), on every reminders tick (`finishDueLessons`).
+- Instructor reports — admin `/api/admin/instructor-report`, detail
+  `/api/admin/instructor-control/:id`, kassa (same endpoints, scoped to its
+  register) and the instructor panel `/api/instructor/summary` — are built from
+  `backend/src/lesson-ledger.ts`: lesson owner = the instructor who scanned, day =
+  scan day, money = that receipt. Paid receipts that nobody scanned are reported
+  separately as `totals.unscanned`. Lessons from before the first scan record are
+  counted the old way (started + paid, booking instructor).
+- Kassa walk-in receipts: choosing an instructor is optional.
+- Customer Mini App: the "Farqi yo‘q" (auto-pick any instructor) option is removed.
+
 ## No-deposit policy
 
 Deposits are not required for booking creation. Instead the system uses:
