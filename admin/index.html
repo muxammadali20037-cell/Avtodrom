@@ -4422,6 +4422,8 @@ const xbSrvText = key => { const c = xbSrv(key); return c && (c.k === 'sheet' ||
 const xbText = key => { const d = (XB.drafts[XB.date] || {})[key]; return d ? d.t : xbSrvText(key); };
 const xbEndMs = r => atTk(XB.d.date, pad(XB.d.hours[r]) + ':00').getTime() + 3600e3;
 const xbPast = r => xbEndMs(r) <= Date.now();
+/** Soat boshlanib ketgan — server bu soatga bron yaratmaydi (faqat band) */
+const xbStarted = r => xbEndMs(r) - 3600e3 <= Date.now();
 function xbCanEdit(r, c){
   if (!XB.d?.can_edit || xbPast(r)) return false;
   const s = xbSrv(xbKey(r, c));
@@ -4486,7 +4488,8 @@ function xbCellParts(r, c){
     /* saqlansa nima bo'ladi: bron · toifa · davomiylik */
     const run = ph ? xbRun(r, c) : null;
     const dur = !ph ? '' : xbIsHalf(dr.t) ? ' · 30 daq' : run && run.n > 1 ? ` · ${run.n} soat` : ' · 1 soat';
-    inner = dr.t ? `<span class="xt">${esc(dr.t)}</span><span class="xs">${ph ? `bron · ${esc(xbCatOf(dr.t, ins))} toifa${dur}` : 'band'}</span>` : `<span class="xt muted">o‘chiriladi</span>`;
+    const late = ph && xbStarted(r) && !(xbSrv(key)?.bk && xbDigits(xbSrv(key).bk.phone) === xbDigits(ph));
+    inner = dr.t ? `<span class="xt">${esc(dr.t)}</span><span class="xs">${late ? 'soat boshlangan — bron bo‘lmaydi' : ph ? `bron · ${esc(xbCatOf(dr.t, ins))} toifa${dur}` : 'band'}</span>` : `<span class="xt muted">o‘chiriladi</span>`;
   } else if (s && (s.k === 'sheet' || s.k === 'note')) {
     const live = s.k === 'sheet';
     cls.push(live ? 'sb' : 'sn');
@@ -4613,7 +4616,8 @@ function xbBar(){
     ? `<button class="btn btn-soft btn-sm" data-act="schpay" data-code="${esc(b.code)}">${I('receipt', 16)} Kassada to‘lash</button>` : '') + xbActs(b);
   if (dr) {
     const ph = dr.t ? xbPhone(dr.t) : null;
-    info = dr.t ? `<span class="pill warn">saqlanmagan</span> «${esc(dr.t)}» → ${ph ? `saqlansa <b>bron</b> bo‘ladi (${esc(ph)})` : 'saqlansa soat <b>band</b> bo‘ladi'}`
+    const late = ph && xbStarted(sel.r) && !(s?.bk && xbDigits(s.bk.phone) === xbDigits(ph));
+    info = dr.t ? `<span class="pill warn">saqlanmagan</span> «${esc(dr.t)}» → ${late ? `<span class="bad-t">${h}:00 boshlanib ketgan — <b>bron bo‘lmaydi</b>.</span> Mijoz kelgan bo‘lsa — kassada chek bering` : ph ? `saqlansa <b>bron</b> bo‘ladi (${esc(ph)})` : 'saqlansa soat <b>band</b> bo‘ladi'}`
       : `<span class="pill warn">saqlanmagan</span> katak o‘chiriladi${s?.k === 'sheet' ? ' — <b>bron bekor qilinadi</b>' : ''}`;
   } else if (s && s.k === 'sheet') { info = `Excel bron: ${bkLine(s.bk)}${s.lock && !xbMovable(s.bk) ? ' · <span class="muted">o‘zgartirib bo‘lmaydi</span>' : ''}`; btn = payBtn(s.bk); }
   else if (s && s.k === 'note') {
@@ -4636,7 +4640,7 @@ const xbActs = b => !XB.d?.can_edit || !b ? ''
   : b.paid && ['pending', 'confirmed', 'no_show'].includes(b.status) ? '<span class="muted" style="font-size:12.5px">To‘langan — bekor qilish uchun avval kassada pulini qaytaring</span>' : '';
 /** Tez tanlash: davomiylik (30 daq · 1/2/3 soat) va toifa (instruktor o'rgatadiganlari; hozirgisi tanlangan) */
 function xbQuick(sel){
-  if (!XB.d?.can_edit || !xbCanEdit(sel.r, sel.c)) return '';
+  if (!XB.d?.can_edit || !xbCanEdit(sel.r, sel.c) || xbStarted(sel.r)) return '';
   const ins = XB.d.instructors[sel.c], run = xbRun(sel.r, sel.c);
   if (!run) return `<span class="xb-q muted">Raqam yozing — keyin vaqt (30 daq, 1–3 soat) va toifani tugma bilan tanlaysiz</span>`;
   const first = xbText(xbKey(run.r0, sel.c)), half = xbIsHalf(first), cat = xbCatOf(first, ins);
@@ -5001,6 +5005,7 @@ function xbResult(d, cr, er){
 }
 ACT.xbhelp = () => openSheet(`<h3>Excel bron — qoidalar</h3>
   <div class="list">
+    <div class="row"><span class="tx"><b>Boshlangan soatga bron yo‘q</b><small>Masalan, 14:10 da 14:00 ga raqam yozilsa — bron yaratilmaydi (aks holda 14:15 da o‘zi «Kelmagan» bo‘lib qolardi). Mijoz kelgan bo‘lsa — kassada chek bering, u hozirgi vaqtdan boshlanadi. Bor bronning matnini o‘zgartirish mumkin.</small></span></div>
     <div class="row"><span class="tx"><b>Telefon raqam → haqiqiy bron</b><small>«994188549», «99-313-56-26», «50 150 05 08» — hammasi taniladi. Bron tasdiqlangan holda, kod bilan yaratiladi. Kassa mijozni raqami yoki kodi bo‘yicha topadi.</small></span></div>
     <div class="row"><span class="tx"><b>Ketma-ket soatlar → bitta bron</b><small>Bir instruktorga 11:00 va 12:00 ga bir xil raqam — 11:00–13:00 bitta 2 soatlik bron.</small></span></div>
     <div class="row"><span class="tx"><b>Vaqt va toifa — tugma bilan</b><small>Raqamli katakni tanlang — yuqorida «30 daq · 1 soat · 2 soat · 3 soat» va toifa tugmalari chiqadi (instruktor o‘rgatadigan toifalar, hozirgisi belgilangan). 2 soat bosilsa keyingi soatga ham o‘sha raqam yoziladi — bitta 2 soatlik bron. Qo‘lda ham bo‘ladi: «947372906/C» — C toifa, «/30 MIN» — 30 daqiqa. Yozilmasa — instruktorning toifasi (B bo‘lsa B).</small></span></div>
