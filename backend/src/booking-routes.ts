@@ -23,6 +23,36 @@ import {
 
 const ACTIVE_STATUSES = 'pending,confirmed,in_progress';
 
+/** Bandlik hisobidagi bronlar: kutilmoqda, tasdiqlangan, jarayonda, tugagan (bekor va kelmagan — yo'q) */
+const LOAD_STATUSES = 'pending,confirmed,in_progress,completed';
+const tkYmd = (ms: number) => new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Tashkent' }).format(new Date(ms));
+/** instruktor id → { 'YYYY-MM-DD': bronlar soni } — bugundan `days` kun */
+export async function instructorLoads(ids: string[], days = 14): Promise<Map<string, Record<string, number>>> {
+  const out = new Map<string, Record<string, number>>();
+  if (!ids.length) return out;
+  const from = new Date(`${tkYmd(Date.now())}T00:00:00+05:00`).getTime(), to = from + days * 864e5;
+  const rows: any[] = [];
+  for (let off = 0; off < 20000; off += 1000) {
+    const page = await supabaseRest<any[]>('bookings', {
+      query: `?instructor_id=in.(${ids.map(encodeURIComponent).join(',')})&status=in.(${LOAD_STATUSES})`
+        + `&start_at=gte.${encodeURIComponent(new Date(from).toISOString())}&start_at=lt.${encodeURIComponent(new Date(to).toISOString())}`
+        + `&select=id,instructor_id,start_at&order=start_at.asc,id.asc&limit=1000&offset=${off}`,
+    });
+    rows.push(...(page || []));
+    if (!page || page.length < 1000) break;
+  }
+  const seen = new Set<string>();
+  for (const b of rows) {
+    if (seen.has(String(b.id))) continue;
+    seen.add(String(b.id));
+    const id = String(b.instructor_id), d = tkYmd(Date.parse(b.start_at));
+    const m = out.get(id) || {};
+    m[d] = (m[d] || 0) + 1;
+    out.set(id, m);
+  }
+  return out;
+}
+
 /** O'zbekiston raqami: istalgan yozuvni +998XXXXXXXXX ga keltiradi. Noto'g'ri bo'lsa null. */
 export function normalizeUzPhone(v: unknown): string | null {
   let d = String(v ?? '').replace(/\D/g, '');
@@ -339,7 +369,12 @@ export async function registerBookingRoutes(
           '&order=created_at.desc',
       }), testInstructorIds()]);
       /* Sinov akkauntlari mijozga ko'rinmaydi */
-      const instructors = rows.filter((r) => !hidden.has(String(r.id))).map(toInstructorCard).filter((x) => x.active);
+      const instructors: any[] = rows.filter((r) => !hidden.has(String(r.id))).map(toInstructorCard).filter((x) => x.active);
+      /* Bandlik: har instruktorning kunlik bronlari soni (bugundan 14 kun).
+         Mini App broni kam instruktorni tepaga qo'yadi — ish teng taqsimlansin.
+         Mijozga faqat son ketadi (kim, qachon — yo'q). Xato bo'lsa — ro'yxat baribir. */
+      const loads = await instructorLoads(instructors.map((i) => String(i.id))).catch(() => null);
+      if (loads) for (const i of instructors) i.load = loads.get(String(i.id)) || {};
       return { ok: true, instructors };
     } catch (e) {
       return reply.code(400).send({ ok: false, error: e instanceof Error ? e.message : 'Instruktorlar yuklanmadi' });
