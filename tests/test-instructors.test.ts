@@ -114,3 +114,24 @@ describe('Sinov akkaunti', () => {
     expect(await say('ertaga')).toMatch(/14:00/);
   });
 });
+
+describe('Mini App: bandlik — broni kam instruktor tepada', () => {
+  it('har instruktorga kunlik bronlar soni ketadi (bekor va kelmagan hisoblanmaydi)', async () => {
+    h.db.admin_settings.length = 0;                                    // ikkala instruktor ham ko'rinsin
+    h.db.users.push({ id: 'u-ins3', full_name: 'Komila', phone: '+998901114466', role: 'instructor', is_active: true, is_blocked: false });
+    h.db.instructor_profiles.push({ id: 'ip-3', user_id: 'u-ins3', is_verified: true, is_available: true, categories: ['B'], rating: 4.2 });
+    const bk = (id: string, ins: string, d: string, hm: string, status = 'confirmed') =>
+      h.db.bookings.push({ id, customer_id: 'u-cust', instructor_id: ins, status, start_at: at(hm, d), end_at: at(hm, d).replace(/T(\d\d)/, (m, x) => `T${String(Number(x) + 1).padStart(2, '0')}`), duration_minutes: 60, category: 'B' });
+    bk('b1', 'ip-1', day, '09:00'); bk('b2', 'ip-1', day, '10:00'); bk('b3', 'ip-1', day, '11:00', 'completed'); bk('b4', 'ip-1', day, '12:00', 'pending');
+    bk('b5', 'ip-3', day, '09:00'); bk('b6', 'ip-3', day, '10:00'); bk('b7', 'ip-3', day, '11:00');
+    bk('b8', 'ip-3', day, '12:00', 'cancelled'); bk('b9', 'ip-3', day, '13:00', 'no_show');
+    bk('b10', 'ip-1', day2, '09:00');
+    bk('b11', 'ip-1', ymd(30), '09:00');                               // 14 kundan keyin — hisobda yo'q
+    const r = await cust('GET', '/api/instructors');
+    expect(r.status).toBe(200);
+    const by = Object.fromEntries(r.body.instructors.map((i: any) => [i.id, i.load]));
+    expect(by['ip-1']).toEqual({ [day]: 4, [day2]: 1 });
+    expect(by['ip-3']).toEqual({ [day]: 3 });
+    expect(by['db90e88e-445b-4e59-8c96-3a8a4c680053']).toEqual({});
+  });
+});
