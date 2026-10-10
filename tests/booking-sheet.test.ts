@@ -4,7 +4,7 @@
  * («BAND», ism) — shu soat band. Ikkalasida ham Mini App, operator va kassa
  * u vaqtga bron qila olmaydi.
  */
-import { describe, it, expect, beforeAll, beforeEach } from 'vitest';
+import { describe, it, expect, beforeAll, beforeEach, afterEach, vi } from 'vitest';
 import crypto from 'node:crypto';
 import { makeHarness, type Harness } from './harness.js';
 import { hashPassword } from '../backend/src/staff-auth.js';
@@ -377,5 +377,54 @@ describe('Excel bron — bekor qilish va ko‘chirish (tugmalar)', () => {
     const nb = h.db.bookings.find((b: any) => b.id === r.body.result.created.id);
     expect(nb).toMatchObject({ customer_id: 'u-cust', start_at: at('17:00'), category: 'C', status: 'confirmed' });
     expect(sheetOf(day)[K('ip-2', 17)].t).toBe('901119999/C Ali Mijoz');
+  });
+});
+
+describe('Excel bron — boshlanib ketgan soatga bron yo‘q', () => {
+  afterEach(() => { vi.useRealTimers(); });
+  const now = (hm: string) => { vi.useFakeTimers({ toFake: ['Date'] }); vi.setSystemTime(new Date(at(hm))); };
+
+  it('14:10 da 14:00 ga raqam — bron yaratilmaydi, katakda xato; 15:00 — bron bo‘ladi', async () => {
+    now('14:10');
+    admin = (await h.login('boss', 'admin1234')).cookie;
+    const r = await save({ [K('ip-1', 14)]: '901234567', [K('ip-2', 15)]: '907654321' });
+    expect(r.status).toBe(200);
+    expect(r.body.result.errors[0].error).toMatch(/14:00 boshlanib ketgan — bron yaratilmadi/);
+    expect(r.body.cells[K('ip-1', 14)]).toMatchObject({ k: 'note', e: expect.stringMatching(/kassada chek/) });
+    const a = active();
+    expect(a).toHaveLength(1);
+    expect(a[0]).toMatchObject({ instructor_id: 'ip-2', start_at: at('15:00') });
+  });
+
+  it('14:00 dagi bor bron: 14:10 da katak matni o‘zgarsa (o‘sha raqam) — bron joyida qoladi', async () => {
+    now('13:00');
+    admin = (await h.login('boss', 'admin1234')).cookie;
+    await save({ [K('ip-1', 14)]: '901234567' });
+    const b = active()[0];
+    expect(b.start_at).toBe(at('14:00'));
+    now('14:10');
+    admin = (await h.login('boss', 'admin1234')).cookie;
+    const r = await save({ [K('ip-1', 14)]: '901234567 Bekzod' });
+    expect(r.body.result.errors).toEqual([]);
+    expect(b.status).toBe('confirmed');
+    expect(r.body.cells[K('ip-1', 14)]).toMatchObject({ k: 'sheet', t: '901234567 Bekzod' });
+    expect(r.body.cells[K('ip-1', 14)].bk.id).toBe(String(b.id));
+  });
+
+  it('instruktor boti ham 14:05 da 14:00 ga bron qilmaydi', async () => {
+    now('14:05');
+    h.db.instructor_applications = h.db.instructor_applications || [];
+    h.db.instructor_applications.push({ telegram_user_id: INS_TG, status: 'APPROVED', first_name: 'Aziz' });
+    const before = h.telegram.length;
+    const d = new Date(at('14:00'));
+    const dd = `${String(new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Tashkent', day: '2-digit' }).format(d))}.${new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Tashkent', month: '2-digit' }).format(d)}`;
+    const r = await h.app.inject({
+      method: 'POST', url: '/api/telegram/instructor/webhook',
+      headers: { 'x-telegram-bot-api-secret-token': 'test-webhook-secret' },
+      payload: { update_id: 3, message: { message_id: 3, chat: { id: INS_TG, type: 'private' }, from: { id: INS_TG, first_name: 'Aziz' }, text: `${dd} 14:00 901234567` } },
+    });
+    expect(r.statusCode).toBe(200);
+    expect(h.telegram.slice(before).map((m) => m.text).join('\n')).toMatch(/14:00 boshlanib ketgan/);
+    expect(active()).toHaveLength(0);
   });
 });
