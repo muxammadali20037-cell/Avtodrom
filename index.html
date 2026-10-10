@@ -2077,6 +2077,13 @@ const catLong = o => !o ? '' : o.cat ? `${o.cat} — ${T(CAT_LONG[o.cat])}` : (o
 const stepsOf = () => B.mode === 'ins' ? ['cat', 'dur', 'ins', 'time', 'confirm'] : ['cat', 'dur', 'time', 'ins', 'confirm'];
 const selIns = () => S.instructors.find(i => String(i.id) === String(B.ins)) || null;
 const byRating = (a, b) => ((Number(b.rating) || 0) - (Number(a.rating) || 0)) || ((Number(b.total_reviews) || 0) - (Number(a.total_reviews) || 0));
+/* Bron qilishda broni KAM instruktor tepada — ish teng taqsimlansin.
+   Server har instruktorga kunlik bronlar sonini beradi (load: { sana: son }).
+   Vaqt tanlangan bo'lsa — o'sha kun (paketda — tanlangan kunlar yig'indisi),
+   kun hali tanlanmagan bo'lsa — bugundan 7 kun. Teng bo'lsa — reyting. */
+const loadOn = (i, days) => days.reduce((a, d) => a + (Number(i && i.load && i.load[d]) || 0), 0);
+const next7 = () => Array.from({ length: 7 }, (_, k) => addDays(ymd(), k));
+const byLoad = days => (a, b) => (loadOn(a, days) - loadOn(b, days)) || byRating(a, b);
 
 /** Yangi bronni boshlash. key — toifa oldindan tanlangan bo'lsa, ins — instruktor. */
 function startBook({ key = '', ins = '' } = {}) {
@@ -2384,7 +2391,8 @@ function insOpt(i) {
 }
 function stepIns() {
   if (B.mode === 'time') {
-    const free = (B.pkg ? pkgAllFree(catInstructors()) : freeFor(B.time)).sort(byRating);
+    const days = B.pkg ? B.pkg.s.filter(Boolean).map(x => x.date) : [B.date];
+    const free = (B.pkg ? pkgAllFree(catInstructors()) : freeFor(B.time)).sort(byLoad(days.length ? days : next7()));
     if (!free.length) return `<h1 class="wz-h">${T('Kim bilan haydaysiz?')}</h1>
       <div class="note warn">${T(B.pkg ? 'Tanlangan hamma kunlarda bo‘sh bitta instruktor topilmadi.' : 'Bu vaqtda bo‘sh instruktor qolmadi.')} <button class="link" data-act="wzjump" data-v="time">${T('Boshqa vaqtni tanlash')}</button></div>`;
     return `<h1 class="wz-h">${T('Kim bilan haydaysiz?')}</h1>
@@ -2394,7 +2402,7 @@ function stepIns() {
         ${free.map(insOpt).join('')}
       </div>`;
   }
-  const opt = curOpt(), list = catInstructors().sort(byRating);
+  const opt = curOpt(), list = catInstructors().sort(byLoad(next7()));
   return `<h1 class="wz-h">${T('Instruktorni tanlang')}</h1>
     <p class="wz-sub">${esc(opt.cat ? T('{c} toifa', { c: opt.cat }) : opt.title)} · ${N(list.length, '{n} ta instruktor. Keyin uning bo‘sh vaqtlari chiqadi.', ['{n} инструктор. Затем появится его свободное время.', '{n} инструктора. Затем появится свободное время выбранного.', '{n} инструкторов. Затем появится свободное время выбранного.'])}</p>
     <div class="opt-list">${list.map(insOpt).join('')}</div>
