@@ -38,8 +38,10 @@ const YMD = /^\d{4}-\d{2}-\d{2}$/;
 const iso = (ms: number) => new Date(ms).toISOString();
 const SHOWN = ['pending', 'confirmed', 'in_progress', 'completed', 'no_show'];
 const BUSY = ['pending', 'confirmed', 'in_progress'];
-/** Soat boshlanganidan keyin shuncha daqiqa ichida yozilgan raqam ham bron bo'ladi */
-const GRACE_MS = 10 * 60000;
+/* Boshlanib ketgan soatga bron YARATILMAYDI (ilgari 10 daqiqa ruxsat bor edi —
+   14:07 da yozilgan 14:00 bron 14:15 da o'zi «Kelmagan» bo'lib qolardi).
+   Mijoz kelgan bo'lsa — kassa hozirgi vaqtdan chek beradi. */
+const lateMsg = (h: number) => `${h}:00 boshlanib ketgan — bron yaratilmadi. Mijoz kelgan bo‘lsa — kassada chek bering.`;
 const fmtHm = (ms: number) => new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Tashkent', hour: '2-digit', minute: '2-digit' }).format(new Date(ms));
 const durOf = (b: any) => {
   const s = Date.parse(b.start_at), e = Date.parse(b.end_at);
@@ -291,6 +293,8 @@ export async function applySheetChanges(o: ApplyOpts): Promise<ApplyResult> {
   const toCancel = new Map<string, any>();
   const toCreate: (Run & { ins: string })[] = [];
   const matched: { run: Run; bid: string }[] = [];
+  /* boshlangan soat: o'sha raqamli bron qoladi (faqat matn o'zgardi) / yangi raqam — bron bo'lmaydi */
+  const startedKeep = new Set<string>(), late: string[] = [];
   const defCat = (ins: Ins) => (ins.categories.includes('B') ? 'B' : ins.categories[0] || 'B');
   for (const insId of new Set([...changed].map((k) => parseKey(k)!.ins))) {
     const ins = st.insMap.get(insId)!;
@@ -299,7 +303,15 @@ export async function applySheetChanges(o: ApplyOpts): Promise<ApplyResult> {
       const key = cellKey(insId, h);
       const c = work[key];
       if (!c?.t) continue;
-      if (hourStartMs(date, h) < now - GRACE_MS) continue;
+      if (hourStartMs(date, h) <= now) {
+        const ph = changed.has(key) ? parsePhone(c.t) : null;
+        if (ph) {
+          const old = c.b ? st.byId.get(c.b) : null;
+          if (old && old.status !== 'cancelled' && samePhone(st.users.get(String(old.customer_id))?.phone, ph)) startedKeep.add(key);
+          else late.push(key);
+        }
+        continue;
+      }
       if (cellInfo(st, insId, h).lock) continue;      // to'langan / boshlangan bron — chegara
       const phone = parsePhone(c.t);
       if (!phone) continue;
@@ -313,7 +325,7 @@ export async function applySheetChanges(o: ApplyOpts): Promise<ApplyResult> {
     });
     /* Tegilgan kataklar to'plami kengayadi: o'zgargan katak → uning bronining
        hamma kataklari → shu kataklardagi yangi bronlar → … (barqaror bo'lguncha) */
-    const T = new Set([...changed].filter((k) => parseKey(k)!.ins === insId));
+    const T = new Set([...changed].filter((k) => parseKey(k)!.ins === insId && !startedKeep.has(k)));
     for (let i = 0; i < 8; i++) {
       const before = T.size;
       for (const r of runs) if (r.keys.some((k) => T.has(k))) r.keys.forEach((k) => T.add(k));
@@ -338,6 +350,14 @@ export async function applySheetChanges(o: ApplyOpts): Promise<ApplyResult> {
   for (const { run, bid } of matched) {
     const b = st.byId.get(bid);
     for (const k of run.keys) if (work[k]) { work[k].b = bid; work[k].s = b.start_at; work[k].m = durOf(b); delete work[k].e; }
+  }
+
+  /* Boshlangan soatga yozilgan yangi raqam — bron emas, xato ko'rinsin (bot: katak yozilmaydi) */
+  for (const k of late) {
+    const msg = lateMsg(parseKey(k)!.h);
+    if (o.strict) work[k] = { t: '' };
+    else if (work[k]) { work[k].e = msg; delete work[k].b; delete work[k].s; delete work[k].m; }
+    errors.push({ key: k, error: msg });
   }
 
   /* 3. Eski bronlarni bekor qilish (to'lanmagan, boshlanmagan) */
@@ -449,6 +469,7 @@ export async function applySheetChanges(o: ApplyOpts): Promise<ApplyResult> {
 
   /* 5. Raqamsiz bo'lib qolgan kataklarda eski bron havolasi qolmasin */
   const runKeys = new Set(matched.flatMap((m) => m.run.keys));
+  for (const k of startedKeep) runKeys.add(k);                   // boshlangan soatdagi bron joyida qoladi
   for (const c of created) runKeys.add(c.key);
   for (const r of toCreate) for (const k of r.keys) if (work[k]?.b) runKeys.add(k);
   for (const k of changed) {

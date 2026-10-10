@@ -319,7 +319,7 @@ export async function handleInstructorSheetMessage(token: string, chatId: number
   for (const h of hours) {
     const c = day.cells.find((x) => x.h === h)!;
     if (c.end <= now) { await send(token, chatId, `⚠️ ${hText(h)} o‘tib ketgan.`); return true; }
-    if (h === cmd.h0 && c.start < now - 10 * 60000) {
+    if (h === cmd.h0 && c.start <= now) {             // boshlangan soatga bron yo'q (14:10 da 14:00 ga — kassa chek beradi)
       await send(token, chatId, `⚠️ ${hText(h)} boshlanib ketgan — bu bronni kassa chek bilan rasmiylashtiradi.`);
       return true;
     }
