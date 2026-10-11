@@ -702,6 +702,40 @@ button.tr:active{background:var(--card-2)}
 .composer textarea{flex:1;border:0;outline:0;resize:none;min-height:44px;max-height:140px;padding:11px 10px;font-size:16px;background:transparent}
 .composer .send{width:46px;height:46px;border-radius:15px;background:var(--accent);color:#fff;display:grid;place-items:center;flex:none}
 @media (min-width:960px){.composer{left:var(--rail);bottom:0}}
+.msg.bot{background:var(--card-2);color:var(--text);box-shadow:inset 0 0 0 1.5px var(--accent-soft)}
+.msg .who{display:block;font-size:11.5px;font-weight:800;color:var(--accent);margin-bottom:3px;letter-spacing:.02em}
+.msg.wait{box-shadow:inset 0 0 0 2px var(--warn),var(--shadow)}
+.msg.wait .who{color:var(--warn)}
+.msgs.learn{padding-bottom:128px}
+.ch-learn{max-width:736px;margin:0 auto 6px;display:flex;align-items:center;gap:8px;font-size:13.5px;font-weight:650;color:var(--hint);padding:0 6px;cursor:pointer;user-select:none}
+.ch-learn input{width:19px;height:19px;accent-color:var(--accent);flex:none;margin:0}
+.ch-learn.on{color:var(--accent)}
+@media (min-width:960px){.ch-learn{max-width:1156px}}
+.bot-card{display:flex;align-items:center;gap:12px;width:100%;padding:14px 16px;border-radius:18px;background:var(--card);box-shadow:var(--shadow);text-align:left;margin-bottom:12px}
+.bot-card .ic{width:44px;height:44px;border-radius:13px;display:grid;place-items:center;background:var(--accent-soft);font-size:22px;flex:none}
+.bot-card .tx{flex:1;min-width:0}.bot-card .tx b{display:block;font-size:15.5px}.bot-card .tx small{display:block;color:var(--hint);font-size:13px}
+.bot-card.off .ic{background:var(--card-2);filter:grayscale(1)}
+.bt-out{margin-top:10px;padding:12px 14px;border-radius:14px;background:var(--card-2);font-size:14px;line-height:1.45;white-space:pre-wrap;word-wrap:break-word}
+.bt-out .who{display:block;font-size:11.5px;font-weight:800;margin-bottom:4px;color:var(--accent)}
+.bt-out.esc .who{color:var(--warn)}
+.kb-it{padding:12px 14px;border-radius:14px;background:var(--card-2);margin-bottom:8px}
+.kb-it.off{opacity:.55}
+.kb-it .q{font-weight:750;font-size:14.5px;word-wrap:break-word}
+.kb-it .q small{font-weight:600;color:var(--hint)}
+.kb-it .a{color:var(--hint);font-size:13.5px;margin-top:4px;white-space:pre-wrap;word-wrap:break-word;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.kb-it .ft{display:flex;align-items:center;gap:8px;margin-top:8px}
+.kb-it .ft small{flex:1;min-width:0;color:var(--hint);font-size:12px}
+.kb-it .ft button{min-height:34px;padding:0 12px;border-radius:10px;background:var(--card);font-weight:700;font-size:13px}
+.kb-it .ft .sw{transform:scale(.8);transform-origin:right center;background:var(--line);padding:0;min-height:0;border-radius:16px}
+.kb-it .ft .sw.on{background:#16a34a}
+.tp-it{border-radius:14px;background:var(--card-2);margin-bottom:8px;overflow:hidden}
+.tp-it summary{list-style:none;cursor:pointer;padding:12px 14px;display:flex;align-items:center;gap:8px}
+.tp-it summary::-webkit-details-marker{display:none}
+.tp-it summary b{flex:1;min-width:0;font-size:14.5px}
+.tp-it summary svg{flex:none;color:var(--hint);transition:transform .15s}.tp-it[open] summary svg{transform:rotate(90deg)}
+.tp-it summary small{display:block;color:var(--hint);font-weight:600;font-size:12px}
+.tp-it .pv{padding:0 14px 12px;font-size:13.5px;line-height:1.45;white-space:pre-wrap;word-wrap:break-word;color:var(--text)}
+.kb-form textarea{min-height:96px}
 
 /* ---------- pastdan chiquvchi oyna ---------- */
 .sheet-bg{position:fixed;inset:0;z-index:80;background:rgba(0,0,0,.45);opacity:0;transition:opacity .2s;pointer-events:none}
@@ -5720,23 +5754,48 @@ ACT.cxno = async el => {
 /* =========================================================================
    MIJOZLAR CHATI
    ========================================================================= */
-const CH = { threads: null, msgs: null, seq: 0, sending: false };
+const CH = { threads: null, msgs: null, seq: 0, sending: false, bot: null };
+const BOT_P = '🤖 ';
+const isBotMsg = m => m?.sender === 'admin' && String(m.body || '').startsWith(BOT_P);
+/** Bot mijozga «adminga yubordim» degan javob (savol odamni kutyapti) */
+const botHeld = m => isBotMsg(m) && /adminga (ham )?yubordim|передан|передал/i.test(m.body);
+/** Oxirgi (odam) admin javobidan keyingi mijoz savollari: { pend — hammasi, wait — javobsiz qolganlar } */
+function chPending(msgs){
+  let i = msgs.length - 1;
+  while (i >= 0 && !(msgs[i].sender === 'admin' && !isBotMsg(msgs[i]))) i--;
+  const tail = msgs.slice(i + 1), wait = new Set();
+  let q = [];
+  for (const m of tail) {
+    if (m.sender !== 'admin') { q.push(m.id); continue; }
+    if (botHeld(m)) q.forEach(x => wait.add(x));
+    q = [];
+  }
+  q.forEach(x => wait.add(x));
+  return { pend: tail.filter(m => m.sender !== 'admin').length, wait };
+}
 function vChat(uid){
   if (!uid) {
-    $('view').innerHTML = `<div class="view"><div id="chList">${skel(4)}</div></div>`;
-    loadThreads(); return;
+    $('view').innerHTML = `<div class="view"><div id="chBot">${botCard()}</div><div id="chList">${skel(4)}</div></div>`;
+    loadThreads(); loadBot(); return;
   }
   const t = (CH.threads || []).find(x => String(x.user_id) === uid);
   $('tbTitle').textContent = t?.user?.full_name || 'Mijoz';
   $('tbSub').textContent = t?.user?.phone || 'Mijozlar chati';
   $('view').innerHTML = `<div class="view"><div class="msgs" id="chMsgs"><div class="sk"></div></div></div>
-    <div class="composer"><div class="composer-in"><textarea id="chIn" rows="1" placeholder="Javob yozing…"></textarea>
+    <div class="composer"><label class="ch-learn hidden" id="chKbL"><input type="checkbox" id="chKb"> <span>🤖 Avto-javobga o‘rgatish <small style="font-weight:600">— keyingi safar shu savolga bot o‘zi javob beradi</small></span></label>
+      <div class="composer-in"><textarea id="chIn" rows="1" placeholder="Javob yozing…"></textarea>
       <button class="send" data-act="chsend" aria-label="Yuborish">${I('send', 20, 2.2)}</button></div></div>`;
   const inp = $('chIn');
   inp.addEventListener('input', () => { inp.style.height = 'auto'; inp.style.height = Math.min(140, inp.scrollHeight) + 'px'; });
   inp.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey && window.matchMedia('(min-width: 960px)').matches) { e.preventDefault(); ACT.chsend(); } });
+  $('chKb').onchange = e => $('chKbL').classList.toggle('on', e.target.checked);
   CH.msgs = null; loadMsgs(uid);
   if (!CH.threads) loadThreads(true);
+}
+function lastText(m){
+  if (!m) return '';
+  const b = String(m.body || '');
+  return (isBotMsg(m) ? '🤖 Bot: ' + b.slice(BOT_P.length) : (m.sender === 'admin' ? 'Siz: ' : '') + b).slice(0, 90);
 }
 async function loadThreads(quiet){
   try{
@@ -5744,10 +5803,10 @@ async function loadThreads(quiet){
     CH.threads = d.threads || [];
     S.counts.chat = CH.threads.reduce((a, t) => a + (Number(t.unread) || 0), 0); paintNav();
     const box = $('chList'); if (!box) return;
-    if (!CH.threads.length) { box.innerHTML = emptyHtml('chat', 'Xabar yo‘q', 'Mijozlar ilovadan yozsa — shu yerda chiqadi.'); return; }
+    if (!CH.threads.length) { box.innerHTML = emptyHtml('chat', 'Xabar yo‘q', 'Mijozlar ilovadan yoki botdan yozsa — shu yerda chiqadi.'); return; }
     box.innerHTML = `<div class="list">${CH.threads.map(t => `<button class="row" data-go="chat/${esc(t.user_id)}"><span class="ava">${esc(ini(t.user?.full_name))}</span>
-      <span class="tx"><b>${esc(t.user?.full_name || 'Mijoz')}</b><small>${t.last?.sender === 'admin' ? 'Siz: ' : ''}${esc(String(t.last?.body || '').slice(0, 90))}</small></span>
-      <span class="rt"><small style="margin:0 0 4px">${esc(whenText(t.last?.created_at))}</small>${t.unread ? `<span class="pill bad">${t.unread}</span>` : ''}</span></button>`).join('')}</div>`;
+      <span class="tx"><b>${esc(t.user?.full_name || 'Mijoz')}</b><small>${esc(lastText(t.last))}</small></span>
+      <span class="rt"><small style="margin:0 0 4px">${esc(whenText(t.last?.created_at))}</small>${t.unread ? `<span class="pill bad" title="Javobsiz savol">${t.unread}</span>` : ''}</span></button>`).join('')}</div>`;
   }catch(e){ if (!quiet && $('chList')) $('chList').innerHTML = `<div class="note err">${esc(e.message)}</div>`; }
 }
 async function loadMsgs(uid){
@@ -5759,8 +5818,18 @@ async function loadMsgs(uid){
     const atBottom = window.innerHeight + window.scrollY >= document.body.scrollHeight - 80;
     const was = CH.msgs?.length || 0;
     CH.msgs = d.messages || [];
-    box.innerHTML = CH.msgs.length ? CH.msgs.map(m => `<div class="msg ${m.sender === 'admin' ? 'out' : 'in'}">${esc(m.body)}<small>${esc(whenText(m.created_at))}</small></div>`).join('')
-      : emptyHtml('chat', 'Yozishma yo‘q', 'Birinchi xabarni yozing.');
+    const { pend, wait } = chPending(CH.msgs);
+    box.innerHTML = CH.msgs.length ? CH.msgs.map(m => {
+      if (isBotMsg(m)) return `<div class="msg out bot"><span class="who">🤖 Avto-javob</span>${esc(m.body.slice(BOT_P.length))}<small>${esc(whenText(m.created_at))}</small></div>`;
+      const w = m.sender !== 'admin' && wait.has(m.id);
+      return `<div class="msg ${m.sender === 'admin' ? 'out' : 'in'}${w ? ' wait' : ''}">${w ? '<span class="who">❓ Javobingizni kutyapti</span>' : ''}${esc(m.body)}<small>${esc(whenText(m.created_at))}</small></div>`;
+    }).join('') : emptyHtml('chat', 'Yozishma yo‘q', 'Birinchi xabarni yozing.');
+    const lb = $('chKbL');
+    if (lb) {
+      lb.classList.toggle('hidden', !pend);
+      if (!pend && $('chKb')) { $('chKb').checked = false; lb.classList.remove('on'); }
+    }
+    box.classList.toggle('learn', !!pend);
     if (!was || atBottom || CH.msgs.length > was) window.scrollTo(0, document.body.scrollHeight);
     refreshCounts();
   }catch(e){ if ($('chMsgs') && !CH.msgs) $('chMsgs').innerHTML = `<div class="note err">${esc(e.message)}</div>`; }
@@ -5769,10 +5838,137 @@ function chatLive(uid){ if (uid) loadMsgs(uid); else loadThreads(true); }
 ACT.chsend = async () => {
   const uid = S.routeArg, inp = $('chIn'); if (!uid || !inp || CH.sending) return;
   const body = inp.value.trim(); if (!body) return;
+  const kb = !!$('chKb')?.checked && !$('chKbL')?.classList.contains('hidden');
   CH.sending = true;
-  try { await post(`/api/admin/support/${encodeURIComponent(uid)}/reply`, { body }); inp.value = ''; inp.style.height = 'auto'; await loadMsgs(uid); }
+  try {
+    const r = await post(`/api/admin/support/${encodeURIComponent(uid)}/reply`, { body, save_kb: kb });
+    inp.value = ''; inp.style.height = 'auto';
+    if ($('chKb')) { $('chKb').checked = false; $('chKbL')?.classList.remove('on'); }
+    if (kb && r.learned) {
+      toast('🤖 O‘rgatildi — endi bot shunga o‘xshash savolga o‘zi javob beradi');
+      if (CH.bot) CH.bot.kb = [...(CH.bot.kb || []), r.learned];
+    } else if (kb) toast('Yuborildi. O‘rgatish uchun savol topilmadi', true);
+    await loadMsgs(uid);
+  }
   catch (e) { fail(e); }
   finally { CH.sending = false; inp.focus(); }
+};
+
+/* ---------- 🤖 Avto-javob: sozlash, sinash, o'rgatilgan javoblar ---------- */
+const BT = { open: false, edit: null, q: '', res: null, busy: false };
+function botCard(){
+  const d = CH.bot; if (!d) return '';
+  const n = (d.kb || []).filter(k => k.on !== false).length;
+  return `<button class="bot-card ${d.on ? '' : 'off'}" data-act="botset"><span class="ic">🤖</span>
+    <span class="tx"><b>Avto-javob · ${d.on ? 'yoqilgan' : 'o‘chirilgan'}</b><small>${d.on ? `Bot savollarga darhol javob beradi · ${n} ta o‘rgatilgan javob` : 'Hamma savol faqat sizga keladi'}</small></span>${I('chev')}</button>`;
+}
+const paintBotCard = () => { const b = $('chBot'); if (b) b.innerHTML = botCard(); };
+async function loadBot(){
+  try { const d = await api('/api/admin/support-bot'); CH.bot = { on: d.on !== false, kb: d.kb || [], topics: d.topics || [] }; paintBotCard(); if (BT.open && sheetOpen()) btPaint(); }
+  catch { /* jim: chat ro‘yxati baribir ishlaydi */ }
+}
+function btShow(html){
+  const sh = $('sheet');
+  if (BT.open && sheetOpen()) { const y = sh.scrollTop; openSheet(html, btClose); sh.scrollTop = y; }
+  else { BT.open = true; openSheet(html, btClose); }
+}
+function btClose(){ BT.open = false; BT.edit = null; }
+const topicTitle = id => CH.bot?.topics?.find(t => t.id === id)?.title || id;
+function btRes(){
+  const r = BT.res; if (!r) return '';
+  const head = r.kind === 'unknown' ? '❓ Javob topilmadi — mijozga «adminga yubordim» deydi, sizga xabar keladi'
+    : r.kind === 'kb' ? '🤖 O‘rgatilgan javob'
+    : r.kind === 'ack' ? '👌 Javob kerak emas (ok / tushunarli)'
+    : r.kind === 'greet' ? '👋 Salomlashish' : r.kind === 'thanks' ? '🙏 Rahmat'
+    : '🤖 ' + (r.topics || []).map(topicTitle).join(' + ');
+  return `<div class="bt-out ${r.escalate ? 'esc' : ''}"><span class="who">${esc(head)}${r.escalate && r.kind !== 'unknown' ? ' · adminga ham boradi' : ''}</span>${esc(r.text || '')}</div>
+    ${r.kind === 'unknown' ? `<button class="btn btn-soft btn-sm" data-act="botkbed" data-i="new" data-q="${esc(BT.q)}" style="margin-top:8px">${I('plus', 16, 2.4)} Shu savolga javob o‘rgatish</button>` : ''}`;
+}
+function btPaint(){
+  const d = CH.bot; if (!d) return;
+  const kb = d.kb || [];
+  if (BT.edit != null) {
+    const it = BT.edit === 'new' ? { q: BT.newQ ? [BT.newQ] : [], a: '' } : kb[BT.edit] || { q: [], a: '' };
+    btShow(`<h3>${BT.edit === 'new' ? 'Yangi savol-javob' : 'Javobni tahrirlash'}</h3>
+      <p class="lead">Mijoz shunga o‘xshash savol yozsa, bot shu javobni beradi. Har qatorga savolning bitta varianti (lotin yoki kirill — farqi yo‘q).</p>
+      <div class="kb-form"><div class="xm-l">Savollar</div>
+      <textarea class="input" id="kbQ" rows="4" placeholder="Prava qachon beriladi?&#10;Guvohnomani qachon olaman?">${esc(it.q.join('\n'))}</textarea>
+      <div class="xm-l">Javob</div>
+      <textarea class="input" id="kbA" rows="6" maxlength="2000" placeholder="Mijozga boradigan javob matni">${esc(it.a)}</textarea></div>
+      <div class="btn-row" style="margin-top:14px"><button class="btn btn-soft" data-act="botkbx">Ortga</button><button class="btn btn-primary" data-act="botkbsave">${I('check', 18, 2.4)} Saqlash</button></div>`);
+    setTimeout(() => $(it.q.length ? 'kbA' : 'kbQ')?.focus(), 250);
+    return;
+  }
+  const tp = d.topics || [];
+  btShow(`<h3>🤖 Avto-javob</h3>
+    <p class="lead">Mijoz Mini App yoki Telegram botga yozsa — bot darhol javob beradi (o‘zbekcha yoki ruscha). Javobini bilmasa, mijozga «adminga yubordim» deydi, savol <b>Mijozlar chati</b>da o‘qilmagan bo‘lib turadi va admin botga «❓ Javobsiz savol» keladi.</p>
+    <button class="opt" data-act="bottog" ${BT.busy ? 'disabled' : ''}><span class="tx"><b>${d.on ? 'Yoqilgan' : 'O‘chirilgan'}</b><small>${d.on ? 'Bot savollarga o‘zi javob beradi' : 'Bot jim — hamma savol faqat sizga keladi'}</small></span><span class="sw ${d.on ? 'on' : ''}"></span></button>
+    <div class="xm-l">Sinab ko‘ring <small>— mijoz shunday yozsa, bot nima deydi</small></div>
+    <div class="tg-add"><input class="input" id="btQ" placeholder="Masalan: narxi qancha?" value="${esc(BT.q)}" maxlength="500"><button class="btn btn-soft btn-sm" data-act="bottest">Sinash</button></div>
+    ${btRes()}
+    <div class="xm-l">O‘rgatilgan javoblar <small>(${kb.length})</small></div>
+    ${kb.length ? kb.map((k, i) => `<div class="kb-it ${k.on === false ? 'off' : ''}"><div class="q">${esc(k.q[0] || '')}${k.q.length > 1 ? ` <small>+${k.q.length - 1} variant</small>` : ''}</div>
+      <div class="a">${esc(k.a)}</div>
+      <div class="ft"><small>${esc([k.by, k.at ? whenText(k.at) : ''].filter(Boolean).join(' · '))}</small>
+        <button data-act="botkbed" data-i="${i}">Tahrirlash</button><button data-act="botkbdel" data-i="${i}">O‘chirish</button>
+        <button class="sw ${k.on === false ? '' : 'on'}" data-act="botkbon" data-i="${i}" aria-label="${k.on === false ? 'Yoqish' : 'O‘chirish'}" title="${k.on === false ? 'O‘chirilgan' : 'Ishlayapti'}"></button></div></div>`).join('')
+      : '<p class="muted" style="font-size:13.5px;margin:0 2px 8px">Hali yo‘q. Chatda javob yozayotganda «🤖 Avto-javobga o‘rgatish» belgisini qo‘ying — o‘sha savol-javob shu yerga tushadi. Yoki pastdan qo‘shing.</p>'}
+    <button class="btn btn-soft" data-act="botkbed" data-i="new">${I('plus', 18, 2.4)} Yangi savol-javob</button>
+    <div class="xm-l">Tayyor mavzular <small>— javoblar Sozlamalardagi narx, ish vaqti, manzil, telefondan olinadi</small></div>
+    ${tp.map(t => `<details class="tp-it"><summary><b>${esc(t.title)}<small>${esc(t.keywords)}</small></b>${t.escalate ? '<span class="pill warn">adminga</span>' : t.preview || t.id === 'my_booking' ? '' : '<span class="pill warn">ma’lumot yo‘q</span>'}${I('chev', 16)}</summary>
+      <div class="pv">${esc(t.id === 'my_booking' ? 'Mijozning yaqin bronlari: kun, soat, instruktor va bron kodi.' : t.preview || (t.escalate ? 'Savol adminga yuboriladi.' : 'Sozlamalarda bu ma’lumot kiritilmagan — savol adminga yuboriladi.'))}</div></details>`).join('')}`);
+  const q = $('btQ'); if (q) q.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); ACT.bottest(); } });
+}
+ACT.botset = async el => {
+  BT.edit = null; BT.res = null;
+  if (!CH.bot) { busyBtn(el, true); await loadBot(); busyBtn(el, false); if (!CH.bot) return toast('Avto-javob sozlamalari yuklanmadi', true); }
+  btPaint(); loadBot();
+};
+async function btSave(body, okMsg){
+  BT.busy = true;
+  try {
+    const d = await post('/api/admin/support-bot', body, 'PUT');
+    CH.bot = { ...CH.bot, on: d.on !== false, kb: d.kb || [] };
+    if (okMsg) toast(okMsg);
+    return true;
+  } catch (e) { fail(e); return false; }
+  finally { BT.busy = false; paintBotCard(); if (BT.open && sheetOpen()) btPaint(); }
+}
+ACT.bottog = () => { if (BT.busy || !CH.bot) return; const on = !CH.bot.on; btSave({ on }, on ? 'Avto-javob yoqildi' : 'Avto-javob o‘chirildi — savollar faqat sizga keladi'); };
+ACT.bottest = async el => {
+  const q = $('btQ')?.value.trim(); if (!q) return $('btQ')?.focus();
+  BT.q = q; busyBtn(el || document.querySelector('[data-act="bottest"]'), true);
+  try { BT.res = await post('/api/admin/support-bot-test', { text: q }); }
+  catch (e) { fail(e); }
+  btPaint();
+};
+ACT.botkbed = el => { const i = el.dataset.i; BT.edit = i === 'new' ? 'new' : Number(i); BT.newQ = el.dataset.q || ''; btPaint(); };
+ACT.botkbx = () => { BT.edit = null; btPaint(); };
+ACT.botkbsave = async el => {
+  const q = String($('kbQ')?.value || '').split('\n').map(x => x.trim()).filter(Boolean).slice(0, 10);
+  const a = String($('kbA')?.value || '').trim();
+  if (!q.length) return toast('Kamida bitta savol yozing', true);
+  if (!a) return toast('Javob matnini yozing', true);
+  const kb = [...(CH.bot.kb || [])];
+  if (BT.edit === 'new') kb.push({ q, a, on: true });
+  else kb[BT.edit] = { ...kb[BT.edit], q, a };
+  busyBtn(el, true);
+  const ok = await btSave({ kb }, 'Saqlandi — bot endi shu javobni beradi');
+  if (ok) { BT.edit = null; BT.res = null; btPaint(); } else busyBtn(el, false);
+};
+ACT.botkbon = el => {
+  const i = Number(el.dataset.i), kb = [...(CH.bot?.kb || [])]; if (!kb[i] || BT.busy) return;
+  kb[i] = { ...kb[i], on: kb[i].on === false };
+  btSave({ kb }, kb[i].on ? 'Javob yoqildi' : 'Javob o‘chirildi');
+};
+ACT.botkbdel = el => {
+  if (el.dataset.sure !== '1') {
+    el.dataset.sure = '1'; el.textContent = 'Rostdanmi?'; el.style.color = 'var(--danger)';
+    setTimeout(() => { if (el.isConnected) { el.dataset.sure = ''; el.textContent = 'O‘chirish'; el.style.color = ''; } }, 3000);
+    return;
+  }
+  const i = Number(el.dataset.i), kb = (CH.bot?.kb || []).filter((_, j) => j !== i);
+  btSave({ kb }, 'O‘chirildi');
 };
 
 /* =========================================================================
