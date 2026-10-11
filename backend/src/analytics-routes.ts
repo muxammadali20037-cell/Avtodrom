@@ -78,6 +78,11 @@ export function rangeFromQuery(query: any, fallbackPeriod = 'day') {
   return { ...periodRange(period, query?.date), period, fromYmd: '', toYmd: '', days: 0 };
 }
 
+/** analytics_report SQL funksiyasi — «Analitika» (birlashgan) sahifasi ham shuni ishlatadi. */
+export async function analyticsReport(from: Date, to: Date, bucket: string) {
+  return report(from, to, bucket);
+}
+
 async function report(from: Date, to: Date, bucket: string) {
   const res = await supabaseRest<any>('rpc/analytics_report', {
     method: 'POST',

@@ -17,6 +17,7 @@ import { registerSupportRoutes } from './support-routes.js';
 import { runRemindersNow, handleReminderCallback } from './reminders.js';
 import { registerCashierRoutes } from './cashier-routes.js';
 import { registerAnalyticsRoutes } from './analytics-routes.js';
+import { registerUnifiedAnalyticsRoutes } from './unified-analytics.js';
 import { registerShiftRoutes } from './shift-routes.js';
 import { registerMediaRoutes } from './media-routes.js';
 import { registerAdminBotRoutes, sendAdminChatInfo } from './admin-bot-routes.js';
@@ -131,6 +132,8 @@ await registerCashierRoutes(app, requireAdmin, adminUser, audit, authenticateIns
    menyusida ham bor va uning kundalik ishi — unga requireAdmin
    (har qanday kirgan xodim) beriladi. */
 await registerAnalyticsRoutes(app, guardAdmin, requireAdmin);
+/* Birlashgan analitika (Avtodrom + avtodrom12) — /analytics sahifasi, faqat administrator */
+await registerUnifiedAnalyticsRoutes(app, guardAdmin);
 await registerShiftRoutes(app, requireAdmin, adminUser, audit);
 /* Instruktorlar ish grafigi — faqat administrator */
 await registerScheduleRoutes(app, guardAdmin, adminUser, audit);

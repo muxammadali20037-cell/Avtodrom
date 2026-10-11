@@ -139,3 +139,12 @@ Frontend visibility is not authorization. Every protected operation must be chec
 ## Development
 
 Frontend can be deployed as a static site. The API/database must run on a server platform; GitHub Pages is not the backend.
+
+## Analitika — Avtodrom + Avtodrom12 bitta panelda
+
+`/analytics` (admin panel → *Analitika · 2 loyiha*) — faqat administrator. Ikkala loyihadagi tushum, darslar/sessiyalar, avtoshkola darslari, soatlar bo'yicha yuklama, hafta × soat xaritasi, instruktorlar, avtoshkolalar, QR cheklar, jonli holat (kim hozir darsda / maydonda) va **amallar lentasi** (kim, qachon, nima qildi) — bitta sahifada, Toshkent vaqti bilan. Har 20 soniyada yangilanadi, *Excel (CSV)* ga yuklab olinadi.
+
+- API: `GET /api/admin/unified-analytics?from=YYYY-MM-DD&to=YYYY-MM-DD` (`backend/src/unified-analytics.ts`).
+- Avtodrom raqamlari mavjud hisobotlar bilan bir xil: tushum va bronlar — `analytics_report`, darslar — urilgan chek daftari (`lesson-ledger.ts`).
+- Avtodrom12 ma'lumoti server tomonida olinadi: `GET <AVTODROM12_URL>/api/bridge/analytics` (`X-Receipt-Key`). Sozlama QR chek ko'prigi bilan **bir xil** — `AVTODROM12_URL` va `RECEIPT_SHARED_KEY`; yangi o'zgaruvchi kerak emas.
+- Avtodrom12 javob bermasa ham Avtodrom qismi chiqadi, sahifa tepasida sababi va nima qilish kerakligi yoziladi.

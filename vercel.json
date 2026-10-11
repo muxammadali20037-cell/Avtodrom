@@ -95,6 +95,14 @@
       "destination": "/admin/full.html"
     },
     {
+      "source": "/analytics",
+      "destination": "/analytics/index.html"
+    },
+    {
+      "source": "/analytics/",
+      "destination": "/analytics/index.html"
+    },
+    {
       "source": "/instructor",
       "destination": "/instructor/index.html"
     },

@@ -1476,7 +1476,7 @@ function sideDef(){
     ['bookings/new', 'Yangi bronlar', 'bell', 'pending'], ['bookings/cancels', 'Bekor so‘rovlari', 'ban', 'cancels'], ['bookings/all', 'Barcha bronlar', 'list'],
     ['xbron', 'Excel bron', 'sheet'], ['manual', 'Qo‘lda bron', 'phone'], ['schedule', 'Instruktorlar jadvali', 'cal'], ['chat', 'Mijozlar chati', 'chat', 'chat']] });
   if (isAdmin()) G.push({ title: 'Boshqaruv', items: [
-    ['analytics', 'Hisobot va tahlil', 'chart'], ['insrep', 'Instruktorlar hisoboti', 'steer'], ['retention', 'O‘quvchini qaytarish', 'refresh'], ['instructors', 'Instruktorlar', 'users', 'apps'], ['grafik', 'Ish grafigi', 'clock'], ['prices', 'Narxlar va ish vaqti', 'tag'],
+    ['analytics', 'Hisobot va tahlil', 'chart'], ['!/analytics', 'Analitika · 2 loyiha', 'chart'], ['insrep', 'Instruktorlar hisoboti', 'steer'], ['retention', 'O‘quvchini qaytarish', 'refresh'], ['instructors', 'Instruktorlar', 'users', 'apps'], ['grafik', 'Ish grafigi', 'clock'], ['prices', 'Narxlar va ish vaqti', 'tag'],
     ['staff', 'Xodimlar', 'key'], ['!/admin/full', 'Kengaytirilgan panel', 'ext']] });
   return G;
 }
@@ -1777,6 +1777,7 @@ function vHome(){
     </div>
     <div class="sec-h" style="margin-top:22px"><h2>Boshqaruv</h2></div><div class="tiles">
       ${tile('analytics', 'chart', 'Hisobot', 'tushum, bronlar, istalgan davr', { cls: 'o' })}
+      ${tile('', 'chart', 'Analitika', 'Avtodrom + Avtodrom12, jonli', { cls: 'b', href: '/analytics' })}
       ${tile('insrep', 'steer', 'Instruktorlar hisoboti', 'o‘quvchilar, avtoshkola, pullik')}
       ${tile('retention', 'refresh', 'O‘quvchini qaytarish', 'kim jalb qildi, kim qaytardi', { cls: 'g' })}
       ${tile('instructors', 'users', 'Instruktorlar', 'faol / o‘chirilgan, arizalar', { id: 'apps' })}
