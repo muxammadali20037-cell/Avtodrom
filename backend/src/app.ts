@@ -167,6 +167,11 @@ async function handleTelegramWebhook(request: any, reply: any, token: string, mi
   const chatId = Number(message?.chat?.id);
   const isStart = /^\/start(?:@\w+)?(?:\s.*)?$/i.test(text);
   if (Number.isSafeInteger(chatId) && chatId > 0 && isStart) await sendMiniAppStart(token, chatId, miniAppUrl, role);
+  /* Mijoz botiga oddiy savol yozilsa — avto-javob (topilmasa adminga), yozishma admin chatida */
+  else if (role === 'customer' && Number.isSafeInteger(chatId) && chatId > 0 && text && !text.startsWith('/') && Number(message?.from?.id) === chatId) {
+    try { const { handleBotQuestion } = await import('./support-routes.js'); await handleBotQuestion(message.from, chatId, text); }
+    catch (e) { request.log.error({ err: e }, 'customer bot question failed'); }
+  }
   /* Admin bot: /start yoki /id — chat ID ni aytadi, uni panelda
      «Admin bot — yangi bron xabarlari» ga qo'shish mumkin (guruh ham). */
   if (role === 'admin' && Number.isSafeInteger(chatId) && chatId !== 0 && (isStart || /^\/id(?:@\w+)?$/i.test(text))) {
