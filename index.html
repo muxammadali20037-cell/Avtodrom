@@ -971,8 +971,12 @@ const RU = /*RU*/{
   "Instruktor haqida bir-ikki so‘z…": "Пару слов об инструкторе…",
   "Rahmat! Bahoyingiz yuborildi": "Спасибо! Ваша оценка отправлена",
   "Yordam markazi · admin tez javob beradi": "Центр помощи · администратор быстро ответит",
+  "Yordam markazi · darhol javob, kerak bo‘lsa admin": "Центр помощи · ответ сразу, при необходимости — администратор",
   "Savolingiz bormi?": "Есть вопрос?",
   "Yozing — admin shu yerda javob beradi va Telegram’ga xabar keladi.": "Напишите — администратор ответит здесь, и вам придёт сообщение в Telegram.",
+  "Yozing — ko‘p savollarga darhol javob beraman. Bilmasam, adminga yuboraman: u shu yerda javob beradi va Telegram’ga xabar keladi.": "Напишите — на многие вопросы отвечу сразу. Если не знаю — передам администратору: он ответит здесь, и придёт сообщение в Telegram.",
+  "Ish vaqti qanaqa?": "Какое время работы?",
+  "Mening bronim va kodim": "Моя бронь и код",
   "Narxlar haqida savolim bor": "У меня вопрос о ценах",
   "Bronimni boshqa vaqtga o‘tkazmoqchiman": "Хочу перенести бронь на другое время",
   "Manzilni qanday topaman?": "Как найти адрес?",
@@ -2730,17 +2734,17 @@ async function doReview(id, btn) {
    YORDAM — admin bilan yozishma
    ========================================================================= */
 let chatTimer = 0;
-const QUICK = ['Narxlar haqida savolim bor', 'Bronimni boshqa vaqtga o‘tkazmoqchiman', 'Manzilni qanday topaman?', 'Guvohnoma olish uchun nima kerak?'];
+const QUICK = ['Narxlar haqida savolim bor', 'Ish vaqti qanaqa?', 'Manzilni qanday topaman?', 'Mening bronim va kodim', 'Bronimni boshqa vaqtga o‘tkazmoqchiman', 'Guvohnoma olish uchun nima kerak?'];
 function renderSupport() {
   $('#main').innerHTML = `
-    <div class="chat-h">${logoImg()}<div><b>TASH INDEX AVTODROM</b><small>${T('Yordam markazi · admin tez javob beradi')}</small></div></div>
+    <div class="chat-h">${logoImg()}<div><b>TASH INDEX AVTODROM</b><small>${T('Yordam markazi · darhol javob, kerak bo‘lsa admin')}</small></div></div>
     <div class="msgs" id="msgs">${chatHtml()}</div>`;
   scrollChat();
 }
 function chatHtml() {
   if (!S.msgsLoaded) return `<div class="sk" style="min-height:44px;width:60%"></div><div class="sk" style="min-height:44px;width:45%;align-self:flex-end"></div>`;
   if (!S.msgs.length) return `<div class="card" style="text-align:center;padding:20px 16px">
-      <b>${T('Savolingiz bormi?')}</b><p class="muted" style="margin:6px 0 12px;font-size:14px">${T('Yozing — admin shu yerda javob beradi va Telegram’ga xabar keladi.')}</p>
+      <b>${T('Savolingiz bormi?')}</b><p class="muted" style="margin:6px 0 12px;font-size:14px">${T('Yozing — ko‘p savollarga darhol javob beraman. Bilmasam, adminga yuboraman: u shu yerda javob beradi va Telegram’ga xabar keladi.')}</p>
       <div class="quick" style="justify-content:center">${QUICK.map(q => `<button data-act="quick" data-v="${esc(T(q))}">${esc(T(q))}</button>`).join('')}</div></div>`;
   let last = '', out = '';
   for (const m of S.msgs) {
@@ -2780,6 +2784,8 @@ async function sendChat(text) {
   try {
     const r = await api.send(text);
     Object.assign(tmp, r.message || {}, { _sending: false });
+    /* avtomatik javob (🤖) — darhol ko'rinadi */
+    if (r.reply && r.reply.body) S.msgs.push(r.reply);
     haptic.tap();
   } catch (e) {
     S.msgs = S.msgs.filter(m => m !== tmp);
