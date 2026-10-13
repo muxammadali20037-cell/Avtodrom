@@ -1,0 +1,986 @@
+<!doctype html>
+<html lang="uz">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="referrer" content="no-referrer">
+<meta name="format-detection" content="telephone=no">
+<meta name="theme-color" content="#232883">
+<title>Nazorat paneli — instruktorlar</title>
+<style>
+/* =========================================================================
+   NAZORAT PANELI — hamma instruktor bitta havolada (faqat ko'rish)
+   Ma'lumot: GET /api/control-view?k=<maxfiy kalit>&d=YYYY-MM-DD
+   Havolani admin panel → «Nazorat paneli» beradi va yangilaydi.
+   ========================================================================= */
+:root{
+  color-scheme:light;
+  --accent:#2b2f8f;--accent-soft:#eceefb;--on-accent:#fff;
+  --bg:#f1f3f8;--card:#fff;--card-2:#f4f5fa;--line:rgba(20,24,51,.10);--grid:rgba(20,24,51,.08);
+  --text:#141833;--text-2:#4a5068;--hint:#6b7188;
+  --hero:linear-gradient(140deg,#0f1340 0%,#232883 55%,#3a40ae 100%);
+  --shadow:0 1px 2px rgba(16,20,48,.04),0 6px 20px rgba(16,20,48,.06);
+  /* holatlar (rang + belgi + matn — hech qachon faqat rang) */
+  --s-good:#0ca30c;--s-good-soft:#e5f6e5;--s-good-ink:#0b6b0b;
+  --s-warn:#fab219;--s-warn-soft:#fff4d6;--s-warn-ink:#7a5200;
+  --s-crit:#d03b3b;--s-crit-soft:#fdeeee;--s-crit-ink:#a32626;
+  --s-conf:#2a78d6;--s-conf-soft:#e6f0fb;--s-conf-ink:#1c5cab;
+  --s-done:#9aa0b0;--s-done-soft:#eef0f4;--s-done-ink:#4a5068;
+  --s-own:#6250d6;--s-own-soft:#efedfb;--s-own-ink:#4a3aa7;
+  --tl-open:#ffffff;--tl-closed:#e7e9f1;--tl-hatch:rgba(20,24,51,.10);
+  --bar:#2a78d6;--bar-hi:#1c5cab;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --accent:#8f95ff;--accent-soft:#252a52;--on-accent:#0f1220;
+    --bg:#0f1220;--card:#181c2e;--card-2:#1f2438;--line:rgba(255,255,255,.10);--grid:rgba(255,255,255,.08);
+    --text:#eef0f8;--text-2:#c4c8da;--hint:#9aa1b8;
+    --shadow:0 1px 2px rgba(0,0,0,.3),0 6px 20px rgba(0,0,0,.25);
+    --s-good-soft:#163a1c;--s-good-ink:#7ee08a;--s-warn-soft:#3a2f10;--s-warn-ink:#ffd36b;
+    --s-crit-soft:#3d1c20;--s-crit-ink:#ff9a9a;--s-conf:#3987e5;--s-conf-soft:#18294a;--s-conf-ink:#9ec5f4;
+    --s-done:#6b7188;--s-done-soft:#262b40;--s-done-ink:#c4c8da;--s-own:#9085e9;--s-own-soft:#2a2440;--s-own-ink:#c9bdf0;
+    --tl-open:#2a3050;--tl-closed:#1a1e30;--tl-hatch:rgba(255,255,255,.07);
+    --bar:#3987e5;--bar-hi:#86b6ef;
+  }
+}
+:root[data-theme="dark"]{color-scheme:dark}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--text);font:15px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Inter,Arial,sans-serif;-webkit-text-size-adjust:100%}
+button,input{font:inherit;color:inherit}
+button{cursor:pointer;border:0;background:none;padding:0}
+a{color:inherit}
+.hidden{display:none!important}
+.num{font-variant-numeric:tabular-nums}
+
+/* ---------- yuqori qism ---------- */
+.top{background:var(--hero);color:#fff;position:sticky;top:0;z-index:30;box-shadow:0 4px 18px rgba(10,14,50,.25)}
+.top-in{max-width:1180px;margin:0 auto;padding:12px 16px 8px;display:flex;align-items:flex-end;justify-content:space-between;gap:12px}
+.brand small{display:block;font-size:11.5px;font-weight:800;letter-spacing:.08em;opacity:.75}
+.brand h1{margin:1px 0 0;font-size:21px;letter-spacing:-.3px;line-height:1.2}
+.live{font-size:12.5px;opacity:.9;display:flex;align-items:center;gap:7px;white-space:nowrap;padding-bottom:3px}
+.dot{width:8px;height:8px;border-radius:50%;background:#4ade80;box-shadow:0 0 0 3px rgba(74,222,128,.25)}
+.dot.off{background:#fbbf24;box-shadow:0 0 0 3px rgba(251,191,36,.25)}
+.daybar{max-width:1180px;margin:0 auto;padding:0 16px 10px;display:flex;align-items:center;gap:8px}
+.daybar .nav{width:40px;height:40px;border-radius:12px;background:rgba(255,255,255,.14);color:#fff;font-size:22px;font-weight:700;display:grid;place-items:center;flex:none}
+.daybar .nav:active{background:rgba(255,255,255,.24)}
+.day{flex:1;min-width:0;position:relative;display:flex;flex-direction:column;justify-content:center;height:40px;padding:0 12px;border-radius:12px;background:rgba(255,255,255,.10);cursor:pointer}
+.day b{font-size:15.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.day small{font-size:11.5px;opacity:.8;white-space:nowrap}
+.day input{position:absolute;inset:0;opacity:0;width:100%;height:100%;cursor:pointer;border:0}
+.daybar .today{height:40px;padding:0 12px;border-radius:12px;background:#fff;color:#232883;font-weight:800;font-size:13.5px;flex:none}
+.tabs{max-width:1180px;margin:0 auto;padding:0 16px;display:flex;gap:4px}
+.tabs button{flex:1;max-width:180px;padding:9px 6px 11px;color:rgba(255,255,255,.72);font-weight:750;font-size:14.5px;border-bottom:3px solid transparent}
+.tabs button.on{color:#fff;border-bottom-color:#fff}
+
+.wrap{max-width:1180px;margin:0 auto;padding:14px 16px 60px;transition:opacity .15s}
+.wrap.busy{opacity:.55}
+
+/* ---------- KPI ---------- */
+.kpis{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-bottom:12px}
+@media (min-width:640px){.kpis{grid-template-columns:repeat(4,minmax(0,1fr))}}
+@media (min-width:1000px){.kpis{grid-template-columns:repeat(8,minmax(0,1fr))}}
+.kpi{background:var(--card);border-radius:16px;padding:11px 13px;box-shadow:var(--shadow);min-width:0}
+.kpi small{display:block;color:var(--hint);font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.kpi b{display:block;font-size:22px;letter-spacing:-.4px;line-height:1.25;margin-top:2px}
+.kpi b i{font-style:normal;font-size:13px;color:var(--hint);font-weight:650;letter-spacing:0;margin-left:3px}
+.kpi.ok b{color:var(--s-good-ink)}.kpi.bad b{color:var(--s-crit-ink)}.kpi.acc b{color:var(--accent)}
+
+/* ---------- kunlar qatori ---------- */
+.strip{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px;margin-bottom:12px}
+.strip button{background:var(--card);border-radius:13px;padding:7px 2px 6px;text-align:center;box-shadow:var(--shadow);position:relative}
+.strip button b{display:block;font-size:12px;color:var(--hint);font-weight:750}
+.strip button span{display:block;font-size:16px;font-weight:800}
+.strip button i{display:block;font-style:normal;font-size:11.5px;color:var(--hint);font-weight:650}
+.strip button.on{background:var(--accent);color:var(--on-accent)}
+.strip button.on b,.strip button.on i{color:inherit;opacity:.85}
+.strip button.tdy::after{content:'';position:absolute;top:6px;right:7px;width:6px;height:6px;border-radius:50%;background:var(--s-crit)}
+
+/* ---------- filtrlar ---------- */
+.tools{display:flex;flex-direction:column;gap:8px;margin-bottom:12px}
+@media (min-width:800px){.tools{flex-direction:row;align-items:center}.tools .search{max-width:340px}}
+.search{width:100%;height:44px;padding:0 14px;border-radius:13px;border:1px solid var(--line);background:var(--card);outline:none;font-size:15px}
+.search:focus{border-color:var(--accent)}
+.chips{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;margin:0 -16px;padding:2px 16px}
+.chips::-webkit-scrollbar{display:none}
+@media (min-width:800px){.chips{margin:0;padding:2px 0;flex-wrap:wrap}}
+.chip{flex:none;height:36px;padding:0 13px;border-radius:999px;background:var(--card);box-shadow:inset 0 0 0 1px var(--line);font-weight:700;font-size:13.5px;white-space:nowrap}
+.chip.on{background:var(--accent);color:var(--on-accent);box-shadow:none}
+.chip i{font-style:normal;opacity:.7;margin-left:4px;font-weight:650}
+
+/* ---------- instruktor kartasi ---------- */
+.cards{display:grid;gap:12px}
+@media (min-width:900px){.cards{grid-template-columns:repeat(2,minmax(0,1fr));align-items:start}}
+.ins{background:var(--card);border-radius:20px;box-shadow:var(--shadow);overflow:hidden;scroll-margin-top:150px}
+.ins.flash{animation:fl 1.6s ease}
+@keyframes fl{0%,40%{box-shadow:0 0 0 3px var(--accent),var(--shadow)}100%{box-shadow:var(--shadow)}}
+.ins-h{display:flex;align-items:center;gap:11px;padding:13px 14px 10px}
+.ava{width:44px;height:44px;border-radius:14px;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;font-weight:850;font-size:15px;flex:none}
+.who{flex:1;min-width:0}
+.who b{display:block;font-size:16px;letter-spacing:-.2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.who small{display:block;color:var(--hint);font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cat{display:inline-grid;place-items:center;min-width:20px;height:18px;padding:0 5px;border-radius:6px;background:var(--card-2);color:var(--text-2);font-size:11px;font-weight:850;margin-right:3px;vertical-align:1px}
+.tag{display:inline-block;font-size:11px;font-weight:800;padding:2px 7px;border-radius:7px;background:var(--s-warn-soft);color:var(--s-warn-ink);vertical-align:1px;margin-left:4px}
+.tag.crit{background:var(--s-crit-soft);color:var(--s-crit-ink)}
+.call{width:40px;height:40px;border-radius:12px;background:var(--card-2);display:grid;place-items:center;text-decoration:none;font-size:18px;flex:none}
+.state{margin:0 14px 10px;padding:9px 12px;border-radius:12px;font-weight:750;font-size:14px;display:flex;gap:8px;align-items:flex-start}
+.state span{flex:1;min-width:0}
+.state small{display:block;font-weight:600;font-size:12.5px;opacity:.85}
+.state.ok{background:var(--s-good-soft);color:var(--s-good-ink)}
+.state.warn{background:var(--s-warn-soft);color:var(--s-warn-ink)}
+.state.free{background:var(--s-conf-soft);color:var(--s-conf-ink)}
+.state.own{background:var(--s-own-soft);color:var(--s-own-ink)}
+.state.mute{background:var(--card-2);color:var(--text-2)}
+.state.crit{background:var(--s-crit-soft);color:var(--s-crit-ink)}
+
+/* vaqt chizig'i */
+.tlw{padding:0 14px 6px}
+.tl{position:relative;height:30px;border-radius:9px;background:var(--tl-closed);
+  background-image:repeating-linear-gradient(135deg,var(--tl-hatch) 0 2px,transparent 2px 7px);overflow:hidden}
+.tl .op{position:absolute;top:0;bottom:0;background:var(--tl-open);box-shadow:inset 0 0 0 1px var(--line)}
+.tl .ow{position:absolute;top:0;bottom:0;background:var(--s-own-soft);background-image:repeating-linear-gradient(45deg,rgba(98,80,214,.28) 0 2px,transparent 2px 6px)}
+.tl .bk{position:absolute;top:3px;bottom:3px;border-radius:4px;border:1px solid var(--card);min-width:4px;outline:none}
+.tl .bk:hover,.tl .bk:focus-visible{filter:brightness(1.1);box-shadow:0 0 0 2px var(--text)}
+.tl .now{position:absolute;top:-2px;bottom:-2px;width:2px;background:var(--s-crit);border-radius:2px;box-shadow:0 0 0 1px var(--card)}
+.ticks{position:relative;height:16px;margin-top:3px}
+.ticks span{position:absolute;transform:translateX(-50%);font-size:10.5px;color:var(--hint);font-weight:650}
+.ticks span:first-child{transform:none}.ticks span:last-child{transform:translateX(-100%)}
+@media (max-width:520px){.ticks span.odd{display:none}}
+.b-pending{background:var(--s-warn)}
+.b-confirmed{background:var(--s-conf)}
+.b-in_progress{background:var(--s-good)}
+.b-completed{background:var(--s-done)}
+.b-no_show{background:var(--s-crit);background-image:repeating-linear-gradient(45deg,rgba(255,255,255,.45) 0 2px,transparent 2px 6px)}
+
+.hours{padding:2px 14px 10px;font-size:13px;color:var(--text-2);display:flex;flex-wrap:wrap;gap:4px 12px}
+.hours b{color:var(--text);font-weight:750}
+.mini{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:9px 14px;border-top:1px solid var(--line);border-bottom:1px solid var(--line);background:var(--card-2);font-size:13px;color:var(--text-2)}
+.mini b{color:var(--text)}
+.meter{flex:1 1 90px;min-width:80px;height:8px;border-radius:4px;background:var(--grid);overflow:hidden}
+.meter i{display:block;height:100%;background:var(--bar);border-radius:4px}
+.mini .bad{color:var(--s-crit-ink);font-weight:750}
+
+.bks{list-style:none;margin:0;padding:0}
+.bks li{display:flex;gap:11px;padding:10px 14px;align-items:center}
+.bks li + li{border-top:1px solid var(--line)}
+.bks .t{flex:none;width:54px;font-weight:850;font-size:15px;line-height:1.15;font-variant-numeric:tabular-nums}
+.bks .t small{display:block;font-weight:650;font-size:12px;color:var(--hint)}
+.bks .m{flex:1;min-width:0}
+.bks .m b{display:block;font-size:14.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bks .m a{display:inline-block;font-weight:750;font-size:14px;text-decoration:none;color:var(--accent);white-space:nowrap;font-variant-numeric:tabular-nums;padding:1px 0}
+.bks .m small{display:block;color:var(--hint);font-size:12.5px}
+.bks .m em{display:block;font-style:normal;font-size:12.5px;color:var(--text-2);margin-top:2px}
+.bks li.past{opacity:.6}
+.bks li.cur{background:var(--s-good-soft)}
+.badge{flex:none;font-size:11.5px;font-weight:800;padding:4px 8px;border-radius:8px;white-space:nowrap}
+.badge.pending{background:var(--s-warn-soft);color:var(--s-warn-ink)}
+.badge.confirmed{background:var(--s-conf-soft);color:var(--s-conf-ink)}
+.badge.in_progress{background:var(--s-good-soft);color:var(--s-good-ink)}
+.badge.completed{background:var(--s-done-soft);color:var(--s-done-ink)}
+.badge.no_show{background:var(--s-crit-soft);color:var(--s-crit-ink)}
+.empty-b{padding:12px 14px;color:var(--hint);font-size:13.5px}
+.notes{padding:8px 14px 12px;display:flex;flex-wrap:wrap;gap:6px;border-top:1px solid var(--line)}
+.notes span{font-size:12.5px;font-weight:700;padding:4px 9px;border-radius:8px;background:var(--card-2);color:var(--text-2)}
+
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12.5px;color:var(--text-2);margin:2px 0 12px}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend i{width:16px;height:10px;border-radius:3px;display:inline-block}
+.legend i.op{background:var(--tl-open);box-shadow:inset 0 0 0 1px var(--line)}
+.legend i.cl{background:var(--tl-closed);background-image:repeating-linear-gradient(135deg,var(--tl-hatch) 0 2px,transparent 2px 5px)}
+.legend i.ow{background:var(--s-own-soft);background-image:repeating-linear-gradient(45deg,rgba(98,80,214,.35) 0 2px,transparent 2px 5px)}
+.legend i.nw{width:3px;height:14px;background:var(--s-crit)}
+
+/* ---------- hafta jadvali ---------- */
+.card{background:var(--card);border-radius:20px;box-shadow:var(--shadow);padding:14px;margin-bottom:12px}
+.card h3{margin:0 0 2px;font-size:16px;letter-spacing:-.2px}
+.card .sub{color:var(--hint);font-size:12.5px;margin:0 0 12px}
+.wk-scroll{overflow-x:auto;border-radius:20px;background:var(--card);box-shadow:var(--shadow)}
+table.wk{border-collapse:separate;border-spacing:0;width:100%;min-width:860px;font-size:13px}
+.wk th,.wk td{padding:8px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+.wk thead th{position:sticky;top:0;background:var(--card);font-size:12px;color:var(--hint);font-weight:800;white-space:nowrap}
+.wk thead th b{display:block;color:var(--text);font-size:14px}
+.wk th.nm,.wk td.nm{position:sticky;left:0;background:var(--card);z-index:2;min-width:150px;max-width:180px;border-right:1px solid var(--line)}
+.wk td.nm b{display:block;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.wk td.nm small{color:var(--hint);font-size:11.5px}
+.wk .sel{background:var(--accent-soft)}
+.wk thead th.sel{background:var(--accent-soft)}
+.wk th.tdy b::after{content:' •';color:var(--s-crit)}
+.wk td.c{cursor:pointer;min-width:96px}
+.wk td.c:hover{background:var(--card-2)}
+.wk td.c.sel:hover{background:var(--accent-soft)}
+.wk .hrs{font-weight:700;color:var(--text-2);font-size:12px;line-height:1.3;font-variant-numeric:tabular-nums}
+.wk .off{color:var(--hint);font-weight:700;font-size:12px}
+.wk .bn{margin-top:4px;font-weight:800;font-size:13px}
+.wk .bn i{font-style:normal;color:var(--hint);font-weight:650;font-size:11.5px}
+.wk .meter{margin-top:5px;height:5px}
+.wk .x{font-size:11.5px;color:var(--s-crit-ink);font-weight:700}
+.wk .cu{display:inline-block;font-size:10px;font-weight:800;padding:1px 5px;border-radius:5px;background:var(--s-warn-soft);color:var(--s-warn-ink);margin-left:3px}
+.wk tfoot td{font-weight:800;background:var(--card-2);border-bottom:0}
+.wk tfoot td.nm{background:var(--card-2)}
+
+/* ---------- statistika ---------- */
+.bars{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px;align-items:end;height:220px;padding-top:6px;border-bottom:1px solid var(--grid);position:relative}
+.bars .col{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;cursor:default;outline:none}
+.bars .v{font-size:13px;font-weight:800;margin-bottom:4px;font-variant-numeric:tabular-nums}
+.bars .bar{width:min(46px,72%);background:var(--bar);border-radius:4px 4px 0 0;min-height:2px;transition:filter .12s}
+.bars .col.sel .bar{background:var(--bar-hi)}
+.bars .col:hover .bar,.bars .col:focus-visible .bar{filter:brightness(1.12);box-shadow:0 0 0 2px var(--card),0 0 0 3px var(--text)}
+.bars-x{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px;margin-top:6px;text-align:center}
+.bars-x b{display:block;font-size:12.5px}
+.bars-x small{display:block;color:var(--hint);font-size:11px;line-height:1.35}
+.bars-x .sel b{color:var(--accent)}
+table.rk{width:100%;border-collapse:collapse;font-size:13.5px}
+.rk th{font-size:11.5px;color:var(--hint);font-weight:800;text-align:right;padding:6px 6px;border-bottom:1px solid var(--line);white-space:nowrap}
+.rk td{padding:9px 6px;border-bottom:1px solid var(--line);text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.rk th:first-child,.rk td:first-child{text-align:left}
+.rk td:first-child{white-space:normal;font-weight:700;min-width:120px}
+.rk td.ld{width:34%;min-width:120px}
+.rk .ldw{display:flex;align-items:center;gap:8px;justify-content:flex-end}
+.rk .ldw .meter{flex:1;max-width:160px}
+.rk tfoot td{font-weight:850;border-bottom:0}
+.rk .bad{color:var(--s-crit-ink);font-weight:750}
+.rk-wrap{overflow-x:auto;margin:0 -14px;padding:0 14px}
+@media (max-width:600px){.rk .hm{display:none}.rk td.ld{width:auto;min-width:110px}.rk .ldw .meter{max-width:70px}}
+
+/* ---------- yordamchi ---------- */
+.tip{position:fixed;z-index:60;pointer-events:none;background:var(--card);color:var(--text);border-radius:12px;padding:9px 11px;box-shadow:0 8px 28px rgba(0,0,0,.22);font-size:12.5px;max-width:260px;line-height:1.4}
+.tip .l0{font-weight:850;font-size:14px}
+.tip .lx{color:var(--text-2)}
+.msg{max-width:440px;margin:60px auto;background:var(--card);border-radius:22px;box-shadow:var(--shadow);padding:26px 22px;text-align:center}
+.msg .ic{font-size:40px}
+.msg h2{margin:8px 0 6px;font-size:20px}
+.msg p{color:var(--text-2);margin:0 0 14px}
+.msg button{height:46px;padding:0 20px;border-radius:14px;background:var(--accent);color:var(--on-accent);font-weight:800}
+.empty{text-align:center;color:var(--hint);padding:40px 10px}
+.sk{height:120px;border-radius:20px;background:linear-gradient(90deg,var(--card) 0%,var(--card-2) 50%,var(--card) 100%);background-size:200% 100%;animation:sk 1.2s infinite;margin-bottom:12px}
+@keyframes sk{to{background-position:-200% 0}}
+.foot{color:var(--hint);font-size:12px;text-align:center;margin-top:18px}
+.bks .m small.w{color:var(--text-2);font-weight:650}
+
+/* ---------- Excel ko'rinishi (admin «Excel bron» bilan bir xil ranglar) ---------- */
+.xl-bar{display:flex;align-items:flex-start;gap:12px;flex-wrap:wrap}
+.xl-bar > div{flex:1;min-width:220px}
+.dl{height:44px;padding:0 16px;border-radius:13px;background:#107c41;color:#fff;font-weight:800;font-size:14.5px;display:inline-flex;align-items:center;gap:8px;flex:none}
+.dl:active{filter:brightness(.92)}
+.xg-scroll{overflow:auto;max-height:calc(100vh - 170px);border-radius:16px;background:var(--card);box-shadow:var(--shadow);-webkit-overflow-scrolling:touch}
+table.xg{border-collapse:separate;border-spacing:0;font-size:13px;color:#05081a;min-width:100%}
+.xg th,.xg td{border-right:1px solid #9aa1b4;border-bottom:1px solid #9aa1b4;padding:0}
+.xg thead th{position:sticky;z-index:3;text-align:center;font-weight:850}
+.xg thead tr.g th{top:0;height:26px;color:#fff;font-size:12px;letter-spacing:.06em}
+.xg thead tr.n th{top:26px;height:44px;font-size:13px;text-transform:uppercase;padding:4px 8px;line-height:1.2}
+.xg thead tr.n th small{display:block;text-transform:none;font-weight:750;font-size:12px;opacity:.85}
+.xg thead tr.s th{top:70px;height:24px;font-size:11.5px;font-weight:750;background:#f4f5fa;color:#30364f}
+.xg th.hc,.xg td.hc{position:sticky;left:0;z-index:2;background:#e5484d;color:#fff;font-weight:850;font-size:15px;text-align:center;min-width:64px;width:64px;border-right:2px solid #05081a}
+.xg thead th.hc{z-index:5;background:#c62f35}
+.xg td.hc small{display:block;font-size:10.5px;font-weight:700;opacity:.9}
+.xg tr.now td.hc{background:#05081a}
+.xg tr.now td.hc::after{content:'hozir';display:block;font-size:10px;font-weight:800;color:#fbbf24}
+.xg td.xc{min-width:168px;max-width:240px;height:62px;vertical-align:top;background:var(--cb);position:relative}
+.xg thead tr.n th{min-width:168px}
+.xg td.xc.gs,.xg th.gs{border-left:3px solid #05081a}
+.xg tr.past td.xc{opacity:.62}
+.xg td.xc > div{padding:5px 7px 6px;display:flex;flex-direction:column;gap:1px;height:100%}
+.xg .xt{font-weight:850;font-size:15px;line-height:1.2;word-break:break-word}
+.xg .xn{font-weight:750;font-size:12.5px;line-height:1.25}
+.xg .xn a{color:inherit;text-decoration:none}
+.xg .xs{font-size:11.5px;font-weight:650;color:#30364f;line-height:1.3}
+.xg .xw{font-size:11px;font-weight:750;color:#1b1e66;line-height:1.3;margin-top:auto;padding-top:2px}
+.xg .xr{font-size:11px;font-weight:800;color:#30364f}
+.xg td.bk{box-shadow:inset 4px 0 0 #2b2f8f}
+.xg td.bk.app{box-shadow:inset 4px 0 0 #d92d35}
+.xg td.bk.s-in_progress{box-shadow:inset 4px 0 0 #0ca30c,inset 0 0 0 2px #0ca30c}
+.xg td.bk.s-no_show .xt{text-decoration:line-through;text-decoration-thickness:2px}
+.xg .st{display:inline-block;font-size:10.5px;font-weight:850;padding:1px 5px;border-radius:5px;margin-right:3px;vertical-align:1px}
+.xg .st.in_progress{background:#0ca30c;color:#fff}.xg .st.no_show{background:#d03b3b;color:#fff}
+.xg .st.completed{background:#5b6378;color:#fff}.xg .st.pending{background:#fab219;color:#05081a}.xg .st.confirmed{background:#2a78d6;color:#fff}
+.xg td.multi > div{gap:4px}
+.xg td.multi .it{background:rgba(255,255,255,.55);border-radius:6px;padding:3px 5px;display:flex;flex-direction:column;gap:1px}
+.xg td.multi .xt{font-size:13.5px}.xg td.multi .xw{margin-top:0}
+.xg td.nt{background:#e2e5ec;box-shadow:inset 4px 0 0 #5b6378}
+.xg td.nt .xt{color:#1f2440}
+.xg td.ow{background:#e4e7ee;background-image:repeating-linear-gradient(45deg,rgba(98,80,214,.18) 0 2px,transparent 2px 7px)}
+.xg td.of{background:#ece7f8}
+.xg td.cl{background:#e9ebf1;background-image:repeating-linear-gradient(135deg,rgba(20,24,51,.07) 0 2px,transparent 2px 7px)}
+.xg td.ow > div,.xg td.of > div,.xg td.cl > div{align-items:center;justify-content:center;color:#5b6378;font-weight:750;font-size:12px}
+.xg tfoot td{position:sticky;bottom:0;background:#f4f5fa;font-weight:800;font-size:12px;text-align:center;padding:6px 4px;z-index:2;color:#30364f}
+.xg tfoot td.hc{z-index:4;background:#c62f35;color:#fff}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .xg-scroll{background:#d9dce6}}
+@media (max-width:520px){.xg td.xc,.xg thead tr.n th{min-width:146px;max-width:146px}.xg .xt{font-size:14px}}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="top-in">
+    <div class="brand"><small>AVTODROM · NAZORAT PANELI</small><h1>Instruktorlar</h1></div>
+    <div class="live"><i class="dot" id="dot"></i><span id="upd">yuklanmoqda…</span></div>
+  </div>
+  <div class="daybar">
+    <button class="nav" id="prev" aria-label="Oldingi kun">‹</button>
+    <label class="day" title="Kunni tanlash"><b id="dayT">…</b><small id="daySub">kunni tanlash uchun bosing</small><input type="date" id="dayIn" aria-label="Kun"></label>
+    <button class="nav" id="next" aria-label="Keyingi kun">›</button>
+    <button class="today hidden" id="todayBtn">Bugun</button>
+  </div>
+  <nav class="tabs" role="tablist">
+    <button role="tab" data-tab="kun" class="on">Kun</button>
+    <button role="tab" data-tab="hafta">Hafta</button>
+    <button role="tab" data-tab="excel">Excel</button>
+    <button role="tab" data-tab="statistika">Statistika</button>
+  </nav>
+</header>
+
+<main class="wrap" id="main">
+  <div id="boot"><div class="sk"></div><div class="sk"></div><div class="sk"></div></div>
+
+  <section id="t-kun" class="hidden">
+    <div class="kpis" id="kpis"></div>
+    <div class="strip" id="strip"></div>
+    <div class="tools">
+      <input class="search" id="q" type="search" placeholder="Ism, telefon, bron kodi yoki kim yozgani" autocomplete="off" aria-label="Qidirish">
+      <div class="chips" id="flt"></div>
+    </div>
+    <div class="legend" id="lg"></div>
+    <div class="cards" id="cards"></div>
+  </section>
+
+  <section id="t-hafta" class="hidden">
+    <div class="card" style="padding-bottom:10px"><h3 id="wkT">Hafta</h3><p class="sub" style="margin:0">Har katakda: ish vaqti, bronlar soni, band soat va bandlik. Katakni bossangiz — o‘sha kun ochiladi.</p></div>
+    <div class="wk-scroll"><table class="wk" id="wk"></table></div>
+  </section>
+
+  <section id="t-excel" class="hidden">
+    <div class="card xl-bar">
+      <div><h3 id="xlT">Excel bron</h3><p class="sub" id="xlSub" style="margin:0">Ustun — instruktor, qator — soat. Katakda: kimga (mijoz, telefon), bron kodi, toifa, davomiylik, holat va kim yozgani.</p></div>
+      <button class="dl" id="xlDl">⬇ Excel fayl</button>
+    </div>
+    <div class="legend" id="xlLg"></div>
+    <div class="xg-scroll" id="xgS"><table class="xg" id="xg"></table></div>
+  </section>
+
+  <section id="t-statistika" class="hidden">
+    <div class="kpis" id="skpis"></div>
+    <div class="card">
+      <h3>Kunlik bronlar soni</h3>
+      <p class="sub" id="barsSub">Du–Yak · ustun ustiga olib boring yoki bosing — tafsilot</p>
+      <div class="bars" id="bars"></div>
+      <div class="bars-x" id="barsX"></div>
+    </div>
+    <div class="card">
+      <h3>Instruktorlar bandligi — hafta</h3>
+      <p class="sub">Bandlik = band soat ÷ ish soati (grafik bo‘yicha, tanaffus va o‘zi yopgan soatlarsiz)</p>
+      <div class="rk-wrap"><table class="rk" id="rk"></table></div>
+    </div>
+  </section>
+
+  <div id="fail" class="hidden"></div>
+  <p class="foot">Faqat ko‘rish uchun · ma’lumot har 30 soniyada yangilanadi · havolani begonalarga bermang</p>
+</main>
+<div class="tip hidden" id="tip" role="tooltip"></div>
+
+<script>
+/* XL — brauzerda .xlsx yasash (admin panelning xl.js bilan bir xil) */
+const XL = (() => {
+  const enc = new TextEncoder();
+  let CRC = null;
+  function crc32(u8){
+    if (!CRC) { CRC = new Uint32Array(256); for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; CRC[n] = c >>> 0; } }
+    let c = 0xFFFFFFFF;
+    for (let i = 0; i < u8.length; i++) c = CRC[(c ^ u8[i]) & 0xFF] ^ (c >>> 8);
+    return (c ^ 0xFFFFFFFF) >>> 0;
+  }
+  /** ZIP (siqmasdan — «stored»). Excel buni bemalol ochadi. */
+  function zip(files){
+    const parts = [], central = [];
+    let off = 0;
+    const d = new Date(), dt = ((d.getFullYear() - 1980) << 25) | ((d.getMonth() + 1) << 21) | (d.getDate() << 16) | (d.getHours() << 11) | (d.getMinutes() << 5) | (d.getSeconds() >> 1);
+    for (const f of files) {
+      const name = enc.encode(f.name), data = typeof f.data === 'string' ? enc.encode(f.data) : f.data;
+      const crc = crc32(data);
+      const lh = new DataView(new ArrayBuffer(30));
+      lh.setUint32(0, 0x04034b50, true); lh.setUint16(4, 20, true); lh.setUint16(6, 0x0800, true); lh.setUint16(8, 0, true);
+      lh.setUint32(10, dt, true); lh.setUint32(14, crc, true); lh.setUint32(18, data.length, true); lh.setUint32(22, data.length, true);
+      lh.setUint16(26, name.length, true); lh.setUint16(28, 0, true);
+      parts.push(new Uint8Array(lh.buffer), name, data);
+      const ch = new DataView(new ArrayBuffer(46));
+      ch.setUint32(0, 0x02014b50, true); ch.setUint16(4, 20, true); ch.setUint16(6, 20, true); ch.setUint16(8, 0x0800, true); ch.setUint16(10, 0, true);
+      ch.setUint32(12, dt, true); ch.setUint32(16, crc, true); ch.setUint32(20, data.length, true); ch.setUint32(24, data.length, true);
+      ch.setUint16(28, name.length, true); ch.setUint16(30, 0, true); ch.setUint16(32, 0, true); ch.setUint16(34, 0, true);
+      ch.setUint16(36, 0, true); ch.setUint32(38, 0, true); ch.setUint32(42, off, true);
+      central.push(new Uint8Array(ch.buffer), name);
+      off += 30 + name.length + data.length;
+    }
+    const csize = central.reduce((a, x) => a + x.length, 0);
+    const end = new DataView(new ArrayBuffer(22));
+    end.setUint32(0, 0x06054b50, true); end.setUint16(8, files.length, true); end.setUint16(10, files.length, true);
+    end.setUint32(12, csize, true); end.setUint32(16, off, true);
+    return new Blob([...parts, ...central, new Uint8Array(end.buffer)], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+  }
+  const x = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]).replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, '');
+  const col = n => { let s = ''; n++; while (n) { const r = (n - 1) % 26; s = String.fromCharCode(65 + r) + s; n = Math.floor((n - 1) / 26); } return s; };
+  /** Varaq: rows = [{h, cells:[{v, s, n}]}], merges = ['A1:C1'], cols = [kengliklar] */
+  function sheet({ rows, merges = [], cols = [], freeze = null }){
+    const colsXml = cols.length ? `<cols>${cols.map((w, i) => `<col min="${i + 1}" max="${i + 1}" width="${w}" customWidth="1"/>`).join('')}</cols>` : '';
+    const pane = freeze ? `<sheetViews><sheetView workbookViewId="0"><pane xSplit="${freeze.x}" ySplit="${freeze.y}" topLeftCell="${col(freeze.x)}${freeze.y + 1}" activePane="bottomRight" state="frozen"/></sheetView></sheetViews>` : '';
+    const data = rows.map((r, ri) => `<row r="${ri + 1}"${r.h ? ` ht="${r.h}" customHeight="1"` : ''}>${(r.cells || []).map((c, ci) => {
+      if (!c) return '';
+      const ref = col(ci) + (ri + 1), s = c.s ? ` s="${c.s}"` : '';
+      if (c.v === undefined || c.v === null || c.v === '') return `<c r="${ref}"${s}/>`;
+      if (typeof c.v === 'number') return `<c r="${ref}"${s}><v>${c.v}</v></c>`;
+      return `<c r="${ref}"${s} t="inlineStr"><is><t xml:space="preserve">${x(c.v)}</t></is></c>`;
+    }).join('')}</row>`).join('');
+    return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheetPr><pageSetUpPr fitToPage="1"/></sheetPr>${pane}${colsXml}<sheetData>${data}</sheetData>${merges.length ? `<mergeCells count="${merges.length}">${merges.map(m => `<mergeCell ref="${m}"/>`).join('')}</mergeCells>` : ''}<pageMargins left="0.3" right="0.3" top="0.4" bottom="0.4" header="0.2" footer="0.2"/><pageSetup orientation="landscape" fitToWidth="1" fitToHeight="0"/></worksheet>`;
+  }
+  /* Uslublar (s=…): 1 sarlavha, 2 ustun boshi, 3 instruktor, 4 bo'sh, 5 tasdiqlangan,
+     6 kutilmoqda, 7 jarayonda, 8 tugagan, 9 yopiq, 10 o'tgan, 11 kelmagan, 12 oddiy, 13 qalin, 14 izoh,
+     15 son (1 234 567), 16 JAMI son (qalin, kulrang), 17 JAMI matn (qalin, kulrang) */
+  const STYLES = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+<fonts count="6"><font><sz val="10"/><name val="Calibri"/><family val="2"/></font><font><b/><sz val="10"/><name val="Calibri"/><family val="2"/></font><font><b/><sz val="10"/><color rgb="FFFFFFFF"/><name val="Calibri"/><family val="2"/></font><font><b/><sz val="15"/><color rgb="FF1B1E66"/><name val="Calibri"/><family val="2"/></font><font><sz val="9"/><color rgb="FF5A6478"/><name val="Calibri"/><family val="2"/></font><font><b/><sz val="9"/><color rgb="FF1F2433"/><name val="Calibri"/><family val="2"/></font></fonts>
+<fills count="11"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill>
+<fill><patternFill patternType="solid"><fgColor rgb="FF2B2F8F"/><bgColor indexed="64"/></patternFill></fill>
+<fill><patternFill patternType="solid"><fgColor rgb="FFDDF5E6"/><bgColor indexed="64"/></patternFill></fill>
+<fill><patternFill patternType="solid"><fgColor rgb="FFF7B9BE"/><bgColor indexed="64"/></patternFill></fill>
+<fill><patternFill patternType="solid"><fgColor rgb="FFFFE08A"/><bgColor indexed="64"/></patternFill></fill>
+<fill><patternFill patternType="solid"><fgColor rgb="FFB9CCFF"/><bgColor indexed="64"/></patternFill></fill>
+<fill><patternFill patternType="solid"><fgColor rgb="FFD5D9E2"/><bgColor indexed="64"/></patternFill></fill>
+<fill><patternFill patternType="solid"><fgColor rgb="FF9AA1B2"/><bgColor indexed="64"/></patternFill></fill>
+<fill><patternFill patternType="solid"><fgColor rgb="FFF1F2F5"/><bgColor indexed="64"/></patternFill></fill>
+<fill><patternFill patternType="solid"><fgColor rgb="FFFFC999"/><bgColor indexed="64"/></patternFill></fill></fills>
+<borders count="2"><border><left/><right/><top/><bottom/><diagonal/></border><border><left style="thin"><color rgb="FFC9CEDA"/></left><right style="thin"><color rgb="FFC9CEDA"/></right><top style="thin"><color rgb="FFC9CEDA"/></top><bottom style="thin"><color rgb="FFC9CEDA"/></bottom><diagonal/></border></borders>
+<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>
+<cellXfs count="18">
+<xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>
+<xf numFmtId="0" fontId="3" fillId="0" borderId="0" xfId="0" applyFont="1"/>
+<xf numFmtId="0" fontId="2" fillId="2" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf>
+<xf numFmtId="0" fontId="1" fillId="0" borderId="1" xfId="0" applyFont="1" applyBorder="1" applyAlignment="1"><alignment vertical="center" wrapText="1"/></xf>
+<xf numFmtId="0" fontId="0" fillId="3" borderId="1" xfId="0" applyFill="1" applyBorder="1"/>
+<xf numFmtId="0" fontId="5" fillId="4" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf>
+<xf numFmtId="0" fontId="5" fillId="5" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf>
+<xf numFmtId="0" fontId="5" fillId="6" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf>
+<xf numFmtId="0" fontId="5" fillId="7" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf>
+<xf numFmtId="0" fontId="2" fillId="8" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf>
+<xf numFmtId="0" fontId="0" fillId="9" borderId="1" xfId="0" applyFill="1" applyBorder="1"/>
+<xf numFmtId="0" fontId="5" fillId="10" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf>
+<xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1" applyAlignment="1"><alignment vertical="center" wrapText="1"/></xf>
+<xf numFmtId="0" fontId="1" fillId="0" borderId="1" xfId="0" applyFont="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>
+<xf numFmtId="0" fontId="4" fillId="0" borderId="0" xfId="0" applyFont="1"/>
+<xf numFmtId="3" fontId="0" fillId="0" borderId="1" xfId="0" applyNumberFormat="1" applyBorder="1" applyAlignment="1"><alignment vertical="center"/></xf>
+<xf numFmtId="3" fontId="1" fillId="9" borderId="1" xfId="0" applyNumberFormat="1" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment vertical="center"/></xf>
+<xf numFmtId="0" fontId="1" fillId="9" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment vertical="center"/></xf>
+</cellXfs>
+<cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles>
+</styleSheet>`;
+  /* Erkin uslub: katakda { v, st: { fill:'FDE047', bold:true, size:12, color:'05081A', align:'center', wrap:true, left:'2B2F8F' } }.
+     Bir xil uslublar bitta xf bo'ladi; indekslar 18 dan keyin qo'shiladi (eski s=1…17 o'zgarmaydi). */
+  function withDyn(sheets){
+    const list = [], seen = new Map();
+    for (const sh of sheets) for (const r of sh.rows || []) for (const c of r.cells || []) {
+      if (!c || !c.st) continue;
+      const k = JSON.stringify(c.st);
+      if (!seen.has(k)) { seen.set(k, 18 + list.length); list.push(c.st); }
+      c.s = seen.get(k);
+    }
+    if (!list.length) return STYLES;
+    const hex = v => String(v || '').replace('#', '').toUpperCase();
+    const fonts = list.map(t => `<font>${t.bold ? '<b/>' : ''}<sz val="${t.size || 11}"/><color rgb="FF${hex(t.color || '000000')}"/><name val="Calibri"/><family val="2"/></font>`).join('');
+    const fills = list.map(t => t.fill ? `<fill><patternFill patternType="solid"><fgColor rgb="FF${hex(t.fill)}"/><bgColor indexed="64"/></patternFill></fill>` : '<fill><patternFill patternType="none"/></fill>').join('');
+    const line = c => `style="thin"><color rgb="FF${hex(c)}"/>`;
+    const borders = list.map(t => `<border><left ${t.left ? `style="${t.lstyle || 'thick'}"><color rgb="FF${hex(t.left)}"/>` : line(t.grid || '8E97AB')}</left><right ${line(t.grid || '8E97AB')}</right><top ${line(t.grid || '8E97AB')}</top><bottom ${line(t.grid || '8E97AB')}</bottom><diagonal/></border>`).join('');
+    const xfs = list.map((t, i) => `<xf numFmtId="0" fontId="${6 + i}" fillId="${11 + i}" borderId="${2 + i}" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="${t.align || 'left'}" vertical="center"${t.wrap ? ' wrapText="1"' : ''}${t.indent ? ` indent="${t.indent}"` : ''}/></xf>`).join('');
+    return STYLES
+      .replace('<fonts count="6">', `<fonts count="${6 + list.length}">`).replace('</fonts>', fonts + '</fonts>')
+      .replace('<fills count="11">', `<fills count="${11 + list.length}">`).replace('</fills>', fills + '</fills>')
+      .replace('<borders count="2">', `<borders count="${2 + list.length}">`).replace('</borders>', borders + '</borders>')
+      .replace('<cellXfs count="18">', `<cellXfs count="${18 + list.length}">`).replace('</cellXfs>', xfs + '</cellXfs>');
+  }
+  function book(sheets){
+    const styles = withDyn(sheets);
+    const files = [
+      { name: '[Content_Types].xml', data: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>${sheets.map((_, i) => `<Override PartName="/xl/worksheets/sheet${i + 1}.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>`).join('')}</Types>` },
+      { name: '_rels/.rels', data: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>` },
+      { name: 'xl/workbook.xml', data: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets>${sheets.map((s, i) => `<sheet name="${x(s.name)}" sheetId="${i + 1}" r:id="rId${i + 1}"/>`).join('')}</sheets></workbook>` },
+      { name: 'xl/_rels/workbook.xml.rels', data: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">${sheets.map((_, i) => `<Relationship Id="rId${i + 1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet${i + 1}.xml"/>`).join('')}<Relationship Id="rId${sheets.length + 1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>` },
+      { name: 'xl/styles.xml', data: styles },
+      ...sheets.map((s, i) => ({ name: `xl/worksheets/sheet${i + 1}.xml`, data: sheet(s) })),
+    ];
+    return zip(files);
+  }
+  return { book, col };
+})();
+</script>
+<script>
+'use strict';
+(() => {
+const $ = id => document.getElementById(id);
+const TZ = 'Asia/Tashkent';
+const P = new URLSearchParams(location.search);
+const K = P.get('k') || '';
+const S = { d: /^\d{4}-\d{2}-\d{2}$/.test(P.get('d') || '') ? P.get('d') : null, tab: 'kun', q: '', st: 'all', cat: '', data: null, seq: 0, last: 0, focus: null };
+const TABS = ['kun', 'hafta', 'excel', 'statistika'];
+if (TABS.includes(location.hash.slice(1))) S.tab = location.hash.slice(1);
+
+/* ---------- yordamchilar ---------- */
+const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const fmtHm = iso => new Intl.DateTimeFormat('en-GB', { timeZone: TZ, hour: '2-digit', minute: '2-digit' }).format(new Date(iso));
+const fmtHms = d => new Intl.DateTimeFormat('en-GB', { timeZone: TZ, hour: '2-digit', minute: '2-digit', second: '2-digit' }).format(d);
+const ymdNow = () => new Intl.DateTimeFormat('en-CA', { timeZone: TZ }).format(new Date());
+const addDays = (ymd, n) => { const [y, m, d] = ymd.split('-').map(Number); return new Date(Date.UTC(y, m - 1, d + n)).toISOString().slice(0, 10); };
+const wdOf = ymd => new Date(ymd + 'T12:00:00Z').getUTCDay();
+const WD = ['Yak', 'Du', 'Se', 'Chor', 'Pay', 'Ju', 'Sha'];
+const WDF = ['yakshanba', 'dushanba', 'seshanba', 'chorshanba', 'payshanba', 'juma', 'shanba'];
+const MON = ['yanvar', 'fevral', 'mart', 'aprel', 'may', 'iyun', 'iyul', 'avgust', 'sentabr', 'oktabr', 'noyabr', 'dekabr'];
+const dd = ymd => `${ymd.slice(8, 10)}.${ymd.slice(5, 7)}`;
+const rel = ymd => { const t = ymdNow(); return ymd === t ? 'Bugun' : ymd === addDays(t, 1) ? 'Ertaga' : ymd === addDays(t, -1) ? 'Kecha' : ''; };
+const longDay = ymd => `${Number(ymd.slice(8, 10))}-${MON[Number(ymd.slice(5, 7)) - 1]}, ${WDF[wdOf(ymd)]}`;
+const dayHead = ymd => rel(ymd) ? `${rel(ymd)}, ${Number(ymd.slice(8, 10))}-${MON[Number(ymd.slice(5, 7)) - 1]}` : longDay(ymd);
+const hm2m = s => { const [h, m] = String(s).split(':').map(Number); return h * 60 + (m || 0); };
+const dayMin = (iso, ymd) => Math.max(0, Math.min(1440, Math.round((Date.parse(iso) - Date.parse(ymd + 'T00:00:00+05:00')) / 60000)));
+const dur = m => { m = Number(m) || 0; if (m < 60) return `${m} daq`; const h = m / 60; return `${Number.isInteger(h) ? h : h.toFixed(1).replace('.', ',')} soat`; };
+const hrs = m => { const h = (Number(m) || 0) / 60; return Number.isInteger(h) ? String(h) : h.toFixed(1).replace('.', ','); };
+const tel = p => { const d = String(p || '').replace(/\D/g, ''); return d.length >= 9 ? '+998' + d.slice(-9) : ''; };
+const prettyTel = p => { const d = String(p || '').replace(/\D/g, '').slice(-9); return d.length === 9 ? `${d.slice(0, 2)} ${d.slice(2, 5)} ${d.slice(5, 7)} ${d.slice(7)}` : String(p || ''); };
+const ini = n => String(n || '?').trim().split(/\s+/).slice(0, 2).map(x => x[0] || '').join('').toUpperCase() || '?';
+const short = r => r.map(([a, b]) => `${a.replace(/:00$/, '')}–${b.replace(/:00$/, '')}`).join(', ');
+const full = r => r.map(([a, b]) => `${a}–${b}`).join(', ');
+/** qachon: shu kunning o'zi bo'lsa «09:12», aks holda «12.10 09:12» */
+const whenShort = (iso, ymd) => { if (!iso) return ''; const y = new Intl.DateTimeFormat('en-CA', { timeZone: TZ }).format(new Date(iso)); return (y === ymd ? '' : dd(y) + ' ') + fmtHm(iso); };
+/** Bronni kim yozgan */
+function whoTxt(b, ymd, withTime = true){
+  const w = b.who || {}, t = withTime && w.at ? ` · ${whenShort(w.at, ymd)}` : '';
+  switch (w.kind) {
+    case 'sheet': return `✍ ${w.by || 'xodim'} · Excel bron${t}`;
+    case 'bot': return `🤖 ${String(w.by || '').replace(/^Bot\s*·\s*/, '') || 'instruktor'} · instruktor boti${t}`;
+    case 'app': return `📱 Mijoz o‘zi · Mini App${t}`;
+    case 'kassa': return `🧾 Kassa${w.by ? ' ' + w.by : ''}${t}`;
+    case 'manual': return `☎ Qo‘lda bron${w.by ? ' · ' + w.by : ''}${t}`;
+    default: return w.kind ? `${w.kind}${t}` : '';
+  }
+}
+const BS = {
+  pending: ['⏳', 'Kutilmoqda'], confirmed: ['✓', 'Tasdiqlangan'], in_progress: ['▶', 'Darsda'],
+  completed: ['✔', 'Tugagan'], no_show: ['✕', 'Kelmagan'],
+};
+const NOW = {
+  lesson: ['▶', 'Darsda', 'ok'], due: ['⏳', 'Dars vaqti — hali boshlanmagan', 'warn'], free: ['●', 'Bo‘sh', 'free'],
+  break: ['☕', 'Tanaffus', 'mute'], own: ['🔒', 'O‘zi yopgan soat', 'own'], before: ['🕗', 'Hali ish vaqti boshlanmagan', 'mute'],
+  done: ['✓', 'Bugungi ish vaqti tugagan', 'mute'], off: ['🌙', 'Bugun dam olish kuni', 'mute'],
+};
+const pct = (a, b) => b > 0 ? Math.min(100, Math.round(a / b * 100)) : 0;
+
+/* ---------- server ---------- */
+async function load(quiet){
+  if (!K) return fail('Havola to‘liq emas', 'Havolada maxfiy kalit yo‘q. Admin panel → «Nazorat paneli» dan havolani qayta nusxalang.');
+  const seq = ++S.seq;
+  if (!quiet) $('main').classList.add('busy');
+  try{
+    const r = await fetch(`/api/control-view?k=${encodeURIComponent(K)}${S.d ? `&d=${S.d}` : ''}`, { cache: 'no-store', headers: { Accept: 'application/json' } });
+    let d = {}; try { d = await r.json(); } catch { /* bo'sh */ }
+    if (seq !== S.seq) return;
+    if (r.status === 403) return fail('Havola ishlamaydi', d.error || 'Havola eskirgan yoki noto‘g‘ri.');
+    if (!r.ok || d.ok === false) throw Error(d.error || `Xato (${r.status})`);
+    S.data = d; S.d = d.date; S.last = Date.now();
+    $('dot').classList.remove('off');
+    $('fail').classList.add('hidden');
+    paint();
+  }catch(e){
+    if (seq !== S.seq) return;
+    $('dot').classList.add('off');
+    $('upd').textContent = S.data ? 'aloqa yo‘q — eski ma’lumot' : 'aloqa yo‘q';
+    if (!S.data) fail('Ma’lumot yuklanmadi', e.message || 'Internetni tekshiring', true);
+  }finally{ if (seq === S.seq) $('main').classList.remove('busy'); }
+}
+function fail(title, text, retry){
+  $('boot').classList.add('hidden');
+  TABS.forEach(t => $('t-' + t).classList.add('hidden'));
+  const f = $('fail'); f.classList.remove('hidden');
+  f.innerHTML = `<div class="msg"><div class="ic">${retry ? '📡' : '🔒'}</div><h2>${esc(title)}</h2><p>${esc(text)}</p>${retry ? '<button id="retry">Qayta urinish</button>' : ''}</div>`;
+  if (retry) $('retry').onclick = () => load();
+  $('upd').textContent = '—';
+}
+function syncUrl(){
+  const u = new URL(location.href);
+  if (S.d && S.d !== ymdNow()) u.searchParams.set('d', S.d); else u.searchParams.delete('d');
+  u.hash = S.tab === 'kun' ? '' : S.tab;
+  history.replaceState(null, '', u.toString());
+}
+function setDay(ymd, focusIns){
+  S.d = ymd; S.focus = focusIns || null; S.xlScrolled = false;
+  if (S.data && S.data.date !== ymd) $('dayT').textContent = dayHead(ymd);
+  syncUrl(); load();
+}
+
+/* ---------- chizish ---------- */
+function paint(){
+  const d = S.data; if (!d) return;
+  $('boot').classList.add('hidden');
+  $('dayT').textContent = dayHead(d.date);
+  $('daySub').textContent = `${rel(d.date) ? WDF[wdOf(d.date)] + ' · ' : ''}ish vaqti ${d.work.start}–${d.work.end} · ${d.stats.instructors} instruktor`;
+  $('dayIn').value = d.date;
+  $('todayBtn').classList.toggle('hidden', d.date === d.today);
+  $('upd').textContent = `Yangilandi ${fmtHms(new Date())}`;
+  document.querySelectorAll('.tabs button').forEach(b => b.classList.toggle('on', b.dataset.tab === S.tab));
+  TABS.forEach(t => $('t-' + t).classList.toggle('hidden', t !== S.tab));
+  if (S.tab === 'kun') paintDay();
+  if (S.tab === 'hafta') paintWeek();
+  if (S.tab === 'statistika') paintStats();
+  if (S.tab === 'excel') paintExcel();
+}
+
+function kpi(label, val, unit, cls){ return `<div class="kpi ${cls || ''}"><small>${esc(label)}</small><b class="num">${esc(val)}${unit ? `<i>${esc(unit)}</i>` : ''}</b></div>`; }
+
+function paintDay(){
+  const d = S.data, s = d.stats, isToday = d.date === d.today;
+  $('kpis').innerHTML = [
+    isToday ? kpi('Hozir darsda', s.lesson_now, `/ ${s.working}`, 'ok') : kpi('Ishlaydi', s.working, `/ ${s.instructors}`),
+    isToday ? kpi('Hozir bo‘sh', s.free_now, 'instruktor') : kpi('Dam olishda', s.instructors - s.working, 'instruktor'),
+    kpi('Bronlar', s.bron, '', 'acc'),
+    kpi('Band soat', hrs(s.booked_min), `/ ${hrs(s.work_min)} soat`),
+    kpi('Bandlik', s.load + '%', ''),
+    kpi('To‘langan', s.paid, `/ ${s.bron}`),
+    kpi('Kelmagan', s.no_show, '', s.no_show ? 'bad' : ''),
+    kpi('Bekor qilingan', s.cancelled, ''),
+  ].join('');
+
+  $('strip').innerHTML = d.week.totals.map(t => `<button class="${t.date === d.date ? 'on' : ''} ${t.date === d.today ? 'tdy' : ''}" data-day="${t.date}" aria-label="${esc(longDay(t.date))}: ${t.bron} bron">
+    <b>${WD[wdOf(t.date)]}</b><span class="num">${Number(t.date.slice(8, 10))}</span><i>${t.bron} bron</i></button>`).join('');
+
+  /* filtrlar */
+  const all = d.instructors;
+  const cnt = f => all.filter(f).length;
+  const stF = isToday ? [
+    ['all', 'Hammasi', () => true], ['lesson', 'Darsda', i => ['lesson', 'due'].includes(i.now?.state)], ['free', 'Bo‘sh', i => i.now?.state === 'free'],
+    ['break', 'Tanaffus / yopiq', i => ['break', 'own', 'before', 'done'].includes(i.now?.state)], ['off', 'Dam', i => i.day.off],
+  ] : [
+    ['all', 'Hammasi', () => true], ['busy', 'Bronli', i => i.stats.bron > 0], ['empty', 'Bronsiz', i => !i.day.off && !i.stats.bron], ['off', 'Dam', i => i.day.off],
+  ];
+  if (!stF.some(x => x[0] === S.st)) S.st = 'all';
+  const cats = [...new Set(all.flatMap(i => i.categories))].sort();
+  if (S.cat && !cats.includes(S.cat)) S.cat = '';
+  $('flt').innerHTML = stF.map(([k, t, f]) => `<button class="chip ${S.st === k ? 'on' : ''}" data-st="${k}">${esc(t)}<i>${cnt(f)}</i></button>`).join('')
+    + (cats.length > 1 ? cats.map(c => `<button class="chip ${S.cat === c ? 'on' : ''}" data-cat="${c}">${c} toifa</button>`).join('') : '');
+
+  $('lg').innerHTML = `<span><i class="op"></i>ish vaqti</span><span><i class="cl"></i>ishlamaydi / tanaffus</span><span><i class="ow"></i>o‘zi yopgan</span>
+    ${Object.entries(BS).map(([k, [ic, t]]) => `<span><i class="b-${k}"></i>${ic} ${t}</span>`).join('')}${isToday ? '<span><i class="nw"></i>hozir</span>' : ''}`;
+
+  const sf = stF.find(x => x[0] === S.st)[2];
+  const q = S.q.trim().toLowerCase(), qd = q.replace(/\D/g, '');
+  const list = all.filter(i => sf(i) && (!S.cat || i.categories.includes(S.cat)) && (!q
+    || i.name.toLowerCase().includes(q) || (qd.length >= 3 && String(i.phone || '').replace(/\D/g, '').includes(qd))
+    || i.bookings.some(b => String(b.name).toLowerCase().includes(q) || String(b.code || '').toLowerCase().includes(q) || String(b.who?.by || '').toLowerCase().includes(q) || (qd.length >= 3 && String(b.phone || '').replace(/\D/g, '').includes(qd)))));
+  $('cards').innerHTML = list.length ? list.map(i => card(i, d)).join('') : `<div class="empty">${all.length ? 'Bu filtr bo‘yicha instruktor yo‘q' : 'Instruktorlar yo‘q'}</div>`;
+  if (S.focus) {
+    const el = $('ins-' + S.focus); S.focus = null;
+    if (el) { el.scrollIntoView({ behavior: 'smooth', block: 'start' }); el.classList.add('flash'); }
+  }
+}
+
+function card(i, d){
+  const isToday = d.date === d.today, nowM = isToday ? dayMin(d.now, d.date) : null;
+  const st = i.now ? NOW[i.now.state] : null;
+  let state = '';
+  if (st) {
+    let sub = '';
+    const b = i.now.booking, nx = i.now.next;
+    if (b) sub = `${fmtHm(b.start)}–${fmtHm(b.end)} · ${b.name}${b.phone ? ' · ' + prettyTel(b.phone) : ''}${i.now.over ? ` · ⏰ vaqtidan ${i.now.over} daq oshdi` : ''}`;
+    else if (i.now.until) sub = `${i.now.until} da qaytadi`;
+    else if (i.now.at) sub = `Ishga ${i.now.at} da keladi`;
+    if (nx) sub += `${sub ? ' · ' : ''}keyingi: ${fmtHm(nx.start)} ${nx.name}`;
+    const cls = i.now.over ? 'crit' : st[2];
+    state = `<div class="state ${cls}"><b aria-hidden="true">${st[0]}</b><span>${esc(st[1])}${sub ? `<small>${esc(sub)}</small>` : ''}</span></div>`;
+  }
+  /* vaqt chizig'i */
+  let a = hm2m(d.work.start), z = hm2m(d.work.end);
+  for (const b of i.bookings) { a = Math.min(a, dayMin(b.start, d.date)); z = Math.max(z, dayMin(b.end, d.date)); }
+  a = Math.floor(a / 60) * 60; z = Math.max(a + 60, Math.ceil(z / 60) * 60);
+  const L = m => ((m - a) / (z - a) * 100).toFixed(3) + '%', W = (m1, m2) => ((m2 - m1) / (z - a) * 100).toFixed(3) + '%';
+  const seg = (r, cls) => r.map(([x, y]) => { const s = Math.max(a, hm2m(x)), e = Math.min(z, hm2m(y)); return e > s ? `<i class="${cls}" style="left:${L(s)};width:${W(s, e)}"></i>` : ''; }).join('');
+  const bks = i.bookings.map(b => {
+    const s = dayMin(b.start, d.date), e = dayMin(b.end, d.date);
+    const tip = `${fmtHm(b.start)}–${fmtHm(b.end)} · ${b.name}\n${BS[b.status]?.[0] || ''} ${BS[b.status]?.[1] || b.status}${b.paid ? ' · to‘langan' : ''}\n${[b.code, b.cat ? b.cat + ' toifa' : '', dur(b.min)].filter(Boolean).join(' · ')}\n${whoTxt(b, d.date)}`;
+    return `<i class="bk b-${esc(b.status)}" tabindex="0" data-tip="${esc(tip)}" style="left:${L(s)};width:${W(s, e)}"></i>`;
+  }).join('');
+  const ticks = []; for (let m = a, k = 0; m <= z; m += 60, k++) ticks.push(`<span class="${k % 2 ? 'odd' : ''}" style="left:${L(m)}">${m / 60}</span>`);
+  const nowLine = nowM != null && nowM >= a && nowM <= z ? `<i class="now" style="left:${L(nowM)}"></i>` : '';
+  const tl = `<div class="tlw"><div class="tl" role="img" aria-label="Kun vaqt chizig‘i">${seg(i.day.open, 'op')}${seg(i.day.own, 'ow')}${bks}${nowLine}</div><div class="ticks">${ticks.join('')}</div></div>`;
+
+  const hours = i.day.off ? `<span><b>🌙 Dam olish kuni</b></span>${i.bookings.length ? '<span class="tag crit">⚠ dam kuni, lekin bron bor</span>' : ''}`
+    : `<span>🕘 Ish vaqti: <b>${esc(full(i.day.open))}</b></span>${i.day.closed.length ? `<span>☕ Tanaffus / ishlamaydi: ${esc(full(i.day.closed))}</span>` : ''}${i.day.own.length ? `<span>🔒 O‘zi yopgan: ${esc(full(i.day.own))}</span>` : ''}`;
+  const custom = i.day.custom ? '<span class="tag">shu kunga alohida grafik</span>' : '';
+  const x = i.stats;
+  const mini = `<div class="mini"><span><b class="num">${x.bron}</b> bron</span><span><b class="num">${hrs(x.booked_min)}</b> / ${hrs(x.work_min)} soat</span>
+    <span class="meter" role="img" aria-label="Bandlik ${x.load}%"><i style="width:${x.load}%"></i></span><b class="num">${x.load}%</b>
+    ${x.no_show ? `<span class="bad">✕ kelmagan ${x.no_show}</span>` : ''}${x.cancelled ? `<span>bekor ${x.cancelled}</span>` : ''}${x.paid ? `<span>✓ to‘langan ${x.paid}</span>` : ''}</div>`;
+  const nowMs = Date.parse(d.now);
+  const rows = i.bookings.length ? `<ul class="bks">${i.bookings.map(b => {
+    const past = isToday && Date.parse(b.end) <= nowMs && b.status !== 'in_progress';
+    const cur = i.now?.booking?.id === b.id;
+    const t = tel(b.phone);
+    const meta = [b.code, b.cat ? b.cat + ' toifa' : '', dur(b.min), b.paid ? '✓ to‘langan' : ''].filter(Boolean).join(' · ');
+    return `<li class="${past ? 'past' : ''} ${cur ? 'cur' : ''}"><span class="t">${fmtHm(b.start)}<small>${fmtHm(b.end)}</small></span>
+      <div class="m"><b>${esc(b.name)}</b>${t ? `<a href="tel:${t}">📞 ${esc(prettyTel(b.phone))}</a>` : ''}<small>${esc(meta)}</small><small class="w">${esc(whoTxt(b, d.date))}</small>${b.note ? `<em>💬 ${esc(b.note)}</em>` : ''}</div>
+      <span class="badge ${esc(b.status)}">${BS[b.status]?.[0] || ''} ${esc(BS[b.status]?.[1] || b.status)}</span></li>`;
+  }).join('')}</ul>` : `<div class="empty-b">${i.day.off ? 'Dam olish kuni — bron yo‘q' : 'Bron yo‘q'}</div>`;
+  const notes = i.notes.length ? `<div class="notes">${i.notes.map(n => `<span>📌 ${String(n.h).padStart(2, '0')}:00 · ${esc(n.t)}${n.by ? ` · ✍ ${esc(n.by)}` : ''}</span>`).join('')}</div>` : '';
+  const it = tel(i.phone);
+  return `<article class="ins" id="ins-${esc(i.id)}">
+    <div class="ins-h"><span class="ava">${esc(ini(i.name))}</span>
+      <div class="who"><b>${esc(i.name)}${i.active ? '' : '<span class="tag">faol emas</span>'}</b>
+        <small>${i.categories.map(c => `<span class="cat">${esc(c)}</span>`).join('')}${esc([i.car, i.phone ? prettyTel(i.phone) : ''].filter(Boolean).join(' · '))}</small></div>
+      ${it ? `<a class="call" href="tel:${it}" aria-label="Qo‘ng‘iroq: ${esc(i.name)}">📞</a>` : ''}</div>
+    ${state}${tl}<div class="hours">${hours}${custom}</div>${mini}${rows}${notes}</article>`;
+}
+
+function paintWeek(){
+  const d = S.data, days = d.week.days;
+  $('wkT').textContent = `Hafta: ${Number(days[0].slice(8, 10))}-${MON[Number(days[0].slice(5, 7)) - 1]} — ${Number(days[6].slice(8, 10))}-${MON[Number(days[6].slice(5, 7)) - 1]}`;
+  const head = `<thead><tr><th class="nm">Instruktor</th>${days.map(x => `<th class="${x === d.date ? 'sel' : ''} ${x === d.today ? 'tdy' : ''}"><b>${WD[wdOf(x)]} ${dd(x)}</b>${rel(x) || ''}</th>`).join('')}</tr></thead>`;
+  const body = d.instructors.map(i => `<tr><td class="nm"><b>${esc(i.name)}</b><small>${i.categories.join(', ')} toifa${i.active ? '' : ' · faol emas'}</small></td>${i.week.map(w => {
+    const ld = pct(w.booked_min, w.work_min);
+    const inner = w.off && !w.bron ? '<div class="off">🌙 Dam</div>'
+      : `<div class="hrs">${w.off ? '<span class="x">⚠ Dam, lekin bron bor</span>' : esc(short(w.open))}${w.custom ? '<span class="cu">alohida</span>' : ''}</div>
+         <div class="bn">${w.bron} <i>bron · ${hrs(w.booked_min)} s</i></div>${w.work_min ? `<div class="meter" title="Bandlik ${ld}%"><i style="width:${ld}%"></i></div>` : ''}
+         ${w.no_show || w.cancelled ? `<div class="x">${w.no_show ? `✕ ${w.no_show} kelmagan` : ''}${w.no_show && w.cancelled ? ' · ' : ''}${w.cancelled ? `${w.cancelled} bekor` : ''}</div>` : ''}`;
+    return `<td class="c ${w.date === d.date ? 'sel' : ''}" data-day="${w.date}" data-ins="${esc(i.id)}" title="${esc(i.name)} — ${esc(longDay(w.date))}">${inner}</td>`;
+  }).join('')}</tr>`).join('');
+  const foot = `<tfoot><tr><td class="nm">Jami</td>${d.week.totals.map(t => `<td class="${t.date === d.date ? 'sel' : ''}">${t.bron} bron<div style="font-weight:650;color:var(--hint);font-size:11.5px">${t.working} ishlaydi · ${t.load}%</div></td>`).join('')}</tr></tfoot>`;
+  $('wk').innerHTML = d.instructors.length ? head + `<tbody>${body}</tbody>` + foot : '<tbody><tr><td class="empty">Instruktorlar yo‘q</td></tr></tbody>';
+}
+
+function paintStats(){
+  const d = S.data, T = d.week.totals;
+  const sum = k => T.reduce((s, t) => s + (t[k] || 0), 0);
+  const bron = sum('bron'), bm = sum('booked_min'), wm = sum('work_min'), ns = sum('no_show'), cc = sum('cancelled');
+  const doneDays = T.filter(t => t.date <= d.today).length || 1;
+  $('skpis').innerHTML = [
+    kpi('Hafta bronlari', bron, '', 'acc'), kpi('Band soat', hrs(bm), `/ ${hrs(wm)}`), kpi('Bandlik', pct(bm, wm) + '%', ''),
+    kpi('Kelmagan', ns, bron ? `${pct(ns, bron)}%` : '', ns ? 'bad' : ''), kpi('Bekor qilingan', cc, ''),
+    kpi('Kuniga o‘rtacha', Math.round(T.filter(t => t.date <= d.today).reduce((s, t) => s + t.bron, 0) / doneDays), 'bron'),
+    kpi('Eng band kun', bron ? WD[wdOf(T.reduce((m, t) => t.bron > m.bron ? t : m, T[0]).date)] : '—', ''),
+    kpi('Instruktorlar', d.stats.instructors, ''),
+  ].join('');
+  const max = Math.max(1, ...T.map(t => t.bron));
+  $('bars').innerHTML = T.map(t => {
+    const tip = `${t.bron} bron · ${hrs(t.booked_min)} soat\n${longDay(t.date)}\nBandlik ${t.load}% · ${t.working} instruktor ishlaydi\nKelmagan ${t.no_show} · bekor ${t.cancelled}`;
+    return `<div class="col ${t.date === d.date ? 'sel' : ''}" tabindex="0" data-tip="${esc(tip)}" data-day="${t.date}"><span class="v">${t.bron}</span><span class="bar" style="height:${(t.bron / max * 82).toFixed(1)}%"></span></div>`;
+  }).join('');
+  $('barsX').innerHTML = T.map(t => `<div class="${t.date === d.date ? 'sel' : ''}"><b>${WD[wdOf(t.date)]} ${dd(t.date)}</b><small>${t.load}% band</small>${t.no_show ? `<small style="color:var(--s-crit-ink)">✕ ${t.no_show}</small>` : ''}</div>`).join('');
+  $('barsSub').textContent = `${dd(T[0].date)} — ${dd(T[6].date)} · ustunni bosing — tafsilot; ikki marta bosing — o‘sha kun`;
+
+  const rows = d.instructors.map(i => {
+    const s = k => i.week.reduce((a, w) => a + (w[k] || 0), 0);
+    return { i, bron: s('bron'), bm: s('booked_min'), wm: s('work_min'), ns: s('no_show'), cc: s('cancelled') };
+  }).sort((a, b) => pct(b.bm, b.wm) - pct(a.bm, a.wm) || b.bron - a.bron);
+  $('rk').innerHTML = `<thead><tr><th>Instruktor</th><th>Bron</th><th class="hm">Band, soat</th><th class="hm">Ish, soat</th><th>Bandlik</th><th>Kelmagan</th><th class="hm">Bekor</th></tr></thead>
+    <tbody>${rows.map(r => `<tr><td>${esc(r.i.name)}${r.i.active ? '' : ' <span class="tag">faol emas</span>'}</td><td>${r.bron}</td><td class="hm">${hrs(r.bm)}</td><td class="hm">${hrs(r.wm)}</td>
+      <td class="ld"><div class="ldw"><span class="meter"><i style="width:${pct(r.bm, r.wm)}%"></i></span><b>${pct(r.bm, r.wm)}%</b></div></td>
+      <td class="${r.ns ? 'bad' : ''}">${r.ns}</td><td class="hm">${r.cc}</td></tr>`).join('')}</tbody>
+    <tfoot><tr><td>Jami</td><td>${bron}</td><td class="hm">${hrs(bm)}</td><td class="hm">${hrs(wm)}</td><td class="ld"><div class="ldw"><b>${pct(bm, wm)}%</b></div></td><td>${ns}</td><td class="hm">${cc}</td></tr></tfoot>`;
+}
+
+/* ---------- EXCEL ko'rinishi ---------- */
+const XB_PAL = ['#fde047', '#86efac', '#cbd5e1', '#fdba74', '#93c5fd', '#a5b4fc', '#f9a8d4', '#5eead4', '#c4b5fd', '#fcd34d', '#7dd3fc', '#bef264'];
+const grpColor = g => { const s = String(g || '').toUpperCase().replace(/\s+/g, ''); return s === 'A' ? '#c2410c' : s === 'B' ? '#2b2f8f' : s === 'C' ? '#047857' : '#6d28d9'; };
+const tintHex = (hex, k) => { const n = parseInt(hex.slice(1), 16), m = c => Math.round(c * k + 255 * (1 - k)).toString(16).padStart(2, '0'); return '#' + m(n >> 16 & 255) + m(n >> 8 & 255) + m(n & 255); };
+/** Jadval: ustunlar (toifa guruhi → ism), soatlar, har katak turi; ketma-ket soatlardagi bitta bron — bitta katak */
+function sheetGrid(d){
+  const cols = [...d.instructors].map(i => ({ ...i, group: i.categories.join(', ') }))
+    .sort((a, b) => a.group.localeCompare(b.group) || a.name.localeCompare(b.name, 'uz'));
+  let h0 = d.hours[0], h1 = d.hours[d.hours.length - 1];
+  for (const i of cols) for (const b of i.bookings) { h0 = Math.min(h0, Math.floor(dayMin(b.start, d.date) / 60)); h1 = Math.max(h1, Math.ceil(dayMin(b.end, d.date) / 60) - 1); }
+  const H = []; for (let h = Math.max(0, h0); h <= Math.min(23, h1); h++) H.push(h);
+  const out = cols.map((i, c) => {
+    const occ = h => i.bookings.filter(b => dayMin(b.start, d.date) < (h + 1) * 60 && dayMin(b.end, d.date) > h * 60);
+    const firstOpen = i.day.open.length ? hm2m(i.day.open[0][0]) : 0, lastOpen = i.day.open.length ? hm2m(i.day.open[i.day.open.length - 1][1]) : 0;
+    const hits = (rr, m0, m1) => rr.some(([a, b]) => hm2m(a) < m1 && hm2m(b) > m0);
+    const cells = []; let r = 0;
+    while (r < H.length) {
+      const h = H[r], list = occ(h), m0 = h * 60, m1 = m0 + 60;
+      if (list.length === 1) {
+        let span = 1; const id = list[0].id;
+        while (r + span < H.length) { const nx = occ(H[r + span]); if (nx.length === 1 && nx[0].id === id) span++; else break; }
+        cells[r] = { k: 'bk', items: list, span }; for (let x = 1; x < span; x++) cells[r + x] = { k: 'skip' };
+        r += span; continue;
+      }
+      if (list.length > 1) cells[r] = { k: 'bk', items: list, span: 1 };
+      else { const n = i.notes.find(x => x.h === h);
+        if (n) cells[r] = { k: 'note', note: n };
+        else if (hits(i.day.own, m0, m1)) cells[r] = { k: 'own' };
+        else if (i.day.off) cells[r] = { k: 'off' };
+        else if (!hits(i.day.open, m0, m1)) cells[r] = { k: 'cl', mid: m0 >= firstOpen && m1 <= lastOpen };
+        else cells[r] = { k: 'free' }; }
+      r++;
+    }
+    return { i, c, color: XB_PAL[c % XB_PAL.length], gs: c > 0 && cols[c - 1].group !== i.group, cells };
+  });
+  const groups = []; for (const x of out) { const l = groups[groups.length - 1]; if (l && l.g === x.i.group) l.n++; else groups.push({ g: x.i.group, n: 1 }); }
+  return { H, cols: out, groups };
+}
+const stTag = s => `<span class="st ${esc(s)}">${esc((BS[s] || ['', s])[0])} ${esc(((BS[s] || ['', s])[1]).toLowerCase())}</span>`;
+function xlItem(b, d, big){
+  const main = b.t || (b.phone ? prettyTel(b.phone) : b.name);
+  const t = tel(b.phone);
+  const nm = b.t ? `${b.name}` : b.phone ? b.name : '';
+  const meta = [b.code, b.cat ? b.cat + ' toifa' : '', dur(b.min), b.paid ? '✓ to‘langan' : ''].filter(Boolean).join(' · ');
+  return `${big ? '' : `<span class="xr">${fmtHm(b.start)}–${fmtHm(b.end)}</span>`}<span class="xt">${esc(main)}</span>
+    ${nm ? `<span class="xn">${t ? `<a href="tel:${t}">${esc(nm)}${b.t && !String(b.t).replace(/\D/g, '').includes(String(b.phone || '').replace(/\D/g, '').slice(-9)) ? ' · ' + esc(prettyTel(b.phone)) : ''}</a>` : esc(nm)}</span>` : ''}
+    <span class="xs">${b.status !== 'confirmed' ? stTag(b.status) : ''}${esc(meta)}</span><span class="xw">${esc(whoTxt(b, d.date))}</span>`;
+}
+function paintExcel(){
+  const d = S.data, G = sheetGrid(d), isToday = d.date === d.today, nowH = isToday ? Math.floor(dayMin(d.now, d.date) / 60) : null;
+  $('xlT').textContent = `Excel bron — ${dayHead(d.date)}`;
+  const upd = d.sheet?.updated_at ? ` · Excel oxirgi marta: ${whenShort(d.sheet.updated_at, d.date)}${d.sheet.updated_by ? ' (' + d.sheet.updated_by + ')' : ''}` : '';
+  $('xlSub').textContent = `Ustun — instruktor, qator — soat. Katakda: kimga (mijoz, telefon), bron kodi, toifa, davomiylik, holat va kim yozgani${upd}.`;
+  $('xlLg').innerHTML = `<span><i style="background:#2b2f8f"></i>chap chiziq ko‘k — Excel bron</span><span><i style="background:#d92d35"></i>qizil — Mini App, kassa, qo‘lda</span>
+    <span><i style="background:#0ca30c"></i>▶ darsda</span><span><i style="background:#d03b3b"></i>✕ kelmagan</span><span><i class="cl"></i>ishlamaydi / tanaffus</span><span><i class="ow"></i>o‘zi yopgan</span>`;
+  if (!G.cols.length) { $('xg').innerHTML = '<tbody><tr><td class="empty">Instruktorlar yo‘q</td></tr></tbody>'; return; }
+  let ci = 0;
+  const gRow = `<tr class="g"><th class="hc" rowspan="3">Soat</th>${G.groups.map(g => { const gs = ci > 0; ci += g.n; return `<th colspan="${g.n}" class="${gs ? 'gs' : ''}" style="background:${grpColor(g.g)}">${esc(g.g)} TOIFA</th>`; }).join('')}</tr>`;
+  const nRow = `<tr class="n">${G.cols.map(x => `<th class="${x.gs ? 'gs' : ''}" style="background:${x.color}">${esc(x.i.name)}${x.i.phone ? `<small>${esc(prettyTel(x.i.phone))}</small>` : ''}</th>`).join('')}</tr>`;
+  const sRow = `<tr class="s">${G.cols.map(x => `<th class="${x.gs ? 'gs' : ''}">${x.i.day.off ? '🌙 dam' : `${x.i.stats.bron} bron · ${x.i.stats.load}%`}</th>`).join('')}</tr>`;
+  const body = G.H.map((h, r) => `<tr class="${nowH != null && h < nowH ? 'past' : ''} ${h === nowH ? 'now' : ''}"><td class="hc">${h}:00</td>${G.cols.map(x => {
+    const cell = x.cells[r], gs = x.gs ? ' gs' : '';
+    if (cell.k === 'skip') return '';
+    if (cell.k === 'bk') {
+      const multi = cell.items.length > 1, b = cell.items[0];
+      const cls = `xc bk${multi ? ' multi' : ''} s-${esc(b.status)}${b.sheet ? '' : ' app'}${gs}`;
+      const inner = multi ? cell.items.map(it => `<div class="it">${xlItem(it, d, false)}</div>`).join('')
+        : `${cell.span > 1 ? `<span class="xr">${fmtHm(b.start)}–${fmtHm(b.end)} · ${dur(b.min)}</span>` : (dayMin(b.start, d.date) % 60 || b.min < 60 ? `<span class="xr">${fmtHm(b.start)}–${fmtHm(b.end)}</span>` : '')}${xlItem(b, d, true)}`;
+      return `<td class="${cls}" ${cell.span > 1 ? `rowspan="${cell.span}"` : ''} style="--cb:${tintHex(x.color, 0.9)}"><div>${inner}</div></td>`;
+    }
+    if (cell.k === 'note') return `<td class="xc nt${gs}"><div><span class="xt">${esc(cell.note.t)}</span>${cell.note.by ? `<span class="xw">✍ ${esc(cell.note.by)}${cell.note.at ? ' · ' + esc(whenShort(cell.note.at, d.date)) : ''}</span>` : ''}</div></td>`;
+    if (cell.k === 'own') return `<td class="xc ow${gs}"><div>🔒 yopiq</div></td>`;
+    if (cell.k === 'off') return `<td class="xc of${gs}"><div>dam</div></td>`;
+    if (cell.k === 'cl') return `<td class="xc cl${gs}"><div>${cell.mid ? 'tanaffus' : '—'}</div></td>`;
+    return `<td class="xc${gs}" style="--cb:${tintHex(x.color, 0.16)}"><div></div></td>`;
+  }).join('')}</tr>`).join('');
+  const foot = `<tfoot><tr><td class="hc">Jami</td>${G.cols.map(x => `<td class="${x.gs ? 'gs' : ''}">${x.i.stats.bron} bron · ${hrs(x.i.stats.booked_min)} s</td>`).join('')}</tr></tfoot>`;
+  $('xg').innerHTML = `<thead>${gRow}${nRow}${sRow}</thead><tbody>${body}</tbody>${foot}`;
+  if (nowH != null && !S.xlScrolled) {
+    S.xlScrolled = true;
+    const tr = $('xg').querySelector('tr.now'), box = $('xgS'), th = $('xg').tHead;
+    const prev = tr?.previousElementSibling || tr;
+    if (tr && box) box.scrollTop = Math.max(0, prev.offsetTop - (th ? th.offsetHeight : 0));
+  }
+}
+/** Yuklab olinadigan .xlsx — ekrandagi jadval bilan bir xil */
+function downloadXlsx(){
+  const d = S.data; if (!d || typeof XL === 'undefined') return;
+  const G = sheetGrid(d), n = G.cols.length, rows = [], merges = [];
+  if (!n) return;
+  const INK = '05081A', SEP = { left: '05081A', lstyle: 'thick' };
+  const hex = c => c.replace('#', '').toUpperCase();
+  rows.push({ h: 30, cells: [{ v: `Excel bron — ${dayHead(d.date)} (${WDF[wdOf(d.date)]})`, st: { bold: true, size: 16, color: '1B1E66', grid: 'FFFFFF' } }] }); merges.push(`A1:${XL.col(n)}1`);
+  const g = [{ v: 'Soat', st: { fill: 'C62F35', bold: true, size: 13, color: 'FFFFFF', align: 'center' } }]; let ci = 1;
+  for (const x of G.groups) {
+    for (let k = 0; k < x.n; k++) g[ci + k] = { v: k ? '' : `${x.g} toifa`.toUpperCase(), st: { fill: hex(grpColor(x.g)), bold: true, size: 12, color: 'FFFFFF', align: 'center', ...(ci > 1 ? SEP : {}) } };
+    if (x.n > 1) merges.push(`${XL.col(ci)}2:${XL.col(ci + x.n - 1)}2`); ci += x.n;
+  }
+  rows.push({ h: 22, cells: g });
+  rows.push({ h: 34, cells: [{ v: '', st: { fill: 'C62F35' } }, ...G.cols.map(x => ({ v: x.i.name.toUpperCase(), st: { fill: hex(x.color), bold: true, size: 12, color: INK, align: 'center', wrap: true, ...(x.gs ? SEP : {}) } }))] });
+  rows.push({ h: 22, cells: [{ v: '', st: { fill: 'C62F35' } }, ...G.cols.map(x => ({ v: [x.i.phone ? prettyTel(x.i.phone) : '', x.i.day.off ? 'dam' : `${x.i.stats.bron} bron · ${x.i.stats.load}%`].filter(Boolean).join(' · '), st: { fill: hex(tintHex(x.color, 0.6)), bold: true, size: 11, color: INK, align: 'center', ...(x.gs ? SEP : {}) } }))] });
+  merges.push('A2:A4');
+  const R0 = rows.length;
+  const grid = G.H.map(h => [{ v: `${h}:00`, st: { fill: 'E5484D', bold: true, size: 14, color: 'FFFFFF', align: 'center', grid: 'F3A3A6' } }]);
+  const txt = b => [b.t || (b.phone ? prettyTel(b.phone) : b.name), b.t || b.phone ? b.name : '',
+    [b.status !== 'confirmed' ? (BS[b.status] || ['', b.status])[1] : '', b.code, b.cat ? b.cat + ' toifa' : '', dur(b.min), b.paid ? 'to‘langan' : ''].filter(Boolean).join(' · '),
+    whoTxt(b, d.date)].filter(Boolean).join('\n');
+  G.cols.forEach((x, c) => {
+    const base = { bold: true, size: 11, color: INK, wrap: true, indent: 1, ...(x.gs ? SEP : {}) };
+    G.H.forEach((h, r) => {
+      const cell = x.cells[r];
+      let v = '', st = { ...base, fill: hex(tintHex(x.color, 0.16)) };
+      if (cell.k === 'skip') { st = null; }
+      else if (cell.k === 'bk') {
+        const b = cell.items[0];
+        v = cell.items.length > 1 ? cell.items.map(it => `${fmtHm(it.start)}–${fmtHm(it.end)} ${txt(it)}`).join('\n\n')
+          : `${cell.span > 1 || dayMin(b.start, d.date) % 60 || b.min < 60 ? `${fmtHm(b.start)}–${fmtHm(b.end)}\n` : ''}${txt(b)}`;
+        st = { ...base, fill: hex(tintHex(x.color, 0.9)), left: b.status === 'in_progress' ? '0CA30C' : b.sheet ? '2B2F8F' : 'D92D35' };
+        if (cell.span > 1) merges.push(`${XL.col(c + 1)}${R0 + r + 1}:${XL.col(c + 1)}${R0 + r + cell.span}`);
+      }
+      else if (cell.k === 'note') { v = `${cell.note.t}${cell.note.by ? '\n✍ ' + cell.note.by : ''}`; st = { ...base, fill: 'E2E5EC', left: '5B6378', color: '1F2440' }; }
+      else if (cell.k === 'own') { v = 'yopiq'; st = { ...base, fill: 'E4E7EE', color: '4B5368', align: 'center' }; }
+      else if (cell.k === 'off') { v = 'dam'; st = { ...base, fill: 'ECE7F8', color: '5E4D8F', align: 'center', bold: false }; }
+      else if (cell.k === 'cl') { v = cell.mid ? 'tanaffus' : '—'; st = { ...base, fill: 'E9EBF1', color: '5B6378', align: 'center', bold: false }; }
+      grid[r][c + 1] = st ? { v, st } : { v: '', st: grid[r - 1]?.[c + 1]?.st || base };
+    });
+  });
+  grid.forEach(cells => rows.push({ h: 64, cells }));
+  rows.push({ h: 8, cells: [] });
+  rows.push({ h: 20, cells: [{ v: `Nazorat paneli · yuklab olindi ${fmtHms(new Date())}. Katakda: kimga, telefon, holat, kod, toifa, davomiylik va kim yozgani. Chap chiziq: ko‘k — Excel bron, qizil — Mini App / kassa / qo‘lda, yashil — darsda.`, st: { size: 11, color: '4B5368', grid: 'FFFFFF' } }] });
+  merges.push(`A${rows.length}:${XL.col(n)}${rows.length}`);
+  const blob = XL.book([{ name: 'Excel bron', rows, merges, cols: [9, ...Array(n).fill(31)], freeze: { x: 1, y: 4 } }]);
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = `nazorat-excel-${d.date}.xlsx`;
+  document.body.appendChild(a); a.click();
+  setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1500);
+}
+
+/* ---------- tooltip (sichqoncha, klaviatura, barmoq) ---------- */
+const tip = $('tip'); let tipT = 0;
+function showTip(el, x, y){
+  const lines = String(el.dataset.tip || '').split('\n');
+  tip.replaceChildren(...lines.map((l, k) => { const div = document.createElement('div'); div.className = k ? 'lx' : 'l0'; div.textContent = l; return div; }));
+  tip.classList.remove('hidden');
+  const r = tip.getBoundingClientRect();
+  let left = x + 14, top = y + 14;
+  if (left + r.width > innerWidth - 8) left = Math.max(8, x - r.width - 14);
+  if (top + r.height > innerHeight - 8) top = Math.max(8, y - r.height - 14);
+  tip.style.left = left + 'px'; tip.style.top = top + 'px';
+}
+const hideTip = () => tip.classList.add('hidden');
+document.addEventListener('pointermove', e => {
+  if (e.pointerType === 'touch') return;
+  const el = e.target.closest('[data-tip]');
+  if (el) showTip(el, e.clientX, e.clientY); else hideTip();
+});
+document.addEventListener('focusin', e => { const el = e.target.closest?.('[data-tip]'); if (el) { const r = el.getBoundingClientRect(); showTip(el, r.left + r.width / 2, r.bottom); } });
+document.addEventListener('focusout', hideTip);
+window.addEventListener('scroll', hideTip, { passive: true });
+
+/* ---------- bosishlar ---------- */
+document.addEventListener('click', e => {
+  const t = e.target;
+  const tabB = t.closest('.tabs button');
+  if (tabB) { S.tab = tabB.dataset.tab; syncUrl(); paint(); window.scrollTo({ top: 0 }); return; }
+  const tipEl = t.closest('[data-tip]');
+  if (tipEl && (e.pointerType === 'touch' || !e.pointerType || tipEl.classList.contains('col'))) {
+    const r = tipEl.getBoundingClientRect(); showTip(tipEl, r.left + r.width / 2, r.top + r.height);
+    clearTimeout(tipT); tipT = setTimeout(hideTip, 3500);
+    if (!(tipEl.classList.contains('col') && e.detail >= 2)) return;
+  }
+  const dayB = t.closest('[data-day]');
+  if (dayB) {
+    const ins = dayB.dataset.ins || null;
+    if (dayB.closest('#wk') || dayB.closest('#bars')) S.tab = 'kun';
+    if (dayB.dataset.day === S.data?.date) { S.focus = ins; syncUrl(); paint(); return; }
+    setDay(dayB.dataset.day, ins); return;
+  }
+  const stB = t.closest('[data-st]'); if (stB) { S.st = stB.dataset.st; paintDay(); return; }
+  const catB = t.closest('[data-cat]'); if (catB) { S.cat = S.cat === catB.dataset.cat ? '' : catB.dataset.cat; paintDay(); return; }
+});
+$('prev').onclick = () => setDay(addDays(S.data?.date || S.d || ymdNow(), -1));
+$('next').onclick = () => setDay(addDays(S.data?.date || S.d || ymdNow(), 1));
+$('todayBtn').onclick = () => setDay(ymdNow());
+$('xlDl').onclick = () => { try { downloadXlsx(); } catch (e) { alert('Excel fayl tayyorlanmadi: ' + (e?.message || e)); } };
+$('dayIn').onchange = e => { if (/^\d{4}-\d{2}-\d{2}$/.test(e.target.value)) setDay(e.target.value); };
+let qT = 0;
+$('q').addEventListener('input', e => { S.q = e.target.value; clearTimeout(qT); qT = setTimeout(paintDay, 120); });
+
+/* ---------- jonli yangilanish ---------- */
+setInterval(() => { if (!document.hidden && Date.now() - S.last > 29000) load(true); }, 5000);
+document.addEventListener('visibilitychange', () => { if (!document.hidden && Date.now() - S.last > 15000) load(true); });
+window.addEventListener('online', () => load(true));
+/* kun almashganda (yarim tun) «Bugun» o'zi keyingi kunga o'tadi */
+let lastToday = ymdNow();
+setInterval(() => { const t = ymdNow(); if (t !== lastToday) { if (S.d === lastToday) S.d = t; lastToday = t; load(true); } }, 60000);
+
+load();
+})();
+</script>
+</body>
+</html>
