@@ -75,7 +75,7 @@ a{color:inherit}
 .bar .nav{width:40px;height:40px;border-radius:12px;background:rgba(255,255,255,.14);color:#fff;font-size:22px;font-weight:700;display:grid;place-items:center;flex:none}
 .bar .today{height:40px;padding:0 12px;border-radius:12px;background:rgba(255,255,255,.18);color:#fff;font-weight:800;font-size:13.5px;flex:none}
 .bar .see{height:40px;padding:0 14px;border-radius:12px;background:#fff;color:#232883;font-weight:850;font-size:14px;flex:none;display:inline-flex;align-items:center;gap:7px;white-space:nowrap}
-@media (max-width:560px){.bar{flex-wrap:wrap}.bar .day{flex:1 1 calc(100% - 96px)}.bar .see{flex:1 1 100%;justify-content:center}}
+@media (max-width:560px){.bar{flex-wrap:wrap}.bar .day{flex:1 1 calc(100% - 96px)}.bar .see{flex:1 1 calc(100% - 48px);justify-content:center}}
 
 .wrap{max-width:1180px;margin:0 auto;padding:14px 16px 50px;transition:opacity .15s}
 .wrap.busy{opacity:.6}
@@ -109,6 +109,36 @@ a{color:inherit}
 .fr a{flex:none;width:34px;height:34px;border-radius:10px;background:var(--card-2);display:grid;place-items:center;text-decoration:none;font-size:15px}
 .empty-s{padding:18px 16px;color:var(--hint);font-size:13.5px;text-align:center}
 .foot{color:var(--hint);font-size:12px;text-align:center;margin-top:16px}
+
+/* qidiruv oynasi */
+.bar .srch{font-size:18px;background:#fff;color:#232883}
+.sv{position:fixed;inset:0;z-index:55;background:rgba(5,8,26,.55);display:flex;align-items:flex-start;justify-content:center}
+.sv-box{background:var(--bg);width:100%;max-width:680px;height:100%;display:flex;flex-direction:column;min-height:0}
+@media (min-width:760px){.sv{padding:40px 16px}.sv-box{height:auto;max-height:calc(100vh - 80px);border-radius:20px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.35)}}
+.sv-h{display:flex;align-items:center;gap:8px;padding:10px 12px;background:var(--hero);flex:none}
+.sv-ic{font-size:18px;flex:none;padding-left:4px}
+.sv-h input{flex:1;min-width:0;height:46px;border-radius:13px;border:0;outline:none;padding:0 14px;font-size:17px;font-weight:650;background:#fff;color:#141833}
+.sv-h .x{width:42px;height:42px;border-radius:12px;background:rgba(255,255,255,.16);color:#fff;font-size:18px;font-weight:800;flex:none}
+.sv-b{flex:1;min-height:0;overflow:auto;padding:10px 12px 16px;-webkit-overflow-scrolling:touch}
+.sv-tip{color:var(--text-2);font-size:13.5px;line-height:1.5;padding:12px 6px}
+.sv-cnt{color:var(--hint);font-size:12.5px;font-weight:700;padding:4px 6px 8px}
+.sr{display:block;width:100%;text-align:left;background:var(--card);border-radius:16px;box-shadow:var(--shadow);padding:11px 13px;margin-bottom:8px}
+.sr:hover{box-shadow:0 0 0 2px var(--accent),var(--shadow)}
+.sr.cx{opacity:.6}
+.sr-t{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:13.5px;color:var(--text-2);margin-bottom:5px}
+.sr-t b{color:var(--text);font-size:15px}
+.sr-t .tm{font-weight:850;color:var(--text);font-size:15px;font-variant-numeric:tabular-nums}
+.sr-t .sb{margin-left:auto;font-size:11.5px;font-weight:800;padding:3px 8px;border-radius:8px;background:var(--card-2);color:var(--text-2);white-space:nowrap}
+.sr-t .sb.in_progress{background:var(--s-good-soft);color:var(--s-good-ink)}.sr-t .sb.no_show,.sr-t .sb.cancelled,.sr-t .sb.rejected{background:var(--s-crit-soft);color:var(--s-crit-ink)}
+.sr-t .sb.pending{background:var(--s-warn-soft);color:var(--s-warn-ink)}.sr-t .sb.confirmed{background:var(--s-conf-soft);color:var(--s-conf-ink)}
+.sr-c{font-size:15px;font-weight:750;line-height:1.35}
+.sr-c .ph{font-weight:800;color:var(--accent);white-space:nowrap;font-variant-numeric:tabular-nums}
+.sr-c mark{background:#fde047;color:#141833;border-radius:4px;padding:0 2px}
+.sr-i{margin-top:6px;padding:7px 10px;border-radius:11px;background:var(--accent-soft);font-size:14px;line-height:1.35}
+.sr-i b{font-size:15px}
+.sr-m{margin-top:6px;font-size:12.5px;color:var(--hint);line-height:1.45}
+.sr-m .w{color:var(--text-2);font-weight:650;display:block}
+.sv-empty{text-align:center;color:var(--hint);padding:30px 10px;font-size:14px}
 
 /* oyna: Excel bron */
 .ov{position:fixed;inset:0;z-index:50;background:rgba(5,8,26,.55);display:flex;align-items:stretch;justify-content:center}
@@ -198,6 +228,7 @@ table.xg{border-collapse:separate;border-spacing:0;font-size:13px;color:#05081a;
     <label class="day" title="Kunni tanlash"><b id="dayT">…</b><small id="daySub">kunni tanlash uchun bosing</small><input type="date" id="dayIn" aria-label="Kun"></label>
     <button class="nav" id="next" aria-label="Keyingi kun">›</button>
     <button class="today hidden" id="todayBtn">Bugun</button>
+    <button class="nav srch" id="srchBtn" aria-label="Bronni qidirish" title="Bronni qidirish (telefon oxiri)">🔍</button>
     <button class="see" id="allBtn">📋 Bronlarni ko‘rish</button>
   </div>
 </header>
@@ -212,8 +243,17 @@ table.xg{border-collapse:separate;border-spacing:0;font-size:13px;color:#05081a;
     </section>
     <aside class="panel free" id="free"></aside>
   </div>
-  <p class="foot">Instruktorni bosing — uning Excel bron jadvali ochiladi · ma’lumot o‘zi yangilanadi · havolani begonalarga bermang</p>
+  <p class="foot">Instruktorni bosing — uning Excel bron jadvali ochiladi · 🔍 — telefon oxiri bo‘yicha bronni topish · ma’lumot o‘zi yangilanadi · havolani begonalarga bermang</p>
 </main>
+
+<div class="sv hidden" id="sv" role="dialog" aria-modal="true" aria-label="Bronni qidirish">
+  <div class="sv-box">
+    <div class="sv-h"><span class="sv-ic">🔍</span>
+      <input id="svIn" type="search" inputmode="search" autocomplete="off" placeholder="Telefon oxiri (4567), ism yoki bron kodi" aria-label="Qidirish">
+      <button class="x" id="svX" aria-label="Yopish">✕</button></div>
+    <div class="sv-b" id="svB"><div class="sv-tip">Mijoz telefonining oxirgi 3–4 raqamini yozing — kimga (qaysi instruktorga), qachon bron qilingani va kim yozgani chiqadi. 30 kun oldingi va 60 kun keyingi bronlar qidiriladi.</div></div>
+  </div>
+</div>
 
 <div class="ov hidden" id="ov" role="dialog" aria-modal="true">
   <div class="ov-box">
@@ -368,7 +408,7 @@ const $ = id => document.getElementById(id);
 const TZ = 'Asia/Tashkent';
 const P = new URLSearchParams(location.search);
 const K = P.get('k') || '';
-const S = { d: /^\d{4}-\d{2}-\d{2}$/.test(P.get('d') || '') ? P.get('d') : null, q: '', data: null, seq: 0, last: 0, ov: null, xlScrolled: false };
+const S = { d: /^\d{4}-\d{2}-\d{2}$/.test(P.get('d') || '') ? P.get('d') : null, q: '', data: null, seq: 0, last: 0, ov: null, sv: false, pendingOv: null, pendingReplace: false, xlScrolled: false };
 /* ---------- yordamchilar ---------- */
 const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const fmtHm = iso => new Intl.DateTimeFormat('en-GB', { timeZone: TZ, hour: '2-digit', minute: '2-digit' }).format(new Date(iso));
@@ -599,7 +639,8 @@ function paint(){
   $('todayBtn').classList.toggle('hidden', d.date === d.today);
   $('upd').textContent = `Yangilandi ${fmtHms(new Date())}`;
   paintList(); paintFree();
-  if (S.ov) paintOv();
+  if (S.pendingOv) { const id = S.pendingOv, rp = S.pendingReplace; S.pendingOv = null; S.pendingReplace = false; openOv(id, rp); }
+  else if (S.ov) paintOv();
 }
 function paintList(){
   const d = S.data, q = S.q.trim().toLowerCase();
@@ -633,10 +674,11 @@ function paintFree(){
 const minsTo = (iso, nowIso) => { const m = Math.max(0, Math.round((Date.parse(iso) - Date.parse(nowIso)) / 60000)), h = Math.floor(m / 60), r = m % 60; return m < 60 ? `${m} daqiqadan keyin` : r ? `${h} soat ${r} daqiqadan keyin` : `${h} soatdan keyin`; };
 
 /* ---------- oyna: Excel bron (bitta instruktor yoki hammasi) ---------- */
-function openOv(id){
+function openOv(id, replace){
   const was = !!S.ov;
   S.ov = id || 'all'; S.xlScrolled = false;
-  if (!was) history.pushState({ ov: 1 }, '', location.href);
+  if (replace) history.replaceState({ ov: 1 }, '', location.href);
+  else if (!was) history.pushState({ ov: 1 }, '', location.href);
   $('ov').classList.remove('hidden'); document.body.style.overflow = 'hidden';
   paintOv();
   $('ovX').focus();
@@ -665,13 +707,76 @@ function paintOv(){
   if (S.xlScrolled && (y || x)) { box.scrollTop = y; box.scrollLeft = x; }
 }
 
+/* ---------- 🔍 bronni qidirish ---------- */
+const SX = { seq: 0, t: 0, q: '' };
+const BSX = { ...BS, cancelled: ['✕', 'Bekor qilingan'], rejected: ['✕', 'Rad etilgan'] };
+function openSv(){
+  if (!S.sv) { S.sv = true; history.pushState({ sv: 1 }, '', location.href); }
+  $('sv').classList.remove('hidden'); document.body.style.overflow = 'hidden';
+  setTimeout(() => { $('svIn').focus(); $('svIn').select(); }, 30);
+}
+function closeSv(fromPop, keepHistory){
+  if (!S.sv) return;
+  S.sv = false; $('sv').classList.add('hidden'); if (!S.ov) document.body.style.overflow = '';
+  if (!fromPop && !keepHistory && history.state?.sv) history.back();
+}
+/** Telefonni chiroyli ko'rinishda, yozilgan oxirgi raqamlarni belgilab */
+function telMarked(p, digits){
+  const pretty = prettyTel(p); let n = Math.min(String(digits || '').length, 9), i = pretty.length;
+  const local = String(p || '').replace(/\D/g, '').slice(-9);
+  if (!n || !local.endsWith(String(digits).slice(-9))) return esc(pretty);
+  while (i > 0 && n > 0) { i--; if (/\d/.test(pretty[i])) n--; }
+  return esc(pretty.slice(0, i)) + '<mark>' + esc(pretty.slice(i)) + '</mark>';
+}
+async function runSearch(){
+  const q = $('svIn').value.trim(); SX.q = q;
+  const box = $('svB'), seq = ++SX.seq, digits = q.replace(/\D/g, '');
+  if (!q) { box.innerHTML = `<div class="sv-tip">Mijoz telefonining oxirgi 3–4 raqamini yozing — kimga (qaysi instruktorga), qachon bron qilingani va kim yozgani chiqadi. 30 kun oldingi va 60 kun keyingi bronlar qidiriladi.</div>`; return; }
+  if (digits.length < 3 && !/\p{L}{2,}/u.test(q)) { box.innerHTML = '<div class="sv-empty">Kamida 3 ta raqam yozing</div>'; return; }
+  box.innerHTML = '<div class="sv-empty">Qidirilmoqda…</div>';
+  try {
+    const r = await fetch(`/api/control-search?k=${encodeURIComponent(K)}&q=${encodeURIComponent(q)}`, { cache: 'no-store', headers: { Accept: 'application/json' } });
+    let d = {}; try { d = await r.json(); } catch { /* bo'sh */ }
+    if (seq !== SX.seq) return;
+    if (!r.ok || d.ok === false) throw Error(d.error || `Xato (${r.status})`);
+    const list = d.results || [];
+    if (!list.length) { box.innerHTML = `<div class="sv-empty">${esc(d.hint || `«${q}» bo‘yicha bron topilmadi`)}</div>`; return; }
+    const nowMs = Date.now(), tail = /^\d+$/.test(q.replace(/[\s+\-]/g, '')) ? digits : '';
+    box.innerHTML = `<div class="sv-cnt">${d.total > list.length ? `${d.total} ta topildi, ${list.length} tasi ko‘rsatildi` : `${list.length} ta bron`}</div>` + list.map(b => {
+      const day = rel(b.date) || `${dd(b.date)}, ${WDF[wdOf(b.date)]}`;
+      const st = BSX[b.status] || ['', b.status], cx = b.status === 'cancelled' || b.status === 'rejected';
+      const past = Date.parse(b.end) < nowMs && !cx && b.status !== 'in_progress';
+      const meta = [b.code, b.cat ? b.cat + ' toifa' : '', dur(b.min), b.paid ? '✓ to‘langan' : ''].filter(Boolean).join(' · ');
+      const t = tel(b.phone);
+      return `<button class="sr ${cx ? 'cx' : ''}" data-sday="${esc(b.date)}" data-sins="${esc(b.ins?.id || '')}">
+        <div class="sr-t"><b>${esc(day)}</b><span class="tm">${fmtHm(b.start)}–${fmtHm(b.end)}</span>${past ? '<span>o‘tgan</span>' : ''}<span class="sb ${esc(b.status)}">${esc(st[0])} ${esc(st[1])}</span></div>
+        <div class="sr-c">👤 ${esc(b.name)}${t ? ` · <span class="ph">📞 ${telMarked(b.phone, tail)}</span>` : ''}</div>
+        <div class="sr-i">🚗 Instruktor: <b>${esc(b.ins?.name || '—')}</b>${b.ins?.phone ? ` · ${esc(prettyTel(b.ins.phone))}` : ''}</div>
+        <div class="sr-m">${esc(meta)}${b.t ? ` · Excel: «${esc(b.t)}»` : ''}<span class="w">${esc(whoTxt(b, b.date))}</span>${b.note ? `<span class="w">💬 ${esc(b.note)}</span>` : ''}</div>
+      </button>`;
+    }).join('');
+  } catch (e) {
+    if (seq === SX.seq) box.innerHTML = `<div class="sv-empty">${esc(e.message || 'Qidirib bo‘lmadi')}</div>`;
+  }
+}
+
 /* ---------- bosishlar ---------- */
 document.addEventListener('click', e => {
   if (e.target.closest('[data-stop]')) return;
+  const sr = e.target.closest('[data-sday]');
+  if (sr) {
+    const day = sr.dataset.sday, ins = sr.dataset.sins;
+    closeSv(false, true);
+    if (!ins) return;
+    if (S.data?.date === day) openOv(ins, true);
+    else { S.pendingOv = ins; S.pendingReplace = true; setDay(day); }
+    return;
+  }
   const ins = e.target.closest('[data-ins]');
   if (ins && !ins.closest('#ov')) { openOv(ins.dataset.ins); return; }
 });
 document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && S.sv) { e.preventDefault(); closeSv(); return; }
   if (e.key === 'Escape' && S.ov) { e.preventDefault(); closeOv(); }
   if ((e.key === 'Enter' || e.key === ' ') && e.target.classList?.contains('fr')) { e.preventDefault(); openOv(e.target.dataset.ins); }
 });
@@ -679,7 +784,12 @@ $('ov').addEventListener('click', e => { if (e.target === $('ov')) closeOv(); })
 $('ovX').onclick = () => closeOv();
 $('ovDl').onclick = () => { try { downloadXlsx(S.ov && S.ov !== 'all' ? S.ov : null); } catch (err) { alert('Excel fayl tayyorlanmadi: ' + (err?.message || err)); } };
 $('allBtn').onclick = () => openOv('all');
-window.addEventListener('popstate', () => { if (S.ov) closeOv(true); });
+window.addEventListener('popstate', () => { if (S.sv) closeSv(true); if (S.ov) closeOv(true); syncUrl(); });
+$('srchBtn').onclick = () => openSv();
+$('svX').onclick = () => closeSv();
+$('sv').addEventListener('click', e => { if (e.target === $('sv')) closeSv(); });
+$('svIn').addEventListener('input', () => { clearTimeout(SX.t); SX.t = setTimeout(runSearch, 300); });
+$('svIn').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); clearTimeout(SX.t); runSearch(); } });
 $('prev').onclick = () => setDay(addDays(S.data?.date || S.d || ymdNow(), -1));
 $('next').onclick = () => setDay(addDays(S.data?.date || S.d || ymdNow(), 1));
 $('todayBtn').onclick = () => setDay(ymdNow());
