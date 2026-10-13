@@ -191,3 +191,33 @@ describe('Ma’lumot', () => {
     expect(b.bookings.find((x: any) => x.id === 'b9').who).toMatchObject({ kind: 'kassa', by: 'P2' });
   });
 });
+
+describe('🔍 Bronni qidirish', () => {
+  const find = (k: string, q: string) => h.call('GET', `/api/control-search?k=${encodeURIComponent(k)}&q=${encodeURIComponent(q)}`);
+  it('telefon oxiri: kimga (instruktor), qachon, kim yozgan; kalitsiz — 403', async () => {
+    const { k } = await token();
+    expect((await find('', '4567')).status).toBe(403);
+    const r = await find(k, '4567');
+    expect(r.status).toBe(200);
+    expect(r.body.results.map((x: any) => [x.code, x.date, x.ins?.name])).toEqual([['AVD-b1', D, 'Aziz Karimov'], ['AVD-b5', D2, 'Komila Sobirova']]);
+    expect(r.body.results[0]).toMatchObject({ name: 'Ali Valiyev', phone: '+998901234567', status: 'in_progress', paid: true, who: { kind: 'app' } });
+    const s2 = await find(k, '54321');
+    expect(s2.body.results[0]).toMatchObject({ code: 'AVD-b2', cat: 'A', sheet: true, t: '907654321 /A', who: { kind: 'sheet', by: 'boss' } });
+  });
+  it('bron kodi, ism; bekor qilingan — oxirida; qisqa so‘rov — maslahat', async () => {
+    const { k } = await token();
+    h.db.bookings.push({ id: 'b7', instructor_id: 'ip-2', customer_id: 'c3', start_at: at('16:00', D2), end_at: at('17:00', D2), booking_date: at('16:00', D2), status: 'pending', pickup_code: 'AVD-4821', source: 'app', category: 'B' });
+    expect((await find(k, 'AVD-4821')).body.results.map((x: any) => x.code)).toEqual(['AVD-4821']);
+    expect((await find(k, '4821')).body.results.map((x: any) => x.code)).toEqual(['AVD-4821']);
+    const r = await find(k, '1122');
+    expect(r.body.results.map((x: any) => x.code).sort()).toEqual(['AVD-4821', 'AVD-b3', 'AVD-b4']);
+    expect(r.body.results.map((x: any) => x.code)).toEqual(['AVD-b3', 'AVD-4821', 'AVD-b4']);   // yaqin/kelgusi — tartib bilan, bekor — oxirida
+    expect(r.body.results.at(-1).status).toBe('cancelled');
+    expect((await find(k, 'soli')).body.results.length).toBe(3);
+    const short = await find(k, '45');
+    expect(short.body.results).toEqual([]);
+    expect(short.body.hint).toMatch(/3 ta raqam/);
+    expect((await find(k, '000000')).body.results).toEqual([]);
+  });
+});
+
