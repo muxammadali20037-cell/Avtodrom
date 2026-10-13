@@ -4,7 +4,8 @@ import { supabaseRest } from './supabase.js';
 import { selectIn } from './rest-chunks.js';
 import { testInstructorIds } from './test-instructors.js';
 import { loadBlocks } from './instructor-blocks.js';
-import { loadSheet, parseKey, SHEET_HOURS } from './booking-sheet.js';
+import { loadSheet, loadSheets, parseKey, SHEET_HOURS } from './booking-sheet.js';
+import { bookingSearchFilter, cleanSearchTerm } from './booking-search.js';
 import {
   loadSchedules, specFor, mergeRanges, hmToMin, minToHm, tashkentYmdOf, addDaysYmd, dayStartMs, weekdayOf,
   type Range, type Schedule,
@@ -119,6 +120,89 @@ const durMin = (b: any) => {
 };
 const pct = (a: number, b: number) => (b > 0 ? Math.min(100, Math.round((a / b) * 100)) : 0);
 
+type Who = { kind: string; by: string | null; at: string | null };
+/** Bronni kim yozgan: Excel bron (xodim / instruktor boti), mijoz (Mini App), kassa, qo'lda bron */
+function whoFrom(b: any, sc: { by: string | null; at: string | null } | undefined, logBy: Map<string, string>, payReg: Map<string, string>): Who {
+  if (sc) return { kind: /^Bot\b/.test(String(sc.by || '')) ? 'bot' : 'sheet', by: sc.by, at: sc.at || b.created_at || null };
+  const at = b.created_at || null;
+  if (b.source === 'app') return { kind: 'app', by: null, at };
+  if (b.source === 'walk_in') return { kind: 'kassa', by: logBy.get(String(b.id)) || payReg.get(String(b.id)) || null, at };
+  if (b.source === 'admin' || b.source === 'manual') return { kind: 'manual', by: logBy.get(String(b.id)) || null, at };
+  return { kind: String(b.source || 'other'), by: null, at };
+}
+/** Qo'lda bron / kassa — kim yozgani (audit logda `by`) va to'lov kassasi kodi */
+async function whoMaps(rows: any[]) {
+  const [pays, logs, regs] = await Promise.all([
+    selectIn<any>('payments', 'booking_id', rows.map((b) => b.id), 'booking_id,status,register_id').catch(() => []),
+    selectIn<any>('admin_audit_logs', 'entity_id', rows.filter((b) => b.source === 'admin' || b.source === 'walk_in').map((b) => b.id), 'entity_id,new_data',
+      '&action=in.(MANUAL_BOOKING_CREATED,WALK_IN_CREATED)').catch(() => []),
+    supabaseRest<any[]>('cash_registers', { query: '?select=id,code' }).catch(() => []),
+  ]);
+  const regCode = new Map((regs || []).map((r: any) => [String(r.id), String(r.code || '')]));
+  return {
+    paid: new Set(pays.filter((p) => String(p.status) === 'paid').map((p) => String(p.booking_id))),
+    payReg: new Map(pays.filter((p) => p.register_id).map((p) => [String(p.booking_id), regCode.get(String(p.register_id)) || ''])),
+    logBy: new Map<string, string>((logs || []).filter((l: any) => l?.new_data?.by).map((l: any) => [String(l.entity_id), String(l.new_data.by)])),
+  };
+}
+
+/**
+ * BRONNI QIDIRISH (🔍): telefon oxiri («4567»), ism yoki bron kodi («AVD-4821», «4821»).
+ * Oraliq: 30 kun oldin — 60 kun keyin. Kimga (instruktor), qachon, kim yozgan.
+ */
+export async function searchControl(raw: unknown, nowMs = Date.now()) {
+  const term = cleanSearchTerm(raw);
+  const digits = term.replace(/\D/g, '');
+  if (!term || (digits.length < 3 && !/\p{L}{2,}/u.test(term))) return { results: [], hint: 'Kamida 3 ta raqam (telefon oxiri) yoki ism yozing' };
+  const f = await bookingSearchFilter(term);
+  if (!f) return { results: [] };
+  const today = tashkentYmdOf(nowMs);
+  const from = new Date(dayStartMs(addDaysYmd(today, -30))).toISOString(), to = new Date(dayStartMs(addDaysYmd(today, 61))).toISOString();
+  const rows = await supabaseRest<any[]>('bookings', {
+    query: `?${f}&start_at=gte.${q(from)}&start_at=lt.${q(to)}`
+      + '&select=id,instructor_id,customer_id,start_at,end_at,status,pickup_code,source,category,duration_minutes,customer_note,created_at'
+      + '&order=start_at.desc&limit=80',
+  });
+  if (!rows.length) return { results: [] };
+  const ips = await selectIn<any>('instructor_profiles', 'id', rows.map((b) => b.instructor_id), 'id,user_id,categories');
+  const [users, wm, sheets] = await Promise.all([
+    selectIn<any>('users', 'id', [...rows.map((b) => b.customer_id), ...ips.map((i) => i.user_id)], 'id,full_name,phone'),
+    whoMaps(rows),
+    loadSheets([...new Set(rows.map((b) => tashkentYmdOf(Date.parse(b.start_at))))]).catch(() => new Map()),
+  ]);
+  const um = new Map(users.map((u) => [String(u.id), u]));
+  const im = new Map(ips.map((i) => [String(i.id), i]));
+  const cellOf = (b: any) => {
+    const sh: any = sheets.get(tashkentYmdOf(Date.parse(b.start_at)));
+    const c: any = Object.values(sh?.cells || {}).find((x: any) => String(x?.b || '') === String(b.id));
+    return c ? { by: c.by || null, at: c.at || null, t: String(c.t || '') } : undefined;
+  };
+  const soon = nowMs - 2 * 3600e3;
+  const results = rows.map((b) => {
+    const c: any = um.get(String(b.customer_id)) || {};
+    const ip: any = im.get(String(b.instructor_id));
+    const iu: any = ip ? um.get(String(ip.user_id)) || {} : null;
+    const sc = cellOf(b);
+    return {
+      id: String(b.id), date: tashkentYmdOf(Date.parse(b.start_at)), start: b.start_at, end: b.end_at, min: durMin(b), status: String(b.status),
+      code: b.pickup_code || null, name: c.full_name || 'Mijoz', phone: c.phone || null,
+      cat: String(b.category || '').toUpperCase() || null, paid: wm.paid.has(String(b.id)), src: b.source || null, sheet: !!sc, t: sc?.t || null,
+      note: b.customer_note ? String(b.customer_note).slice(0, 140) : null, created_at: b.created_at || null,
+      ins: ip ? { id: String(ip.id), name: iu?.full_name || 'Instruktor', phone: iu?.phone || null, categories: ip.categories || [] } : null,
+      who: whoFrom(b, sc, wm.logBy, wm.payReg),
+    };
+  })
+    /* avval yaqin va kelgusi (o'sish tartibida), keyin o'tganlar (yangisi tepada); bekor qilinganlar oxirida */
+    .sort((a, b) => {
+      const ca = CANCEL.has(a.status) ? 1 : 0, cb = CANCEL.has(b.status) ? 1 : 0;
+      if (ca !== cb) return ca - cb;
+      const fa = Date.parse(a.end) >= soon ? 0 : 1, fb = Date.parse(b.end) >= soon ? 0 : 1;
+      if (fa !== fb) return fa - fb;
+      return fa === 0 ? Date.parse(a.start) - Date.parse(b.start) : Date.parse(b.start) - Date.parse(a.start);
+    });
+  return { results: results.slice(0, 40), total: results.length };
+}
+
 export async function controlData(date: string, nowMs = Date.now()) {
   const today = tashkentYmdOf(nowMs);
   const wd = weekdayOf(date);
@@ -193,16 +277,7 @@ export async function controlData(date: string, nowMs = Date.now()) {
       created_at: b.created_at || null, t: sheetOf.get(String(b.id))?.t || null, who: whoOf(b),
     };
   };
-  /** Bronni kim yozgan: Excel bron (xodim / instruktor boti), mijoz (Mini App), kassa, qo'lda bron */
-  function whoOf(b: any): { kind: string; by: string | null; at: string | null } {
-    const sc = sheetOf.get(String(b.id));
-    if (sc) return { kind: /^Bot\b/.test(String(sc.by || '')) ? 'bot' : 'sheet', by: sc.by, at: sc.at || b.created_at || null };
-    const at = b.created_at || null;
-    if (b.source === 'app') return { kind: 'app', by: null, at };
-    if (b.source === 'walk_in') return { kind: 'kassa', by: logBy.get(String(b.id)) || payReg.get(String(b.id)) || null, at };
-    if (b.source === 'admin' || b.source === 'manual') return { kind: 'manual', by: logBy.get(String(b.id)) || null, at };
-    return { kind: String(b.source || 'other'), by: null, at };
-  }
+  const whoOf = (b: any) => whoFrom(b, sheetOf.get(String(b.id)), logBy, payReg);
 
   const tot = { bron: 0, booked_min: 0, work_min: 0, no_show: 0, cancelled: 0, completed: 0, paid: 0, working: 0, lesson_now: 0, free_now: 0 };
   const instructors = list.map((i) => {
@@ -304,6 +379,20 @@ export async function registerControlRoutes(app: FastifyInstance, deps: Deps) {
       return { ok: true, ...(await controlData(date)) };
     } catch (e: any) {
       return reply.code(500).send({ ok: false, error: e?.message || 'Ma’lumot yuklanmadi' });
+    }
+  });
+
+  /* Bronni qidirish (🔍) — telefon oxiri, ism yoki kod */
+  app.get('/api/control-search', async (req: any, reply: any) => {
+    reply.header('Cache-Control', 'no-store');
+    reply.header('X-Robots-Tag', 'noindex, nofollow');
+    try {
+      if (!(await checkControlToken(String(req.query?.k || '')))) {
+        return reply.code(403).send({ ok: false, error: 'Havola eskirgan yoki noto‘g‘ri. Admin paneldan yangi havolani oling.' });
+      }
+      return { ok: true, ...(await searchControl(req.query?.q)) };
+    } catch (e: any) {
+      return reply.code(500).send({ ok: false, error: e?.message || 'Qidirib bo‘lmadi' });
     }
   });
 
