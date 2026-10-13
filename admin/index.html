@@ -736,6 +736,9 @@ button.tr:active{background:var(--card-2)}
 .tp-it summary small{display:block;color:var(--hint);font-weight:600;font-size:12px}
 .tp-it .pv{padding:0 14px 12px;font-size:13.5px;line-height:1.45;white-space:pre-wrap;word-wrap:break-word;color:var(--text)}
 .kb-form textarea{min-height:96px}
+.ctl-url{padding:12px 14px;border-radius:14px;background:var(--card-2);font-size:13.5px;font-weight:650;word-break:break-all;user-select:all;margin-bottom:12px;color:var(--text)}
+.ctl-pts{margin:0 0 14px;padding:0 0 0 18px;color:var(--hint);font-size:13.5px;line-height:1.55}
+.ctl-meta{color:var(--hint);font-size:12.5px;margin:12px 2px 0}
 
 /* ---------- pastdan chiquvchi oyna ---------- */
 .sheet-bg{position:fixed;inset:0;z-index:80;background:rgba(0,0,0,.45);opacity:0;transition:opacity .2s;pointer-events:none}
@@ -1476,7 +1479,7 @@ function sideDef(){
     ['bookings/new', 'Yangi bronlar', 'bell', 'pending'], ['bookings/cancels', 'Bekor so‘rovlari', 'ban', 'cancels'], ['bookings/all', 'Barcha bronlar', 'list'],
     ['xbron', 'Excel bron', 'sheet'], ['manual', 'Qo‘lda bron', 'phone'], ['schedule', 'Instruktorlar jadvali', 'cal'], ['chat', 'Mijozlar chati', 'chat', 'chat']] });
   if (isAdmin()) G.push({ title: 'Boshqaruv', items: [
-    ['analytics', 'Hisobot va tahlil', 'chart'], ['!/analytics', 'Analitika · 2 loyiha', 'chart'], ['insrep', 'Instruktorlar hisoboti', 'steer'], ['retention', 'O‘quvchini qaytarish', 'refresh'], ['instructors', 'Instruktorlar', 'users', 'apps'], ['grafik', 'Ish grafigi', 'clock'], ['prices', 'Narxlar va ish vaqti', 'tag'],
+    ['analytics', 'Hisobot va tahlil', 'chart'], ['!/analytics', 'Analitika · 2 loyiha', 'chart'], ['insrep', 'Instruktorlar hisoboti', 'steer'], ['retention', 'O‘quvchini qaytarish', 'refresh'], ['instructors', 'Instruktorlar', 'users', 'apps'], ['grafik', 'Ish grafigi', 'clock'], ['@ctllink', 'Nazorat paneli', 'eye'], ['prices', 'Narxlar va ish vaqti', 'tag'],
     ['staff', 'Xodimlar', 'key'], ['!/admin/full', 'Kengaytirilgan panel', 'ext']] });
   return G;
 }
@@ -1504,6 +1507,7 @@ function paintSide(){
   const groups = sideDef().map(g => `${g.title ? `<div class="side-grp"><span>${esc(g.title)}</span>${g.reg ? regSw() : ''}</div>` : ''}
     ${g.items.map(([r, label, ic, cnt]) => r.startsWith('!')
       ? `<a class="side-item" href="${esc(r.slice(1))}">${I(ic, 20)}<span>${esc(label)}</span></a>`
+      : r.startsWith('@') ? `<button class="side-item" data-act="${esc(r.slice(1))}">${I(ic, 20)}<span>${esc(label)}</span></button>`
       : `<button class="side-item ${cur === r ? 'on' : ''}" data-go="${esc(r)}">${I(ic, 20)}<span>${esc(label)}</span>${cnt ? sideCount(cnt) : ''}</button>`).join('')}`).join('');
   el.innerHTML = `<div class="side-top"><img class="logo" src="${esc($('tbLogo').src)}" alt=""><div class="nm"><b>TASH INDEX<br>AVTODROM</b><span class="role ${isCashier() ? 'k' : isOp() ? 'o' : ''}">${esc(roleTxt)}</span></div></div>
     ${cta}<nav class="side-scroll">${groups}</nav>
@@ -1782,6 +1786,7 @@ function vHome(){
       ${tile('retention', 'refresh', 'O‘quvchini qaytarish', 'kim jalb qildi, kim qaytardi', { cls: 'g' })}
       ${tile('instructors', 'users', 'Instruktorlar', 'faol / o‘chirilgan, arizalar', { id: 'apps' })}
       ${tile('grafik', 'clock', 'Ish grafigi', 'kim qachon ishlaydi, tanaffus', { cls: 'b' })}
+      ${tile('', 'eye', 'Nazorat paneli', 'hamma instruktor — bitta havola', { cls: 'o', act: 'ctllink' })}
       ${tile('prices', 'tag', 'Narxlar', 'tarif, 5 soatlik paket, ish vaqti', { cls: 'g' })}
       ${tile('staff', 'key', 'Xodimlar', 'kassir, operator, parollar', { cls: 'b' })}
       ${tile('', 'ext', 'Kengaytirilgan panel', 'hamma bo‘limlar (eski)', { cls: 'dark', href: '/admin/full' })}
@@ -6331,6 +6336,48 @@ ACT.sfactive = async el => {
 /* =========================================================================
    ISHGA TUSHIRISH
    ========================================================================= */
+/* =========================================================================
+   NAZORAT PANELI — hamma instruktor bitta maxfiy havolada (/nazorat?k=…)
+   ========================================================================= */
+const CTL = { url: '', at: null, by: null };
+function ctlPaint(){
+  const share = typeof navigator.share === 'function';
+  openSheet(`<h3>👁 Nazorat paneli</h3>
+    <p class="lead">Hamma instruktor bitta sahifada — havolani bosishingiz bilan ochiladi, parol so‘ramaydi.</p>
+    <ul class="ctl-pts"><li>Hozir kim darsda, kim bo‘sh, kim tanaffusda</li><li>Har instruktorning ish vaqti, tanaffuslari va bronlari (mijoz, telefon, kod)</li>
+      <li>Istalgan kun, butun hafta grafigi va statistika (bandlik, kelmagan, bekor)</li><li>Faqat ko‘rish — hech narsani o‘zgartirib bo‘lmaydi; o‘zi yangilanib turadi</li></ul>
+    <div class="ctl-url" id="ctlUrl">${esc(CTL.url)}</div>
+    <div class="btn-row"><a class="btn btn-primary" href="${esc(CTL.url)}" target="_blank" rel="noopener noreferrer">${I('eye', 18)} Ochish</a>
+      <button class="btn btn-soft" data-act="ctlcopy">${I('check', 18, 2.4)} Nusxalash</button></div>
+    ${share ? `<button class="btn btn-soft" data-act="ctlshare" style="margin-top:8px">Ulashish (Telegram va b.)</button>` : ''}
+    <p class="ctl-meta">Havolani faqat ishonchli odamga bering: unda mijozlarning ismi va telefoni ko‘rinadi.${CTL.at ? ` Yaratilgan: ${esc(whenText(CTL.at))}${CTL.by ? ' · ' + esc(CTL.by) : ''}.` : ''}</p>
+    <button class="btn btn-danger" data-act="ctlreset" style="margin-top:12px">${I('refresh', 18)} Havolani yangilash</button>
+    <p class="ctl-meta" style="margin-top:6px">Yangilasangiz eski havola darhol ishlamay qoladi (masalan, havola begona odamga o‘tib ketsa).</p>`);
+}
+ACT.ctllink = async el => {
+  closeSide();
+  if (!isAdmin()) return toast('Faqat administrator uchun', true);
+  busyBtn(el, true);
+  try { Object.assign(CTL, await api('/api/admin/control-link')); ctlPaint(); }
+  catch (e) { fail(e); }
+  finally { busyBtn(el, false); }
+};
+ACT.ctlcopy = async () => {
+  try { await navigator.clipboard.writeText(CTL.url); toast('Havola nusxalandi'); }
+  catch {
+    const r = document.createRange(), box = $('ctlUrl');
+    if (box) { r.selectNodeContents(box); const sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(r); }
+    toast('Havolani belgilab, nusxalang', true);
+  }
+};
+ACT.ctlshare = async () => { try { await navigator.share({ title: 'Nazorat paneli — instruktorlar', url: CTL.url }); } catch { /* bekor qilindi */ } };
+ACT.ctlreset = async () => {
+  const ok = await ask({ title: 'Havolani yangilaysizmi?', text: 'Eski havola darhol ishlamay qoladi. Kimga bergan bo‘lsangiz, ularga yangi havolani yuborasiz.', ok: 'Yangilash', danger: true });
+  if (!ok) return ctlPaint();
+  try { Object.assign(CTL, await post('/api/admin/control-link', { reset: true })); toast('Yangi havola tayyor — eskisi yopildi'); ctlPaint(); }
+  catch (e) { fail(e); }
+};
+
 (async function boot(){
   try{
     const me = await api('/api/admin/me');
