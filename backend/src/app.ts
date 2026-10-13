@@ -24,6 +24,7 @@ import { registerAdminBotRoutes, sendAdminChatInfo } from './admin-bot-routes.js
 import { registerScheduleRoutes } from './schedule-routes.js';
 import { registerBookingSheetRoutes } from './booking-sheet-routes.js';
 import { registerSheetShareRoutes, handleGroupMessage } from './sheet-share.js';
+import { registerControlRoutes } from './control-view.js';
 
 const app = Fastify({ logger: true });
 
@@ -139,6 +140,7 @@ await registerShiftRoutes(app, requireAdmin, adminUser, audit);
 await registerScheduleRoutes(app, guardAdmin, adminUser, audit);
 await registerBookingSheetRoutes(app, { currentStaff, guardDesk, adminUser, audit });
 await registerSheetShareRoutes(app, { currentStaff, guardDesk });
+await registerControlRoutes(app, { guardAdmin, currentStaff, adminUser, audit });
 await registerAdminBotRoutes(app);
 
 // IMPORTANT: admin-password-routes.ts is the single owner of the canonical

@@ -22,6 +22,11 @@ import {
   verifySchoolReceipt, redeemSchoolReceipt, releaseSchoolReceipt,
 } from './school-receipt.js';
 
+/** Bronni kim yozgani (xodim logini) — audit logga; aniqlanmasa null */
+async function staffLogin(req: any): Promise<string | null> {
+  try { const { peekStaff } = await import('./admin-password-routes.js'); return peekStaff(req)?.login || null; } catch { return null; }
+}
+
 /**
  * KASSA — barcha to'lovlar shu yerdan o'tadi.
  *
@@ -741,7 +746,7 @@ export async function registerCashierRoutes(
         }),
       });
       const booking = rows[0];
-      await audit(admin.id, 'WALK_IN_CREATED', 'bookings', booking?.id ?? null, null, { customer: customer.full_name });
+      await audit(admin.id, 'WALK_IN_CREATED', 'bookings', booking?.id ?? null, null, { customer: customer.full_name, by: await staffLogin(req) });
       const m = await loadMaps([booking]);
       return reply.code(201).send({ ok: true, booking: shape(booking, m) });
     } catch (e: any) {
@@ -1463,7 +1468,7 @@ export async function registerCashierRoutes(
           note: note || 'Telefon orqali qo‘lda bron', tariffs, prices: pkgPrices, newCode: nextPickupCode,
         });
         await audit(admin.id, 'MANUAL_BOOKING_CREATED', 'bookings', bookings[0]?.id ?? null, null,
-          { customer: fullName, phone, category, minutes: PACKAGE_MINUTES, package: record.id, sessions: bookings.length });
+          { customer: fullName, phone, category, minutes: PACKAGE_MINUTES, package: record.id, sessions: bookings.length, ids: bookings.map((x: any) => x.id), by: await staffLogin(req) });
         await (await import('./instructor-notify.js')).notifyInstructorNewBooking(bookings, 'manual');
         const pkg = { id: record.id, price: record.price, list_price: record.list_price, of: bookings.length };
         return reply.code(201).send({
@@ -1498,7 +1503,7 @@ export async function registerCashierRoutes(
       });
       const booking = rows[0];
       await audit(admin.id, 'MANUAL_BOOKING_CREATED', 'bookings', booking?.id ?? null, null,
-        { customer: fullName, phone, category, minutes });
+        { customer: fullName, phone, category, minutes, by: await staffLogin(req) });
       await (await import('./instructor-notify.js')).notifyInstructorNewBooking([booking], 'manual');
 
       return reply.code(201).send({
