@@ -75,7 +75,8 @@ a{color:inherit}
 .bar .nav{width:40px;height:40px;border-radius:12px;background:rgba(255,255,255,.14);color:#fff;font-size:22px;font-weight:700;display:grid;place-items:center;flex:none}
 .bar .today{height:40px;padding:0 12px;border-radius:12px;background:rgba(255,255,255,.18);color:#fff;font-weight:800;font-size:13.5px;flex:none}
 .bar .see{height:40px;padding:0 14px;border-radius:12px;background:#fff;color:#232883;font-weight:850;font-size:14px;flex:none;display:inline-flex;align-items:center;gap:7px;white-space:nowrap}
-@media (max-width:560px){.bar{flex-wrap:wrap}.bar .day{flex:1 1 calc(100% - 96px)}.bar .see{flex:1 1 calc(100% - 48px);justify-content:center}}
+.bar .add{height:40px;padding:0 14px;border-radius:12px;background:#16a34a;color:#fff;font-weight:850;font-size:14px;flex:none;white-space:nowrap}
+@media (max-width:560px){.bar{flex-wrap:wrap}.bar .day{flex:1 1 calc(100% - 96px)}.bar .see,.bar .add{flex:1 1 calc(50% - 28px);justify-content:center;padding:0 8px;font-size:13.5px}}
 
 .wrap{max-width:1180px;margin:0 auto;padding:14px 16px 50px;transition:opacity .15s}
 .wrap.busy{opacity:.6}
@@ -139,6 +140,64 @@ a{color:inherit}
 .sr-m{margin-top:6px;font-size:12.5px;color:var(--hint);line-height:1.45}
 .sr-m .w{color:var(--text-2);font-weight:650;display:block}
 .sv-empty{text-align:center;color:var(--hint);padding:30px 10px;font-size:14px}
+
+/* bron qilish oynasi */
+.xg td.fb{cursor:pointer}
+.xg td.fb .fbp{display:none;margin:auto;font-size:12.5px;font-weight:850;color:#15803d;background:rgba(255,255,255,.75);border-radius:8px;padding:3px 8px}
+.xg td.fb > div{align-items:center;justify-content:center}
+.xg td.fb:hover .fbp,.one .xg td.fb .fbp{display:inline-block}
+.xg td.fb:hover{box-shadow:inset 0 0 0 2px #16a34a}
+.bk{position:fixed;inset:0;z-index:60;background:rgba(5,8,26,.55);display:flex;align-items:flex-start;justify-content:center}
+.bk-box{background:var(--bg);width:100%;max-width:640px;height:100%;display:flex;flex-direction:column;min-height:0}
+@media (min-width:760px){.bk{padding:30px 16px}.bk-box{height:auto;max-height:calc(100vh - 60px);border-radius:20px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.35)}}
+.bk-h{display:flex;align-items:center;gap:10px;padding:12px 14px;background:linear-gradient(140deg,#14532d,#16a34a);color:#fff;flex:none}
+.bk-h h2{margin:0;font-size:18px;flex:1}
+.bk-h .x{width:40px;height:40px;border-radius:12px;background:rgba(255,255,255,.18);color:#fff;font-size:18px;font-weight:800;flex:none}
+.bk-b{flex:1;min-height:0;overflow:auto;padding:12px 14px 18px;-webkit-overflow-scrolling:touch}
+.bk-l{font-size:12px;font-weight:850;color:var(--hint);text-transform:uppercase;letter-spacing:.05em;margin:14px 2px 7px}
+.bk-l:first-child{margin-top:2px}
+.bk-l small{text-transform:none;letter-spacing:0;font-weight:650}
+.bk-days{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}
+.bk-days::-webkit-scrollbar{display:none}
+.bk-days button{flex:none;min-width:64px;padding:7px 10px;border-radius:12px;background:var(--card);box-shadow:inset 0 0 0 1px var(--line);text-align:center;font-weight:800;font-size:13.5px;line-height:1.2}
+.bk-days button small{display:block;font-weight:650;font-size:11.5px;color:var(--hint)}
+.bk-days button.on{background:#16a34a;color:#fff;box-shadow:none}.bk-days button.on small{color:rgba(255,255,255,.85)}
+.bk-seg{display:grid;grid-template-columns:1fr 1fr;gap:4px;background:var(--card-2);border-radius:13px;padding:4px}
+.bk-seg button{height:40px;border-radius:10px;font-weight:800;font-size:14px;color:var(--text-2)}
+.bk-seg button.on{background:var(--card);color:var(--text);box-shadow:0 1px 4px rgba(0,0,0,.12)}
+.bk-ins{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px}
+.bk-ins button{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 11px;border-radius:12px;background:var(--card);box-shadow:inset 0 0 0 1px var(--line);text-align:left;font-weight:750;font-size:14px;line-height:1.25}
+.bk-ins button small{flex:none;font-size:11.5px;font-weight:800;color:#15803d;background:var(--s-good-soft);border-radius:8px;padding:2px 7px}
+.bk-ins button small.z{color:var(--hint);background:var(--card-2)}
+.bk-ins button.on{background:#16a34a;color:#fff;box-shadow:none}.bk-ins button.on small{background:rgba(255,255,255,.22);color:#fff}
+.bk-ins button:disabled{opacity:.45}
+.bk-hrs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+@media (min-width:560px){.bk-hrs{grid-template-columns:repeat(6,minmax(0,1fr))}}
+.bk-hrs button{height:50px;border-radius:12px;background:var(--card);box-shadow:inset 0 0 0 1px var(--line);font-weight:850;font-size:15px;line-height:1.1;font-variant-numeric:tabular-nums}
+.bk-hrs button small{display:block;font-size:10.5px;font-weight:700;color:var(--hint);margin-top:2px}
+.bk-hrs button.free small{color:#15803d}
+.bk-hrs button:disabled{background:var(--card-2);box-shadow:none;color:var(--hint);cursor:not-allowed}
+.bk-hrs button.on{background:#16a34a;color:#fff;box-shadow:none}.bk-hrs button.on small{color:rgba(255,255,255,.9)}
+.bk-dur{display:flex;gap:6px;flex-wrap:wrap}
+.bk-dur button{height:40px;padding:0 14px;border-radius:12px;background:var(--card);box-shadow:inset 0 0 0 1px var(--line);font-weight:800;font-size:14px}
+.bk-dur button.on{background:#16a34a;color:#fff;box-shadow:none}
+.bk-dur button:disabled{opacity:.4;cursor:not-allowed}
+.bk-in{width:100%;height:50px;border-radius:13px;border:1px solid var(--line);background:var(--card);color:var(--text);padding:0 14px;font-size:18px;font-weight:750;outline:none;font-variant-numeric:tabular-nums}
+.bk-in:focus{border-color:#16a34a;box-shadow:0 0 0 3px rgba(22,163,74,.18)}
+.bk-in.nm{font-size:16px;font-weight:650;height:46px;margin-top:8px}
+.bk-sum{margin-top:14px;padding:12px 14px;border-radius:14px;background:var(--s-good-soft);color:var(--s-good-ink);font-weight:750;font-size:14.5px;line-height:1.45}
+.bk-go{margin-top:12px;width:100%;height:54px;border-radius:15px;background:#16a34a;color:#fff;font-weight:850;font-size:17px}
+.bk-go:disabled{opacity:.5;cursor:not-allowed}
+.bk-err{margin-top:10px;padding:10px 12px;border-radius:12px;background:var(--s-crit-soft);color:var(--s-crit-ink);font-weight:700;font-size:14px}
+.bk-ok{text-align:center;padding:16px 6px}
+.bk-ok .big{font-size:44px}
+.bk-ok h3{margin:6px 0 4px;font-size:20px}
+.bk-ok p{margin:0 0 4px;color:var(--text-2);font-size:15px;line-height:1.5}
+.bk-ok .code{display:inline-block;margin:8px 0 14px;padding:6px 14px;border-radius:10px;background:var(--card);font-weight:900;font-size:20px;letter-spacing:.04em;box-shadow:var(--shadow)}
+.bk-ok .row2{display:flex;gap:8px}.bk-ok .row2 button{flex:1;height:48px;border-radius:14px;font-weight:800;font-size:15px;background:var(--card);box-shadow:inset 0 0 0 1px var(--line)}
+.bk-ok .row2 button.pr{background:#16a34a;color:#fff;box-shadow:none}
+.bk-note{color:var(--hint);font-size:12.5px;margin-top:10px;line-height:1.45}
+.fr .bkq{flex:none;height:34px;padding:0 10px;border-radius:10px;background:#16a34a;color:#fff;font-weight:850;font-size:13px}
 
 /* oyna: Excel bron */
 .ov{position:fixed;inset:0;z-index:50;background:rgba(5,8,26,.55);display:flex;align-items:stretch;justify-content:center}
@@ -229,6 +288,7 @@ table.xg{border-collapse:separate;border-spacing:0;font-size:13px;color:#05081a;
     <button class="nav" id="next" aria-label="Keyingi kun">›</button>
     <button class="today hidden" id="todayBtn">Bugun</button>
     <button class="nav srch" id="srchBtn" aria-label="Bronni qidirish" title="Bronni qidirish (telefon oxiri)">🔍</button>
+    <button class="add" id="bkBtn">＋ Bron qilish</button>
     <button class="see" id="allBtn">📋 Bronlarni ko‘rish</button>
   </div>
 </header>
@@ -243,7 +303,7 @@ table.xg{border-collapse:separate;border-spacing:0;font-size:13px;color:#05081a;
     </section>
     <aside class="panel free" id="free"></aside>
   </div>
-  <p class="foot">Instruktorni bosing — uning Excel bron jadvali ochiladi · 🔍 — telefon oxiri bo‘yicha bronni topish · ma’lumot o‘zi yangilanadi · havolani begonalarga bermang</p>
+  <p class="foot">Instruktorni bosing — uning Excel bron jadvali ochiladi · ＋ Bron qilish — instruktor yoki vaqtni tanlab, telefon yozib bron · 🔍 — telefon oxiri bo‘yicha qidirish · havolani begonalarga bermang (u orqali bron ham qilsa bo‘ladi)</p>
 </main>
 
 <div class="sv hidden" id="sv" role="dialog" aria-modal="true" aria-label="Bronni qidirish">
@@ -252,6 +312,13 @@ table.xg{border-collapse:separate;border-spacing:0;font-size:13px;color:#05081a;
       <input id="svIn" type="search" inputmode="search" autocomplete="off" placeholder="Telefon oxiri (4567), ism yoki bron kodi" aria-label="Qidirish">
       <button class="x" id="svX" aria-label="Yopish">✕</button></div>
     <div class="sv-b" id="svB"><div class="sv-tip">Mijoz telefonining oxirgi 3–4 raqamini yozing — kimga (qaysi instruktorga), qachon bron qilingani va kim yozgani chiqadi. 30 kun oldingi va 60 kun keyingi bronlar qidiriladi.</div></div>
+  </div>
+</div>
+
+<div class="bk hidden" id="bk" role="dialog" aria-modal="true" aria-label="Bron qilish">
+  <div class="bk-box">
+    <div class="bk-h"><h2>＋ Bron qilish</h2><button class="x" id="bkX" aria-label="Yopish">✕</button></div>
+    <div class="bk-b" id="bkB"></div>
   </div>
 </div>
 
@@ -520,7 +587,7 @@ function paintExcel(only){
     if (cell.k === 'own') return `<td class="xc ow${gs}"><div>🔒 yopiq</div></td>`;
     if (cell.k === 'off') return `<td class="xc of${gs}"><div>dam</div></td>`;
     if (cell.k === 'cl') return `<td class="xc cl${gs}"><div>${cell.mid ? 'tanaffus' : '—'}</div></td>`;
-    return `<td class="xc${gs}" style="--cb:${tintHex(x.color, 0.16)}"><div></div></td>`;
+    return canBook(d, h) && d.hours.includes(h) ? `<td class="xc fb${gs}" data-bki="${esc(x.i.id)}" data-bkh="${h}" title="Bron qilish" style="--cb:${tintHex(x.color, 0.16)}"><div><span class="fbp">＋ bron</span></div></td>` : `<td class="xc${gs}" style="--cb:${tintHex(x.color, 0.16)}"><div></div></td>`;
   }).join('')}</tr>`).join('');
   const foot = `<tfoot><tr><td class="hc">Jami</td>${G.cols.map(x => `<td class="${x.gs ? 'gs' : ''}">${x.i.stats.bron} bron · ${hrs(x.i.stats.booked_min)} s</td>`).join('')}</tr></tfoot>`;
   $('xg').innerHTML = `<thead>${gRow}${nRow}${sRow}</thead><tbody>${body}</tbody>${foot}`;
@@ -641,6 +708,7 @@ function paint(){
   paintList(); paintFree();
   if (S.pendingOv) { const id = S.pendingOv, rp = S.pendingReplace; S.pendingOv = null; S.pendingReplace = false; openOv(id, rp); }
   else if (S.ov) paintOv();
+  if (BK.open && !BK.busy && BK.date === S.data.date) { BK.data = S.data; if (!BK.done) paintBk(); }
 }
 function paintList(){
   const d = S.data, q = S.q.trim().toLowerCase();
@@ -668,7 +736,7 @@ function paintFree(){
     ${free.length ? free.map(i => {
       const nx = i.now.next, t = tel(i.phone);
       const sub = nx ? `keyingi bron ${fmtHm(nx.start)} · ${minsTo(nx.start, d.now)}` : 'bugun boshqa broni yo‘q';
-      return `<div class="fr" role="button" tabindex="0" data-ins="${esc(i.id)}"><i class="gd"></i><span class="nm">${esc(i.name)}<small>${esc(sub)}</small></span>${t ? `<a href="tel:${t}" aria-label="Qo‘ng‘iroq: ${esc(i.name)}" data-stop="1">📞</a>` : ''}</div>`;
+      return `<div class="fr" role="button" tabindex="0" data-ins="${esc(i.id)}"><i class="gd"></i><span class="nm">${esc(i.name)}<small>${esc(sub)}</small></span><button class="bkq" data-bkq="${esc(i.id)}" aria-label="Bron qilish: ${esc(i.name)}">＋</button>${t ? `<a href="tel:${t}" aria-label="Qo‘ng‘iroq: ${esc(i.name)}" data-stop="1">📞</a>` : ''}</div>`;
     }).join('') : '<div class="empty-s">Hozir bo‘sh instruktor yo‘q — hammasi darsda, bronli yoki ish vaqtidan tashqarida.</div>'}`;
 }
 const minsTo = (iso, nowIso) => { const m = Math.max(0, Math.round((Date.parse(iso) - Date.parse(nowIso)) / 60000)), h = Math.floor(m / 60), r = m % 60; return m < 60 ? `${m} daqiqadan keyin` : r ? `${h} soat ${r} daqiqadan keyin` : `${h} soatdan keyin`; };
@@ -706,6 +774,147 @@ function paintOv(){
   }
   if (S.xlScrolled && (y || x)) { box.scrollTop = y; box.scrollLeft = x; }
 }
+
+/* ---------- ＋ bron qilish ---------- */
+/** Shu kun shu soatga hali bron qilsa bo'ladimi (boshlangan/o'tgan soat — yo'q) */
+function canBook(d, h){ if (!d || d.date < d.today) return false; if (d.date > d.today) return true; return h * 60 > dayMin(d.now, d.date); }
+const BK = { open: false, date: null, mode: 'ins', ins: null, h: null, n: 1, half: false, cat: null, data: null, seq: 0, busy: false, err: '', done: null, phone: '', name: '' };
+const bkDays = () => { const t = ymdNow(); return Array.from({ length: 8 }, (_, i) => addDays(t, i)); };
+function openBk(pre = {}){
+  const t = ymdNow();
+  const date = pre.date || (S.data && S.data.date >= t ? S.data.date : t);
+  Object.assign(BK, { date, mode: pre.ins && pre.h == null ? 'ins' : pre.h != null && !pre.ins ? 'time' : BK.mode, ins: pre.ins || null, h: pre.h ?? null, n: 1, half: false, cat: null, err: '', done: null, busy: false });
+  if (!BK.open) { BK.open = true; history.pushState({ bk: 1 }, '', location.href); }
+  $('bk').classList.remove('hidden'); document.body.style.overflow = 'hidden';
+  bkLoad(date);
+}
+function closeBk(fromPop){
+  if (!BK.open) return;
+  BK.open = false; $('bk').classList.add('hidden'); if (!S.ov && !S.sv) document.body.style.overflow = '';
+  if (!fromPop && history.state?.bk) history.back();
+}
+async function bkLoad(date){
+  BK.date = date;
+  if (S.data && S.data.date === date) { BK.data = S.data; paintBk(); return; }
+  BK.data = null; paintBk();
+  const seq = ++BK.seq;
+  try {
+    const r = await fetch(`/api/control-view?k=${encodeURIComponent(K)}&d=${date}`, { cache: 'no-store', headers: { Accept: 'application/json' } });
+    const d = await r.json().catch(() => ({}));
+    if (seq !== BK.seq) return;
+    if (!r.ok || d.ok === false) throw Error(d.error || `Xato (${r.status})`);
+    BK.data = d; paintBk();
+  } catch (e) { if (seq === BK.seq) { BK.err = e.message || 'Yuklanmadi'; paintBk(); } }
+}
+/** Har instruktor, har soat: free / band / dam / tanaffus / yopiq / o'tgan */
+function bkModel(){
+  const d = BK.data; if (!d) return null;
+  const G = sheetGrid(d);
+  const cols = G.cols.filter(x => x.i.active);
+  const st = (x, h) => { const r = G.H.indexOf(h); if (r < 0) return 'x'; if (!canBook(d, h)) return 'past'; const c = x.cells[r]; return c.k === 'cl' ? (c.mid ? 'brk' : 'cl') : c.k; };
+  const LBL = { free: 'bo‘sh', bk: 'band', skip: 'band', note: 'band', own: 'yopiq', off: 'dam', cl: 'ishlamaydi', brk: 'tanaffus', past: 'o‘tgan', x: '—' };
+  return { d, cols, hours: d.hours, st, LBL, freeN: x => d.hours.filter(h => st(x, h) === 'free').length };
+}
+function bkPaint(html){ const box = $('bkB'), y = box.scrollTop; box.innerHTML = html; box.scrollTop = y; }
+function paintBk(){
+  if (!BK.open) return;
+  if (BK.done) {
+    const b = BK.done, end = new Date(Date.parse(b.start) + b.minutes * 60000).toISOString();
+    bkPaint(`<div class="bk-ok"><div class="big">✅</div><h3>Bron qilindi</h3>
+      <p><b>${esc(b.ins.name)}</b> · ${esc(dayHead(BK.date))}, ${fmtHm(b.start)}–${fmtHm(end)} · ${esc(dur(b.minutes))} · ${esc(b.category)} toifa</p>
+      <p>👤 ${esc(b.name)} · 📞 ${esc(prettyTel(b.phone))}</p>
+      <div class="code">${esc(b.code || '—')}</div>
+      <p class="bk-note" style="margin-bottom:14px">Excel bron'ga yozildi («Nazorat paneli»). Instruktorga va guruhga xabar ketdi. Mijoz kassada shu kodni aytadi.</p>
+      <div class="row2"><button data-bka="again">＋ Yana bron</button><button class="pr" data-bka="close">Yopish</button></div></div>`);
+    return;
+  }
+  const days = bkDays(); if (!days.includes(BK.date)) days.push(BK.date);
+  const dayHtml = `<div class="bk-l">Kun</div><div class="bk-days">${days.map(x => `<button class="${x === BK.date ? 'on' : ''}" data-bkd="${x}">${esc(rel(x) || dd(x))}<small>${esc(WDF[wdOf(x)].slice(0, 3))}${rel(x) ? ' ' + dd(x) : ''}</small></button>`).join('')}</div>`;
+  const m = bkModel();
+  if (!m) { bkPaint(dayHtml + `<div class="sv-empty">${BK.err ? esc(BK.err) : 'Yuklanmoqda…'}</div>`); return; }
+  const seg = `<div class="bk-l">Qanday tanlaysiz</div><div class="bk-seg"><button class="${BK.mode === 'ins' ? 'on' : ''}" data-bkm="ins">👤 Avval instruktor</button><button class="${BK.mode === 'time' ? 'on' : ''}" data-bkm="time">🕘 Avval vaqt</button></div>`;
+  const insX = BK.ins ? m.cols.find(x => x.i.id === BK.ins) : null;
+  if (BK.ins && !insX) BK.ins = null;
+  /* tanlangan instruktor + soatdan boshlab nechta soat ketma-ket bo'sh */
+  const runFree = (x, h) => { let k = 0; while (k < 3 && m.hours.includes(h + k) && m.st(x, h + k) === 'free') k++; return k; };
+  if (insX && BK.h != null && m.st(insX, BK.h) !== 'free') BK.h = null;
+  const insList = (filterH) => `<div class="bk-ins">${m.cols.map(x => {
+    const ok = filterH == null ? true : m.st(x, filterH) === 'free';
+    const n = m.freeN(x);
+    if (filterH != null && !ok) return '';
+    return `<button class="${BK.ins === x.i.id ? 'on' : ''}" data-bki2="${esc(x.i.id)}" ${n ? '' : 'disabled'}><span>${esc(x.i.name)}${x.i.categories.length > 1 || !x.i.categories.includes('B') ? ` <span style="opacity:.7;font-size:12px">${esc(x.i.categories.join(', '))}</span>` : ''}</span><small class="${n ? '' : 'z'}">${filterH != null ? 'bo‘sh' : n ? n + ' soat bo‘sh' : 'bo‘sh yo‘q'}</small></button>`;
+  }).join('') || '<div class="sv-empty">Bu soatda bo‘sh instruktor yo‘q</div>'}</div>`;
+  const hourGrid = (x) => `<div class="bk-hrs">${m.hours.map(h => {
+    const s = x ? m.st(x, h) : (m.cols.some(c => m.st(c, h) === 'free') ? 'free' : m.cols.every(c => m.st(c, h) === 'past') ? 'past' : 'bk');
+    const cnt = x ? '' : m.cols.filter(c => m.st(c, h) === 'free').length;
+    const idle = !x && m.cols.every(c => ['cl', 'off', 'brk', 'own', 'past'].includes(m.st(c, h)));
+    const lab = x ? m.LBL[s] || s : s === 'free' ? `${cnt} bo‘sh` : s === 'past' ? 'o‘tgan' : idle ? 'ishlamaydi' : 'hammasi band';
+    return `<button class="${s === 'free' ? 'free' : ''} ${BK.h === h ? 'on' : ''}" data-bkh2="${h}" ${s === 'free' ? '' : 'disabled'}>${h}:00<small>${esc(lab)}</small></button>`;
+  }).join('')}</div>`;
+  let body = '';
+  if (BK.mode === 'ins') {
+    body += `<div class="bk-l">Instruktor</div>${insList(null)}`;
+    if (insX) body += `<div class="bk-l">Soat <small>— ${esc(insX.i.name)}</small></div>${hourGrid(insX)}`;
+  } else {
+    body += `<div class="bk-l">Soat <small>— har soatda nechta instruktor bo‘sh</small></div>${hourGrid(null)}`;
+    if (BK.h != null) body += `<div class="bk-l">Bo‘sh instruktorlar <small>— ${BK.h}:00</small></div>${insList(BK.h)}`;
+  }
+  let rest = '';
+  if (insX && BK.h != null) {
+    const maxN = runFree(insX, BK.h);
+    if (!BK.half && BK.n > maxN) BK.n = Math.max(1, maxN);
+    const cats = insX.i.categories, defCat = cats.includes('B') ? 'B' : cats[0] || 'B';
+    if (!BK.cat || !cats.includes(BK.cat)) BK.cat = defCat;
+    rest += `<div class="bk-l">Davomiylik</div><div class="bk-dur">
+      <button class="${BK.half ? 'on' : ''}" data-bkn="half">30 daq</button>
+      ${[1, 2, 3].map(n => `<button class="${!BK.half && BK.n === n ? 'on' : ''}" data-bkn="${n}" ${n <= maxN ? '' : 'disabled'} title="${n <= maxN ? '' : 'keyingi soat band'}">${n} soat</button>`).join('')}</div>`;
+    if (cats.length > 1) rest += `<div class="bk-l">Toifa</div><div class="bk-dur">${cats.map(c => `<button class="${BK.cat === c ? 'on' : ''}" data-bkc="${esc(c)}">${esc(c)} toifa</button>`).join('')}</div>`;
+    rest += `<div class="bk-l">Mijoz telefoni</div><input class="bk-in" id="bkPh" type="tel" inputmode="tel" autocomplete="off" placeholder="90 123 45 67" value="${esc(BK.phone)}">
+      <input class="bk-in nm" id="bkNm" type="text" autocomplete="off" maxlength="40" placeholder="Ism (ixtiyoriy)" value="${esc(BK.name)}">`;
+    const endH = BK.half ? `${BK.h}:30` : `${BK.h + BK.n}:00`;
+    rest += `<div class="bk-sum">👤 ${esc(insX.i.name)} · 📅 ${esc(dayHead(BK.date))} · 🕘 ${BK.h}:00–${endH} · ${esc(BK.cat)} toifa</div>`;
+    rest += BK.err ? `<div class="bk-err">⚠️ ${esc(BK.err)}</div>` : '';
+    rest += `<button class="bk-go" id="bkGo" ${BK.busy ? 'disabled' : ''}>${BK.busy ? 'Yozilmoqda…' : '✅ Bron qilish'}</button>
+      <p class="bk-note">Bron Excel bron'ga yoziladi (yozgan: «Nazorat paneli»), instruktorga va guruhga xabar boradi.</p>`;
+  } else {
+    rest += BK.err ? `<div class="bk-err">⚠️ ${esc(BK.err)}</div>` : '';
+    rest += `<p class="bk-note">${BK.mode === 'ins' ? (insX ? 'Bo‘sh soatni tanlang.' : 'Instruktorni tanlang — uning bo‘sh soatlari chiqadi.') : (BK.h == null ? 'Soatni tanlang — o‘sha soatda bo‘sh instruktorlar chiqadi.' : 'Instruktorni tanlang.')}</p>`;
+  }
+  bkPaint(dayHtml + seg + body + rest);
+  const ph = $('bkPh'); if (ph) { ph.oninput = e => { BK.phone = e.target.value; if (BK.err) { BK.err = ''; document.querySelector('#bkB .bk-err')?.remove(); } }; ph.onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); bkSubmit(); } }; }
+  const nm = $('bkNm'); if (nm) nm.oninput = e => { BK.name = e.target.value; };
+}
+async function bkSubmit(){
+  if (BK.busy || !BK.ins || BK.h == null) return;
+  const digits = String(BK.phone || '').replace(/\D/g, '');
+  if (digits.length < 9) { BK.err = 'Telefon raqamini to‘liq yozing (masalan 90 123 45 67)'; paintBk(); $('bkPh')?.focus(); return; }
+  BK.busy = true; BK.err = ''; paintBk();
+  try {
+    const r = await fetch('/api/control-book', { method: 'POST', cache: 'no-store', headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify({ k: K, date: BK.date, ins: BK.ins, h: BK.h, n: BK.n, half: BK.half, cat: BK.cat, phone: BK.phone, name: BK.name }) });
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok || d.ok === false) throw Error(d.error || `Xato (${r.status})`);
+    BK.done = d.booking; BK.phone = ''; BK.name = '';
+    load(true);
+  } catch (e) { BK.err = e.message || 'Bron qilinmadi'; }
+  finally { BK.busy = false; paintBk(); }
+}
+$('bkB').addEventListener('click', e => {
+  const t = e.target.closest('button'); if (!t || t.disabled) return;
+  const ds = t.dataset;
+  if (ds.bkd) { BK.err = ''; if (ds.bkd !== BK.date) { BK.h = null; bkLoad(ds.bkd); } return; }
+  if (ds.bkm) { BK.mode = ds.bkm; BK.err = ''; paintBk(); return; }
+  if (ds.bki2) { BK.ins = ds.bki2; BK.err = ''; if (BK.mode === 'ins') BK.h = null; paintBk(); return; }
+  if (ds.bkh2) { BK.h = Number(ds.bkh2); BK.err = ''; if (BK.mode === 'time') { const m = bkModel(); const x = m && BK.ins && m.cols.find(c => c.i.id === BK.ins); if (!x || m.st(x, BK.h) !== 'free') BK.ins = null; } paintBk(); return; }
+  if (ds.bkn) { if (ds.bkn === 'half') { BK.half = true; BK.n = 1; } else { BK.half = false; BK.n = Number(ds.bkn); } paintBk(); return; }
+  if (ds.bkc) { BK.cat = ds.bkc; paintBk(); return; }
+  if (t.id === 'bkGo') { bkSubmit(); return; }
+  if (ds.bka === 'again') { const keep = BK.date; BK.done = null; BK.h = null; BK.ins = null; BK.err = ''; bkLoad(keep); return; }
+  if (ds.bka === 'close') { closeBk(); }
+});
+$('bkX').onclick = () => closeBk();
+$('bk').addEventListener('click', e => { if (e.target === $('bk')) closeBk(); });
+$('bkBtn').onclick = () => openBk({});
 
 /* ---------- 🔍 bronni qidirish ---------- */
 const SX = { seq: 0, t: 0, q: '' };
@@ -763,6 +972,10 @@ async function runSearch(){
 /* ---------- bosishlar ---------- */
 document.addEventListener('click', e => {
   if (e.target.closest('[data-stop]')) return;
+  const q1 = e.target.closest('[data-bkq]');
+  if (q1) { openBk({ ins: q1.dataset.bkq, date: S.data?.today }); return; }
+  const fc = e.target.closest('[data-bki]');
+  if (fc && S.data) { openBk({ ins: fc.dataset.bki, h: Number(fc.dataset.bkh), date: S.data.date }); BK.mode = 'ins'; paintBk(); return; }
   const sr = e.target.closest('[data-sday]');
   if (sr) {
     const day = sr.dataset.sday, ins = sr.dataset.sins;
@@ -776,6 +989,7 @@ document.addEventListener('click', e => {
   if (ins && !ins.closest('#ov')) { openOv(ins.dataset.ins); return; }
 });
 document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && BK.open) { e.preventDefault(); closeBk(); return; }
   if (e.key === 'Escape' && S.sv) { e.preventDefault(); closeSv(); return; }
   if (e.key === 'Escape' && S.ov) { e.preventDefault(); closeOv(); }
   if ((e.key === 'Enter' || e.key === ' ') && e.target.classList?.contains('fr')) { e.preventDefault(); openOv(e.target.dataset.ins); }
@@ -784,7 +998,7 @@ $('ov').addEventListener('click', e => { if (e.target === $('ov')) closeOv(); })
 $('ovX').onclick = () => closeOv();
 $('ovDl').onclick = () => { try { downloadXlsx(S.ov && S.ov !== 'all' ? S.ov : null); } catch (err) { alert('Excel fayl tayyorlanmadi: ' + (err?.message || err)); } };
 $('allBtn').onclick = () => openOv('all');
-window.addEventListener('popstate', () => { if (S.sv) closeSv(true); if (S.ov) closeOv(true); syncUrl(); });
+window.addEventListener('popstate', () => { if (BK.open) { closeBk(true); syncUrl(); return; } if (S.sv) closeSv(true); if (S.ov) closeOv(true); syncUrl(); });
 $('srchBtn').onclick = () => openSv();
 $('svX').onclick = () => closeSv();
 $('sv').addEventListener('click', e => { if (e.target === $('sv')) closeSv(); });
