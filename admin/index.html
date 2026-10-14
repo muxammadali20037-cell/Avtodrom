@@ -975,6 +975,64 @@ button.row,a.row,button.tr,.side-item,.icon-btn{transition:background .15s var(-
   .tile,.kpi,.opt,.dur,.pkg-card,.btn,.btn-light,.sheet,.sheet.show,.toast{transition-duration:.01ms!important}
   .tile:hover,.kpi:hover,.opt:hover,.dur:hover,.pkg-card:hover,.btn-primary:hover{transform:none}
 }
+
+/* =========================================================================
+   AVTODROM12 KO'RINISHI — kengaytirilgan panel bilan bir uslubda.
+   Yon menyu panelning o'z to'q siyohrang-ko'k rangida (bosh sahifa
+   sarlavhasi bilan bir xil), oq yozuv, tanlangan bo'limda chap chiziq.
+   Tugmalar va aksent ranglari o'sha-o'sha.
+   ========================================================================= */
+:root{--side-bg:linear-gradient(180deg,#1c2150 0%,#0f1340 100%);--side-accent:#7c82f0;
+  --sh-sm:0 1px 2px rgba(16,20,48,.04),0 1px 3px rgba(16,20,48,.03);--sh-md:0 4px 12px rgba(16,20,48,.07),0 1px 3px rgba(16,20,48,.04)}
+.side{background:var(--side-bg);border-right:0;color:#fff;scrollbar-color:rgba(255,255,255,.18) transparent}
+@media (min-width:960px){.side{box-shadow:4px 0 24px rgba(10,12,40,.16)}}
+.side :focus-visible{outline-color:#a9adff}
+.side-top b{color:#fff}
+.side-top .logo{box-shadow:0 0 0 2px rgba(255,255,255,.14),0 2px 10px rgba(0,0,0,.3)}
+.side-top .role{background:rgba(124,130,240,.22);color:#d3d5ff}
+.side-top .role.k{background:rgba(34,197,94,.18);color:#95f0b6}
+.side-top .role.o{background:rgba(56,152,236,.22);color:#b5dcff}
+.side-cta .btn-primary{background:linear-gradient(135deg,#4a50c4,#2b2f8f);box-shadow:inset 0 0 0 1px rgba(255,255,255,.14),0 4px 14px rgba(0,0,0,.25)}
+.side-cta .btn-green{box-shadow:0 4px 14px rgba(0,0,0,.25)}
+.side-scroll{scrollbar-color:rgba(255,255,255,.18) transparent}
+.side-grp{color:rgba(255,255,255,.36);letter-spacing:1.4px}
+.side-item{color:rgba(255,255,255,.72);transition:background-color .2s var(--ease),color .2s var(--ease),box-shadow .2s var(--ease)}
+.side-item svg{color:rgba(255,255,255,.52);transition:color .2s var(--ease)}
+.side-item:hover{background:rgba(255,255,255,.07);color:#fff}
+.side-item:hover svg{color:rgba(255,255,255,.88)}
+.side-item.on{background:rgba(255,255,255,.11);color:#fff;font-weight:700;box-shadow:inset 3px 0 0 var(--side-accent)}
+.side-item.on svg{color:#fff}
+.side-item .cnt{background:rgba(255,255,255,.14);color:#fff}
+.side-item .cnt.hot{background:var(--danger);color:#fff}
+.side-item .cnt.info{background:rgba(56,152,236,.28);color:#d4ebff}
+.reg-sw{background:rgba(255,255,255,.08)}
+.reg-sw button{color:rgba(255,255,255,.62);transition:background-color .2s var(--ease),color .2s var(--ease)}
+.reg-sw button.on{background:#fff;color:var(--accent)}
+.side-user{border-top-color:rgba(255,255,255,.1)}
+.side-user .ava{background:rgba(255,255,255,.12);color:#fff}
+.side-user .live{box-shadow:0 0 0 2.5px #0f1340}
+.side-user .who b{color:#fff}
+.side-user .who small{color:rgba(255,255,255,.5)}
+.side-user .out{background:rgba(209,67,67,.18);color:#ff9a9a;transition:background-color .2s var(--ease)}
+.side-user .out:hover{background:rgba(209,67,67,.3)}
+.side.open{box-shadow:20px 0 70px rgba(10,12,40,.45)}
+.side-bg{transition:opacity .22s var(--ease)}
+
+/* tepa panel (kompyuter): oq, pastida ingichka chiziq */
+@media (min-width:960px){
+  .topbar{background:rgba(255,255,255,.92);border-bottom:1px solid var(--line);box-shadow:var(--sh-sm)}
+  .topbar .icon-btn{box-shadow:inset 0 0 0 1px var(--line)}
+}
+/* asosiy tugma: o'sha rang, yumshoq gradient va soya */
+.btn-primary{background:linear-gradient(135deg,#3a40ae,#22257a);box-shadow:0 2px 8px rgba(43,47,143,.26)}
+.btn-primary:active{background:var(--accent-press);box-shadow:0 1px 4px rgba(43,47,143,.26)}
+.btn-primary:disabled{box-shadow:none}
+/* maydon: bosilganda yumshoq halqa */
+.input:focus{box-shadow:inset 0 0 0 2px var(--accent),0 0 0 4px rgba(43,47,143,.12)}
+/* kartalar: ustiga kelganda soya chuqurlashadi */
+.card,.list,.side-card{transition:box-shadow .2s var(--ease)}
+@media (hover:hover) and (pointer:fine){.card:hover,.list:hover,.side-card:hover{box-shadow:var(--sh-md),0 6px 20px rgba(16,20,48,.06)}}
+@media (prefers-reduced-motion:reduce){.side-item,.side-item svg,.reg-sw button,.card,.list,.side-card{transition:none}}
 </style>
 </head>
 <body>
