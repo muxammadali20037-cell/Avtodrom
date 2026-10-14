@@ -933,6 +933,48 @@ table.xb{border-collapse:separate;border-spacing:0;font-size:14.5px;table-layout
 #xbSave{position:sticky;bottom:calc(var(--nav-h) + var(--sb) + 10px);z-index:40}
 #xbSave .wp-save{position:static;margin-top:12px}
 @media (min-width:960px){#xbSave{bottom:16px}}
+
+/* =========================================================================
+   HARAKAT SIFATI — Avtodrom12 uslubida silliq o'tishlar.
+   Ranglar va joylashuv o'zgarmaydi: faqat kirish, bosish va ustiga
+   kelish harakatlari. Telefon «harakatni kamaytirish» so'rasa — o'chadi.
+   ========================================================================= */
+:root{--ease:cubic-bezier(.4,0,.2,1);--ease-out:cubic-bezier(.2,.8,.2,1)}
+/* boshqa bo'limga o'tish */
+.view.pg-in{animation:pgIn .32s var(--ease-out) backwards}
+@keyframes pgIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+/* bosh sahifa plitalari ketma-ket chiqadi */
+.view.pg-in .tiles>.tile{animation:pgIn .34s var(--ease-out) backwards}
+.view.pg-in .tiles>.tile:nth-child(2){animation-delay:.03s}.view.pg-in .tiles>.tile:nth-child(3){animation-delay:.06s}
+.view.pg-in .tiles>.tile:nth-child(4){animation-delay:.09s}.view.pg-in .tiles>.tile:nth-child(5){animation-delay:.12s}
+.view.pg-in .tiles>.tile:nth-child(6){animation-delay:.15s}.view.pg-in .tiles>.tile:nth-child(n+7){animation-delay:.18s}
+/* bosilganda — darhol, ustiga kelganda — yumshoq */
+.tile,.kpi,.opt,.dur,.pkg-card{transition:transform .2s var(--ease),box-shadow .2s var(--ease),background .15s var(--ease)}
+.btn,.btn-light{transition:transform .12s var(--ease),background .15s var(--ease),box-shadow .2s var(--ease),opacity .15s}
+button.row,a.row,button.tr,.side-item,.icon-btn{transition:background .15s var(--ease),color .15s var(--ease),transform .12s var(--ease)}
+@media (hover:hover) and (pointer:fine){
+  .tile:hover{transform:translateY(-2px);box-shadow:0 2px 4px rgba(16,20,48,.05),0 14px 30px rgba(16,20,48,.10)}
+  .kpi:hover{transform:translateY(-2px);box-shadow:0 2px 4px rgba(16,20,48,.05),0 12px 26px rgba(16,20,48,.09)}
+  .opt:hover,.dur:hover,.pkg-card:hover{transform:translateY(-1px);box-shadow:0 2px 4px rgba(16,20,48,.05),0 10px 24px rgba(16,20,48,.09)}
+  .btn-primary:hover{transform:translateY(-1px);box-shadow:0 8px 20px rgba(43,47,143,.26)}
+  button.row:hover,a.row:hover,button.tr:hover{background:var(--card-2)}
+  .tile:hover:active{transform:scale(.97)}
+  .opt:hover:active,.pkg-card:hover:active{transform:scale(.985)}
+  .dur:hover:active{transform:scale(.97)}
+  .btn:hover:active{transform:scale(.98)}
+}
+/* oyna: kompyuterda markazdan kattalashib chiqadi, telefonda — pastdan */
+@media (min-width:700px){
+  .sheet{opacity:0;transform:translateY(50%) scale(.96);transition:transform .18s var(--ease),opacity .18s var(--ease),visibility 0s .18s}
+  .sheet.show{opacity:1;transform:translateY(50%) scale(1);transition:transform .3s var(--ease-out),opacity .22s var(--ease)}
+}
+.sheet-bg{transition:opacity .22s var(--ease)}
+.toast{transition:opacity .22s var(--ease),transform .32s var(--ease-out)}
+@media (prefers-reduced-motion:reduce){
+  .view,.view.pg-in,.view.pg-in .tiles>.tile{animation:none}
+  .tile,.kpi,.opt,.dur,.pkg-card,.btn,.btn-light,.sheet,.sheet.show,.toast{transition-duration:.01ms!important}
+  .tile:hover,.kpi:hover,.opt:hover,.dur:hover,.pkg-card:hover,.btn-primary:hover{transform:none}
+}
 </style>
 </head>
 <body>
@@ -1080,7 +1122,7 @@ const ROLE_UZ = { admin: 'Administrator', operator: 'Operator', cashier: 'Kassir
 /* ---------- server bilan aloqa ---------- */
 /** Xato matni: satr yoki { message } obyekt — hech qachon «[object Object]» emas. */
 const errMsg = v => !v ? '' : typeof v === 'string' ? v : String(v.message || v.error || v.code || '');
-async function api(path, opt = {}){
+async function apiNet(path, opt = {}){
   const ctl = new AbortController(), timer = setTimeout(() => ctl.abort(), 20000);
   const writing = !['GET', 'HEAD'].includes(String(opt.method || 'GET').toUpperCase());
   try{
@@ -1115,6 +1157,106 @@ async function api(path, opt = {}){
     throw e;
   }finally{ clearTimeout(timer); }
 }
+/* ---------- TEZKOR O'TISH: bo'limlar ma'lumoti xotirada ----------
+   Bir marta ochilgan bo'limga qaytganda ro'yxat bir zumda chiziladi,
+   server bilan esa orqada solishtiriladi — farq bo'lsa jimgina yangilanadi.
+   Har qanday yozishdan (POST/PATCH/DELETE) keyin xotira tozalanadi —
+   o'z amalingizdan keyin eski holat hech qachon ko'rinmaydi.
+   Faqat o'qish uchun xavfsiz manzillar (ochilganda hech narsani o'zgartirmaydi). */
+const AC_OK = /^\/api\/admin\/(?:bookings|schedule|booking-sheet|in-progress|cancellation-requests|applications|analytics|work-schedules|instructor-report|retention|register-report|staff|settings|courses|support|support-bot|telegram-admins|sheet-group|cashier\/(?:receipts|instructors)|instructors(?:\/[^/?]+\/work-schedule)?|instructor-control\/[^/?]+)(?:\?|$)/;
+const AC = new Map();          // manzil -> { d, at, stamp }
+const AF = new Map();          // manzil -> ketayotgan so'rov (bir vaqtda bitta)
+const AC_FRESH = 15000, AC_MAX_AGE = 5 * 60000, AC_LIMIT = 80;
+let acGen = 0;                 // yozishdan keyin eski so'rov javobi xotiraga tushmasin
+const acCopy = d => { try { return structuredClone(d); } catch { return JSON.parse(JSON.stringify(d)); } };
+function acFetch(path){
+  if (AF.has(path)) return AF.get(path);
+  const gen = acGen, stamp = S.stamp;
+  const p = apiNet(path).then(d => {
+    if (gen === acGen) {
+      AC.delete(path); AC.set(path, { d, at: Date.now(), stamp });
+      if (AC.size > AC_LIMIT) AC.delete(AC.keys().next().value);
+    }
+    return d;
+  }).finally(() => AF.delete(path));
+  AF.set(path, p);
+  return p;
+}
+function acClear(){ acGen++; AC.clear(); AF.clear(); }
+/* Hozir ochiq bo'lim qaysi manzillardan o'qiyapti (jonli yangilanish uchun) */
+const AC_CUR = new Set();
+async function api(path, opt = {}){
+  const method = String(opt.method || 'GET').toUpperCase();
+  if (method !== 'GET' || opt.body) {
+    try { return await apiNet(path, opt); }
+    finally { acClear(); }
+  }
+  const key = String(path);
+  if (!AC_OK.test(key)) return apiNet(path, opt);
+  if (opt.fresh) return acCopy(await acFetch(key));
+  AC_CUR.add(key); routeNote(key);
+  /* Xotiradan faqat bo'limga endi kirilganda o'qiladi. Keyingi har qanday
+     yangilash (jonli, tugma, kutish) — avvalgidek to'g'ridan-to'g'ri serverdan. */
+  const hit = AC.get(key), age = hit ? Date.now() - hit.at : Infinity;
+  if (hit && age < AC_MAX_AGE && Date.now() < acNavUntil) {
+    if (age > AC_FRESH || hit.stamp !== S.stamp) acRevalidate(key, hit);
+    return acCopy(hit.d);
+  }
+  return acCopy(await acFetch(key));
+}
+/* Orqada solishtirish: javob o'zgargan bo'lsa ochiq bo'lim jimgina qayta chiziladi */
+let acSoftT = 0;
+function acRevalidate(key, hit){
+  if (AF.has(key)) return;
+  const route = S.routeName + '/' + S.routeArg;
+  acFetch(key).then(d => {
+    if (route !== S.routeName + '/' + S.routeArg) return;
+    if (JSON.stringify(d) === JSON.stringify(hit.d)) return;
+    clearTimeout(acSoftT);
+    acSoftT = setTimeout(softRefresh, 60);
+  }).catch(() => {});
+}
+function softRefresh(){
+  const R = ROUTES[S.routeName];
+  if (R?.live && !sheetOpen() && !typing()) { try { R.live(S.routeArg); } catch (e) { console.warn(e); } }
+}
+
+/* ---------- OLDINDAN YUKLASH ----------
+   Har bo'lim qaysi manzillarni o'qishini eslab qolamiz (shu brauzerda).
+   Tugma ustiga sichqoncha kelganda / barmoq tekkanda — ma'lumot oldindan olinadi,
+   bosilganda sahifa darhol tayyor bo'ladi. */
+const RTP_KEY = 'adm_route_paths_v1';
+let RTP = (() => { try { return JSON.parse(localStorage.getItem(RTP_KEY) || '{}') || {}; } catch { return {}; } })();
+let rpSaveT = 0, rpRoute = '', rpUntil = 0, acNavUntil = 0;
+const todayKey = () => new Date().toLocaleDateString('sv');
+function routeStart(name, arg){ rpRoute = name + (arg ? '/' + arg : ''); rpUntil = Date.now() + 2500; acNavUntil = Date.now() + 1500; AC_CUR.clear(); }
+function routeNote(path){
+  if (!rpRoute || Date.now() > rpUntil || typing()) return;
+  const list = (RTP[rpRoute] || []).filter(x => x.p !== path);
+  list.unshift({ p: path, d: todayKey() });
+  RTP[rpRoute] = list.slice(0, 4);
+  clearTimeout(rpSaveT);
+  rpSaveT = setTimeout(() => {
+    try {
+      const keys = Object.keys(RTP);
+      if (keys.length > 60) keys.slice(0, keys.length - 60).forEach(k => delete RTP[k]);
+      localStorage.setItem(RTP_KEY, JSON.stringify(RTP));
+    } catch {}
+  }, 400);
+}
+function prefetchRoute(r){
+  if (!S.me || !S.online || !r) return;
+  const day = todayKey();
+  for (const x of (RTP[r] || [])) {
+    if (x.d !== day || !AC_OK.test(x.p)) continue;
+    const hit = AC.get(x.p);
+    if (hit && Date.now() - hit.at < AC_FRESH && hit.stamp === S.stamp) continue;
+    acFetch(x.p).catch(() => {});
+  }
+}
+/* Ochiq bo'limdagi ma'lumot o'zgardi — uning manzillari xotiradan olib tashlanadi,
+   jonli yangilanish serverdan yangisini oladi (boshqa bo'limlar xotirada qoladi). */
+function acDropCurrent(){ AC_CUR.forEach(p => AC.delete(p)); }
 const post = (p, body = {}, method = 'POST') => api(p, { method, body: JSON.stringify(body) });
 function setOnline(on){
   if (on === S.online) return;
@@ -1419,9 +1561,12 @@ function render(){
   const v = $('view');
   v.className = 'wrap' + (R.wide ? ' wide' : '');
   paintNav();
-  if (changed) window.scrollTo(0, 0);
+  if (changed) { window.scrollTo(0, 0); routeStart(name, arg); }
   closeSide();
   R.render(arg);
+  /* Avtodrom12 kabi yumshoq kirish: faqat boshqa bo'limga o'tganda
+     (bo'lim ichidagi yangilanishlar silkinmaydi) */
+  if (changed) requestAnimationFrame(() => { const el = v.firstElementChild; if (el && el.classList.contains('view')) el.classList.add('pg-in'); });
 }
 function parentOf(){ const R = ROUTES[S.routeName]; return R?.parent ? R.parent(S.routeArg) : 'home'; }
 $('backBtn').onclick = () => go(parentOf());
@@ -1534,6 +1679,28 @@ document.addEventListener('click', e => {
   const f = ACT[a.dataset.act];
   if (f) { e.preventDefault(); f(a, e); }
 });
+/* Oldindan yuklash: tugma ustida 60 ms turganda (sichqoncha) yoki barmoq tekkanda */
+let pfT = 0, pfEl = null;
+document.addEventListener('pointerover', e => {
+  const g = e.target.closest?.('[data-go]');
+  if (g === pfEl) return;
+  pfEl = g; clearTimeout(pfT);
+  if (g && !g.disabled && e.pointerType === 'mouse') pfT = setTimeout(() => prefetchRoute(g.dataset.go), 60);
+});
+document.addEventListener('touchstart', e => {
+  const g = e.target.closest?.('[data-go]');
+  if (g && !g.disabled) prefetchRoute(g.dataset.go);
+}, { passive: true });
+/* Kirgandan keyin: asosiy bo'limlar ma'lumoti bo'sh vaqtda tayyorlab qo'yiladi */
+function warmRoutes(){
+  const idle = window.requestIdleCallback || (f => setTimeout(f, 300));
+  setTimeout(() => idle(() => {
+    if (!S.me) return;
+    const seen = new Set([S.routeName + (S.routeArg ? '/' + S.routeArg : '')]);
+    const list = [...document.querySelectorAll('#nav [data-go], #side [data-go]')].map(b => b.dataset.go).filter(r => !seen.has(r) && seen.add(r)).slice(0, 6);
+    list.forEach((r, i) => setTimeout(() => prefetchRoute(r), i * 180));
+  }), 1500);
+}
 ACT.sheetx = () => closeSheet();
 ACT.menu = () => openSide();
 /* Administrator: yon menyudagi P1 / P2 — qaysi kassa nomidan ishlaydi */
@@ -1597,7 +1764,7 @@ ACT.profile = () => {
       <button class="row danger" data-act="logout"><span class="ic" style="background:var(--danger-soft);color:var(--danger)">${I('out')}</span><span class="tx"><b style="color:var(--danger)">Chiqish</b><small>Hisobdan chiqish</small></span></button>
     </div>`);
 };
-ACT.hardrefresh = async () => { closeSheet(); SCHC.clear(); await loadBase(); await refreshCounts(); render(); toast('Yangilandi'); };
+ACT.hardrefresh = async () => { closeSheet(); SCHC.clear(); acClear(); await loadBase(); await refreshCounts(); render(); toast('Yangilandi'); };
 ACT.logout = async () => {
   closeSheet(); closeSide();
   try { await post('/api/admin/logout'); } catch {}
@@ -1609,7 +1776,7 @@ ACT.logout = async () => {
    KIRISH
    ========================================================================= */
 function showLogin(){
-  S.me = null; S.reg = null; S.stamp = ''; S.routeName = '';
+  S.me = null; S.reg = null; S.stamp = ''; S.routeName = ''; acClear();
   $('app').classList.add('hidden'); $('login').classList.remove('hidden');
   setTimeout(() => { try { ($('loginUser').value ? $('loginPass') : $('loginUser')).focus(); } catch {} }, 60);
 }
@@ -1634,6 +1801,7 @@ async function enter(me){
   render();
   refreshCounts();
   pulse();
+  warmRoutes();
 }
 $('passEye').onclick = () => { const p = $('loginPass'); p.type = p.type === 'password' ? 'text' : 'password'; };
 $('loginForm').addEventListener('submit', async e => {
@@ -1674,6 +1842,7 @@ function typing(){
 }
 function onDataChange(){
   SCHC.clear();
+  acDropCurrent();
   refreshCounts();
   const R = ROUTES[S.routeName];
   if (R?.live && !sheetOpen() && !typing()) { try { R.live(S.routeArg); } catch (e) { console.warn(e); } }
@@ -1708,22 +1877,22 @@ async function doRefreshCounts(){
   if (!S.coursesOk || !S.setOk) loadBase();
   const c = S.counts, jobs = [];
   if (canDesk()) {
-    jobs.push(api('/api/admin/bookings?status=pending&per_page=8&order=asc').then(d => { c.pending = Number(d.total) || 0; S.pendRows = d.bookings || []; }).catch(() => {}));
-    jobs.push(api('/api/admin/cancellation-requests').then(d => { c.cancels = (d.requests || []).length; }).catch(() => {}));
-    jobs.push(api('/api/admin/support').then(d => { c.chat = (d.threads || []).reduce((a, t) => a + (Number(t.unread) || 0), 0); }).catch(() => {}));
+    jobs.push(api('/api/admin/bookings?status=pending&per_page=8&order=asc', { fresh: true }).then(d => { c.pending = Number(d.total) || 0; S.pendRows = d.bookings || []; }).catch(() => {}));
+    jobs.push(api('/api/admin/cancellation-requests', { fresh: true }).then(d => { c.cancels = (d.requests || []).length; }).catch(() => {}));
+    jobs.push(api('/api/admin/support', { fresh: true }).then(d => { c.chat = (d.threads || []).reduce((a, t) => a + (Number(t.unread) || 0), 0); }).catch(() => {}));
   }
-  if (canKassa()) jobs.push(api('/api/admin/in-progress').then(d => { c.live = Number(d.counts?.active) || 0; c.liveRed = Number(d.counts?.red) || 0; }).catch(() => {}));
+  if (canKassa()) jobs.push(api('/api/admin/in-progress', { fresh: true }).then(d => { c.live = Number(d.counts?.active) || 0; c.liveRed = Number(d.counts?.red) || 0; }).catch(() => {}));
   /* Administrator bosh sahifada HAMMA kassaning bugungi cheklarini ko'radi; kassir — o'zinikini */
-  if (isAdmin() || (canKassa() && regOk())) jobs.push(api(`/api/admin/cashier/receipts?${isAdmin() ? 'register=all' : 'token=' + encodeURIComponent(S.reg.t)}&date=${kToday()}`)
+  if (isAdmin() || (canKassa() && regOk())) jobs.push(api(`/api/admin/cashier/receipts?${isAdmin() ? 'register=all' : 'token=' + encodeURIComponent(S.reg.t)}&date=${kToday()}`, { fresh: true })
     .then(d => { const s = d.summary || {}; c.receipts = (Number(s.total) || 0) - (Number(s.cancelled) || 0); c.amount = Number(s.amount) || 0; S.rcRows = d.receipts || []; }).catch(() => {}));
   if (isAdmin() && (!S.appsAt || Date.now() - S.appsAt > 5 * 60000 || ['home', 'instructors'].includes(S.routeName))) {
     S.appsAt = Date.now();
-    jobs.push(api('/api/admin/applications').then(d => { c.apps = (d.applications || []).filter(a => String(a.status || '').toUpperCase() === 'PENDING').length; }).catch(() => {}));
+    jobs.push(api('/api/admin/applications', { fresh: true }).then(d => { c.apps = (d.applications || []).filter(a => String(a.status || '').toUpperCase() === 'PENDING').length; }).catch(() => {}));
   }
   if (isAdmin() && S.routeName === 'home') {
-    jobs.push(api(`/api/admin/analytics?period=day&date=${kToday()}`).then(d => { S.today = d.totals || {}; }).catch(() => {}));
+    jobs.push(api(`/api/admin/analytics?period=day&date=${kToday()}`, { fresh: true }).then(d => { S.today = d.totals || {}; }).catch(() => {}));
     /* Ikkala kassaning bugungi hisobi — faqat administrator ko'radi */
-    jobs.push(api('/api/admin/register-report?period=day').then(d => { S.regRep = d; }).catch(() => {}));
+    jobs.push(api('/api/admin/register-report?period=day', { fresh: true }).then(d => { S.regRep = d; }).catch(() => {}));
   }
   await Promise.all(jobs);
   paintNav();

@@ -948,6 +948,97 @@ pre.json{background:#F7FAFF;border:1px solid var(--line);border-radius:8px;paddi
 #simpleLink{text-decoration:none;display:inline-flex;align-items:center;white-space:nowrap;font-size:12px!important;color:inherit}
 </style>
 <link rel="stylesheet" href="/assets/ultra.css">
+<style id="a12-look">
+/* =========================================================================
+   AVTODROM12 KO'RINISHI — kengaytirilgan panel.
+   Ranglar o'sha-o'sha (ko'k + to'q ko'k). O'zgargani: to'q yon menyu
+   (oq yozuv, tanlangan bo'limda chiziq), soyali kartalar, silliq harakatlar.
+   Faqat ko'rinish — hech bir tugma, bo'lim yoki ish tartibi o'zgarmaydi.
+   ========================================================================= */
+@media screen{
+  .ultra-admin{--a12-ease:cubic-bezier(.4,0,.2,1);--a12-out:cubic-bezier(.2,.8,.2,1);
+    --a12-side:linear-gradient(180deg,#172d4b 0%,#0e1d33 100%);--a12-accent:#6683ee;
+    --a12-sh-sm:0 1px 2px rgba(16,24,40,.04),0 1px 3px rgba(16,24,40,.03);
+    --a12-sh-md:0 4px 12px rgba(16,24,40,.07),0 1px 3px rgba(16,24,40,.04);
+    --a12-sh-lg:0 8px 30px rgba(16,24,40,.09),0 2px 6px rgba(16,24,40,.04);
+    --sw:232px}
+
+  /* ---------- yon menyu: to'q, oq yozuv ---------- */
+  .ultra-admin .side{background:var(--a12-side);border-right:0;scrollbar-color:rgba(255,255,255,.18) transparent}
+  .ultra-admin .side .navgroup{color:rgba(255,255,255,.34);font-weight:700;letter-spacing:1.6px;padding:16px 14px 8px}
+  .ultra-admin .side .navgroup:first-child{padding-top:4px}
+  .ultra-admin .side .nav{color:rgba(255,255,255,.68);font-weight:600;font-size:13px;border-radius:10px;padding:11px 14px;margin:2px 0;background:transparent;
+    transition:background-color .2s var(--a12-ease),color .2s var(--a12-ease),box-shadow .2s var(--a12-ease),transform .16s var(--a12-ease)}
+  .ultra-admin .side .nav:hover{color:rgba(255,255,255,.96);background:rgba(255,255,255,.07)}
+  .ultra-admin .side .nav.on{color:#fff;background:rgba(255,255,255,.11);font-weight:700;box-shadow:inset 3px 0 0 var(--a12-accent)}
+  .ultra-admin .side .nav .count{background:rgba(255,255,255,.15);color:#fff;border-radius:99px;padding:2px 8px;font-size:11px;font-weight:700;min-width:22px;text-align:center}
+  .ultra-admin .side .ultra-side-foot{border-top-color:rgba(255,255,255,.1);color:rgba(255,255,255,.5)}
+  .ultra-admin .side .ultra-side-foot strong{color:#fff}
+  .ultra-admin .side :focus-visible{outline-color:#a9bbff}
+
+  /* Kompyuter: menyu chapda butun bo'yi bo'ylab, logotip uning tepasida */
+  @media (min-width:761px){
+    .ultra-admin .layout{display:block;padding-left:var(--sw)}
+    .ultra-admin .side{position:fixed;top:0;left:0;bottom:0;width:var(--sw);height:100dvh;z-index:50;padding:100px 12px 18px;overflow-y:auto;box-shadow:4px 0 24px rgba(8,18,38,.16)}
+    .ultra-admin .top{margin-left:var(--sw);box-shadow:var(--a12-sh-sm)}
+    .ultra-admin .topin .brand{position:fixed;left:0;top:0;width:var(--sw);height:84px;padding:0 14px;gap:10px;background:#172d4b;border-bottom:1px solid rgba(255,255,255,.08);z-index:2;overflow:hidden}
+    .ultra-admin .topin .brand>div{min-width:0}
+    .ultra-admin .topin .brand b{display:block;color:#fff;font-size:13px;line-height:1.25;letter-spacing:-.2px;white-space:normal}
+    .ultra-admin .topin .brand small{color:rgba(255,255,255,.45);font-size:8.5px;letter-spacing:.8px;line-height:1.4;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .ultra-admin .topin .brandlogo{width:40px;height:40px;flex:none;background:#fff;border-radius:50%;padding:2px;box-shadow:0 2px 10px rgba(0,0,0,.25)}
+    .ultra-admin .modeswitch{margin-left:0}
+    .ultra-admin .ultra-search{margin-left:0}
+  }
+  @media (min-width:761px) and (max-width:1050px){.ultra-admin{--sw:205px}.ultra-admin .topin .brand small{display:none}}
+  /* Telefon: o'sha to'q menyu chapdan suriladi */
+  @media (max-width:760px){
+    .ultra-admin .side{transition:transform .3s var(--a12-out)}
+    .ultra-admin.menu-open .side{box-shadow:20px 0 70px rgba(8,18,38,.45)}
+    .ultra-admin.menu-open .ultra-scrim{animation:a12fade .2s ease-out;backdrop-filter:blur(2px)}
+  }
+
+  /* ---------- tepa panel, kartalar, ko'rsatkichlar ---------- */
+  .ultra-admin .top{box-shadow:var(--a12-sh-sm)}
+  .ultra-admin .card{box-shadow:var(--a12-sh-sm);transition:box-shadow .2s var(--a12-ease),border-color .2s var(--a12-ease)}
+  .ultra-admin .card:hover{box-shadow:var(--a12-sh-md)}
+  .ultra-admin .kcard,.ultra-admin .kpi{box-shadow:var(--a12-sh-sm);transition:transform .2s var(--a12-ease),box-shadow .2s var(--a12-ease),border-color .2s var(--a12-ease)}
+  @media (hover:hover) and (pointer:fine){
+    .ultra-admin .kcard:hover,.ultra-admin .kpi:hover{transform:translateY(-2px);box-shadow:var(--a12-sh-md)}
+  }
+
+  /* ---------- tugmalar ---------- */
+  .ultra-admin .btn{transition:transform .2s var(--a12-ease),background-color .2s var(--a12-ease),border-color .2s var(--a12-ease),box-shadow .2s var(--a12-ease),color .2s var(--a12-ease)}
+  .ultra-admin .btn.primary,.ultra-admin .btn.green{background:linear-gradient(135deg,#4f6ee6,#2b49bf);border-color:transparent;box-shadow:0 2px 8px rgba(52,86,216,.28)}
+  .ultra-admin .btn.primary:hover:not(:disabled),.ultra-admin .btn.green:hover:not(:disabled){background:linear-gradient(135deg,#4f6ee6,#2b49bf);box-shadow:0 4px 16px rgba(52,86,216,.38);transform:translateY(-1px)}
+  .ultra-admin .btn.primary:active:not(:disabled),.ultra-admin .btn.green:active:not(:disabled){transform:translateY(0);box-shadow:0 1px 4px rgba(52,86,216,.28)}
+  .ultra-admin .btn:not(.primary):not(.green):hover:not(:disabled){border-color:#c9d3e4;box-shadow:var(--a12-sh-sm)}
+  .ultra-admin .seg,.ultra-admin .ms,.ultra-admin .chip{transition:background-color .2s var(--a12-ease),color .2s var(--a12-ease),box-shadow .2s var(--a12-ease)}
+
+  /* ---------- maydonlar: bosilganda yumshoq ko'k halqa ---------- */
+  .ultra-admin .input,.ultra-admin .search,.ultra-admin .select,.ultra-admin textarea{transition:border-color .2s var(--a12-ease),box-shadow .2s var(--a12-ease)}
+  .ultra-admin .input:focus,.ultra-admin .search:focus,.ultra-admin .select:focus,.ultra-admin textarea:focus{border-color:var(--g);box-shadow:0 0 0 3px rgba(52,86,216,.15);outline:none}
+
+  /* ---------- jadvallar ---------- */
+  .ultra-admin .table td,.ultra-admin .dtable td{transition:background-color .15s var(--a12-ease)}
+  .ultra-admin .table tr:hover td{background:#f8fafc}
+
+  /* ---------- harakatlar ---------- */
+  .ultra-admin .page.on{animation:a12up .35s var(--a12-out) backwards}
+  .ultra-admin .modalback.open{animation:a12fade .2s ease-out}
+  .ultra-admin .modalback.open .modal{animation:a12scale .3s var(--a12-out) backwards}
+  .ultra-admin .toast.on{animation:a12toast .35s var(--a12-out) both}
+  @keyframes a12up{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+  @keyframes a12fade{from{opacity:0}to{opacity:1}}
+  @keyframes a12scale{from{opacity:0;transform:scale(.95) translateY(10px)}to{opacity:1;transform:none}}
+  @keyframes a12toast{from{opacity:0;transform:translateX(40px)}to{opacity:1;transform:none}}
+
+  @media (prefers-reduced-motion:reduce){
+    .ultra-admin .page.on,.ultra-admin .modalback.open,.ultra-admin .modalback.open .modal,.ultra-admin .toast.on,.ultra-admin.menu-open .ultra-scrim{animation:none}
+    .ultra-admin .kcard:hover,.ultra-admin .kpi:hover,.ultra-admin .btn:hover{transform:none!important}
+    .ultra-admin .side{transition:none}
+  }
+}
+</style>
 <script src="/assets/ultra-core.js"></script>
 <script src="/assets/ultra-ui.js"></script>
 </head>
