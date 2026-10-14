@@ -4,7 +4,7 @@ import { supabaseRest } from './supabase.js';
 import { selectIn } from './rest-chunks.js';
 import { testInstructorIds } from './test-instructors.js';
 import { loadBlocks } from './instructor-blocks.js';
-import { loadSheet, loadSheets, parseKey, SHEET_HOURS } from './booking-sheet.js';
+import { loadSheet, loadSheets, parseKey, parsePhone, cellKey, SHEET_HOURS } from './booking-sheet.js';
 import { bookingSearchFilter, cleanSearchTerm } from './booking-search.js';
 import {
   loadSchedules, specFor, mergeRanges, hmToMin, minToHm, tashkentYmdOf, addDaysYmd, dayStartMs, weekdayOf,
@@ -354,6 +354,63 @@ export async function controlData(date: string, nowMs = Date.now()) {
 }
 
 /* ------------------------------------------------------------------ */
+/* BRON QILISH (nazorat paneli → Excel bron katagi)                    */
+/* ------------------------------------------------------------------ */
+export const CONTROL_ACTOR = 'Nazorat paneli';
+type BookIn = { date?: unknown; ins?: unknown; h?: unknown; n?: unknown; half?: unknown; cat?: unknown; phone?: unknown; name?: unknown };
+type BookDeps = { adminUser: () => Promise<any>; audit: (adminId: string | null, action: string, entityType: string, entityId: string | null, oldData: unknown, newData: unknown) => Promise<void> };
+class BookError extends Error { constructor(msg: string, public statusCode = 400) { super(msg); } }
+
+/**
+ * Excel bron'ga instruktor boti kabi yoziladi: katakka «901234567/A 30 MIN Ism»,
+ * bron yaratilmasa katak ham yozilmaydi (strict). Keyin instruktorga va guruhga xabar.
+ */
+export async function controlBook(b: BookIn, deps: BookDeps, nowMs = Date.now()) {
+  const today = tashkentYmdOf(nowMs);
+  const date = String(b.date || '');
+  if (!YMD.test(date)) throw new BookError('Sana noto‘g‘ri');
+  if (date < today) throw new BookError('O‘tgan kunga bron qilib bo‘lmaydi');
+  if (date > addDaysYmd(today, 60)) throw new BookError('Ko‘pi bilan 60 kun oldinga');
+  const h0 = Number(b.h), half = b.half === true || b.half === 'true';
+  const n = half ? 1 : Math.max(1, Math.min(3, Math.round(Number(b.n) || 1)));
+  if (!Number.isInteger(h0) || !SHEET_HOURS.includes(h0) || !SHEET_HOURS.includes(h0 + n - 1)) throw new BookError('Soat noto‘g‘ri');
+  const phone = parsePhone(String(b.phone || ''));
+  if (!phone) throw new BookError('Telefon raqamini to‘liq yozing (masalan 90 123 45 67)');
+  const name = String(b.name || '').replace(/[^\p{L}\s'‘’`ʻ-]/gu, ' ').replace(/\s+/g, ' ').trim().slice(0, 40);
+
+  const { instructorDay, applySheetChanges, SHEET_LOCK_MSG } = await import('./booking-sheet-routes.js');
+  const day = await instructorDay(date, String(b.ins || ''));
+  if (!day.ins) throw new BookError('Instruktor topilmadi yoki faol emas', 404);
+  const cats = (day.ins.categories || ['B']).map((c) => String(c).toUpperCase());
+  const defCat = cats.includes('B') ? 'B' : cats[0] || 'B';
+  const cat = String(b.cat || defCat).toUpperCase();
+  if (!cats.includes(cat)) throw new BookError(`${day.ins.name} ${cat} toifani o‘rgatmaydi`);
+
+  const hm = (h: number) => `${String(h).padStart(2, '0')}:00`;
+  for (let h = h0; h < h0 + n; h++) {
+    const c = day.cells.find((x) => x.h === h);
+    if (!c) throw new BookError('Soat noto‘g‘ri');
+    if (c.end <= nowMs || (h === h0 && c.start <= nowMs)) throw new BookError(`${hm(h)} boshlanib ketgan — bu mijozga kassa chek beradi.`);
+    if (c.sc) throw new BookError(`${hm(h)} band: «${c.sc.t}». Boshqa vaqtni tanlang.`, 409);
+    if (c.lock) throw new BookError(`${hm(h)}: ${c.lock === 'bk' ? 'bu soatda boshqa bron bor (Mini App, kassa yoki qo‘lda).' : SHEET_LOCK_MSG[c.lock] || 'band'}`, 409);
+  }
+  const text = `${phone.slice(-9)}${cat !== defCat ? '/' + cat : ''}${half ? ' 30 MIN' : ''}${name ? ' ' + name : ''}`;
+  const res = await applySheetChanges({
+    date, actor: { login: CONTROL_ACTOR, role: 'operator' }, adminUser: deps.adminUser, audit: deps.audit, strict: true, notePrefix: CONTROL_ACTOR,
+    changes: Array.from({ length: n }, (_, i) => ({ key: cellKey(day.ins!.id, h0 + i), t: text, prev: '' })),
+  });
+  const made = res.created[0];
+  if (!made) throw new BookError(res.errors[0]?.error || 'Bron qilinmadi', 409);
+  /* instruktorga (bot) va guruhga — Excel bron saqlangandagidek; xato bo'lsa bron buzilmaydi */
+  try { const { notifySheetSave } = await import('./instructor-notify.js'); await notifySheetSave(date, res.events); } catch (e) { console.error('control book notify failed:', e); }
+  try { const { afterSheetSave } = await import('./sheet-share.js'); await afterSheetSave(date, res.events, CONTROL_ACTOR); } catch (e) { console.error('control book group failed:', e); }
+  return {
+    booking: { id: made.id || null, code: made.code || null, start: made.start, minutes: made.minutes, category: made.category || cat, name: made.name || name || 'Mijoz', phone: made.phone || phone,
+      ins: { id: day.ins.id, name: day.ins.name } },
+  };
+}
+
+/* ------------------------------------------------------------------ */
 /* API                                                                 */
 /* ------------------------------------------------------------------ */
 type Deps = {
@@ -393,6 +450,20 @@ export async function registerControlRoutes(app: FastifyInstance, deps: Deps) {
       return { ok: true, ...(await searchControl(req.query?.q)) };
     } catch (e: any) {
       return reply.code(500).send({ ok: false, error: e?.message || 'Qidirib bo‘lmadi' });
+    }
+  });
+
+  /* Bron qilish — Excel bron katagiga yoziladi */
+  app.post('/api/control-book', async (req: any, reply: any) => {
+    reply.header('Cache-Control', 'no-store');
+    try {
+      const b = req.body || {};
+      if (!(await checkControlToken(String(b.k || req.query?.k || '')))) {
+        return reply.code(403).send({ ok: false, error: 'Havola eskirgan yoki noto‘g‘ri. Admin paneldan yangi havolani oling.' });
+      }
+      return { ok: true, ...(await controlBook(b, deps)) };
+    } catch (e: any) {
+      return reply.code(e?.statusCode ?? 500).send({ ok: false, error: e?.message || 'Bron qilinmadi' });
     }
   });
 
