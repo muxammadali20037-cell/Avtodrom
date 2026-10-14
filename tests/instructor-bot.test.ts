@@ -7,7 +7,7 @@ import { makeHarness, type Harness } from './harness.js';
 import { hashPassword } from '../backend/src/staff-auth.js';
 import { parseBotText } from '../backend/src/instructor-sheet-bot.js';
 import { cellKey } from '../backend/src/booking-sheet.js';
-import { webhookSecret, _resetHealThrottle } from '../backend/src/webhook-secret.js';
+import { webhookSecret, _resetHealThrottle, _resetEnsuredCallbacks } from '../backend/src/webhook-secret.js';
 import { parseMenu, _resetBotCommands } from '../backend/src/instructor-bot-menu.js';
 
 let h: Harness;
@@ -25,6 +25,17 @@ async function say(text: string, tg = INS_TG) {
     method: 'POST', url: '/api/telegram/instructor/webhook',
     headers: { 'x-telegram-bot-api-secret-token': 'test-webhook-secret' },
     payload: { update_id: 1, message: { message_id: 1, chat: { id: tg, type: 'private' }, from: { id: tg, first_name: 'Aziz' }, text } },
+  });
+  expect(r.statusCode).toBe(200);
+  return h.telegram.slice(before).map((m) => m.text).join('\n');
+}
+/** Bot xabaridagi tugmani bosish (callback_query) */
+async function press(data: string, tg = INS_TG) {
+  const before = h.telegram.length;
+  const r = await h.app.inject({
+    method: 'POST', url: '/api/telegram/instructor/webhook',
+    headers: { 'x-telegram-bot-api-secret-token': 'test-webhook-secret' },
+    payload: { update_id: 2, callback_query: { id: 'cb-1', from: { id: tg, first_name: 'Aziz' }, data, message: { message_id: 77, chat: { id: tg, type: 'private' } } } },
   });
   expect(r.statusCode).toBe(200);
   return h.telegram.slice(before).map((m) => m.text).join('\n');
@@ -95,9 +106,96 @@ describe('Instruktor boti — xabarni o‘qish', () => {
     expect(p('salom')).toEqual({ kind: 'help', error: undefined });
     expect(p('901234567')).toMatchObject({ kind: 'help', error: expect.stringMatching(/Vaqtni/) });
     expect(p('953905171 3/10')).toMatchObject({ kind: 'help', error: expect.stringMatching(/Vaqtni/) });
-    expect(p('901234567 14:30')).toMatchObject({ kind: 'help', error: expect.stringMatching(/soat boshidan/) });
+    expect(p('901234567 14:30')).toMatchObject({ kind: 'book', h0: 14, h1: 15, half: true, off: 30 });   // soat yarimidan, 30 daqiqa
+    expect(p('901234567 14:15')).toMatchObject({ kind: 'help', error: expect.stringMatching(/soat boshidan/) });
     expect(p('901234567 9-16')).toMatchObject({ kind: 'help', error: expect.stringMatching(/5 soat/) });
-    expect(p('bekor')).toMatchObject({ kind: 'help' });
+    expect(p('bekor')).toMatchObject({ kind: 'cancel', pick: true, h0: null, phone: null });   // tugmalar chiqadi
+  });
+
+  it('yarim soat — har xil yozilishi', () => {
+    const D1 = '2026-10-09';
+    const half = (t: string) => { const r: any = p(t); return r.kind === 'book' ? `${r.date} ${r.h0}${r.off ? ':30' : ':00'} ${r.half ? '30m' : (r.h1 - r.h0) + 'h'} ${r.phone}` : `${r.kind}:${r.error || ''}`; };
+    const P = '+998901234567', H0 = `${D1} 14:00 30m ${P}`, H30 = `${D1} 14:30 30m ${P}`;
+    for (const t of ['ertaga 14:00 901234567 30 min', 'ertaga 14:00 901234567 30 minut', 'ertaga 14 901234567 30min', 'ertaga 14:00 901234567 30 daqiqa',
+      'ertaga 14:00 901234567 yarim soat', 'ertaga 14:00 901234567 yarim soatlik', 'ertaga 14:00 901234567 yarim soatga', 'ertaga 14:00 901234567 yarim',
+      'ertaga 14:00 901234567 yarimta', 'ertaga 14:00 901234567 0,5 soat', 'ertaga 14:00 901234567 0.5 soat', 'ertaga 14:00 901234567 1/2 soat',
+      'ertaga 14:00 901234567 пол часа', 'ertaga 14:00 901234567 полчаса', 'эртага 14:00 901234567 ярим соат', 'эртага 14:00 901234567 30 минут',
+      'ertaga 14:00-14:30 901234567', 'ertaga 14-14:30 901234567', 'ertaga 14:00 dan 14:30 gacha 901234567', 'ertaga 901234567 14:00 30',
+      'ertaga 901234567 14:00 30-min', 'ertaga 901234567 soat 14 yarim soat', 'ertaga 14-00 901234567 30 min', 'yarim soat ertaga 14:00 901234567']) {
+      expect(half(t), t).toBe(H0);
+    }
+    for (const t of ['ertaga 14:30 901234567', 'ertaga 14:30-15:00 901234567', 'ertaga 14.30 901234567', 'ertaga 14-30 901234567',
+      'ertaga soat 2 yarimda 901234567', 'ertaga soat ikki yarimda 901234567', 'ertaga 14:30 901234567 yarim soat', 'эртага 14:30 901234567']) {
+      expect(half(t), t).toBe(H30);
+    }
+    expect(half('ertaga soat ikkida 901234567')).toBe(`${D1} 14:00 1h ${P}`);
+    expect(half('ertaga 14:00 901234567 ikki soat')).toBe(`${D1} 14:00 2h ${P}`);
+    expect(half('ertaga 14:30 901234567 1 soat')).toMatch(/^help:Soat yarimidan faqat 30 daqiqalik/);
+    expect(half('ertaga 14:30-15:30 901234567')).toMatch(/^help:Soat yarimidan faqat 30 daqiqalik/);
+    expect(half('ertaga 14:00 901234567 1,5 soat')).toMatch(/^help:Excel bronda 30 daqiqa yoki butun soat/);
+    expect(half('ertaga 14:00 901234567 bir yarim soat')).toMatch(/^help:Excel bronda 30 daqiqa yoki butun soat/);
+    expect(half('ertaga 14-16 901234567 yarim soat')).toMatch(/^help:«Yarim soat» va 2 soatlik/);
+    /* telefon bo'laklari vaqt bo'lib qolmaydi */
+    expect(half('ertaga 93-272-87-00 14:00')).toBe(`${D1} 14:00 1h +998932728700`);
+    expect(half('ertaga 14:00 93 272 87 30')).toBe(`${D1} 14:00 1h +998932728730`);
+  });
+
+  it('bron xabari bekor yoki boshqa narsa bo‘lib qolmaydi (ko‘rib chiqishda topilgan holatlar)', () => {
+    const D1 = '2026-10-09', P = '+998901234567';
+    const b = (t: string) => { const r: any = p(t); return r.kind === 'book' ? `${r.date} ${r.h0}${r.off ? ':30' : ':00'} ${r.half ? '30m' : (r.h1 - r.h0) + 'h'} ${r.phone}` : `${r.kind}:${r.error || ''}`; };
+    for (const t of ['ertaga 15:00 901234567 agar kelmasa aytaman', "ertaga 15:00 901234567 o'chirmang", 'ertaga 901234567 15 bekorga', 'ertaga 15:00 901234567 Udalov',
+      'ertaga 15:00 901234567 Uchirov', 'ertaga 15:00 901234567 Bekarov', 'ertaga bir o\'quvchi 901234567 15', 'ertaga ikki kishi 901234567 15',
+      'завтра одна ученица 901234567 15', 'завтра две ученицы 901234567 в 15', 'ertaga 901234567 15 birga', 'ertaga akasi bilan birga 901234567 soat 15',
+      'ertaga 15:00 901234567 avans 30 000', 'ertaga 15:00 901234567 30-may', "ertaga o'n beshda 901234567", "ertaga soat o'n beshda 901234567", 'ertaga soat 3 Husan 901234567']) {
+      expect(b(t), t).toBe(`${D1} 15:00 1h ${P}`);
+    }
+    expect(b('ertaga 14:00 901234567 Kochirov')).toBe(`${D1} 14:00 1h ${P}`);
+    expect(b('ertaga 14:00 901234567 1/20')).toBe(`${D1} 14:00 1h ${P}`);
+    expect(b('ertaga 14:00 901234567 30 mexanika')).toBe(`${D1} 14:00 1h ${P}`);
+    expect(b('ertaga 14:00 901234567 2 Hilola')).toBe(`${D1} 14:00 1h ${P}`);
+    expect(b('ertaga 901234567 4 Hamid')).toBe(`${D1} 16:00 1h ${P}`);
+    expect(b('ertaga 901234567 soat 5 Hasanga')).toBe(`${D1} 17:00 1h ${P}`);
+    expect(b('завтра в 5 часов 901234567')).toBe(`${D1} 17:00 1h ${P}`);
+    expect(b("ertaga o'n oltida 901234567")).toBe(`${D1} 16:00 1h ${P}`);
+    expect(b("ertaga o'n sakkizga 901234567")).toBe(`${D1} 18:00 1h ${P}`);
+    expect(b('ertaga 901234567 kechki oltida')).toBe(`${D1} 18:00 1h ${P}`);
+    expect(b('soat birda 901234567')).toBe(`${T} 13:00 1h ${P}`);
+    /* telefon bo'laklari */
+    expect(b('ertaga 14:00 90 - 123 - 45 - 30')).toBe(`${D1} 14:00 1h +998901234530`);
+    expect(b('ertaga 14:00 90 123 45 30 Murod')).toBe(`${D1} 14:00 1h +998901234530`);
+    expect(b('ertaga 14:00 93 512 12-30')).toBe(`${D1} 14:00 1h +998935121230`);
+    /* «kerak emas», «не нужно» telefon bilan — so'raydi (bron ham, bekor ham qilmaydi) */
+    expect(b('ertaga 15:00 901234567 chek kerak emas')).toMatch(/^help:Tushunmadim: bron qilaymi yoki bekor qilaymi/);
+    expect(b('завтра 901234567 15:00 чек не нужно')).toMatch(/^help:Tushunmadim/);
+    /* ikki xil kun */
+    expect(b('bugun kelmaydi, ertaga 15:00 901234567')).toMatch(/^help:Kun ikki xil/);
+  });
+
+  it('bekor — xabarning istalgan joyida, har xil yozilsa ham', () => {
+    const D1 = '2026-10-09';
+    const c = (t: string) => { const r: any = p(t); return r.kind === 'cancel' ? `${r.date} ${r.h0 ?? '-'} ${r.phone || '-'}${r.pick ? ' pick' : ''}` : `${r.kind}:${r.error || ''}`; };
+    for (const t of ['bekor 14:00', 'bekor qil 14:00', 'bekor qiling 14:00', '14:00 ni bekor qiling', '14:00 bekor', 'otmen 14:00', 'otmena 14:00',
+      'отмена 14:00', 'отмени 14:00', 'бекор 14:00', 'бекор килинг 14:00', 'udali 14:00', 'удали 14:00', 'bekr 14:00', 'bekor14:00', 'cancel 14:00']) {
+      expect(c(t), t).toBe(`${T} 14 -`);
+    }
+    for (const t of ['ertaga 14:00 bekor', 'ertaga 14:00 dagi bronni bekor qil', 'ertaga 14 bekor qilindi', 'ertaga 14:00 kelmaydi',
+      "ertaga 14:00 ni o'chir", 'ertaga 14:00 ochirib tashla', 'ertaga 14:00 ni bekor qilib bering', 'ertagi 14:00 bekor',
+      'Bekor qilish ertaga soat 14', 'ertaga 14:00 da mijoz kelmaydi bekor qil', 'ertaga 14:00 kerak emas', 'ertaga 14:30 bekor']) {
+      expect(c(t), t).toBe(`${D1} 14 -`);
+    }
+    expect(c('ertaga 14:00 901234567 bekor')).toBe(`${D1} 14 +998901234567`);   // ilgari bu bron bo'lib, ismi «Bekor» bo'lardi
+    expect(c('901234567 bekor')).toBe(`${T} - +998901234567`);
+    expect(c('ertaga 901234567 bekor qiling')).toBe(`${D1} - +998901234567`);
+    expect(c('bekor qilmoqchiman')).toBe(`${T} - - pick`);
+    expect(c('ertaga bekor')).toBe(`${D1} - - pick`);
+    expect(c("ertaga 14:00ni 16:00ga ko'chiring")).toMatch(/^help:Ko‘chirish uchun/);
+    /* tinish belgilari bilan */
+    expect(c('bekor, ertaga 15:00 901234567')).toBe(`${D1} 15 +998901234567`);
+    expect(c('otmena, 14:00 901234567')).toBe(`${T} 14 +998901234567`);
+    expect(c('Bekor: ertaga 14:00')).toBe(`${D1} 14 -`);
+    expect(c('отмена! завтра 14:00')).toBe(`${D1} 14 -`);
+    expect(c('Bekor!')).toBe(`${T} - - pick`);
+    expect(c('bekor.')).toBe(`${T} - - pick`);
   });
 });
 
@@ -145,6 +243,113 @@ describe('Instruktor boti — bron', () => {
     await h.call('PUT', '/api/admin/booking-sheet', { cookie: admin, payload: { date: ymd(1), changes: [{ key: cellKey('ip-1', 11), t: '947494944', prev: '' }] } });
     expect(await say('bekor ertaga 11:00')).toMatch(/admin kiritgan/);
     expect(active()).toHaveLength(1);
+  });
+
+  it('yarim soat: 14:00–14:30 va 14:30–15:00 — ikkalasi ham bron bo‘ladi, bekor ham qilinadi', async () => {
+    let msg = await say('ertaga 14:00-14:30 901234567');
+    expect(msg).toMatch(/Bron qilindi[\s\S]*14:00–14:30 \(30 daqiqa\)/);
+    msg = await say('ertaga 15:30 947494944');
+    expect(msg).toMatch(/Bron qilindi[\s\S]*15:30–16:00 \(30 daqiqa\)/);
+    expect(msg).toContain('bekor 15:30');
+    const [a, b] = active().sort((x: any, y: any) => x.start_at.localeCompare(y.start_at));
+    expect(a).toMatchObject({ start_at: at('14:00'), end_at: at('14:30'), duration_minutes: 30 });
+    expect(b).toMatchObject({ start_at: at('15:30'), end_at: at('16:00'), duration_minutes: 30 });
+    const g = await h.call('GET', `/api/admin/booking-sheet?date=${ymd(1)}`, { cookie: admin });
+    expect(g.body.cells[cellKey('ip-1', 15)].t).toBe('947494944 30 MIN 15:30');
+    expect(g.body.cells[cellKey('ip-1', 15)].bk.code).toBe(b.pickup_code);
+    /* Excel bron qayta saqlansa ham o'sha bron joyida qoladi */
+    await h.call('PUT', '/api/admin/booking-sheet', { cookie: admin, payload: { date: ymd(1), changes: [{ key: cellKey('ip-1', 17), t: 'BAND', prev: '' }] } });
+    expect(active()).toHaveLength(2);
+    /* admin ko'chirsa — yangi joyda ham soat yarimidan */
+    const mv = await h.call('POST', '/api/admin/booking-sheet-move', { cookie: admin, payload: { date: ymd(1), key: cellKey('ip-1', 15), to_date: ymd(1), to_ins: 'ip-2', to_h: 10 } });
+    expect(mv.status, JSON.stringify(mv.body)).toBe(200);
+    const moved = active().find((x: any) => x.instructor_id === 'ip-2')!;
+    expect(moved).toMatchObject({ start_at: at('10:30'), end_at: at('11:00'), duration_minutes: 30 });
+    expect(h.db.bookings.find((x: any) => x.id === b.id).cancellation_reason).toMatch(/10:30/);
+    expect(await say('ertaga 14:00 bekor')).toMatch(/Bekor qilindi: Ertaga, 14:00–14:30/);
+    expect(active()).toHaveLength(1);
+  });
+
+  it('o‘sha mijozning qo‘shni soatdagi broni bo‘lsa ham 14:30 alohida 30 daqiqa', async () => {
+    await say('ertaga 13:00 901234567');
+    const first = active()[0];
+    expect(await say('ertaga 14:30 901234567')).toMatch(/14:30–15:00 \(30 daqiqa\)/);
+    const list = active().sort((x: any, y: any) => x.start_at.localeCompare(y.start_at));
+    expect(list.map((b: any) => [b.start_at, b.duration_minutes])).toEqual([[at('13:00'), 60], [at('14:30'), 30]]);
+    expect(list[0].id).toBe(first.id);
+  });
+
+  it('admin Excel bronda «30 MIN 14:30» yozsa — bron 14:30–15:00; boshqa yozuvlar — avvalgidek', async () => {
+    const put = (h0: number, t: string) => h.call('PUT', '/api/admin/booking-sheet', { cookie: admin, payload: { date: ymd(1), changes: [{ key: cellKey('ip-1', h0), t, prev: '' }] } });
+    await put(14, '901234567 30 MIN 14:30');
+    expect(active()[0]).toMatchObject({ start_at: at('14:30'), end_at: at('15:00'), duration_minutes: 30 });
+    await put(9, '901234568 9:30');                       // «30 MIN» siz — oddiy 1 soat (izoh)
+    await put(11, '901234569 30 MIN 11:00-11:30');         // tugash vaqti — birinchi yarmi
+    await put(12, '901234571 30 MIN 12:30-13:00');         // oraliq boshi — ikkinchi yarmi
+    await put(13, '901234572 30 MIN до 13:30');            // «до» — tugash
+    expect(active().find((b: any) => b.start_at === at('12:30'))).toMatchObject({ duration_minutes: 30 });
+    expect(active().find((b: any) => b.start_at === at('13:00'))).toMatchObject({ duration_minutes: 30 });
+    const by = (hm: string) => active().find((b: any) => b.start_at === at(hm));
+    expect(by('09:00')).toMatchObject({ duration_minutes: 60 });
+    expect(by('11:00')).toMatchObject({ duration_minutes: 30 });
+    /* ko'p soatli bron ichidagi «2:30 da keladi» — bron o'zgarmaydi */
+    await h.call('PUT', '/api/admin/booking-sheet', { cookie: admin, payload: { date: ymd(1), changes: [
+      { key: cellKey('ip-1', 16), t: '901234570', prev: '' }, { key: cellKey('ip-1', 17), t: '901234570', prev: '' }] } });
+    const long = by('16:00');
+    expect(long).toMatchObject({ duration_minutes: 120 });
+    await h.call('PUT', '/api/admin/booking-sheet', { cookie: admin, payload: { date: ymd(1), changes: [{ key: cellKey('ip-1', 17), t: '901234570 5:30 da keladi', prev: '901234570' }] } });
+    expect(by('16:00')).toMatchObject({ id: long.id, duration_minutes: 120 });
+    expect(by('17:30')).toBeUndefined();
+  });
+
+  it('«ertaga 14:00 <raqam> bekor» — bron emas, bekor qiladi; boshqa mijozning broniga tegmaydi', async () => {
+    await say('ertaga 901234567 14:00');
+    await say('ertaga 933334455 15:00');
+    expect(active()).toHaveLength(2);
+    expect(await say('ertaga 15:00 901234567 bekor')).toMatch(/boshqa mijoz yozilgan \(\+998 93 333 44 55\) — bekor qilinmadi/);
+    expect(active()).toHaveLength(2);
+    expect(await say('ertaga 14:00 901234567 bekor')).toMatch(/Bekor qilindi/);
+    expect(active()).toHaveLength(1);
+  });
+
+  it('faqat «bekor» — bronlar tugma bo‘lib chiqadi, bosilsa bekor bo‘ladi', async () => {
+    await say('ertaga 901234567 10:00');
+    await say('ertaga 947494944 12:00 30 min');
+    const before = h.telegram.length;
+    expect(await say('bekor')).toMatch(/Qaysi bronni bekor qilamiz/);
+    const kb = h.telegram.slice(before).find((m) => m.markup?.inline_keyboard)!.markup.inline_keyboard;
+    expect(kb.map((r: any) => r[0].text)).toEqual(['Ertaga 10:00–11:00 · +998 90 123 45 67', 'Ertaga 12:00–12:30 · +998 94 749 49 44']);
+    const b12 = active().find((b: any) => b.start_at === at('12:00'));
+    expect(kb[1][0].callback_data).toBe(`bc|${ymd(1)}|12|${b12.id}`);
+    /* boshqa instruktor shu tugmani bossa — uning ustunida bron yo'q */
+    expect(await press(kb[1][0].callback_data, INS2_TG)).toMatch(/allaqachon bekor qilingan yoki o‘zgargan/);
+    expect(active()).toHaveLength(2);
+    expect(await press(kb[1][0].callback_data)).toMatch(/Bekor qilindi: Ertaga, 12:00–12:30/);
+    expect(active().map((b: any) => b.start_at)).toEqual([at('10:00')]);
+    expect(h.tgCalls.some((c) => c.method === 'answerCallbackQuery')).toBe(true);
+    expect(h.tgCalls.some((c) => c.method === 'editMessageReplyMarkup')).toBe(true);
+    /* eski tugma: o'sha soatga keyin boshqa bron yozilgan — unga tegilmaydi */
+    await say('ertaga 933334455 12:00');
+    expect(await press(kb[1][0].callback_data)).toMatch(/allaqachon bekor qilingan yoki o‘zgargan/);
+    expect(active()).toHaveLength(2);
+    await say('ertaga 12:00 bekor');
+    /* bekor qilinadigan bron yo'q bo'lsa — aytadi */
+    await press(kb[0][0].callback_data);
+    expect(await say('bekor qilmoqchiman')).toMatch(/bekor qilsa bo‘ladigan broningiz yo‘q/);
+  });
+
+  it('webhook tugmalarni qabul qilmasa — «bekor» yozilganda callback_query qo‘shiladi', async () => {
+    _resetEnsuredCallbacks();
+    const WH = 'https://avtodrom.vercel.app/api/telegram/instructor/webhook';
+    h.tgResults.set('getWebhookInfo', { url: WH, pending_update_count: 0, max_connections: 40, allowed_updates: ['message'] });
+    await say('bekor');
+    const set = h.tgCalls.find((c) => c.method === 'setWebhook')!;
+    expect(set.body).toMatchObject({ url: WH, secret_token: 'test-webhook-secret', drop_pending_updates: false, allowed_updates: ['message', 'callback_query'] });
+    /* ikkinchi marta tekshirmaydi */
+    const n = h.tgCalls.filter((c) => c.method === 'getWebhookInfo').length;
+    await say('bekor');
+    expect(h.tgCalls.filter((c) => c.method === 'getWebhookInfo')).toHaveLength(n);
+    h.tgResults.delete('getWebhookInfo');
   });
 
   it('«bekor <raqam>» — kun aytilmasa ham o‘sha raqamni topib bekor qiladi', async () => {
