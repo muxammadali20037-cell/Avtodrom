@@ -8,7 +8,7 @@ import { loadTariffs } from './pricing.js';
 import { loadPackagePrices, priceWithPackage, insertBookings } from './packages.js';
 import type { StaffIdentity } from './staff-auth.js';
 import {
-  SHEET_HOURS, cellKey, parseKey, hourStartMs, cleanText, parsePhone, parseCategory, parseHalf, nameFrom,
+  SHEET_HOURS, cellKey, parseKey, hourStartMs, cleanText, parsePhone, parseCategory, parseHalf, parseSecondHalf, nameFrom,
   prettyPhone, buildRuns, loadSheet, writeSheet, type Sheet, type SheetCell, type Run, type RunInput,
 } from './booking-sheet.js';
 
@@ -41,7 +41,7 @@ const BUSY = ['pending', 'confirmed', 'in_progress'];
 /* Boshlanib ketgan soatga bron YARATILMAYDI (ilgari 10 daqiqa ruxsat bor edi —
    14:07 da yozilgan 14:00 bron 14:15 da o'zi «Kelmagan» bo'lib qolardi).
    Mijoz kelgan bo'lsa — kassa hozirgi vaqtdan chek beradi. */
-const lateMsg = (h: number) => `${h}:00 boshlanib ketgan — bron yaratilmadi. Mijoz kelgan bo‘lsa — kassada chek bering.`;
+const lateMsg = (h: number, off = 0) => `${h}:${off ? '30' : '00'} boshlanib ketgan — bron yaratilmadi. Mijoz kelgan bo‘lsa — kassada chek bering.`;
 const fmtHm = (ms: number) => new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Tashkent', hour: '2-digit', minute: '2-digit' }).format(new Date(ms));
 const durOf = (b: any) => {
   const s = Date.parse(b.start_at), e = Date.parse(b.end_at);
@@ -303,7 +303,9 @@ export async function applySheetChanges(o: ApplyOpts): Promise<ApplyResult> {
       const key = cellKey(insId, h);
       const c = work[key];
       if (!c?.t) continue;
-      if (hourStartMs(date, h) <= now) {
+      /* «14:30» — bron soat yarimidan (30 daqiqa); boshlangan-boshlanmagani ham shundan */
+      const off = parsePhone(c.t) && parseSecondHalf(c.t, h) ? 30 : 0;
+      if (hourStartMs(date, h) + off * 60000 <= now) {
         const ph = changed.has(key) ? parsePhone(c.t) : null;
         if (ph) {
           const old = c.b ? st.byId.get(c.b) : null;
@@ -315,7 +317,7 @@ export async function applySheetChanges(o: ApplyOpts): Promise<ApplyResult> {
       if (cellInfo(st, insId, h).lock) continue;      // to'langan / boshlangan bron — chegara
       const phone = parsePhone(c.t);
       if (!phone) continue;
-      inputs.push({ h, key, phone, cat: parseCategory(c.t), half: parseHalf(c.t), text: c.t });
+      inputs.push({ h, key, phone, cat: parseCategory(c.t), half: parseHalf(c.t), off, text: c.t });
     }
     const runs = buildRuns(inputs);
     /* Shu ustundagi Excel bronlari — faqat o'zgartirsa bo'ladiganlari */
@@ -339,7 +341,7 @@ export async function applySheetChanges(o: ApplyOpts): Promise<ApplyResult> {
       const b = st.byId.get(bid);
       const u = st.users.get(String(b.customer_id));
       const same = touched.find((r) => !taken.has(r)
-        && Date.parse(b.start_at) === hourStartMs(date, r.h0) && durOf(b) === r.minutes
+        && Date.parse(b.start_at) === hourStartMs(date, r.h0) + r.off * 60000 && durOf(b) === r.minutes
         && samePhone(u?.phone, r.phone) && String(b.category || '').toUpperCase() === (r.cat || defCat(ins)));
       if (same) { taken.add(same); matched.push({ run: same, bid }); }
       else toCancel.set(bid, b);
@@ -354,7 +356,8 @@ export async function applySheetChanges(o: ApplyOpts): Promise<ApplyResult> {
 
   /* Boshlangan soatga yozilgan yangi raqam — bron emas, xato ko'rinsin (bot: katak yozilmaydi) */
   for (const k of late) {
-    const msg = lateMsg(parseKey(k)!.h);
+    const kh = parseKey(k)!.h;
+    const msg = lateMsg(kh, work[k]?.t && parseSecondHalf(work[k].t, kh) ? 30 : 0);
     if (o.strict) work[k] = { t: '' };
     else if (work[k]) { work[k].e = msg; delete work[k].b; delete work[k].s; delete work[k].m; }
     errors.push({ key: k, error: msg });
@@ -407,7 +410,7 @@ export async function applySheetChanges(o: ApplyOpts): Promise<ApplyResult> {
       if (!ins.categories.includes(cat)) { fail(r, `${ins.name} ${cat} toifani o‘rgatmaydi`); continue; }
       const course = courses.find((c) => String(c.category || '').toUpperCase() === cat);
       if (!course) { fail(r, `${cat} toifa uchun mashg‘ulot topilmadi (Narxlar bo‘limida qo‘shing)`); continue; }
-      const start = hourStartMs(date, r.h0), end = start + r.minutes * 60000;
+      const start = hourStartMs(date, r.h0) + r.off * 60000, end = start + r.minutes * 60000;
       const clash = st.day.find((b) => String(b.instructor_id) === r.ins && BUSY.includes(String(b.status))
         && Date.parse(b.start_at) < end && Date.parse(b.end_at) > start);
       if (clash) { fail(r, `Instruktor ${fmtHm(Date.parse(clash.start_at))} da band — boshqa bron bor`); continue; }
@@ -601,7 +604,9 @@ export async function moveCellBooking(date: string, key: string, to: { date: str
   const def = ins.categories.includes('B') ? 'B' : ins.categories[0] || 'B';
   if (!ins.categories.includes(cat)) throw Object.assign(new Error(`${ins.name} ${cat} toifani o‘rgatmaydi`), { statusCode: 400 });
   const realName = u?.full_name && !/^Mijoz\b/i.test(u.full_name) ? ` ${u.full_name}` : '';
-  const text = `${digits}${cat !== def ? '/' + cat : ''}${min === 30 ? '/30 MIN' : ''}${realName}`.slice(0, 80);
+  /* 14:30–15:00 bron — yangi joyda ham soat yarimidan */
+  const off30 = min === 30 && new Date(b.start_at).getUTCMinutes() === 30;
+  const text = `${digits}${cat !== def ? '/' + cat : ''}${min === 30 ? '/30 MIN' : ''}${off30 ? ` ${to.h}:30` : ''}${realName}`.slice(0, 80);
   const keys = Array.from({ length: n }, (_, i) => cellKey(to.ins, to.h + i));
   const own = new Set(cb.keys);
   for (const k of keys) {
@@ -633,7 +638,7 @@ export async function moveCellBooking(date: string, key: string, to: { date: str
     }
     throw Object.assign(new Error(`Ko‘chirilmadi: ${res?.errors?.[0]?.error || 'yangi bron yaratilmadi'}`), { statusCode: 409 });
   }
-  const when = `${to.date.slice(8, 10)}.${to.date.slice(5, 7)} ${String(to.h).padStart(2, '0')}:00`;
+  const when = `${to.date.slice(8, 10)}.${to.date.slice(5, 7)} ${String(to.h).padStart(2, '0')}:${off30 ? '30' : '00'}`;
   await supabaseRest('bookings', {
     method: 'PATCH', query: `?id=eq.${q(String(b.id))}`,
     body: JSON.stringify({ cancellation_reason: `Ko‘chirildi → ${made.code || ''} ${when} (${ins.name})`.trim().slice(0, 300) }),

@@ -103,6 +103,26 @@ export function parseCategory(text: unknown): 'A' | 'B' | 'C' | null {
 export function parseHalf(text: unknown): boolean {
   return /(?:^|\D)30\s*(?:min|мин|daq|дак|дақ)/iu.test(String(text ?? ''));
 }
+/**
+ * Katakda shu soatning yarmi yozilgan bo'lsa («14:30», «2.30» — 14-qatorda) —
+ * bron soat yarimidan boshlanadi va 30 daqiqa davom etadi (14:30–15:00).
+ * Boshqa soat («15:30» 14-qatorda) hisobga olinmaydi.
+ */
+export function parseSecondHalf(text: unknown, h: number): boolean {
+  const s = String(text ?? '');
+  /* faqat «30 MIN» bilan birga: «901234567 30 MIN 14:30» (bot shunday yozadi) */
+  if (!parseHalf(s)) return false;
+  const hs = [...new Set([h, h > 12 ? h - 12 : h])].join('|');
+  for (const m of s.matchAll(new RegExp(`(^|[^\\d:.])0?(?:${hs})[:.]30(?!\\d)`, 'g'))) {
+    const at = (m.index ?? 0) + m[1].length;
+    const before = s.slice(0, at), after = s.slice(at + m[0].length - m[1].length);
+    /* «14:00-14:30», «… dan 14:30 gacha» — bu tugash vaqti, boshlanish emas */
+    if (/(?:[-–—]|(?:^|\s)(?:dan|дан|до|gacha))\s*$/iu.test(before)) continue;
+    if (/^\s*(?:gacha|гача)(?:\s|$)/iu.test(after)) continue;
+    return true;
+  }
+  return false;
+}
 
 const STOP = new Set(['band', 'банд', 'бант', 'min', 'мин', 'daq', 'дак', 'soat', 'соат', 'toifa', 'тоифа', 'avtomat', 'автомат',
   'mexanika', 'механика', 'mijoz', 'мижоз', 'paket', 'пакет', 'bron', 'брон']);
@@ -122,8 +142,9 @@ export function prettyPhone(p: string): string {
 
 /* ---------------- ketma-ket soatlar → bitta bron ---------------- */
 
-export type RunInput = { h: number; key: string; phone: string; cat: 'A' | 'B' | 'C' | null; half: boolean; text: string };
-export type Run = { keys: string[]; h0: number; n: number; phone: string; cat: 'A' | 'B' | 'C' | null; minutes: number; text: string };
+export type RunInput = { h: number; key: string; phone: string; cat: 'A' | 'B' | 'C' | null; half: boolean; off?: number; text: string };
+/** off — soat boshidan necha daqiqa keyin boshlanadi (0 yoki 30) */
+export type Run = { keys: string[]; h0: number; n: number; phone: string; cat: 'A' | 'B' | 'C' | null; minutes: number; off: number; text: string };
 
 /**
  * Bir instruktor ustunidagi raqamli kataklar → bronlar. Ketma-ket soatlarda
@@ -135,11 +156,13 @@ export function buildRuns(cells: RunInput[]): Run[] {
   const runs: Run[] = [];
   for (const c of list) {
     const last = runs[runs.length - 1];
-    if (last && last.h0 + last.n === c.h && last.phone === c.phone && last.cat === c.cat) {
+    /* soat yarimidan boshlanadigan katak — doim alohida 30 daqiqalik bron */
+    if (last && !last.off && !c.off && last.h0 + last.n === c.h && last.phone === c.phone && last.cat === c.cat) {
       last.keys.push(c.key); last.n++; last.minutes = last.n * 60;
       continue;
     }
-    runs.push({ keys: [c.key], h0: c.h, n: 1, phone: c.phone, cat: c.cat, minutes: c.half ? 30 : 60, text: c.text });
+    const off = c.off === 30 ? 30 : 0;
+    runs.push({ keys: [c.key], h0: c.h, n: 1, phone: c.phone, cat: c.cat, minutes: c.half || off ? 30 : 60, off, text: c.text });
   }
   return runs;
 }

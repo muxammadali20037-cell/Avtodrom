@@ -7,8 +7,8 @@ import { registerBookingRoutes } from './booking-routes.js';
 import { registerInstructorRoutes } from './instructor-routes.js';
 import { registerInstructorRegistrationRoutes } from './instructor-registration-routes.js';
 import { handleInstructorStart } from './instructor-start.js';
-import { handleInstructorSheetMessage, logBotEvent, readBotLog } from './instructor-sheet-bot.js';
-import { webhookSecret, resetWebhook, healWebhook } from './webhook-secret.js';
+import { handleInstructorSheetMessage, handleInstructorCallback, logBotEvent, readBotLog } from './instructor-sheet-bot.js';
+import { webhookSecret, resetWebhook, healWebhook, ensureCallbackUpdates } from './webhook-secret.js';
 import { registerAdminPasswordRoutes, guard as requireAdmin, guardAdmin, guardDesk, currentStaff, adminUser, audit, peekStaff, operatorMayCall } from './admin-password-routes.js';
 import { registerContentRoutes } from './content-routes.js';
 import { registerCourseRoutes } from './courses-routes.js';
@@ -258,6 +258,23 @@ app.post('/api/telegram/instructor/webhook', async (request, reply) => {
     if (healed) request.log.warn(`instructor webhook: noto‘g‘ri sir — ${healed}`);
     return reply.code(401).send({ ok: false, error: 'Invalid webhook secret' });
   }
+  /* Tugma bosildi (masalan «bekor» → qaysi bron) */
+  const cbq = (request.body as any)?.callback_query;
+  if (cbq) {
+    const t0 = Date.now(), replies: string[] = [];
+    let error: string | null = null;
+    try { await handleInstructorCallback(INSTRUCTOR_BOT_TOKEN, cbq, replies); }
+    catch (e) {
+      error = e instanceof Error ? e.message : String(e);
+      request.log.error({ err: e }, 'instructor bot callback failed');
+      const cid = Number(cbq?.message?.chat?.id);
+      if (Number.isSafeInteger(cid) && cid > 0) {
+        await telegramApi(INSTRUCTOR_BOT_TOKEN, 'sendMessage', { chat_id: cid, text: `⚠️ Xatolik yuz berdi — bekor qilinmadi. Birozdan keyin qayta urinib ko‘ring.\n(${error.slice(0, 200)})` }).catch(() => {});
+      }
+    }
+    await logBotEvent({ sent_at: null, chat: Number(cbq?.from?.id) || 0, text: `[tugma] ${String(cbq?.data || '')}`, reply: replies.join(' | ') || (error ? '' : '(javob yo‘q)'), error, ms: Date.now() - t0 });
+    return { ok: true };
+  }
   const message = (request.body as any)?.message;
   const text = typeof message?.text === 'string' ? message.text.trim() : '';
   const chatId = Number(message?.chat?.id);
@@ -274,7 +291,11 @@ app.post('/api/telegram/instructor/webhook', async (request, reply) => {
   else if (Number.isSafeInteger(chatId) && chatId > 0 && text && Number(message?.from?.id) === chatId) {
     const t0 = Date.now(), replies: string[] = [];
     let error: string | null = null;
-    try { await handleInstructorSheetMessage(INSTRUCTOR_BOT_TOKEN, chatId, chatId, text, replies); }
+    try {
+      await handleInstructorSheetMessage(INSTRUCTOR_BOT_TOKEN, chatId, chatId, text, replies, {
+        ensureButtons: () => ensureCallbackUpdates(INSTRUCTOR_BOT_TOKEN, INSTRUCTOR_WEBHOOK_URL, expected),
+      });
+    }
     catch (e) {
       /* Jim qolmasin: instruktor nima bo'lganini bilsin */
       error = e instanceof Error ? e.message : String(e);

@@ -14,7 +14,7 @@ export async function handleInstructorStart(token: string, chatId: number, user:
     await ensureBotCommands(token);
     await telegramApi(token, 'sendMessage', {
       chat_id: chatId,
-      text: '✅ Arizangiz tasdiqlangan. Instructor paneliga kirishingiz mumkin.\n\n📝 Bron yozish: mijoz raqami va vaqtni shu yerga yozing, masalan <code>901234567 14:00</code> yoki <code>ertaga 901234567 15-17</code>. Bekor qilish: <code>bekor 14:00</code>.',
+      text: '✅ Arizangiz tasdiqlangan. Instructor paneliga kirishingiz mumkin.\n\n📝 Bron yozish: mijoz raqami va vaqtni shu yerga yozing, masalan <code>901234567 14:00</code>, <code>ertaga 901234567 15-17</code>, yarim soat — <code>ertaga 14:00 901234567 30 min</code> yoki <code>ertaga 14:30 901234567</code>. Bekor qilish: <code>bekor 14:00</code> yoki faqat <code>bekor</code> — tugmalar chiqadi.',
       parse_mode: 'HTML',
       reply_markup: { inline_keyboard: [[{ text: '👨‍🏫 Instructor panelini ochish', web_app: { url: registrationUrl(miniAppUrl) } }]] }
     });

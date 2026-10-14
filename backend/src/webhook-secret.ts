@@ -32,10 +32,41 @@ export async function resetWebhook(token: string, url: string, secret: string, o
   await telegramApi(token, 'setWebhook', {
     url, secret_token: secret, drop_pending_updates: false,
     ...(info.max_connections ? { max_connections: info.max_connections } : {}),
-    allowed_updates: Array.isArray(info.allowed_updates) && info.allowed_updates.length ? info.allowed_updates : ['message', 'callback_query'],
+    allowed_updates: withCallbacks(info.allowed_updates),
   });
   return { done: true, note: 'qayta o‘rnatildi — navbatdagi xabarlar qayta yuboriladi', info: await telegramApi<any>(token, 'getWebhookInfo', {}) };
 }
+/** Tugmalar (callback_query) doim kelsin: ro'yxat bo'sh bo'lsa — standart, bo'lmasa qo'shiladi */
+function withCallbacks(list: unknown): string[] {
+  const base = Array.isArray(list) && list.length ? list.map(String) : ['message', 'callback_query'];
+  return base.includes('callback_query') ? base : [...base, 'callback_query'];
+}
+
+/**
+ * Bot tugmalari ishlashi uchun webhook callback_query'ni ham qabul qilishi
+ * kerak. Webhook faqat «message» bilan o'rnatilgan bo'lsa — o'sha manzil va
+ * sir bilan callback_query qo'shiladi (jarayon davomida bir marta tekshiriladi).
+ */
+const ensuredCb = new Set<string>();
+export async function ensureCallbackUpdates(token: string, url: string, secret: string): Promise<string | null> {
+  if (!token || !secret || ensuredCb.has(url)) return null;
+  ensuredCb.add(url);
+  try {
+    const info = await telegramApi<any>(token, 'getWebhookInfo', {});
+    const list = Array.isArray(info?.allowed_updates) ? info.allowed_updates : [];
+    if (info?.url !== url || !list.length || list.includes('callback_query')) return null;
+    await telegramApi(token, 'setWebhook', {
+      url, secret_token: secret, drop_pending_updates: false,
+      ...(info.max_connections ? { max_connections: info.max_connections } : {}),
+      allowed_updates: withCallbacks(list),
+    });
+    return 'callback_query qo‘shildi';
+  } catch {
+    ensuredCb.delete(url);
+    return null;
+  }
+}
+export const _resetEnsuredCallbacks = () => ensuredCb.clear();
 
 /**
  * Sirsiz yoki noto'g'ri sir bilan kelgan so'rovdan keyin webhook'ni o'zi
