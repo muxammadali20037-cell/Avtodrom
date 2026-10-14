@@ -55,6 +55,7 @@ beforeEach(async () => {
   bk('b5', 'ip-2', 'c1', '09:00', '10:00', 'confirmed', {}, D2);
   h.db.payments.push({ id: 'p1', booking_id: 'b1', customer_id: 'c1', amount: 250000, status: 'paid' });
   h.db.courses.push({ id: 'c-b', name: 'B', category: 'B', price: 250000, duration_minutes: 60, is_active: true });
+  h.db.courses.push({ id: 'c-a', name: 'A', category: 'A', price: 350000, duration_minutes: 60, is_active: true });
   admin = (await h.login('boss', 'parol1234')).cookie;
   operator = (await h.login('oper', 'parol1234')).cookie;
 });
@@ -218,6 +219,46 @@ describe('🔍 Bronni qidirish', () => {
     expect(short.body.results).toEqual([]);
     expect(short.body.hint).toMatch(/3 ta raqam/);
     expect((await find(k, '000000')).body.results).toEqual([]);
+  });
+});
+
+describe('＋ Nazoratdan bron qilish', () => {
+  const book = (payload: any) => h.call('POST', '/api/control-book', { payload });
+  it('Excel bron katagiga yoziladi: bron, kim yozgan — «Nazorat paneli»', async () => {
+    const { k } = await token();
+    expect((await book({ date: D2, ins: 'ip-1', h: 14, phone: '937778899' })).status).toBe(403);
+    const r = await book({ k, date: D2, ins: 'ip-1', h: 14, n: 2, phone: '93 777 88 99', name: 'Bobur Karimov', cat: 'A' });
+    expect(r.status).toBe(200);
+    expect(r.body.booking).toMatchObject({ start: at('14:00', D2), minutes: 120, category: 'A', ins: { id: 'ip-1', name: 'Aziz Karimov' } });
+    expect(r.body.booking.code).toMatch(/^AVD-/);
+    const b = h.db.bookings.find((x) => x.start_at === at('14:00', D2) && x.instructor_id === 'ip-1');
+    expect(b).toMatchObject({ end_at: at('16:00', D2), status: 'confirmed', category: 'A' });
+    const sheet = h.db.admin_settings.find((x) => x.key === `booking_sheet:${D2}`);
+    const cells = sheet.value.cells || sheet.value.value?.cells;
+    expect(cells['ip-1|14']).toMatchObject({ t: '937778899/A Bobur Karimov', by: 'Nazorat paneli' });
+    expect(cells['ip-1|15'].t).toBe('937778899/A Bobur Karimov');
+    const v = await view(k, D2);
+    const bk = v.body.instructors.find((i: any) => i.id === 'ip-1').bookings.find((x: any) => x.start === at('14:00', D2));
+    expect(bk).toMatchObject({ name: 'Bobur Karimov', phone: '+998937778899', min: 120, who: { kind: 'sheet', by: 'Nazorat paneli' } });
+  });
+  it('30 daqiqa; band, boshlangan soat, toifa, noto‘g‘ri raqam — rad etiladi', async () => {
+    const { k } = await token();
+    const half = await book({ k, date: D2, ins: 'ip-2', h: 12, half: true, phone: '+998 90 555 44 33' });
+    expect(half.status).toBe(200);
+    expect(half.body.booking.minutes).toBe(30);
+    const busy = await book({ k, date: D2, ins: 'ip-2', h: 9, phone: '905554433' });
+    expect(busy.status).toBe(409);
+    expect(busy.body.error).toMatch(/boshqa bron/);
+    const again = await book({ k, date: D2, ins: 'ip-2', h: 12, phone: '901112233' });
+    expect(again.status).toBe(409);
+    expect(again.body.error).toMatch(/band/);
+    const started = await book({ k, date: D, ins: 'ip-1', h: 10, phone: '901112233' });
+    expect(started.status).toBe(400);
+    expect(started.body.error).toMatch(/boshlanib ketgan/);
+    expect((await book({ k, date: D2, ins: 'ip-2', h: 15, cat: 'A', phone: '901112233' })).body.error).toMatch(/A toifani o‘rgatmaydi/);
+    expect((await book({ k, date: D2, ins: 'ip-2', h: 15, phone: '12345' })).body.error).toMatch(/Telefon/);
+    expect((await book({ k, date: '2020-01-01', ins: 'ip-2', h: 15, phone: '901112233' })).status).toBe(400);
+    expect((await book({ k, date: D2, ins: 'nope', h: 15, phone: '901112233' })).status).toBe(404);
   });
 });
 
