@@ -176,6 +176,11 @@ a{color:inherit}
 .bk-hrs button{height:50px;border-radius:12px;background:var(--card);box-shadow:inset 0 0 0 1px var(--line);font-weight:850;font-size:15px;line-height:1.1;font-variant-numeric:tabular-nums}
 .bk-hrs button small{display:block;font-size:10.5px;font-weight:700;color:var(--hint);margin-top:2px}
 .bk-hrs button.free small{color:#15803d}
+.bk-hrs button.ab small{color:#b45309}
+.bk-auto{margin-top:7px;font-size:12.5px;color:var(--text-2);line-height:1.45;background:var(--card);border-radius:12px;padding:8px 11px;box-shadow:inset 0 0 0 1px var(--line)}
+.bk-auto b{color:var(--text)}
+.ov-auto{font-size:12.5px;color:#7c2d12;background:#fff7ed;border:1px solid #fed7aa;border-radius:10px;padding:5px 10px;margin:0 4px 8px;flex:none;line-height:1.45}
+.ov-auto b{color:#431407}
 .bk-hrs button:disabled{background:var(--card-2);box-shadow:none;color:var(--hint);cursor:not-allowed}
 .bk-hrs button.on{background:#16a34a;color:#fff;box-shadow:none}.bk-hrs button.on small{color:rgba(255,255,255,.9)}
 .bk-dur{display:flex;gap:6px;flex-wrap:wrap}
@@ -335,7 +340,8 @@ table.xg{border-collapse:separate;border-spacing:0;table-layout:fixed;width:max-
     <div class="ov-h"><div class="tt"><h2 id="ovT"></h2><small id="ovS"></small></div>
       <button class="dl" id="ovDl">⬇ Excel</button><button class="x" id="ovX" aria-label="Yopish">✕</button></div>
     <div class="ov-b" id="ovB">
-      <div class="ov-lg"><span><i style="background:#2b2f8f"></i>ko‘k chiziq — Excel bron</span><span><i style="background:#d92d35"></i>qizil — Mini App, kassa, qo‘lda</span><span><i style="background:#0ca30c"></i>▶ darsda</span><span><i style="background:#d03b3b"></i>✕ kelmagan</span></div>
+      <div class="ov-lg"><span><i style="background:#2b2f8f"></i>ko‘k chiziq — Excel bron</span><span><i style="background:#d92d35"></i>qizil — Mini App, kassa, qo‘lda</span><span><i style="background:#0ca30c"></i>▶ darsda</span><span><i style="background:#d03b3b"></i>✕ kelmagan</span><span>🚗 avtomat mashina</span></div>
+      <div class="ov-auto hidden" id="ovAuto"></div>
       <div class="xg-scroll" id="xgS"><table class="xg" id="xg"></table></div>
     </div>
   </div>
@@ -625,7 +631,7 @@ function paintExcel(only){
 }
 /** Bitta bron bloki: soat ichidagi o'rni (top/height, %) bo'yicha; sig'gancha qator ko'rsatiladi, to'liq ma'lumot — title'da */
 function xlBlock(b, d, top, hgt, px, bg, lo){
-  const main = b.t || (b.phone ? prettyTel(b.phone) : b.name);
+  const main = (b.auto ? '🚗 ' : '') + (b.t || (b.phone ? prettyTel(b.phone) : b.name));
   const t = tel(b.phone);
   const nm = b.t ? b.name : b.phone ? b.name : '';
   const time = `${fmtHm(b.start)}–${fmtHm(b.end)}`;
@@ -633,7 +639,7 @@ function xlBlock(b, d, top, hgt, px, bg, lo){
   const meta = [b.code, b.cat ? b.cat + ' toifa' : '', dur(b.min), b.paid ? '✓ to‘langan' : ''].filter(Boolean).join(' · ');
   const who = whoTxt(b, d.date);
   const extraPh = b.t && b.phone && !String(b.t).replace(/\D/g, '').includes(String(b.phone).replace(/\D/g, '').slice(-9)) ? ' · ' + prettyTel(b.phone) : '';
-  const tip = [time + ' · ' + dur(b.min), main, nm + extraPh, (BS[b.status] || ['', b.status])[1], meta, who].filter(Boolean).join('\n');
+  const tip = [time + ' · ' + dur(b.min) + (b.auto ? ' · 🚗 Avtomat mashina' : ''), main, nm + extraPh, (BS[b.status] || ['', b.status])[1], meta, who].filter(Boolean).join('\n');
   const showTime = b.min !== 60 || dayMin(b.start, d.date) % 60 !== 0 || hgt < 100 || px > 64;
   const tall = px >= 110;                 // 2 soat va undan ko'p — vaqt alohida qatorda
   const l0 = tall ? `<span class="l0">${esc(time)} · ${esc(dur(b.min))}</span>` : '';
@@ -819,18 +825,26 @@ function paintOv(){
     $('ovB').classList.add('one');
     paintExcel(i.id);
   }
+  const oa = $('ovAuto');
+  if (oa) { const l = autoList(d); oa.classList.toggle('hidden', !l.length); oa.innerHTML = l.length ? `🚗 Avtomat mashina ${esc(dayHead(d.date).toLowerCase())}: ${autoText(d)}` : ''; }
   if (S.xlScrolled && (y || x)) { box.scrollTop = y; box.scrollLeft = x; }
 }
 
+/* ---------- 🚗 AVTOMAT mashina (bitta) ---------- */
+const AUTO_LIVE = ['pending', 'confirmed', 'in_progress'];
+/** Shu kungi avtomat bronlar (amaldagilari): [{a, z, name}] daqiqada */
+const autoList = d => (d && Array.isArray(d.auto) ? d.auto : []).filter(x => AUTO_LIVE.includes(x.status))
+  .map(x => ({ a: dayMin(x.start, d.date), z: dayMin(x.end, d.date), name: x.name, start: x.start, end: x.end }));
+const autoText = d => { const l = autoList(d); return l.length ? l.map(x => `<b>${fmtHm(x.start)}–${fmtHm(x.end)}</b> ${esc(x.name)}`).join(' · ') : 'hali bron yo‘q — bo‘sh'; };
 /* ---------- ＋ bron qilish ---------- */
 /** Shu kun shu soatga hali bron qilsa bo'ladimi (boshlangan/o'tgan soat — yo'q) */
 function canBook(d, h){ if (!d || d.date < d.today) return false; if (d.date > d.today) return true; return h * 60 > dayMin(d.now, d.date); }
-const BK = { open: false, date: null, mode: 'ins', ins: null, h: null, n: 1, half: false, cat: null, data: null, seq: 0, busy: false, err: '', done: null, phone: '', name: '' };
+const BK = { open: false, date: null, mode: 'ins', ins: null, h: null, n: 1, half: false, cat: null, auto: false, data: null, seq: 0, busy: false, err: '', done: null, phone: '', name: '' };
 const bkDays = () => { const t = ymdNow(); return Array.from({ length: 8 }, (_, i) => addDays(t, i)); };
 function openBk(pre = {}){
   const t = ymdNow();
   const date = pre.date || (S.data && S.data.date >= t ? S.data.date : t);
-  Object.assign(BK, { date, mode: pre.ins && pre.h == null ? 'ins' : pre.h != null && !pre.ins ? 'time' : BK.mode, ins: pre.ins || null, h: pre.h ?? null, n: 1, half: false, cat: null, err: '', done: null, busy: false });
+  Object.assign(BK, { date, mode: pre.ins && pre.h == null ? 'ins' : pre.h != null && !pre.ins ? 'time' : BK.mode, ins: pre.ins || null, h: pre.h ?? null, n: 1, half: false, cat: null, auto: false, err: '', done: null, busy: false });
   if (!BK.open) { BK.open = true; history.pushState({ bk: 1 }, '', location.href); }
   $('bk').classList.remove('hidden'); document.body.style.overflow = 'hidden';
   bkLoad(date);
@@ -858,8 +872,11 @@ function bkModel(){
   const d = BK.data; if (!d) return null;
   const G = sheetGrid(d);
   const cols = G.cols.filter(x => x.i.active);
-  const st = (x, h) => { const r = G.H.indexOf(h); if (r < 0) return 'x'; if (!canBook(d, h)) return 'past'; const c = x.cells[r]; return c.k === 'cl' ? (c.mid ? 'brk' : 'cl') : c.k; };
-  const LBL = { free: 'bo‘sh', bk: 'band', skip: 'band', note: 'band', own: 'yopiq', off: 'dam', cl: 'ishlamaydi', brk: 'tanaffus', past: 'o‘tgan', x: '—' };
+  /* «🚗 Avtomat» tanlansa: avtomat mashina band soat — instruktor bo'sh bo'lsa ham «avtomat band» */
+  const al = autoList(d);
+  const autoBusy = h => BK.auto && al.some(x => x.a < h * 60 + (BK.half ? 30 : 60) && x.z > h * 60);
+  const st = (x, h) => { const r = G.H.indexOf(h); if (r < 0) return 'x'; if (!canBook(d, h)) return 'past'; const c = x.cells[r]; const k = c.k === 'cl' ? (c.mid ? 'brk' : 'cl') : c.k; return k === 'free' && autoBusy(h) ? 'abusy' : k; };
+  const LBL = { free: 'bo‘sh', bk: 'band', skip: 'band', note: 'band', own: 'yopiq', off: 'dam', cl: 'ishlamaydi', brk: 'tanaffus', past: 'o‘tgan', abusy: 'avtomat band', x: '—' };
   return { d, cols, hours: d.hours, st, LBL, freeN: x => d.hours.filter(h => st(x, h) === 'free').length };
 }
 function bkPaint(html){ const box = $('bkB'), y = box.scrollTop; box.innerHTML = html; box.scrollTop = y; }
@@ -868,7 +885,7 @@ function paintBk(){
   if (BK.done) {
     const b = BK.done, end = new Date(Date.parse(b.start) + b.minutes * 60000).toISOString();
     bkPaint(`<div class="bk-ok"><div class="big">✅</div><h3>Bron qilindi</h3>
-      <p><b>${esc(b.ins.name)}</b> · ${esc(dayHead(BK.date))}, ${fmtHm(b.start)}–${fmtHm(end)} · ${esc(dur(b.minutes))} · ${esc(b.category)} toifa</p>
+      <p><b>${esc(b.ins.name)}</b> · ${esc(dayHead(BK.date))}, ${fmtHm(b.start)}–${fmtHm(end)} · ${esc(dur(b.minutes))} · ${esc(b.category)} toifa${b.auto ? ' · 🚗 Avtomat' : ''}</p>
       <p>👤 ${esc(b.name)} · 📞 ${esc(prettyTel(b.phone))}</p>
       <div class="code">${esc(b.code || '—')}</div>
       <p class="bk-note" style="margin-bottom:14px">Excel bron'ga yozildi («Nazorat paneli»). Instruktorga va guruhga xabar ketdi. Mijoz kassada shu kodni aytadi.</p>
@@ -879,7 +896,9 @@ function paintBk(){
   const dayHtml = `<div class="bk-l">Kun</div><div class="bk-days">${days.map(x => `<button class="${x === BK.date ? 'on' : ''}" data-bkd="${x}">${esc(rel(x) || dd(x))}<small>${esc(WDF[wdOf(x)].slice(0, 3))}${rel(x) ? ' ' + dd(x) : ''}</small></button>`).join('')}</div>`;
   const m = bkModel();
   if (!m) { bkPaint(dayHtml + `<div class="sv-empty">${BK.err ? esc(BK.err) : 'Yuklanmoqda…'}</div>`); return; }
-  const seg = `<div class="bk-l">Qanday tanlaysiz</div><div class="bk-seg"><button class="${BK.mode === 'ins' ? 'on' : ''}" data-bkm="ins">👤 Avval instruktor</button><button class="${BK.mode === 'time' ? 'on' : ''}" data-bkm="time">🕘 Avval vaqt</button></div>`;
+  const seg = `<div class="bk-l">Mashina</div><div class="bk-seg"><button class="${BK.auto ? '' : 'on'}" data-bkau="0">⚙️ Mexanika</button><button class="${BK.auto ? 'on' : ''}" data-bkau="1">🚗 Avtomat</button></div>
+    ${BK.auto ? `<div class="bk-auto">🚗 Avtomat mashina bitta — ${esc(dayHead(BK.date).toLowerCase())}: ${autoText(m.d)}</div>` : ''}
+    <div class="bk-l">Qanday tanlaysiz</div><div class="bk-seg"><button class="${BK.mode === 'ins' ? 'on' : ''}" data-bkm="ins">👤 Avval instruktor</button><button class="${BK.mode === 'time' ? 'on' : ''}" data-bkm="time">🕘 Avval vaqt</button></div>`;
   const insX = BK.ins ? m.cols.find(x => x.i.id === BK.ins) : null;
   if (BK.ins && !insX) BK.ins = null;
   /* tanlangan instruktor + soatdan boshlab nechta soat ketma-ket bo'sh */
@@ -895,8 +914,9 @@ function paintBk(){
     const s = x ? m.st(x, h) : (m.cols.some(c => m.st(c, h) === 'free') ? 'free' : m.cols.every(c => m.st(c, h) === 'past') ? 'past' : 'bk');
     const cnt = x ? '' : m.cols.filter(c => m.st(c, h) === 'free').length;
     const idle = !x && m.cols.every(c => ['cl', 'off', 'brk', 'own', 'past'].includes(m.st(c, h)));
-    const lab = x ? m.LBL[s] || s : s === 'free' ? `${cnt} bo‘sh` : s === 'past' ? 'o‘tgan' : idle ? 'ishlamaydi' : 'hammasi band';
-    return `<button class="${s === 'free' ? 'free' : ''} ${BK.h === h ? 'on' : ''}" data-bkh2="${h}" ${s === 'free' ? '' : 'disabled'}>${h}:00<small>${esc(lab)}</small></button>`;
+    const ab = x ? s === 'abusy' : !m.cols.some(c => m.st(c, h) === 'free') && m.cols.some(c => m.st(c, h) === 'abusy');
+    const lab = x ? m.LBL[s] || s : s === 'free' ? `${cnt} bo‘sh` : s === 'past' ? 'o‘tgan' : ab ? 'avtomat band' : idle ? 'ishlamaydi' : 'hammasi band';
+    return `<button class="${s === 'free' ? 'free' : ''} ${ab ? 'ab' : ''} ${BK.h === h ? 'on' : ''}" data-bkh2="${h}" ${s === 'free' ? '' : 'disabled'}>${h}:00<small>${esc(lab)}</small></button>`;
   }).join('')}</div>`;
   let body = '';
   if (BK.mode === 'ins') {
@@ -919,7 +939,7 @@ function paintBk(){
     rest += `<div class="bk-l">Mijoz telefoni</div><input class="bk-in" id="bkPh" type="tel" inputmode="tel" autocomplete="off" placeholder="90 123 45 67" value="${esc(BK.phone)}">
       <input class="bk-in nm" id="bkNm" type="text" autocomplete="off" maxlength="40" placeholder="Ism (ixtiyoriy)" value="${esc(BK.name)}">`;
     const endH = BK.half ? `${BK.h}:30` : `${BK.h + BK.n}:00`;
-    rest += `<div class="bk-sum">👤 ${esc(insX.i.name)} · 📅 ${esc(dayHead(BK.date))} · 🕘 ${BK.h}:00–${endH} · ${esc(BK.cat)} toifa</div>`;
+    rest += `<div class="bk-sum">👤 ${esc(insX.i.name)} · 📅 ${esc(dayHead(BK.date))} · 🕘 ${BK.h}:00–${endH} · ${esc(BK.cat)} toifa${BK.auto ? ' · 🚗 Avtomat' : ''}</div>`;
     rest += BK.err ? `<div class="bk-err">⚠️ ${esc(BK.err)}</div>` : '';
     rest += `<button class="bk-go" id="bkGo" ${BK.busy ? 'disabled' : ''}>${BK.busy ? 'Yozilmoqda…' : '✅ Bron qilish'}</button>
       <p class="bk-note">Bron Excel bron'ga yoziladi (yozgan: «Nazorat paneli»), instruktorga va guruhga xabar boradi.</p>`;
@@ -938,7 +958,7 @@ async function bkSubmit(){
   BK.busy = true; BK.err = ''; paintBk();
   try {
     const r = await fetch('/api/control-book', { method: 'POST', cache: 'no-store', headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-      body: JSON.stringify({ k: K, date: BK.date, ins: BK.ins, h: BK.h, n: BK.n, half: BK.half, cat: BK.cat, phone: BK.phone, name: BK.name }) });
+      body: JSON.stringify({ k: K, date: BK.date, ins: BK.ins, h: BK.h, n: BK.n, half: BK.half, cat: BK.cat, auto: BK.auto, phone: BK.phone, name: BK.name }) });
     const d = await r.json().catch(() => ({}));
     if (!r.ok || d.ok === false) throw Error(d.error || `Xato (${r.status})`);
     BK.done = d.booking; BK.phone = ''; BK.name = '';
@@ -951,6 +971,7 @@ $('bkB').addEventListener('click', e => {
   const ds = t.dataset;
   if (ds.bkd) { BK.err = ''; if (ds.bkd !== BK.date) { BK.h = null; bkLoad(ds.bkd); } return; }
   if (ds.bkm) { BK.mode = ds.bkm; BK.err = ''; paintBk(); return; }
+  if (ds.bkau) { BK.auto = ds.bkau === '1'; BK.err = ''; paintBk(); return; }
   if (ds.bki2) { BK.ins = ds.bki2; BK.err = ''; if (BK.mode === 'ins') BK.h = null; paintBk(); return; }
   if (ds.bkh2) { BK.h = Number(ds.bkh2); BK.err = ''; if (BK.mode === 'time') { const m = bkModel(); const x = m && BK.ins && m.cols.find(c => c.i.id === BK.ins); if (!x || m.st(x, BK.h) !== 'free') BK.ins = null; } paintBk(); return; }
   if (ds.bkn) { if (ds.bkn === 'half') { BK.half = true; BK.n = 1; } else { BK.half = false; BK.n = Number(ds.bkn); } paintBk(); return; }
