@@ -144,7 +144,7 @@ a{color:inherit}
 /* bron qilish oynasi */
 .xg td.fb{cursor:pointer}
 .xg td.fb .fbp{display:none;margin:auto;font-size:12.5px;font-weight:850;color:#15803d;background:rgba(255,255,255,.75);border-radius:8px;padding:3px 8px}
-.xg td.fb > div{align-items:center;justify-content:center}
+.xg td.fb .cv{display:flex;align-items:center;justify-content:center}
 .xg td.fb:hover .fbp,.one .xg td.fb .fbp{display:inline-block}
 .xg td.fb:hover{box-shadow:inset 0 0 0 2px #16a34a}
 .bk{position:fixed;inset:0;z-index:60;background:rgba(5,8,26,.55);display:flex;align-items:flex-start;justify-content:center}
@@ -214,9 +214,8 @@ a{color:inherit}
 .ov-lg{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:12px;color:var(--text-2);padding:0 4px 8px;flex:none}
 .ov-lg span{display:inline-flex;align-items:center;gap:5px}
 .ov-lg i{width:14px;height:9px;border-radius:3px;display:inline-block}
-.one .xg td.xc{min-width:0;max-width:none;width:auto}
-.one .xg thead tr.n th{min-width:0}
 .one table.xg{width:100%}
+.one .xg col.cc{width:auto}
 .msg{max-width:440px;margin:60px auto;background:var(--card);border-radius:22px;box-shadow:var(--shadow);padding:26px 22px;text-align:center}
 .msg .ic{font-size:40px}
 .msg h2{margin:8px 0 6px;font-size:20px}
@@ -225,55 +224,64 @@ a{color:inherit}
 .empty{text-align:center;color:var(--hint);padding:40px 10px}
 .sk{height:120px;border-radius:20px;background:linear-gradient(90deg,var(--card) 0%,var(--card-2) 50%,var(--card) 100%);background-size:200% 100%;animation:sk 1.2s infinite;margin-bottom:12px}
 @keyframes sk{to{background-position:-200% 0}}
-/* ---------- Excel ko'rinishi (admin «Excel bron» bilan bir xil ranglar) ---------- */
+/* ---------- Excel ko'rinishi: har soat bir xil balandlikda (Excel kabi), matn katakdan chiqmaydi ---------- */
 .xl-bar{display:flex;align-items:flex-start;gap:12px;flex-wrap:wrap}
 .xl-bar > div{flex:1;min-width:220px}
 .dl{height:44px;padding:0 16px;border-radius:13px;background:#107c41;color:#fff;font-weight:800;font-size:14.5px;display:inline-flex;align-items:center;gap:8px;flex:none}
 .dl:active{filter:brightness(.92)}
-.xg-scroll{overflow:auto;max-height:calc(100vh - 170px);border-radius:16px;background:var(--card);box-shadow:var(--shadow);-webkit-overflow-scrolling:touch}
-table.xg{border-collapse:separate;border-spacing:0;font-size:13px;color:#05081a;min-width:100%}
-.xg th,.xg td{border-right:1px solid #9aa1b4;border-bottom:1px solid #9aa1b4;padding:0}
-.xg thead th{position:sticky;z-index:3;text-align:center;font-weight:850}
-.xg thead tr.g th{top:0;height:26px;color:#fff;font-size:12px;letter-spacing:.06em}
-.xg thead tr.n th{top:26px;height:44px;font-size:13px;text-transform:uppercase;padding:4px 8px;line-height:1.2}
-.xg thead tr.n th small{display:block;text-transform:none;font-weight:750;font-size:12px;opacity:.85}
-.xg thead tr.s th{top:70px;height:24px;font-size:11.5px;font-weight:750;background:#f4f5fa;color:#30364f}
-.xg th.hc,.xg td.hc{position:sticky;left:0;z-index:2;background:#e5484d;color:#fff;font-weight:850;font-size:15px;text-align:center;min-width:64px;width:64px;border-right:2px solid #05081a}
-.xg thead th.hc{z-index:5;background:#c62f35}
-.xg td.hc small{display:block;font-size:10.5px;font-weight:700;opacity:.9}
+.xg-scroll{overflow:auto;max-height:calc(100vh - 170px);border-radius:16px;background:var(--card);box-shadow:var(--shadow);-webkit-overflow-scrolling:touch;--cw:166px}
+table.xg{border-collapse:separate;border-spacing:0;table-layout:fixed;width:max-content;min-width:100%;font-size:13px;color:#05081a}
+.xg col.hcol{width:62px}.xg col.cc{width:var(--cw)}
+.xg th,.xg td{border-right:1px solid #b3b9c8;border-bottom:1px solid #b3b9c8;padding:0}
+.xg thead th{position:sticky;z-index:3;text-align:center;font-weight:850;overflow:hidden}
+.xg thead tr.g th{top:0;height:26px;color:#fff;font-size:12px;letter-spacing:.06em;white-space:nowrap;text-align:left;overflow:visible}
+.xg thead tr.g th .gt{position:sticky;left:72px;padding:0 10px;display:inline-block}
+.xg thead tr.n th{top:26px;height:46px;font-size:12.5px;text-transform:uppercase;padding:3px 6px;line-height:1.15}
+.xg thead tr.n th .nm{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;word-break:break-word}
+.xg thead tr.n th small{display:block;text-transform:none;font-weight:750;font-size:11.5px;opacity:.85;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.xg thead tr.s th{top:72px;height:24px;font-size:11.5px;font-weight:750;background:#f4f5fa;color:#30364f;white-space:nowrap}
+.xg th.hc,.xg td.hc{position:sticky;left:0;z-index:2;background:#e5484d;color:#fff;font-weight:850;font-size:15px;text-align:center;border-right:2px solid #05081a}
+.xg thead th.hc,.xg thead tr.g th.hc{z-index:5;background:#c62f35;text-align:center}
+.xg td.hc .hv{height:63px;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.1}
 .xg tr.now td.hc{background:#05081a}
-.xg tr.now td.hc::after{content:'hozir';display:block;font-size:10px;font-weight:800;color:#fbbf24}
-.xg td.xc{min-width:168px;max-width:240px;height:62px;vertical-align:top;background:var(--cb);position:relative}
-.xg thead tr.n th{min-width:168px}
+.xg tr.now td.hc .hv::after{content:'hozir';display:block;font-size:10px;font-weight:800;color:#fbbf24;margin-top:2px}
+.xg td.xc{vertical-align:top;background:var(--cb);overflow:hidden}
 .xg td.xc.gs,.xg th.gs{border-left:3px solid #05081a}
 .xg tr.past td.xc{opacity:.62}
-.xg td.xc > div{padding:5px 7px 6px;display:flex;flex-direction:column;gap:1px;height:100%}
-.xg .xt{font-weight:850;font-size:15px;line-height:1.2;word-break:break-word}
-.xg .xn{font-weight:750;font-size:12.5px;line-height:1.25}
-.xg .xn a{color:inherit;text-decoration:none}
-.xg .xs{font-size:11.5px;font-weight:650;color:#30364f;line-height:1.3}
-.xg .xw{font-size:11px;font-weight:750;color:#1b1e66;line-height:1.3;margin-top:auto;padding-top:2px}
-.xg .xr{font-size:11px;font-weight:800;color:#30364f}
-.xg td.bk{box-shadow:inset 4px 0 0 #2b2f8f}
-.xg td.bk.app{box-shadow:inset 4px 0 0 #d92d35}
-.xg td.bk.s-in_progress{box-shadow:inset 4px 0 0 #0ca30c,inset 0 0 0 2px #0ca30c}
-.xg td.bk.s-no_show .xt{text-decoration:line-through;text-decoration-thickness:2px}
-.xg .st{display:inline-block;font-size:10.5px;font-weight:850;padding:1px 5px;border-radius:5px;margin-right:3px;vertical-align:1px}
+/* katak ichi — qat'iy balandlik: soatlar soni × 64px. Ortiqcha matn ko'rinmaydi (to'liq ma'lumot — sichqoncha ustida) */
+.xg .cv{position:relative;height:calc(64px * var(--sp, 1) - 1px);overflow:hidden}
+.xg .cv.mid{display:flex;align-items:center;justify-content:center;text-align:center;padding:4px;color:#5b6378;font-weight:750;font-size:12px}
+.xg .it{position:absolute;left:0;right:0;overflow:hidden;background:var(--ib);box-shadow:inset 4px 0 0 #2b2f8f;padding:3px 6px 3px 9px;display:flex;flex-direction:column;justify-content:flex-start;cursor:default}
+.xg .it + .it,.xg .it.lo{border-top:1px dashed rgba(5,8,26,.35)}
+.xg .it.app{box-shadow:inset 4px 0 0 #d92d35}
+.xg .it.s-in_progress{box-shadow:inset 4px 0 0 #0ca30c,inset 0 0 0 2px #0ca30c}
+.xg .it > span{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.xg .it .l0{font-size:11.5px;font-weight:800;color:#30364f;line-height:15px}
+.xg .it .l1{font-weight:850;font-size:14px;line-height:17px}
+.xg .it .l1 .tm{font-weight:800;font-size:11.5px;color:#30364f;margin-right:4px}
+.xg .it .l2{font-weight:750;font-size:12px;line-height:16px}
+.xg .it .l2 a{color:inherit;text-decoration:none}
+.xg .it .l3{font-size:11px;font-weight:650;color:#30364f;line-height:15px}
+.xg .it .l4{font-size:10.5px;font-weight:750;color:#1b1e66;line-height:14px}
+.xg .it.sm{padding-top:2px;padding-bottom:2px}
+.xg .it.sm .l1{font-size:12.5px;line-height:15px}
+.xg .it.sm .l2{font-size:11px;line-height:13px}
+.xg .it.s-no_show .l1 .ph{text-decoration:line-through;text-decoration-thickness:2px}
+.xg .st{display:inline-block;font-size:10px;font-weight:850;padding:0 4px;border-radius:4px;margin-right:3px;line-height:14px;vertical-align:1px}
 .xg .st.in_progress{background:#0ca30c;color:#fff}.xg .st.no_show{background:#d03b3b;color:#fff}
 .xg .st.completed{background:#5b6378;color:#fff}.xg .st.pending{background:#fab219;color:#05081a}.xg .st.confirmed{background:#2a78d6;color:#fff}
-.xg td.multi > div{gap:4px}
-.xg td.multi .it{background:rgba(255,255,255,.55);border-radius:6px;padding:3px 5px;display:flex;flex-direction:column;gap:1px}
-.xg td.multi .xt{font-size:13.5px}.xg td.multi .xw{margin-top:0}
-.xg td.nt{background:#e2e5ec;box-shadow:inset 4px 0 0 #5b6378}
-.xg td.nt .xt{color:#1f2440}
+.xg .nl{position:absolute;left:0;right:0;height:2px;background:#e5484d;z-index:1;pointer-events:none;box-shadow:0 0 0 1px rgba(255,255,255,.6)}
+.xg td.nt{background:#e2e5ec}
+.xg td.nt .cv{padding:4px 6px 4px 9px;box-shadow:inset 4px 0 0 #5b6378}
+.xg td.nt .nt-t{font-weight:850;font-size:13px;line-height:16px;color:#1f2440;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;word-break:break-word}
+.xg td.nt .nt-w{font-size:10.5px;font-weight:750;color:#1b1e66;line-height:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
 .xg td.ow{background:#e4e7ee;background-image:repeating-linear-gradient(45deg,rgba(98,80,214,.18) 0 2px,transparent 2px 7px)}
 .xg td.of{background:#ece7f8}
 .xg td.cl{background:#e9ebf1;background-image:repeating-linear-gradient(135deg,rgba(20,24,51,.07) 0 2px,transparent 2px 7px)}
-.xg td.ow > div,.xg td.of > div,.xg td.cl > div{align-items:center;justify-content:center;color:#5b6378;font-weight:750;font-size:12px}
-.xg tfoot td{position:sticky;bottom:0;background:#f4f5fa;font-weight:800;font-size:12px;text-align:center;padding:6px 4px;z-index:2;color:#30364f}
+.xg tfoot td{position:sticky;bottom:0;background:#f4f5fa;font-weight:800;font-size:12px;text-align:center;padding:6px 4px;z-index:2;color:#30364f;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .xg tfoot td.hc{z-index:4;background:#c62f35;color:#fff}
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .xg-scroll{background:#d9dce6}}
-@media (max-width:520px){.xg td.xc,.xg thead tr.n th{min-width:146px;max-width:146px}.xg .xt{font-size:14px}}
+@media (max-width:520px){.xg-scroll{--cw:142px}.xg .it .l1{font-size:13px}}
 </style>
 </head>
 <body>
@@ -564,39 +572,78 @@ function xlItem(b, d, big){
     ${nm ? `<span class="xn">${t ? `<a href="tel:${t}">${esc(nm)}${b.t && !String(b.t).replace(/\D/g, '').includes(String(b.phone || '').replace(/\D/g, '').slice(-9)) ? ' · ' + esc(prettyTel(b.phone)) : ''}</a>` : esc(nm)}</span>` : ''}
     <span class="xs">${b.status !== 'confirmed' ? stTag(b.status) : ''}${esc(meta)}</span><span class="xw">${esc(whoTxt(b, d.date))}</span>`;
 }
+/* Eslatma: katakka «bk» sinfi BERILMAYDI — u «＋ Bron qilish» oynasining sinfi (.bk{position:fixed;display:flex}).
+   Avval shu to'qnashuv tufayli kataklar jadvaldan «chiqib» ketib, hamma joy aralashib ko'rinardi. */
 function paintExcel(only){
   const d = S.data, G0 = sheetGrid(d), isToday = d.date === d.today, nowH = isToday ? Math.floor(dayMin(d.now, d.date) / 60) : null;
+  const nowM = isToday ? dayMin(d.now, d.date) : null;
   const G = only ? { ...G0, cols: G0.cols.filter(x => x.i.id === only).map(x => ({ ...x, gs: false })), groups: G0.groups } : G0;
   if (only && G.cols[0]) G.groups = [{ g: G.cols[0].i.group, n: 1 }];
   if (!G.cols.length) { $('xg').innerHTML = '<tbody><tr><td class="empty">Instruktorlar yo‘q</td></tr></tbody>'; return; }
   let ci = 0;
-  const gRow = `<tr class="g"><th class="hc" rowspan="3">Soat</th>${G.groups.map(g => { const gs = ci > 0; ci += g.n; return `<th colspan="${g.n}" class="${gs ? 'gs' : ''}" style="background:${grpColor(g.g)}">${esc(g.g)} TOIFA</th>`; }).join('')}</tr>`;
-  const nRow = `<tr class="n">${G.cols.map(x => `<th class="${x.gs ? 'gs' : ''}" style="background:${x.color}">${esc(x.i.name)}${x.i.phone ? `<small>${esc(prettyTel(x.i.phone))}</small>` : ''}</th>`).join('')}</tr>`;
+  const cg = `<colgroup><col class="hcol">${G.cols.map(() => '<col class="cc">').join('')}</colgroup>`;
+  const gRow = `<tr class="g"><th class="hc" rowspan="3">Soat</th>${G.groups.map(g => { const gs = ci > 0; ci += g.n; return `<th colspan="${g.n}" class="${gs ? 'gs' : ''}" style="background:${grpColor(g.g)}"><span class="gt">${esc(g.g)} TOIFA</span></th>`; }).join('')}</tr>`;
+  const nRow = `<tr class="n">${G.cols.map(x => `<th class="${x.gs ? 'gs' : ''}" style="background:${x.color}" title="${esc(x.i.name)}"><span class="nm">${esc(x.i.name)}</span>${x.i.phone ? `<small>${esc(prettyTel(x.i.phone))}</small>` : ''}</th>`).join('')}</tr>`;
   const sRow = `<tr class="s">${G.cols.map(x => `<th class="${x.gs ? 'gs' : ''}">${x.i.day.off ? '🌙 dam' : `${x.i.stats.bron} bron · ${x.i.stats.load}%`}</th>`).join('')}</tr>`;
-  const body = G.H.map((h, r) => `<tr class="${nowH != null && h < nowH ? 'past' : ''} ${h === nowH ? 'now' : ''}"><td class="hc">${h}:00</td>${G.cols.map(x => {
+  /* hozirgi vaqt chizig'i: katak [a, z) daqiqalar oralig'ida bo'lsa */
+  const nowLine = (a, z) => nowM != null && nowM >= a && nowM < z ? `<i class="nl" style="top:${((nowM - a) / (z - a) * 100).toFixed(2)}%"></i>` : '';
+  const body = G.H.map((h, r) => `<tr class="${nowH != null && h < nowH ? 'past' : ''} ${h === nowH ? 'now' : ''}"><td class="hc"><div class="hv">${h}:00</div></td>${G.cols.map(x => {
     const cell = x.cells[r], gs = x.gs ? ' gs' : '';
     if (cell.k === 'skip') return '';
+    const light = tintHex(x.color, 0.16);
     if (cell.k === 'bk') {
-      const multi = cell.items.length > 1, b = cell.items[0];
-      const cls = `xc bk${multi ? ' multi' : ''} s-${esc(b.status)}${b.sheet ? '' : ' app'}${gs}`;
-      const inner = multi ? cell.items.map(it => `<div class="it">${xlItem(it, d, false)}</div>`).join('')
-        : `${cell.span > 1 ? `<span class="xr">${fmtHm(b.start)}–${fmtHm(b.end)} · ${dur(b.min)}</span>` : (dayMin(b.start, d.date) % 60 || b.min < 60 ? `<span class="xr">${fmtHm(b.start)}–${fmtHm(b.end)}</span>` : '')}${xlItem(b, d, true)}`;
-      return `<td class="${cls}" ${cell.span > 1 ? `rowspan="${cell.span}"` : ''} style="--cb:${tintHex(x.color, 0.9)}"><div>${inner}</div></td>`;
+      const span = cell.span || 1, a = h * 60, z = (h + span) * 60, px = 64 * span - 1;
+      const items = cell.items.map(b => ({ b, s: Math.max(a, dayMin(b.start, d.date)), e: Math.min(z, dayMin(b.end, d.date)) })).sort((p, q) => p.s - q.s);
+      const overlap = items.some((it, k) => k && it.s < items[k - 1].e);
+      const html = items.map((it, k) => {
+        const top = overlap ? k / items.length * 100 : (it.s - a) / (z - a) * 100;
+        const hgt = overlap ? 100 / items.length : Math.max(8, (it.e - it.s) / (z - a) * 100);
+        return xlBlock(it.b, d, top, hgt, px * hgt / 100, tintHex(x.color, 0.9), k > 0 && Math.abs(top - (items[k - 1].s - a) / (z - a) * 100 - (items[k - 1].e - items[k - 1].s) / (z - a) * 100) > 0.5);
+      }).join('');
+      return `<td class="xc xbk${gs}"${span > 1 ? ` rowspan="${span}"` : ''} style="--cb:${light}"><div class="cv" style="--sp:${span}">${html}${nowLine(a, z)}</div></td>`;
     }
-    if (cell.k === 'note') return `<td class="xc nt${gs}"><div><span class="xt">${esc(cell.note.t)}</span>${cell.note.by ? `<span class="xw">✍ ${esc(cell.note.by)}${cell.note.at ? ' · ' + esc(whenShort(cell.note.at, d.date)) : ''}</span>` : ''}</div></td>`;
-    if (cell.k === 'own') return `<td class="xc ow${gs}"><div>🔒 yopiq</div></td>`;
-    if (cell.k === 'off') return `<td class="xc of${gs}"><div>dam</div></td>`;
-    if (cell.k === 'cl') return `<td class="xc cl${gs}"><div>${cell.mid ? 'tanaffus' : '—'}</div></td>`;
-    return canBook(d, h) && d.hours.includes(h) ? `<td class="xc fb${gs}" data-bki="${esc(x.i.id)}" data-bkh="${h}" title="Bron qilish" style="--cb:${tintHex(x.color, 0.16)}"><div><span class="fbp">＋ bron</span></div></td>` : `<td class="xc${gs}" style="--cb:${tintHex(x.color, 0.16)}"><div></div></td>`;
+    const a = h * 60, z = a + 60;
+    if (cell.k === 'note') {
+      const w = cell.note.by ? `✍ ${cell.note.by}${cell.note.at ? ' · ' + whenShort(cell.note.at, d.date) : ''}` : '';
+      return `<td class="xc nt${gs}" title="${esc(cell.note.t + (w ? '\n' + w : ''))}"><div class="cv"><span class="nt-t">${esc(cell.note.t)}</span>${w ? `<span class="nt-w">${esc(w)}</span>` : ''}${nowLine(a, z)}</div></td>`;
+    }
+    if (cell.k === 'own') return `<td class="xc ow${gs}"><div class="cv mid">🔒 yopiq${nowLine(a, z)}</div></td>`;
+    if (cell.k === 'off') return `<td class="xc of${gs}"><div class="cv mid">dam${nowLine(a, z)}</div></td>`;
+    if (cell.k === 'cl') return `<td class="xc cl${gs}"><div class="cv mid">${cell.mid ? 'tanaffus' : '—'}${nowLine(a, z)}</div></td>`;
+    return canBook(d, h) && d.hours.includes(h)
+      ? `<td class="xc fb${gs}" data-bki="${esc(x.i.id)}" data-bkh="${h}" title="Bron qilish" style="--cb:${light}"><div class="cv"><span class="fbp">＋ bron</span>${nowLine(a, z)}</div></td>`
+      : `<td class="xc${gs}" style="--cb:${light}"><div class="cv">${nowLine(a, z)}</div></td>`;
   }).join('')}</tr>`).join('');
   const foot = `<tfoot><tr><td class="hc">Jami</td>${G.cols.map(x => `<td class="${x.gs ? 'gs' : ''}">${x.i.stats.bron} bron · ${hrs(x.i.stats.booked_min)} s</td>`).join('')}</tr></tfoot>`;
-  $('xg').innerHTML = `<thead>${gRow}${nRow}${sRow}</thead><tbody>${body}</tbody>${foot}`;
+  $('xg').innerHTML = `${cg}<thead>${gRow}${nRow}${sRow}</thead><tbody>${body}</tbody>${foot}`;
   if (nowH != null && !S.xlScrolled) {
     S.xlScrolled = true;
     const tr = $('xg').querySelector('tr.now'), box = $('xgS'), th = $('xg').tHead;
     const prev = tr?.previousElementSibling || tr;
     if (tr && box) box.scrollTop = Math.max(0, prev.offsetTop - (th ? th.offsetHeight : 0));
   }
+}
+/** Bitta bron bloki: soat ichidagi o'rni (top/height, %) bo'yicha; sig'gancha qator ko'rsatiladi, to'liq ma'lumot — title'da */
+function xlBlock(b, d, top, hgt, px, bg, lo){
+  const main = b.t || (b.phone ? prettyTel(b.phone) : b.name);
+  const t = tel(b.phone);
+  const nm = b.t ? b.name : b.phone ? b.name : '';
+  const time = `${fmtHm(b.start)}–${fmtHm(b.end)}`;
+  const st = b.status !== 'confirmed' ? stTag(b.status) : '';
+  const meta = [b.code, b.cat ? b.cat + ' toifa' : '', dur(b.min), b.paid ? '✓ to‘langan' : ''].filter(Boolean).join(' · ');
+  const who = whoTxt(b, d.date);
+  const extraPh = b.t && b.phone && !String(b.t).replace(/\D/g, '').includes(String(b.phone).replace(/\D/g, '').slice(-9)) ? ' · ' + prettyTel(b.phone) : '';
+  const tip = [time + ' · ' + dur(b.min), main, nm + extraPh, (BS[b.status] || ['', b.status])[1], meta, who].filter(Boolean).join('\n');
+  const showTime = b.min !== 60 || dayMin(b.start, d.date) % 60 !== 0 || hgt < 100 || px > 64;
+  const tall = px >= 110;                 // 2 soat va undan ko'p — vaqt alohida qatorda
+  const l0 = tall ? `<span class="l0">${esc(time)} · ${esc(dur(b.min))}</span>` : '';
+  const l1 = `<span class="l1">${showTime && !tall ? `<span class="tm">${esc(time)}</span>` : ''}<span class="ph">${esc(main)}</span></span>`;
+  const l2 = nm || extraPh ? `<span class="l2">${t ? `<a href="tel:${t}">${esc(nm + extraPh)}</a>` : esc(nm + extraPh)}</span>` : '';
+  const l3 = `<span class="l3">${st}${esc(meta)}</span>`;
+  const l4 = who ? `<span class="l4">${esc(who)}</span>` : '';
+  /* balandlikka qarab: ~31px — 2 qator, ~63px — 3 qator, 2 soat va undan ko'p — kim yozgani ham */
+  const lines = px < 26 ? l1 : px < 44 ? l1 + (st ? `<span class="l2">${st}${esc(nm)}</span>` : l2) : !tall ? l1 + l2 + l3 : l0 + l1 + l2 + l3 + l4;
+  return `<div class="it s-${esc(b.status)}${b.sheet ? '' : ' app'}${px < 44 ? ' sm' : ''}${lo ? ' lo' : ''}" style="top:${top.toFixed(2)}%;height:${hgt.toFixed(2)}%;--ib:${bg}" title="${esc(tip)}">${lines}</div>`;
 }
 /** Yuklab olinadigan .xlsx — ekrandagi jadval bilan bir xil */
 function downloadXlsx(only){
