@@ -1224,6 +1224,12 @@ export async function registerAdminPasswordRoutes(app: FastifyInstance) {
               + `&start_at=lt.${q(String(old.end_at))}&end_at=gt.${q(String(old.start_at))}&id=neq.${q(id)}&select=id&limit=1`)
           : [];
         if (busy[0]) return reply.code(409).send({ ok: false, error: 'Bu vaqtda instruktorga boshqa bron yozilgan — avval uni ko‘rib chiqing' });
+        /* avtomat mashina (bitta) — shu vaqtda boshqa instruktorda bo'lsa, qayta ochilmaydi */
+        if (old.start_at && old.end_at) {
+          const { autoCarConflict } = await import('./booking-sheet-routes.js');
+          const ac = await autoCarConflict({ id, start_at: String(old.start_at), end_at: String(old.end_at) }).catch(() => null);
+          if (ac) return reply.code(409).send({ ok: false, error: ac });
+        }
         const at = new Date().toISOString();
         const rows = await supabaseRest<any[]>('bookings', {
           method: 'PATCH', headers: { Prefer: 'return=representation' }, query: `?id=eq.${q(id)}`,

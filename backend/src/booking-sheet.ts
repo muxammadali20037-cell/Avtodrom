@@ -99,6 +99,20 @@ export function parseCategory(text: unknown): 'A' | 'B' | 'C' | null {
   return (CYR[m[1]] || m[1]) as 'A' | 'B' | 'C';
 }
 
+/**
+ * AVTOMAT MASHINA — avtodromda bitta. Katakda «AVTOMAT», «avtomat», «автомат»,
+ * «avtomatda», «avto», «akpp» kabi yozilsa — bron avtomat mashinada bo'ladi va
+ * boshqa instruktorlarning avtomat broni bilan bir vaqtga tushmaydi.
+ * («avtodrom», «avtobus» — avtomat emas.)
+ */
+const AUTO_RE = /(?:^|[^\p{L}])(?:avtomat\p{L}*|avtamat\p{L}*|aftomat\p{L}*|aftamat\p{L}*|автомат\p{L}*|афтомат\p{L}*|автамат\p{L}*|automat\p{L}*|akpp|акпп|акп)(?=$|[^\p{L}])/iu;
+/* «avtomatsiz», «avtomat emas», «не автомат» — avtomat EMAS */
+const AUTO_NOT = /(?:avtomat|автомат|aftomat|automat)\p{L}*(?:siz|сиз)(?=$|[^\p{L}])|(?:avtomat|автомат|aftomat)\p{L}*\s+(?:emas|эмас)(?=$|[^\p{L}])|(?:^|[^\p{L}])(?:не|ne)\s+(?:автомат|avtomat)/iu;
+export function parseAuto(text: unknown): boolean {
+  const s = String(text ?? '');
+  return AUTO_RE.test(s) && !AUTO_NOT.test(s);
+}
+
 /** «30 MIN», «30 мин», «30 daq» — yarim soatlik dars. */
 export function parseHalf(text: unknown): boolean {
   return /(?:^|\D)30\s*(?:min|мин|daq|дак|дақ)/iu.test(String(text ?? ''));
@@ -129,7 +143,7 @@ const STOP = new Set(['band', 'банд', 'бант', 'min', 'мин', 'daq', '�
 /** Katakdagi ism (raqam, toifa va izohsiz). Ism bo'lmasa — null. */
 export function nameFrom(text: unknown): string | null {
   const words = String(text ?? '').split(/[^\p{L}'‘’`ʻ-]+/u).map((w) => w.replace(/^[-'‘’`ʻ]+|[-'‘’`ʻ]+$/g, ''))
-    .filter((w) => w.length >= 2 && !STOP.has(w.toLowerCase()));
+    .filter((w) => w.length >= 2 && !STOP.has(w.toLowerCase()) && !parseAuto(w));
   if (!words.length) return null;
   return words.slice(0, 3).map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
 }
@@ -142,9 +156,9 @@ export function prettyPhone(p: string): string {
 
 /* ---------------- ketma-ket soatlar → bitta bron ---------------- */
 
-export type RunInput = { h: number; key: string; phone: string; cat: 'A' | 'B' | 'C' | null; half: boolean; off?: number; text: string };
-/** off — soat boshidan necha daqiqa keyin boshlanadi (0 yoki 30) */
-export type Run = { keys: string[]; h0: number; n: number; phone: string; cat: 'A' | 'B' | 'C' | null; minutes: number; off: number; text: string };
+export type RunInput = { h: number; key: string; phone: string; cat: 'A' | 'B' | 'C' | null; half: boolean; off?: number; auto?: boolean; text: string };
+/** off — soat boshidan necha daqiqa keyin boshlanadi (0 yoki 30); auto — avtomat mashinada */
+export type Run = { keys: string[]; h0: number; n: number; phone: string; cat: 'A' | 'B' | 'C' | null; minutes: number; off: number; auto: boolean; text: string };
 
 /**
  * Bir instruktor ustunidagi raqamli kataklar → bronlar. Ketma-ket soatlarda
@@ -157,12 +171,13 @@ export function buildRuns(cells: RunInput[]): Run[] {
   for (const c of list) {
     const last = runs[runs.length - 1];
     /* soat yarimidan boshlanadigan katak — doim alohida 30 daqiqalik bron */
-    if (last && !last.off && !c.off && last.h0 + last.n === c.h && last.phone === c.phone && last.cat === c.cat) {
+    /* avtomat va mexanika — alohida bron (yonma-yon soatlarda o'sha mijoz bo'lsa ham) */
+    if (last && !last.off && !c.off && last.h0 + last.n === c.h && last.phone === c.phone && last.cat === c.cat && last.auto === !!c.auto) {
       last.keys.push(c.key); last.n++; last.minutes = last.n * 60;
       continue;
     }
     const off = c.off === 30 ? 30 : 0;
-    runs.push({ keys: [c.key], h0: c.h, n: 1, phone: c.phone, cat: c.cat, minutes: c.half || off ? 30 : 60, off, text: c.text });
+    runs.push({ keys: [c.key], h0: c.h, n: 1, phone: c.phone, cat: c.cat, minutes: c.half || off ? 30 : 60, off, auto: !!c.auto, text: c.text });
   }
   return runs;
 }

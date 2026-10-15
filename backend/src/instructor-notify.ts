@@ -2,7 +2,7 @@ import { supabaseRest } from './supabase.js';
 import { selectIn } from './rest-chunks.js';
 import { telegramApi, telegramSendPhoto } from './telegram.js';
 import { tashkentYmdOf, addDaysYmd } from './instructor-schedule.js';
-import { parsePhone } from './booking-sheet.js';
+import { parsePhone, parseAuto } from './booking-sheet.js';
 import { instructorDay, allInstructorDays, type InsDay, type SheetEvent } from './booking-sheet-routes.js';
 import { renderDayPng, type DayRow } from './instructor-day-image.js';
 
@@ -58,7 +58,7 @@ export async function instructorChats(insIds: string[]): Promise<Map<string, num
 
 /** Kunlik ustundan: rasm qatorlari va bosiladigan raqamlar ro'yxati */
 /** Bitta bron (instruktorning «Bugungi bronlarim» ro'yxati uchun) */
-export type DayBooking = { start: number; end: number; phone: string; name: string; code: string; paid: boolean; src: string; status: string; note: string };
+export type DayBooking = { start: number; end: number; phone: string; name: string; code: string; paid: boolean; src: string; status: string; note: string; auto?: boolean };
 
 export function dayModel(day: InsDay, now = Date.now()) {
   const rows: DayRow[] = [];
@@ -75,10 +75,12 @@ export function dayModel(day: InsDay, now = Date.now()) {
       const name = realName(b.name);
       const cont = prevId && prevId === b.id;
       const app = o.k === 'bk';
+      /* avtomat mashinada: bronning istalgan katagida «avtomat» */
+      const auto = !app && !!b.id && day.cells.some((x) => x.out?.bk?.id === b.id && parseAuto(x.out?.t));
       rows.push({
         h: c.h, kind: app ? 'app' : 'bron', past,
         main: cont ? '— davomi —' : phone ? short(phone) : (o.t || name || 'Mijoz'),
-        sub: cont ? '' : [name, b.cat ? `${b.cat} toifa` : '', b.min && b.min < 60 ? `${b.min} daq` : ''].filter(Boolean).join(' · '),
+        sub: cont ? '' : [auto ? 'AVTOMAT' : '', name, b.cat ? `${b.cat} toifa` : '', b.min && b.min < 60 ? `${b.min} daq` : ''].filter(Boolean).join(' · '),
         tag: cont ? '' : b.paid ? 'to‘langan' : app ? (b.src === 'app' ? 'Mini App' : b.src === 'walk_in' ? 'Kassa' : (b.code || 'Bron')) : (b.code || 'Bron'),
       });
       if (!cont) {
@@ -86,9 +88,9 @@ export function dayModel(day: InsDay, now = Date.now()) {
         const end = Date.parse(b.end) || c.end;
         bookings.push({
           start: Date.parse(b.start) || c.start, end, phone: tel(phone), name, code: b.code || '', paid: !!b.paid,
-          src: app ? String(b.src || '') : 'sheet', status: String(b.status || ''), note: phone ? '' : String(o.t || ''),
+          src: app ? String(b.src || '') : 'sheet', status: String(b.status || ''), note: phone ? '' : String(o.t || ''), auto,
         });
-        lines.push(`<b>${hm(Date.parse(b.start) || c.start)}–${hm(end)}</b> ${tel(phone) || esc(o.t || '')}${name ? ` · ${esc(name)}` : ''}${b.code ? ` · ${esc(b.code)}` : ''}${b.paid ? ' · ✅' : ''}${app && b.src === 'app' ? ' · Mini App' : ''}`);
+        lines.push(`<b>${hm(Date.parse(b.start) || c.start)}–${hm(end)}</b> ${tel(phone) || esc(o.t || '')}${name ? ` · ${esc(name)}` : ''}${b.code ? ` · ${esc(b.code)}` : ''}${b.paid ? ' · ✅' : ''}${app && b.src === 'app' ? ' · Mini App' : ''}${auto ? ' · 🚗 avtomat' : ''}`);
       }
       prevId = b.id || '';
       continue;
@@ -121,7 +123,7 @@ export function bookingsText(date: string, day: InsDay, now = Date.now()): strin
   if (!bookings.length) return `${head}\n\nHozircha bron yo‘q.\n\n📝 Bron yozish: <code>${date === today ? 'bugun' : 'ertaga'} 14:00 901234567</code>`;
   const lines = bookings.map((b) => {
     const mark = b.end <= now ? '✔️' : b.start <= now ? '▶️' : '🕐';
-    const extra = [b.name ? esc(b.name) : '', b.code ? esc(b.code) : '', b.paid ? '✅ to‘langan' : '', SRC[b.src] ? esc(SRC[b.src]) : ''].filter(Boolean).join(' · ');
+    const extra = [b.auto ? '🚗 avtomat' : '', b.name ? esc(b.name) : '', b.code ? esc(b.code) : '', b.paid ? '✅ to‘langan' : '', SRC[b.src] ? esc(SRC[b.src]) : ''].filter(Boolean).join(' · ');
     return `${mark} <b>${hm(b.start)}–${hm(b.end)}</b>  ${b.phone || esc(b.note || 'raqamsiz')}${extra ? `\n      ${extra}` : ''}`;
   });
   const left = bookings.filter((b) => b.end > now).length;

@@ -4,7 +4,7 @@ import { supabaseRest } from './supabase.js';
 import { selectIn } from './rest-chunks.js';
 import { testInstructorIds } from './test-instructors.js';
 import { loadBlocks } from './instructor-blocks.js';
-import { loadSheet, loadSheets, parseKey, parsePhone, cellKey, SHEET_HOURS } from './booking-sheet.js';
+import { loadSheet, loadSheets, parseKey, parsePhone, cellKey, SHEET_HOURS, parseAuto } from './booking-sheet.js';
 import { bookingSearchFilter, cleanSearchTerm } from './booking-search.js';
 import {
   loadSchedules, specFor, mergeRanges, hmToMin, minToHm, tashkentYmdOf, addDaysYmd, dayStartMs, weekdayOf,
@@ -241,11 +241,14 @@ export async function controlData(date: string, nowMs = Date.now()) {
   const cellsByIns = new Map<string, { h: number; t: string; by: string | null; at: string | null }[]>();
   /** Excel bron katagi → bron: birinchi katak (matn, kim, qachon yozgan) */
   const sheetOf = new Map<string, { t: string; by: string | null; at: string | null; h: number }>();
+  /** avtomat mashinadagi bronlar: katakning istalganida «avtomat» */
+  const autoIds = new Set<string>();
   for (const [k, c] of Object.entries<any>(sheet.cells || {}).sort(([a], [b]) => a.localeCompare(b))) {
     const p = parseKey(k); if (!p) continue;
     const t = String(c?.t || '').trim(); if (!t) continue;
     const bk = c?.b ? dayB.find((b) => String(b.id) === String(c.b)) : null;
     if (c?.b && !sheetOf.has(String(c.b))) sheetOf.set(String(c.b), { t, by: c.by || null, at: c.at || null, h: p.h });
+    if (c?.b && parseAuto(t)) autoIds.add(String(c.b));
     if (bk && !CANCEL.has(String(bk.status))) continue;            // bron sifatida ko'rinadi
     cellsByIns.set(p.ins, [...(cellsByIns.get(p.ins) || []), { h: p.h, t, by: c.by || null, at: c.at || null }]);
   }
@@ -275,6 +278,7 @@ export async function controlData(date: string, nowMs = Date.now()) {
       cat: String(b.category || '').toUpperCase() || null, paid: paid.has(String(b.id)), src: b.source || null, sheet: sheetOf.has(String(b.id)),
       note: b.customer_note ? String(b.customer_note).slice(0, 140) : null, arrived: !!b.arrived_at,
       created_at: b.created_at || null, t: sheetOf.get(String(b.id))?.t || null, who: whoOf(b),
+      auto: autoIds.has(String(b.id)),
     };
   };
   const whoOf = (b: any) => whoFrom(b, sheetOf.get(String(b.id)), logBy, payReg);
@@ -345,8 +349,14 @@ export async function controlData(date: string, nowMs = Date.now()) {
     return { ...x, load: pct(x.booked_min, x.work_min) };
   });
 
+  /* Avtomat mashina (bitta) — shu kungi bandligi: kim, qachon */
+  const insName = new Map(list.map((i) => [i.id, i.name]));
+  const auto = dayB.filter((b) => HOLD.has(String(b.status)) && autoIds.has(String(b.id)))
+    .sort((a, b) => Date.parse(a.start_at) - Date.parse(b.start_at))
+    .map((b) => ({ id: String(b.id), start: b.start_at, end: b.end_at, ins: String(b.instructor_id), name: insName.get(String(b.instructor_id)) || 'Instruktor', status: String(b.status) }));
+
   return {
-    date, today, now: new Date(nowMs).toISOString(), work: { start: minToHm(ws.start), end: minToHm(ws.end) }, hours: SHEET_HOURS,
+    date, today, now: new Date(nowMs).toISOString(), work: { start: minToHm(ws.start), end: minToHm(ws.end) }, hours: SHEET_HOURS, auto,
     sheet: { updated_at: (sheet as any).updated_at || null, updated_by: (sheet as any).updated_by || null },
     stats: { ...tot, instructors: instructors.length, load: pct(tot.booked_min, tot.work_min) },
     instructors, week: { from: mon, days, totals: weekTotals },
@@ -357,7 +367,7 @@ export async function controlData(date: string, nowMs = Date.now()) {
 /* BRON QILISH (nazorat paneli → Excel bron katagi)                    */
 /* ------------------------------------------------------------------ */
 export const CONTROL_ACTOR = 'Nazorat paneli';
-type BookIn = { date?: unknown; ins?: unknown; h?: unknown; n?: unknown; half?: unknown; cat?: unknown; phone?: unknown; name?: unknown };
+type BookIn = { date?: unknown; ins?: unknown; h?: unknown; n?: unknown; half?: unknown; cat?: unknown; phone?: unknown; name?: unknown; auto?: unknown };
 type BookDeps = { adminUser: () => Promise<any>; audit: (adminId: string | null, action: string, entityType: string, entityId: string | null, oldData: unknown, newData: unknown) => Promise<void> };
 class BookError extends Error { constructor(msg: string, public statusCode = 400) { super(msg); } }
 
@@ -394,7 +404,8 @@ export async function controlBook(b: BookIn, deps: BookDeps, nowMs = Date.now())
     if (c.sc) throw new BookError(`${hm(h)} band: «${c.sc.t}». Boshqa vaqtni tanlang.`, 409);
     if (c.lock) throw new BookError(`${hm(h)}: ${c.lock === 'bk' ? 'bu soatda boshqa bron bor (Mini App, kassa yoki qo‘lda).' : SHEET_LOCK_MSG[c.lock] || 'band'}`, 409);
   }
-  const text = `${phone.slice(-9)}${cat !== defCat ? '/' + cat : ''}${half ? ' 30 MIN' : ''}${name ? ' ' + name : ''}`;
+  const auto = b.auto === true || b.auto === 'true';
+  const text = `${phone.slice(-9)}${cat !== defCat ? '/' + cat : ''}${half ? ' 30 MIN' : ''}${auto ? ' AVTOMAT' : ''}${name ? ' ' + name : ''}`;
   const res = await applySheetChanges({
     date, actor: { login: CONTROL_ACTOR, role: 'operator' }, adminUser: deps.adminUser, audit: deps.audit, strict: true, notePrefix: CONTROL_ACTOR,
     changes: Array.from({ length: n }, (_, i) => ({ key: cellKey(day.ins!.id, h0 + i), t: text, prev: '' })),
@@ -405,7 +416,7 @@ export async function controlBook(b: BookIn, deps: BookDeps, nowMs = Date.now())
   try { const { notifySheetSave } = await import('./instructor-notify.js'); await notifySheetSave(date, res.events); } catch (e) { console.error('control book notify failed:', e); }
   try { const { afterSheetSave } = await import('./sheet-share.js'); await afterSheetSave(date, res.events, CONTROL_ACTOR); } catch (e) { console.error('control book group failed:', e); }
   return {
-    booking: { id: made.id || null, code: made.code || null, start: made.start, minutes: made.minutes, category: made.category || cat, name: made.name || name || 'Mijoz', phone: made.phone || phone,
+    booking: { id: made.id || null, code: made.code || null, start: made.start, minutes: made.minutes, category: made.category || cat, name: made.name || name || 'Mijoz', phone: made.phone || phone, auto,
       ins: { id: day.ins.id, name: day.ins.name } },
   };
 }

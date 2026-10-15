@@ -2,7 +2,7 @@ import { telegramApi } from './telegram.js';
 import { supabaseRest } from './supabase.js';
 import { findUserByTelegram, instructorProfileForUser } from './identity.js';
 import { tashkentYmdOf, addDaysYmd } from './instructor-schedule.js';
-import { cellKey, parsePhone, parseHalf, nameFrom, prettyPhone, SHEET_FIRST_HOUR, SHEET_LAST_HOUR } from './booking-sheet.js';
+import { cellKey, parsePhone, parseHalf, parseAuto, nameFrom, prettyPhone, SHEET_FIRST_HOUR, SHEET_LAST_HOUR } from './booking-sheet.js';
 import { applySheetChanges, instructorDay, SHEET_LOCK_MSG } from './booking-sheet-routes.js';
 import { adminUser, audit } from './admin-password-routes.js';
 import { parseMenu, MENU_KEYBOARD, latinWords } from './instructor-bot-menu.js';
@@ -26,7 +26,7 @@ import { parseMenu, MENU_KEYBOARD, latinWords } from './instructor-bot-menu.js';
  */
 
 export type BotCmd =
-  | { kind: 'book'; date: string; h0: number; h1: number; phone: string; cat: 'A' | 'B' | 'C' | null; half: boolean; off?: 30; name: string | null }
+  | { kind: 'book'; date: string; h0: number; h1: number; phone: string; cat: 'A' | 'B' | 'C' | null; half: boolean; off?: 30; auto?: true; name: string | null }
   /* pick — na vaqt, na raqam yozilgan: bot yaqin bronlarni tugma qilib chiqaradi */
   | { kind: 'cancel'; date: string; h0: number | null; phone: string | null; anyDay?: boolean; pick?: boolean }
   | { kind: 'list'; date: string }
@@ -41,6 +41,7 @@ const STOP_WORDS = new Set(('bugun ertaga ertag ertga indinga soat soatga da ga 
   'kechki kechqurun kechqurin ertalab tushdan keyin oldin band ber bering bor yangi raqam raqami nomer tel telefon aka opa ' +
   'keladi kelsin kelyapti kelib kelishadi birga bilan boradi oladi olib yozvoring yozvor shu ushbu mana yana ham ' +
   'bir ikki uch kishi kishiga agar kelmasa aytaman aytadi soatda soatga chek kod avans pul tolov to\'lov ' +
+  'mashina mashinada mashinaga mashinasi mashinani avtodrom avtodromga avtodromda машина машинада avto auto emas maktab avtomatsiz ' +
   'dushanba seshanba chorshanba payshanba juma shanba yakshanba min daq minut minutlik daqiqa avtomat mexanika ' +
   'сегодня завтра послезавтра бугун эртага ертага индинга в на с до час часа часов бронь клиент мин минут запиши записать ' +
   'пожалуйста ученик урок вечер вечера утра утром понедельник вторник среда среду четверг пятница пятницу суббота субботу воскресенье').split(' '));
@@ -102,6 +103,11 @@ export function parseBotText(raw: string, today: string): BotCmd {
   if (has(MOVE_RE, s)) {
     return { kind: 'help', error: 'Ko‘chirish uchun: avval eski bronni bekor qiling (masalan «bekor 14:00»), keyin yangi vaqtni yozing (masalan «ertaga 16:00 901234567»).' };
   }
+  /* «avtomat», «avtomatda», «автомат», «avto», «akpp» — avtomat mashina (bitta); «mexanika» — oddiy */
+  const AUTO_W = /(^|[^\p{L}])(?:avtomat\p{L}*|avtamat\p{L}*|aftomat\p{L}*|aftamat\p{L}*|автомат\p{L}*|афтомат\p{L}*|автамат\p{L}*|automat\p{L}*|akpp|акпп|акп)(?=[^\p{L}]|$)/gu;
+  const auto = parseAuto(text);
+  s = s.replace(AUTO_W, '$1 ');
+  cut(/(^|\s)(?:mexanika\S*|mexanik\S*|механика\S*|механик\S*|mkpp|мкпп)(?=\s|$)/gu);
   const strongCancel = has(CANCEL_RE, s), softCancel = has(CANCEL_SOFT, s);
   if (strongCancel) cut(CANCEL_RE);
   if (softCancel) cut(CANCEL_SOFT);
@@ -249,8 +255,8 @@ export function parseBotText(raw: string, today: string): BotCmd {
   if (!phone) {
     /* «bugun», «ertaga», «12.10», «jadval» — o'sha kunning ro'yxati (rasm bilan) */
     const rest = s.replace(/(^|\s)\/?(list|ro'yxat|royxat|jadval|jadvalim|bronlar|bronlarim|o'quvchilar|oquvchilar|список)(?=\s|$)/giu, ' ').trim();
-    if (h0 === null && !rest && !half) return { kind: 'list', date };
-    return { kind: 'help', error: h0 !== null || half ? 'Mijozning telefon raqamini yozing (9 ta raqam).' : undefined };
+    if (h0 === null && !rest && !half && !auto) return { kind: 'list', date };
+    return { kind: 'help', error: h0 !== null || half || auto ? 'Mijozning telefon raqamini yozing (9 ta raqam).' : undefined };
   }
   if (h0 === null) return { kind: 'help', error: 'Vaqtni yozing, masalan: 901234567 14:00' };
   if (badMinute) return { kind: 'help', error: 'Bron soat boshidan (14:00) yoki yarimidan (14:30) boshlanadi.' };
@@ -278,7 +284,7 @@ export function parseBotText(raw: string, today: string): BotCmd {
   if (h1 - h0 > MAX_HOURS) return { kind: 'help', error: `Bir martada ko‘pi bilan ${MAX_HOURS} soat.` };
   if (date < today) return { kind: 'help', error: 'O‘tgan kunga bron qilib bo‘lmaydi.' };
   if (date > addDaysYmd(today, MAX_DAYS)) return { kind: 'help', error: `Ko‘pi bilan ${MAX_DAYS} kun oldinga.` };
-  return { kind: 'book', date, h0, h1, phone, cat, half: half && h1 - h0 === 1, ...(off ? { off: 30 as const } : {}), name };
+  return { kind: 'book', date, h0, h1, phone, cat, half: half && h1 - h0 === 1, ...(off ? { off: 30 as const } : {}), ...(auto ? { auto: true as const } : {}), name };
 }
 
 /* ---------------- javob matnlari ---------------- */
@@ -309,6 +315,7 @@ export const BOT_HELP = [
   '<code>ertaga 14:00 30 min …</code>, <code>… yarim soat</code> yoki <code>14:00-14:30</code> — yarim soat',
   '<code>ertaga 14:30 932728766</code> — 14:30–15:00, yarim soat',
   '<code>… /C</code> — C toifa, ism ham yozsa bo‘ladi',
+  '<code>ertaga 14:00 932728766 avtomat</code> — avtomat mashinada (bitta; band bo‘lsa bot aytadi)',
   '',
   '<code>bekor 13:00</code>, <code>ertaga 13:00 bekor</code> yoki <code>bekor 932728766</code> — o‘zingiz yozgan bronni bekor qilish',
   'Faqat <code>bekor</code> deb yozsangiz — bronlaringiz tugma bo‘lib chiqadi, bosasiz va bekor bo‘ladi',
@@ -427,7 +434,7 @@ export async function handleInstructorSheetMessage(token: string, chatId: number
     }
   }
   const digits = cmd.phone.slice(-9);
-  const cellText = `${digits}${cmd.cat ? '/' + cmd.cat : ''}${cmd.half || off ? ' 30 MIN' : ''}${off ? ` ${cmd.h0}:30` : ''}${cmd.name ? ' ' + cmd.name : ''}`;
+  const cellText = `${digits}${cmd.cat ? '/' + cmd.cat : ''}${cmd.half || off ? ' 30 MIN' : ''}${off ? ` ${cmd.h0}:30` : ''}${cmd.auto ? ' AVTOMAT' : ''}${cmd.name ? ' ' + cmd.name : ''}`;
   const res = await applySheetChanges({
     date: cmd.date, actor, adminUser, audit, strict: true, notePrefix: 'Instruktor boti',
     changes: hours.map((h) => ({ key: cellKey(insId, h), t: cellText, prev: '' })),
@@ -443,6 +450,7 @@ export async function handleInstructorSheetMessage(token: string, chatId: number
   await send(token, chatId, [
     '✅ <b>Bron qilindi</b>',
     `📅 ${dayText(cmd.date, today)}, ${fmt(Date.parse(b.start))}–${fmt(end)} (${b.minutes >= 60 ? `${b.minutes / 60} soat` : `${b.minutes} daqiqa`}) · ${b.category} toifa`,
+    ...(cmd.auto ? ['🚗 <b>Avtomat mashinada</b>'] : []),
     `👤 ${htmlEsc(b.name)}${String(b.name).includes(prettyPhone(b.phone)) ? '' : ` · ${htmlEsc(prettyPhone(b.phone))}`}`,
     `🔖 Kod: <b>${htmlEsc(b.code || '—')}</b> — mijoz kassada shu kodni aytadi`,
     '',

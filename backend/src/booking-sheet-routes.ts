@@ -8,7 +8,7 @@ import { loadTariffs } from './pricing.js';
 import { loadPackagePrices, priceWithPackage, insertBookings } from './packages.js';
 import type { StaffIdentity } from './staff-auth.js';
 import {
-  SHEET_HOURS, cellKey, parseKey, hourStartMs, cleanText, parsePhone, parseCategory, parseHalf, parseSecondHalf, nameFrom,
+  SHEET_HOURS, cellKey, parseKey, hourStartMs, cleanText, parsePhone, parseCategory, parseHalf, parseSecondHalf, parseAuto, nameFrom,
   prettyPhone, buildRuns, loadSheet, writeSheet, type Sheet, type SheetCell, type Run, type RunInput,
 } from './booking-sheet.js';
 
@@ -225,6 +225,24 @@ export async function allInstructorDays(date: string): Promise<Map<string, InsDa
 }
 export const SHEET_LOCK_MSG = LOCK_MSG;
 
+/**
+ * Bron qayta ochilsa (Kelmagan / Bekor → Tasdiqlangan): u avtomat mashinada bo'lsa,
+ * shu vaqtda boshqa amaldagi avtomat bron yo'qligini tekshiradi. Band bo'lsa — xato matni.
+ */
+export async function autoCarConflict(b: { id: string; start_at: string; end_at: string }): Promise<string | null> {
+  const st = await loadState(tashkentYmdOf(Date.parse(b.start_at)));
+  const isAuto = (keys: string[] | undefined) => (keys || []).some((k) => parseAuto(st.sheet.cells[k]?.t));
+  if (!isAuto(st.refs.get(String(b.id)))) return null;
+  const s0 = Date.parse(b.start_at), e0 = Date.parse(b.end_at);
+  for (const [bid, keys] of st.refs) {
+    if (bid === String(b.id)) continue;
+    const o = st.byId.get(bid);
+    if (!o || !BUSY.includes(String(o.status)) || !isAuto(keys) || !(Date.parse(o.start_at) < e0 && Date.parse(o.end_at) > s0)) continue;
+    return `Avtomat mashina ${fmtHm(Date.parse(o.start_at))}–${fmtHm(Date.parse(o.end_at))} da band (${st.insMap.get(String(o.instructor_id))?.name || 'boshqa instruktor'}) — avtomat bitta, bronni qayta ochib bo‘lmaydi.`;
+  }
+  return null;
+}
+
 export type SheetActor = { login: string; role: string; bi?: string };
 export type ApplyOpts = {
   date: string; changes: { key: string; t: string; prev: string }[]; actor: SheetActor;
@@ -317,7 +335,7 @@ export async function applySheetChanges(o: ApplyOpts): Promise<ApplyResult> {
       if (cellInfo(st, insId, h).lock) continue;      // to'langan / boshlangan bron — chegara
       const phone = parsePhone(c.t);
       if (!phone) continue;
-      inputs.push({ h, key, phone, cat: parseCategory(c.t), half: parseHalf(c.t), off, text: c.t });
+      inputs.push({ h, key, phone, cat: parseCategory(c.t), half: parseHalf(c.t), off, auto: parseAuto(c.t), text: c.t });
     }
     const runs = buildRuns(inputs);
     /* Shu ustundagi Excel bronlari — faqat o'zgartirsa bo'ladiganlari */
@@ -348,6 +366,50 @@ export async function applySheetChanges(o: ApplyOpts): Promise<ApplyResult> {
     }
     for (const r of touched) if (!taken.has(r)) toCreate.push({ ...r, ins: insId });
   }
+  /* 2b. AVTOMAT MASHINA (bitta) — eski bronlar BEKOR QILINISHIDAN OLDIN tekshiriladi.
+     Band: katagida «avtomat» bo'lgan, avval ham avtomat bo'lgan amaldagi bronlar.
+     Tekshiriladi: yangi avtomat bronlar va «avtomat» endi qo'shilgan mavjud bronlar.
+     Band bo'lsa — o'sha instruktor ustunidagi shu saqlashdagi o'zgarishlar qabul qilinmaydi
+     (eski bron joyida qoladi, kataklar avvalgidek), xato ko'rsatiladi. */
+  const orig = st.sheet.cells;
+  const autoMsg = (x: { s: number; e: number; ins: string }) =>
+    `Avtomat mashina ${fmtHm(x.s)}–${fmtHm(x.e)} da band (${st.insMap.get(x.ins)?.name || 'boshqa instruktor'}) — avtomat bitta. Boshqa vaqtni tanlang.`;
+  const anyAuto = (cells: Record<string, SheetCell>, keys: string[]) => keys.some((k) => parseAuto(cells[k]?.t));
+  for (let pass = 0; pass < 60; pass++) {
+    type Slot = { s: number; e: number; ins: string; bid: string; keys: string[] };
+    const byB = new Map<string, string[]>();
+    for (const [k, c] of Object.entries(work)) if (c?.b) byB.set(c.b, [...(byB.get(c.b) || []), k]);
+    const busy: Slot[] = [], cand: Slot[] = [];
+    for (const [bid, keys] of byB) {
+      const b = st.byId.get(bid);
+      if (!b || !BUSY.includes(String(b.status)) || toCancel.has(bid) || !anyAuto(work, keys)) continue;
+      const it = { s: Date.parse(b.start_at), e: Date.parse(b.end_at), ins: String(b.instructor_id), bid, keys };
+      (anyAuto(orig, st.refs.get(bid) || keys) ? busy : cand).push(it);
+    }
+    for (const r of toCreate) {
+      if (!r.auto) continue;
+      const s0 = hourStartMs(date, r.h0) + r.off * 60000;
+      cand.push({ s: s0, e: s0 + r.minutes * 60000, ins: r.ins, bid: '', keys: r.keys });
+    }
+    cand.sort((x, y) => x.s - y.s);
+    let bad: { c: Slot; x: Slot } | null = null;
+    for (const c of cand) {
+      const x = busy.find((y) => (y.bid !== c.bid || !c.bid) && y.s < c.e && y.e > c.s);
+      if (x) { bad = { c, x }; break; }
+      busy.push(c);
+    }
+    if (!bad) break;
+    const ins = bad.c.ins;
+    const mine = [...changed].filter((k) => parseKey(k)!.ins === ins);
+    for (const k of mine) { if (orig[k]) work[k] = { ...orig[k] }; else delete work[k]; changed.delete(k); }
+    for (let i = toCreate.length - 1; i >= 0; i--) if (toCreate[i].ins === ins) toCreate.splice(i, 1);
+    for (const [bid, b] of [...toCancel]) if (String(b.instructor_id) === ins) toCancel.delete(bid);
+    for (let i = matched.length - 1; i >= 0; i--) if (parseKey(matched[i].run.keys[0])!.ins === ins) matched.splice(i, 1);
+    for (let i = late.length - 1; i >= 0; i--) if (parseKey(late[i])!.ins === ins) late.splice(i, 1);
+    for (const k of [...startedKeep]) if (parseKey(k)!.ins === ins) startedKeep.delete(k);
+    errors.push({ key: bad.c.keys.find((k) => mine.includes(k)) || mine[0] || bad.c.keys[0], error: autoMsg(bad.x) });
+  }
+
   /* O'zgarmagan bron: kataklarida havola joyida tursin */
   for (const { run, bid } of matched) {
     const b = st.byId.get(bid);
@@ -606,7 +668,9 @@ export async function moveCellBooking(date: string, key: string, to: { date: str
   const realName = u?.full_name && !/^Mijoz\b/i.test(u.full_name) ? ` ${u.full_name}` : '';
   /* 14:30–15:00 bron — yangi joyda ham soat yarimidan */
   const off30 = min === 30 && new Date(b.start_at).getUTCMinutes() === 30;
-  const text = `${digits}${cat !== def ? '/' + cat : ''}${min === 30 ? '/30 MIN' : ''}${off30 ? ` ${to.h}:30` : ''}${realName}`.slice(0, 80);
+  /* avtomat mashinadagi bron — yangi joyda ham avtomatda (bandligi qayta tekshiriladi) */
+  const auto = cb.keys.some((k) => parseAuto(st.sheet.cells[k]?.t));
+  const text = `${digits}${cat !== def ? '/' + cat : ''}${min === 30 ? '/30 MIN' : ''}${off30 ? ` ${to.h}:30` : ''}${auto ? ' AVTOMAT' : ''}${realName}`.slice(0, 80);
   const keys = Array.from({ length: n }, (_, i) => cellKey(to.ins, to.h + i));
   const own = new Set(cb.keys);
   for (const k of keys) {
