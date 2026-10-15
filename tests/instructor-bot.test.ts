@@ -171,6 +171,24 @@ describe('Instruktor boti — xabarni o‘qish', () => {
     expect(b('bugun kelmaydi, ertaga 15:00 901234567')).toMatch(/^help:Kun ikki xil/);
   });
 
+  it('🚗 avtomat — har qanday yozilishi', () => {
+    const a = (t: string) => { const r: any = p(t); return r.kind === 'book' ? `${r.h0}${r.auto ? ' auto' : ''}${r.name ? ' ' + r.name : ''}` : `${r.kind}:${r.error || ''}`; };
+    for (const t of ['ertaga 14:00 901234567 avtomat', 'ertaga 14:00 901234567 AVTOMAT', 'ertaga avtomatga 14:00 901234567', 'ertaga 14:00 901234567 avtomatda',
+      'эртага 14:00 901234567 автомат', 'ertaga 14:00 901234567 avtomat/C', 'ertaga 14:00 901234567 (avtomat)', 'ertaga 14:00 901234567 AKPP', 'ertaga 14:00 901234567 aftomat', 'ertaga 14:00 901234567 avtomatik mashina']) {
+      expect(a(t), t).toBe('14 auto');
+    }
+    expect(a('ertaga 14:00 901234567 автоматда Дилшод')).toBe('14 auto Дилшод');
+    expect(a('ertaga 14:00 901234567 mexanika')).toBe('14');
+    expect(a('ertaga 14:00 901234567 avtodromga keladi')).toBe('14');
+    expect(a('ertaga 14:00 901234567 avtomatsiz')).toBe('14');
+    expect(a('ertaga 14:00 901234567 avtomat emas')).toBe('14');
+    expect(a('ertaga 14:00 901234567 avto maktab')).toBe('14');               // «avto» yolg'iz — avtomat emas
+    expect(p('ertaga 14:00 901234567 avtomat/C')).toMatchObject({ auto: true, cat: 'C' });
+    expect(p('ertaga 14:00 avtomat-901234567')).toMatchObject({ kind: 'book', auto: true, phone: '+998901234567' });
+    expect(p('ertaga 14:30 901234567 avtomat')).toMatchObject({ kind: 'book', off: 30, half: true, auto: true });
+    expect(a('avtomat')).toMatch(/^help:Mijozning telefon raqamini yozing/);
+  });
+
   it('bekor — xabarning istalgan joyida, har xil yozilsa ham', () => {
     const D1 = '2026-10-09';
     const c = (t: string) => { const r: any = p(t); return r.kind === 'cancel' ? `${r.date} ${r.h0 ?? '-'} ${r.phone || '-'}${r.pick ? ' pick' : ''}` : `${r.kind}:${r.error || ''}`; };
@@ -350,6 +368,99 @@ describe('Instruktor boti — bron', () => {
     await say('bekor');
     expect(h.tgCalls.filter((c) => c.method === 'getWebhookInfo')).toHaveLength(n);
     h.tgResults.delete('getWebhookInfo');
+  });
+
+  it('🚗 avtomat mashina bitta — bir vaqtga ikki instruktor yozolmaydi', async () => {
+    let msg = await say('ertaga 14:00 901234567 avtomat');
+    expect(msg).toMatch(/Bron qilindi[\s\S]*Avtomat mashinada/);
+    const g = await h.call('GET', `/api/admin/booking-sheet?date=${ymd(1)}`, { cookie: admin });
+    expect(g.body.cells[cellKey('ip-1', 14)].t).toBe('901234567 AVTOMAT');
+    /* boshqa instruktor shu vaqtga avtomatga — yo'q; mexanikaga — bo'ladi */
+    msg = await say('ertaga 14:00 947494944 avtomat', INS2_TG);
+    expect(msg).toMatch(/Avtomat mashina 14:00–15:00 da band \(Aziz Karimov\)/);
+    expect(active()).toHaveLength(1);
+    expect(await say('ertaga 14:00 947494944', INS2_TG)).toMatch(/Bron qilindi/);
+    expect(await say('ertaga 15:00 933334455 avtomat', INS2_TG)).toMatch(/Avtomat mashinada/);
+    /* yarim soatlar: 16:00–16:30 va 16:30–17:00 — to'qnashmaydi; 16:00 ga yana — band */
+    expect(await say('ertaga 16:00 901112233 30 min avtomat')).toMatch(/Avtomat mashinada/);
+    expect(await say('ertaga 16:30 945556677 avtomat', INS2_TG)).toMatch(/16:30–17:00[\s\S]*Avtomat mashinada/);
+    expect(await say('ertaga 17:00 901112244 avtomat 30 min')).toMatch(/Avtomat mashinada/);
+    expect(await say('ertaga 17:00 945556688 avtomat', INS2_TG)).toMatch(/Avtomat mashina 17:00–17:30 da band \(Aziz Karimov\)/);
+    /* admin ko'chirsa — avtomat saqlanadi va bandligi tekshiriladi */
+    const a15 = active().find((b: any) => b.start_at === at('15:00'));
+    const mv = await h.call('POST', '/api/admin/booking-sheet-move', { cookie: admin, payload: { date: ymd(1), key: cellKey('ip-2', 15), to_date: ymd(1), to_ins: 'ip-2', to_h: 17 } });
+    expect(mv.status).toBe(409);                                       // 17:00–17:30 da Aziz avtomatda
+    expect(mv.body.error).toMatch(/Avtomat mashina 17:00–17:30 da band/);
+    expect(active().find((b: any) => b.id === a15.id)).toBeTruthy();   // eski bron qaytdi
+    const mv2 = await h.call('POST', '/api/admin/booking-sheet-move', { cookie: admin, payload: { date: ymd(1), key: cellKey('ip-2', 15), to_date: ymd(1), to_ins: 'ip-2', to_h: 18 } });
+    expect(mv2.status).toBe(200);
+    const g2 = await h.call('GET', `/api/admin/booking-sheet?date=${ymd(1)}`, { cookie: admin });
+    expect(g2.body.cells[cellKey('ip-2', 18)].t).toMatch(/AVTOMAT/);
+    /* bekor qilinsa — avtomat bo'shaydi */
+    expect(await say('bekor ertaga 14:00')).toMatch(/Bekor qilindi/);
+    expect(await say('ertaga 14:00 945550011 avtomat', INS2_TG)).toMatch(/band: «947494944»|allaqachon|band/);   // Komilaning o'zi 14:00 da band
+    expect(await say('ertaga 13:00 945550011 avtomat', INS2_TG)).toMatch(/Avtomat mashinada/);
+  });
+
+  it('Excel bron: «AVTOMAT» yozilsa ham tekshiriladi; mavjud bronga qo‘shilsa ham', async () => {
+    const put = (changes: any[]) => h.call('PUT', '/api/admin/booking-sheet', { cookie: admin, payload: { date: ymd(1), changes } });
+    await put([{ key: cellKey('ip-1', 10), t: '901234567 avtomat', prev: '' }]);
+    expect(active()).toHaveLength(1);
+    const r = await put([{ key: cellKey('ip-2', 10), t: '947494944 AVTOMAT', prev: '' }]);
+    expect(r.body.result.errors[0].error).toMatch(/Avtomat mashina 10:00–11:00 da band \(Aziz Karimov\)/);
+    expect(active()).toHaveLength(1);
+    /* mexanika bron, keyin unga «avtomat» qo'shilsa — rad, yozuv qaytadi, bron joyida */
+    await put([{ key: cellKey('ip-2', 13), t: '947494955', prev: '' }]);
+    const b2 = active().find((b: any) => b.instructor_id === 'ip-2');
+    expect(b2).toBeTruthy();
+    await put([{ key: cellKey('ip-1', 13), t: '901234588 avtomat', prev: '' }]);
+    expect(active()).toHaveLength(3);
+    const r2 = await put([{ key: cellKey('ip-2', 13), t: '947494955 avtomat', prev: '947494955' }]);
+    expect(r2.body.result.errors[0].error).toMatch(/Avtomat mashina 13:00–14:00 da band \(Aziz Karimov\)/);
+    expect(r2.body.cells[cellKey('ip-2', 13)].t).toBe('947494955');
+    expect(active().find((b: any) => b.id === b2.id)).toBeTruthy();
+    /* Aziznikini bekor qilsak — endi qo'shsa bo'ladi, bron o'zgarmaydi */
+    await put([{ key: cellKey('ip-1', 13), t: '', prev: '901234588 avtomat' }]);
+    const r3 = await put([{ key: cellKey('ip-2', 13), t: '947494955 avtomat', prev: '947494955' }]);
+    expect(r3.body.result.errors).toEqual([]);
+    expect(r3.body.cells[cellKey('ip-2', 13)].t).toBe('947494955 avtomat');
+    expect(active().find((b: any) => b.id === b2.id)).toBeTruthy();
+  });
+
+  it('🚗 avtomat: rad etilsa eski bron joyida qoladi (ko‘rib chiqishda topilgan holatlar)', async () => {
+    const put = (changes: any[]) => h.call('PUT', '/api/admin/booking-sheet', { cookie: admin, payload: { date: ymd(1), changes } });
+    /* 1) mexanika 10:00, keyin o'sha mijozga 11:00 avtomat — alohida bron, 10:00 tegilmaydi */
+    await say('ertaga 10:00 901234567');
+    const b10 = active()[0];
+    await say('ertaga 10:00 907654321 avtomat', INS2_TG);
+    expect(await say('ertaga 11:00 901234567 avtomat')).toMatch(/11:00–12:00[\s\S]*Avtomat mashinada/);
+    expect(h.db.bookings.find((b: any) => b.id === b10.id).status).toBe('confirmed');
+    expect(active().find((b: any) => b.start_at === at('11:00') && b.instructor_id === 'ip-1')).toMatchObject({ duration_minutes: 60 });
+    /* 2) avtomat bronni cho'zish: keyingi soatda avtomat band — rad, eski bron joyida */
+    await put([{ key: cellKey('ip-1', 14), t: '901110000 avtomat', prev: '' }]);
+    await put([{ key: cellKey('ip-2', 15), t: '907770000 avtomat', prev: '' }]);
+    const b14 = active().find((b: any) => b.start_at === at('14:00'));
+    const r = await put([{ key: cellKey('ip-1', 15), t: '901110000 avtomat', prev: '' }]);
+    expect(r.body.result.errors[0].error).toMatch(/Avtomat mashina 15:00–16:00 da band \(Komila Sobirova\)/);
+    expect(h.db.bookings.find((b: any) => b.id === b14.id).status).toBe('confirmed');
+    expect(r.body.cells[cellKey('ip-1', 15)]).toBeUndefined();
+    expect(r.body.cells[cellKey('ip-1', 14)].t).toBe('901110000 avtomat');
+    /* 3) qayta ochish: Kelmagan avtomat bron — shu vaqtda boshqa avtomat bo'lsa, ochilmaydi */
+    h.db.bookings.find((b: any) => b.id === b14.id).status = 'no_show';
+    await put([{ key: cellKey('ip-2', 14), t: '907770001 avtomat', prev: '' }]);
+    const re = await h.call('PATCH', `/api/admin/bookings/${b14.id}/status`, { cookie: admin, payload: { status: 'confirmed' } });
+    expect(re.status).toBe(409);
+    expect(re.body.error).toMatch(/Avtomat mashina 14:00–15:00 da band \(Komila Sobirova\)/);
+  });
+
+  it('🚗 avtomat belgisi faqat keyingi katakda bo‘lsa ham — ko‘rinadi va tekshiriladi', async () => {
+    const put = (changes: any[]) => h.call('PUT', '/api/admin/booking-sheet', { cookie: admin, payload: { date: ymd(1), changes } });
+    await put([{ key: cellKey('ip-1', 10), t: '901234567 avtomat', prev: '' }, { key: cellKey('ip-1', 11), t: '901234567 avtomat', prev: '' }]);
+    /* belgini birinchi katakdan olib tashlasa — 10:00 mexanika, 11:00 avtomat (alohida) */
+    await put([{ key: cellKey('ip-1', 10), t: '901234567', prev: '901234567 avtomat' }]);
+    const r = await put([{ key: cellKey('ip-2', 11), t: '947494944 avtomat', prev: '' }]);
+    expect(r.body.result.errors[0].error).toMatch(/Avtomat mashina 11:00–12:00 da band/);
+    expect(await say('ertaga 10:00 947494945 avtomat', INS2_TG)).toMatch(/Avtomat mashinada/);
   });
 
   it('«bekor <raqam>» — kun aytilmasa ham o‘sha raqamni topib bekor qiladi', async () => {

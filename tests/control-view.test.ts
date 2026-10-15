@@ -260,5 +260,27 @@ describe('＋ Nazoratdan bron qilish', () => {
     expect((await book({ k, date: '2020-01-01', ins: 'ip-2', h: 15, phone: '901112233' })).status).toBe(400);
     expect((await book({ k, date: D2, ins: 'nope', h: 15, phone: '901112233' })).status).toBe(404);
   });
+  it('🚗 avtomat mashina bitta: bir vaqtga ikki instruktor yozolmaydi; kunlik bandlik ko‘rinadi', async () => {
+    const { k } = await token();
+    const a = await book({ k, date: D2, ins: 'ip-1', h: 15, auto: true, phone: '931112233' });
+    expect(a.status).toBe(200);
+    expect(a.body.booking.auto).toBe(true);
+    const sheet = h.db.admin_settings.find((x) => x.key === `booking_sheet:${D2}`);
+    expect((sheet.value.cells || sheet.value.value?.cells)['ip-1|15'].t).toBe('931112233 AVTOMAT');
+    const b = await book({ k, date: D2, ins: 'ip-2', h: 15, auto: true, phone: '931112244' });
+    expect(b.status).toBe(409);
+    expect(b.body.error).toMatch(/Avtomat mashina 15:00–16:00 da band \(Aziz Karimov\)/);
+    expect((await book({ k, date: D2, ins: 'ip-2', h: 15, phone: '931112244' })).status).toBe(200);     // mexanika — mumkin
+    expect((await book({ k, date: D2, ins: 'ip-2', h: 16, auto: true, phone: '931112255' })).status).toBe(200);
+    const v = await view(k, D2);
+    expect(v.body.auto.map((x: any) => [x.start, x.end, x.name])).toEqual([[at('15:00', D2), at('16:00', D2), 'Aziz Karimov'], [at('16:00', D2), at('17:00', D2), 'Komila Sobirova']]);
+    const bk = v.body.instructors.find((i: any) => i.id === 'ip-1').bookings.find((x: any) => x.start === at('15:00', D2));
+    expect(bk.auto).toBe(true);
+    /* 2 soatlik bron, belgi faqat ikkinchi katakda — baribir avtomat deb ko'rinadi */
+    const put = (changes: any[]) => h.call('PUT', '/api/admin/booking-sheet', { cookie: admin, payload: { date: D2, changes } });
+    await put([{ key: 'ip-1|17', t: '931112266', prev: '' }, { key: 'ip-1|18', t: '931112266 avtomat', prev: '' }]);
+    const v2 = await view(k, D2);
+    expect(v2.body.auto.some((x: any) => x.start === at('18:00', D2))).toBe(true);
+  });
 });
 
