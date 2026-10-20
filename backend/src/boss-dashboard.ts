@@ -11,7 +11,7 @@ import { allKeys, seriesKey } from './unified-analytics.js';
  * BOSHLIQ ILOVASI — rahbar telefoniga (iPhone) o'rnatiladigan panel.
  *
  *   /boshliq?k=<kalit>  — sahifa (boshliq.html, «Ekranga qo'shish» bilan ilova bo'ladi)
- *   GET  /api/boss-hello?k=          — havola to'g'rimi, PIN qo'yilganmi
+ *   POST /api/boss-hello {k}         — havola to'g'rimi, PIN qo'yilganmi
  *   POST /api/boss-login {k, pin}    — PIN to'g'ri bo'lsa 60 kunlik token
  *   GET  /api/boss-data?from=&to=    — hamma raqamlar (Authorization: Bearer <token>)
  *   GET  /api/admin/boss-link        — admin: havola va holat (yo'q bo'lsa yaratiladi)
@@ -39,8 +39,8 @@ export const BOSS_KEY = 'boss_link';
 const TOKEN_TTL_MS = 60 * 24 * 3600e3;          // 60 kun; har ochilganda yangilanadi
 const q = (v: string) => encodeURIComponent(v);
 const n = (v: unknown) => (Number.isFinite(Number(v)) ? Number(v) : 0);
-const nf = (v: number) => String(Math.round(Number(v) || 0)).replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
-const pct = (a: number, b: number) => (!b ? (a ? 100 : 0) : Math.round(((a - b) / b) * 100));
+const nf = (v: number) => String(Math.round(Number(v) || 0)).replace(/\B(?=(\d{3})+(?!\d))/g, '\u00a0');
+const pct = (a: number, b: number) => (!b ? (a ? 100 : 0) : Math.round(((a - b) / Math.abs(b)) * 100));
 const BASE = () => String(process.env.PUBLIC_BASE_URL || 'https://avtodrom.vercel.app').replace(/\/+$/, '');
 const err = (code: number, message: string) => Object.assign(new Error(message), { statusCode: code });
 
@@ -109,7 +109,7 @@ const bearer = (req: any) => {
 /* ------------------------------------------------------------------ */
 export type OwnerBridge = { ok: boolean; status: number | null; data?: any; error?: string; hint?: string; ms?: number };
 
-export async function fetchOwnerBridge(fromYmd: string, toYmd: string, bucket: string): Promise<OwnerBridge> {
+export async function fetchOwnerBridge(fromYmd: string, toYmd: string, bucket: string, cut: Date | null = null): Promise<OwnerBridge> {
   const base = String(process.env.AVTODROM12_URL || process.env.SCHOOL_RECEIPT_URL || '').replace(/\/+$/, '');
   const key = String(process.env.RECEIPT_SHARED_KEY || '');
   if (!base || !key) {
@@ -120,7 +120,7 @@ export async function fetchOwnerBridge(fromYmd: string, toYmd: string, bucket: s
   const timer = setTimeout(() => ctrl.abort(), 20000);
   const t0 = Date.now();
   try {
-    const r = await fetch(`${base}/api/bridge/owner?from=${q(fromYmd)}&to=${q(toYmd)}&bucket=${q(bucket)}`, {
+    const r = await fetch(`${base}/api/bridge/owner?from=${q(fromYmd)}&to=${q(toYmd)}&bucket=${q(bucket)}${cut ? `&cut=${q(cut.toISOString())}` : ''}`, {
       headers: { 'X-Receipt-Key': key, Accept: 'application/json' }, signal: ctrl.signal,
     });
     const ms = Date.now() - t0;
@@ -162,20 +162,22 @@ const cardOf = (p: any) => {
 const durName = (min: number) => (!min ? 'Noma’lum' : min <= 30 ? '30 daqiqa' : min % 60 === 0 ? `${min / 60} soat` : `${min} daqiqa`);
 
 type Bucket = 'hour' | 'day' | 'month';
+/* Toshkent: UTC+5, yozgi vaqt yo'q — har to'lovga Intl yaratmaslik uchun arifmetika */
 const keyOf = (iso: string, bucket: Bucket) => {
-  const d = new Date(iso);
-  if (bucket === 'hour') return `${new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Tashkent', hour: '2-digit', hourCycle: 'h23' }).format(d)}:00`;
-  const ymd = tashkentYmd(iso);
-  return bucket === 'month' ? ymd.slice(0, 7) : ymd;
+  const t = new Date(new Date(iso).getTime() + 5 * 3600e3).toISOString();
+  if (bucket === 'hour') return `${t.slice(11, 13)}:00`;
+  return bucket === 'month' ? t.slice(0, 7) : t.slice(0, 10);
 };
 
-export async function buildAvtodrom(from: Date, to: Date, prevFrom: Date, bucket: Bucket) {
+/** prevTo — oldingi davr oxiri: davr hali tugamagan bo'lsa (bugun, shu hafta)
+ *  oldingi davrning AYNAN shu vaqtigacha olinadi — ertalab «kechagidan 80% kam» chiqmasin. */
+export async function buildAvtodrom(from: Date, to: Date, prevFrom: Date, bucket: Bucket, prevTo: Date = from) {
   const warnings: Array<{ section: string; error: string }> = [];
   const safe = async <T>(section: string, fn: () => Promise<T>, fallback: T): Promise<T> => {
     try { return await fn(); }
     catch (e: any) { warnings.push({ section, error: String(e?.message || e).slice(0, 200) }); return fallback; }
   };
-  const F = q(from.toISOString()), T = q(to.toISOString()), PF = q(prevFrom.toISOString());
+  const F = q(from.toISOString()), T = q(to.toISOString()), PF = q(prevFrom.toISOString()), PT = q(prevTo.toISOString());
   const nowIso = new Date().toISOString();
   const todayYmd = tashkentYmd(nowIso);
   const [ty, tm, td] = todayYmd.split('-').map(Number);
@@ -186,7 +188,7 @@ export async function buildAvtodrom(from: Date, to: Date, prevFrom: Date, bucket
     safe('payments', () => pageAll<any>('payments',
       `?status=eq.paid&paid_at=gte.${F}&paid_at=lt.${T}&select=id,booking_id,customer_id,amount,method,cash_amount,card_amount,register_id,receipt_code,paid_at&order=paid_at.asc,id.asc`), [] as any[]),
     safe('payments_prev', () => pageAll<any>('payments',
-      `?status=eq.paid&paid_at=gte.${PF}&paid_at=lt.${F}&select=id,amount,register_id&order=paid_at.asc,id.asc`), [] as any[]),
+      `?status=eq.paid&paid_at=gte.${PF}&paid_at=lt.${PT}&select=id,amount,register_id&order=paid_at.asc,id.asc`), [] as any[]),
     safe('bookings', () => pageAll<any>('bookings',
       `?start_at=gte.${F}&start_at=lt.${T}&select=id,status,source,category,customer_id,instructor_id,duration_minutes,school_receipt_code,customer_note&order=start_at.asc,id.asc`), [] as any[]),
     safe('bookings_prev', async () => (await supabaseRestPaged<any>('bookings', `?start_at=gte.${PF}&start_at=lt.${F}&select=id`, 1, 1)).total, 0),
@@ -227,8 +229,10 @@ export async function buildAvtodrom(from: Date, to: Date, prevFrom: Date, bucket
   const series = new Map<string, number>();
   const cats = new Map<string, { name: string; total: number; receipts: number }>();
   const durs = new Map<string, { name: string; total: number; receipts: number; min: number }>();
+  const known = new Set(regs.map((r: any) => String(r.id)));
   for (const p of pays) {
-    const rk = p.register_id ? String(p.register_id) : '-';
+    /* Kassasiz yoki o'chirilgan kassadagi to'lov — «bog'lanmagan» qatorida, jami bilan mos kelsin */
+    const rk = p.register_id && known.has(String(p.register_id)) ? String(p.register_id) : '-';
     const a = byReg.get(rk) || blank();
     for (const t of [a, tot]) { t.receipts++; t.total += n(p.amount); t.cash += cashOf(p); t.card += cardOf(p); }
     byReg.set(rk, a);
@@ -245,7 +249,7 @@ export async function buildAvtodrom(from: Date, to: Date, prevFrom: Date, bucket
   const prevByReg = new Map<string, number>();
   let prevTotal = 0;
   for (const p of prevPays) {
-    const rk = p.register_id ? String(p.register_id) : '-';
+    const rk = p.register_id && known.has(String(p.register_id)) ? String(p.register_id) : '-';
     prevByReg.set(rk, (prevByReg.get(rk) || 0) + n(p.amount)); prevTotal += n(p.amount);
   }
   const shiftOf = (rid: string) => shifts.find((s: any) => String(s.register_id) === rid) || null;
@@ -362,15 +366,21 @@ export async function buildBossData(query: any) {
   const toYmd = range.toYmd || tashkentYmd(new Date(to.getTime() - 1).toISOString());
   const span = to.getTime() - from.getTime();
   const prevFrom = new Date(from.getTime() - span);
+  /* Davr hali davom etyapti (bugun, shu hafta…) — oldingi davr ham shu nuqtagacha */
+  const nowMs = Date.now();
+  const partial = nowMs > from.getTime() && nowMs < to.getTime();
+  const prevTo = partial ? new Date(prevFrom.getTime() + (nowMs - from.getTime())) : from;
 
   const [avd, bridge] = await Promise.all([
-    buildAvtodrom(from, to, prevFrom, bucket),
-    fetchOwnerBridge(fromYmd, toYmd, bucket),
+    buildAvtodrom(from, to, prevFrom, bucket, prevTo),
+    fetchOwnerBridge(fromYmd, toYmd, bucket, partial ? new Date(nowMs) : null),
   ]);
   const a12 = bridge.ok ? bridge.data : null;
   const P = a12?.paid?.totals || {}, PP = a12?.paid?.previous || {};
   const S = a12?.school?.totals || {}, SP = a12?.school?.previous || {};
   const E = a12?.expenses || {};
+  const a12warn: Array<{ section: string }> = Array.isArray(a12?.warnings) ? a12.warnings : [];
+  const expensesOk = bridge.ok && !a12warn.some((w) => String(w.section).startsWith('expenses'));
 
   /* --- UMUMIY --- */
   const revenue = {
@@ -379,14 +389,14 @@ export async function buildBossData(query: any) {
   const prevRevenue = { avtodrom: n(avd.kassa.previous_total), paid: n(PP.revenue), school: n(SP.revenue) };
   const total = revenue.avtodrom + revenue.paid + revenue.school;
   const prevTotal = prevRevenue.avtodrom + prevRevenue.paid + prevRevenue.school;
-  const expenses = n(E.total), prevExpenses = n(E.previous_total);
+  const expenses = expensesOk ? n(E.total) : 0, prevExpenses = expensesOk ? n(E.previous_total) : 0;
 
   const keys = allKeys(fromYmd, toYmd, bucket);
   const sm = new Map<string, any>(keys.map((k) => [k, { key: k, avtodrom: 0, paid: 0, school: 0, expenses: 0 }]));
   const at = (k: string) => { if (!sm.has(k)) sm.set(k, { key: k, avtodrom: 0, paid: 0, school: 0, expenses: 0 }); return sm.get(k); };
   for (const s of avd.kassa.series) at(s.key).avtodrom += n(s.total);
   for (const s of a12?.series || []) { const r = at(seriesKey(s.key, bucket)); r.paid += n(s.paid_revenue); r.school += n(s.school_revenue); }
-  for (const s of E.series || []) { if (bucket !== 'hour') at(seriesKey(s.key, bucket)).expenses += n(s.total); }
+  if (expensesOk) for (const s of E.series || []) { if (bucket !== 'hour') at(seriesKey(s.key, bucket)).expenses += n(s.total); }
   const series = [...sm.values()].sort((a, b) => a.key.localeCompare(b.key));
 
   const visits = {
@@ -398,7 +408,8 @@ export async function buildBossData(query: any) {
   /* --- e'tibor talab qiladiganlar --- */
   const alerts: Array<{ level: 'warn' | 'info' | 'bad'; text: string }> = [];
   if (!bridge.ok) alerts.push({ level: 'bad', text: `Avtoshkola, platniy va xarajatlar ko‘rinmayapti: ${bridge.error}${bridge.hint ? ` — ${bridge.hint}` : ''}` });
-  if (avd.lessons.unscanned.receipts) alerts.push({ level: 'warn', text: `${avd.lessons.unscanned.receipts} ta to‘langan chek instruktor tomonidan urilmagan (${nf(avd.lessons.unscanned.amount)} so‘m)` });
+  if (a12warn.length) alerts.push({ level: 'bad', text: `avtodrom12 ma’lumotining bir qismi yuklanmadi (${[...new Set(a12warn.map((w) => w.section))].join(', ')}) — shu raqamlar 0 ko‘rinishi mumkin` });
+  if (avd.lessons.unscanned.receipts) alerts.push({ level: 'warn', text: `${avd.lessons.unscanned.receipts} ta chek to‘langan, lekin hali urilmagan (${nf(avd.lessons.unscanned.amount)} so‘m) — dars hali bo‘lmagan yoki instruktor chekni urmagan` });
   if (n(a12?.paid?.debts?.total)) alerts.push({ level: 'warn', text: `Platniy qarzlar: ${nf(n(a12.paid.debts.total))} so‘m (${n(a12.paid.debts.sessions)} ta yozuv)` });
   if (n(a12?.school?.over_limit?.lessons)) alerts.push({ level: 'info', text: `Avtoshkola: ${n(a12.school.over_limit.lessons)} ta dars shartnoma limitidan oshgan — to‘lov kerak (${nf(n(a12.school.over_limit.due))} so‘m)` });
   if (n(avd.kassa.unassigned.receipts)) alerts.push({ level: 'info', text: `Kassaga bog‘lanmagan to‘lovlar: ${avd.kassa.unassigned.receipts} ta (${nf(avd.kassa.unassigned.total)} so‘m)` });
@@ -423,7 +434,8 @@ export async function buildBossData(query: any) {
       visits, minutes,
       expenses, previous_expenses: prevExpenses, expenses_change: pct(expenses, prevExpenses),
       net: total - expenses, previous_net: prevTotal - prevExpenses, net_change: pct(total - expenses, prevTotal - prevExpenses),
-      expenses_known: bridge.ok,
+      expenses_known: expensesOk,
+      compare: { partial, prev_from: prevFrom.toISOString(), prev_to: prevTo.toISOString() },
       series,
       alerts,
     },
@@ -451,12 +463,13 @@ export async function registerBossRoutes(app: FastifyInstance, deps: Deps) {
   const noStore = (reply: any) => { reply.header('Cache-Control', 'no-store'); reply.header('X-Robots-Tag', 'noindex, nofollow'); };
   const BAD_LINK = 'Havola eskirgan yoki noto‘g‘ri. Admin paneldan yangi havolani oling.';
 
-  /* Havola to'g'rimi va PIN qo'yilganmi — sahifa ochilganda */
-  app.get('/api/boss-hello', async (req: any, reply: any) => {
+  /* Havola to'g'rimi va PIN qo'yilganmi — sahifa ochilganda.
+     POST: kalit manzilda (query) bo'lsa server jurnaliga yozilib qolardi. */
+  app.post('/api/boss-hello', async (req: any, reply: any) => {
     noStore(reply);
     try {
       const link = await readBossLink();
-      if (!checkKey(link, String(req.query?.k || ''))) return reply.code(403).send({ ok: false, error: BAD_LINK });
+      if (!checkKey(link, String(req.body?.k || ''))) return reply.code(403).send({ ok: false, error: BAD_LINK });
       return { ok: true, pin_set: !!link!.pin_hash };
     } catch (e: any) {
       return reply.code(e?.statusCode ?? 500).send({ ok: false, error: e?.message || 'Tekshirib bo‘lmadi' });
@@ -518,6 +531,7 @@ export async function registerBossRoutes(app: FastifyInstance, deps: Deps) {
     try {
       await deps.guardAdmin(req);
       const b = req.body || {};
+      b.reset = b.reset === true;
       const pin = b.pin === undefined || b.pin === null || b.pin === '' ? null : String(b.pin).trim();
       if (!b.reset && pin === null) return reply.code(400).send({ ok: false, error: 'pin yoki reset: true yuboring' });
       if (pin !== null && !PIN_RE.test(pin)) return reply.code(400).send({ ok: false, error: 'PIN 4–8 ta raqam bo‘lsin' });

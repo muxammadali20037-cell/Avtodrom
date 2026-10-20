@@ -350,7 +350,8 @@ const S = { k: '', token: '', per: LS.get('boss_per') || 'today', from: '', to: 
   S.k = LS.get('boss_k') || '';
   S.token = LS.get('boss_token') || '';
   const c = LS.get('boss_custom');
-  if (c) { try { const x = JSON.parse(c); S.from = x.from; S.to = x.to; } catch {} }
+  if (c) { try { const x = JSON.parse(c), ok = v => /^\d{4}-\d{2}-\d{2}$/.test(String(v || '')); if (ok(x.from) && ok(x.to)) { S.from = x.from; S.to = x.to; } } catch {} }
+  if (S.per === 'custom' && !(S.from && S.to)) S.per = 'today';
 })();
 
 /* ======================================================================
@@ -390,9 +391,9 @@ function rangeTitle(r){
   return `${dayName(r.from)}${fy !== ty ? ' ' + fy : ''} — ${dayName(r.to)} ${ty}`;
 }
 const days = r => Math.round((new Date(r.to + 'T00:00:00Z') - new Date(r.from + 'T00:00:00Z')) / 864e5) + 1;
-function cmpWord(r){
-  if (r.from === r.to) return r.from === today() ? 'kechaga nisbatan' : 'oldingi kunga nisbatan';
-  return `oldingi ${days(r)} kunga nisbatan`;
+function cmpWord(r, partial){
+  if (r.from === r.to) return r.from === today() ? (partial ? 'kechaning shu vaqtiga nisbatan' : 'kechaga nisbatan') : 'oldingi kunga nisbatan';
+  return partial ? `oldingi ${days(r)} kunning shu nuqtasiga nisbatan` : `oldingi ${days(r)} kunga nisbatan`;
 }
 
 const nf = v => String(Math.round(Number(v) || 0)).replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
@@ -438,7 +439,7 @@ async function api(path, opt = {}){
   catch { const e = new Error('Internet yo‘q yoki server javob bermadi'); e.offline = true; throw e; }
   let d = null; try { d = await r.json(); } catch {}
   if (!r.ok || !d || d.ok === false) {
-    const e = new Error((d && d.error) || (r.status === 429 ? 'Juda ko‘p urinish — 15 daqiqadan keyin qayta urining' : `Server javobi: ${r.status}`));
+    const e = new Error(r.status === 429 ? 'Juda ko‘p urinish — 15 daqiqadan keyin qayta urining' : (d && d.error) || `Server javobi: ${r.status}`);
     e.status = r.status; e.data = d; throw e;
   }
   return d;
@@ -496,7 +497,7 @@ async function login(){
     pin = ''; paintPad();
     $('lockMsg').textContent = e.message;
     $('lock').classList.remove('shake'); void $('lock').offsetWidth; $('lock').classList.add('shake');
-    if (e.status === 403) showLock({ title: 'Havola eskirgan', text: 'Admin paneldan yangi havolani oling va shu telefonda oching.', noPad: true });
+    if (e.status === 403) { clearCache(); showLock({ title: 'Havola eskirgan', text: 'Admin paneldan yangi havolani oling va shu telefonda oching.', noPad: true }); }
   }
 }
 async function boot(){
@@ -504,16 +505,24 @@ async function boot(){
   if (!S.k) return showLock({ title: 'Havola kerak', text: 'Bu ilova admin paneldagi maxfiy havola orqali ochiladi: Boshqaruv → Boshliq ilovasi.', noPad: true });
   if (S.token) return startApp();
   try {
-    const h = await api(`/api/boss-hello?k=${encodeURIComponent(S.k)}`);
+    const h = await api('/api/boss-hello', { method: 'POST', body: { k: S.k } });
     if (!h.pin_set) return showLock({ title: 'PIN qo‘yilmagan', text: 'Administrator admin panelda PIN qo‘ygandan keyin shu yerdan kirasiz.', noPad: true });
     showLock();
   } catch (e) {
-    if (e.status === 403) return showLock({ title: 'Havola eskirgan', text: 'Admin paneldan yangi havolani oling va shu telefonda oching.', noPad: true });
+    if (e.status === 403) { clearCache(); LS.del('boss_token'); return showLock({ title: 'Havola eskirgan', text: 'Admin paneldan yangi havolani oling va shu telefonda oching.', noPad: true }); }
     showLock({ msg: e.message });
   }
 }
+/* Oxirgi 8 ta davr saqlanadi — telefon xotirasi to'lib qolmasin */
+function cachePut(key, val){
+  let keys = []; try { keys = JSON.parse(LS.get('boss_cache_keys') || '[]'); } catch {}
+  keys = [key, ...keys.filter(k => k !== key)];
+  for (const old of keys.slice(8)) LS.del(old);
+  LS.set('boss_cache_keys', JSON.stringify(keys.slice(0, 8)));
+  LS.set(key, val);
+}
 function clearCache(){
-  try { for (let i = localStorage.length - 1; i >= 0; i--) { const k = localStorage.key(i); if (k && k.startsWith('boss_cache:')) localStorage.removeItem(k); } } catch {}
+  try { for (let i = localStorage.length - 1; i >= 0; i--) { const k = localStorage.key(i); if (k && k.startsWith('boss_cache')) localStorage.removeItem(k); } } catch {}
 }
 function logout(){
   LS.del('boss_token'); S.token = ''; S.d = null; clearCache();
@@ -539,8 +548,16 @@ function paintPeriods(){
 $('periods').onclick = e => {
   const b = e.target.closest('[data-p]'); if (!b) return;
   if (b.dataset.p === 'custom') return openCustom();
-  S.per = b.dataset.p; LS.set('boss_per', S.per); paintPeriods(); load();
+  S.per = b.dataset.p; LS.set('boss_per', S.per); paintPeriods(); showRangeNow(); load();
 };
+/* Davr almashganda eski raqamlar yangi sana ostida qolmasin: saqlangani bo'lsa — o'sha, bo'lmasa — kutish */
+function showRangeNow(){
+  const r = range(S.per);
+  const c = LS.get(`boss_cache:${r.from}:${r.to}`);
+  S.d = null;
+  if (c) { try { S.d = JSON.parse(c); } catch {} }
+  if (S.d) paint(true); else { $('main').innerHTML = skeleton(); $('foot').innerHTML = ''; }
+}
 $('btnRefresh').onclick = () => load(true);
 
 function startApp(){
@@ -569,11 +586,11 @@ async function load(manual){
     if (d.session?.token) { S.token = d.session.token; LS.set('boss_token', d.session.token); }
     delete d.session;
     S.d = d; S.d._fetched = Date.now(); S.d._range = r;
-    LS.set(`boss_cache:${r.from}:${r.to}`, JSON.stringify(S.d));
+    cachePut(`boss_cache:${r.from}:${r.to}`, JSON.stringify(S.d));
     paint();
   } catch (e) {
     if (seq !== S.seq) return;
-    if (e.status === 401) { LS.del('boss_token'); S.token = ''; return showLock({ msg: 'Qayta kiring' }); }
+    if (e.status === 401) { LS.del('boss_token'); S.token = ''; S.d = null; clearCache(); return showLock({ msg: 'Qayta kiring' }); }
     if (S.d && S.d._range && S.d._range.from === r.from && S.d._range.to === r.to) { paint(true, e.message); }
     else $('main').innerHTML = `<div class="err"><b>Ma’lumot yuklanmadi</b>${esc(e.message)}</div>`;
   } finally {
@@ -581,7 +598,7 @@ async function load(manual){
   }
 }
 /* Bugun ko'rinsa — har daqiqada; ilovaga qaytganda — darhol */
-setInterval(() => { if (!document.hidden && S.token && !$('appRoot').classList.contains('hidden') && range(S.per).to === today()) load(); }, 60000);
+setInterval(() => { if (!document.hidden && S.token && !$('appRoot').classList.contains('hidden') && range(S.per).to === today()) load(); }, 120000);
 document.addEventListener('visibilitychange', () => { if (!document.hidden && S.token && !$('appRoot').classList.contains('hidden')) load(); });
 
 /* ---------- davr oynasi ---------- */
@@ -601,7 +618,7 @@ function openCustom(){
     if (a > b) [a, b] = [b, a];
     S.from = a; S.to = b; S.per = 'custom';
     LS.set('boss_custom', JSON.stringify({ from: a, to: b })); LS.set('boss_per', 'custom');
-    close(); paintPeriods(); load();
+    close(); paintPeriods(); showRangeNow(); load();
   };
 }
 
@@ -623,7 +640,7 @@ function list(id, items, row, limit = 6){
 }
 function rankRow(color, max){
   return x => `<div class="row"><div class="nm">${esc(x.name)}${x.sub ? `<small>${x.sub}</small>` : ''}</div>
-    <div class="am num">${x.val}${x.val2 ? `<small>${x.val2}</small>` : ''}</div>
+    <div class="am num">${esc(x.val)}${x.val2 ? `<small>${esc(x.val2)}</small>` : ''}</div>
     <div class="bar-t"><u style="width:${max && x.v > 0 ? Math.max(2, Math.round((x.v / max) * 100)) : 0}%;background:${color}"></u></div></div>`;
 }
 function rank(id, items, color, limit){
@@ -746,7 +763,7 @@ function paint(fromCache, errMsg){
   const d = S.d; if (!d) return;
   chartSeq = 0; for (const k in CHARTS) delete CHARTS[k];
   const r = d._range || range(S.per);
-  const cmp = cmpWord(r);
+  const cmp = cmpWord(r, !!d.combined?.compare?.partial);
   const a12 = d.avtodrom12 || {}, avd = d.avtodrom || {}, c = d.combined || {};
   let h = '';
   if (isIOS() && !isStandalone() && !LS.get('boss_inst_hide')) {
@@ -756,17 +773,19 @@ function paint(fromCache, errMsg){
   }
   if (errMsg) h += `<div class="alert bad" style="margin-bottom:12px">${ICON.warn}<div>Yangilab bo‘lmadi: ${esc(errMsg)}. Oxirgi saqlangan raqamlar ko‘rsatilmoqda.</div></div>`;
 
-  h += indexBlock(d, cmp);
-  h += alertsBlock(c.alerts || []);
-  h += schoolSec(a12, cmp);
-  h += paidSec(a12, cmp);
-  h += avdSec(avd, cmp, r);
-  h += totalSec(d, cmp, r);
-  h += expSec(a12, c, cmp);
+  /* Bitta bo'lim chizilmasa ham qolganlari ko'rinsin */
+  const part = (name, fn) => { try { return fn(); } catch (e) { console.error(name, e); return `<div class="err" style="margin-top:12px"><b>${esc(name)} ko‘rsatilmadi</b>Ilovani yangilang yoki keyinroq qayta oching.</div>`; } };
+  h += part('Ko‘rsatkichlar', () => indexBlock(d, cmp));
+  h += part('Ogohlantirishlar', () => alertsBlock(c.alerts || []));
+  h += part('Avtoshkola', () => schoolSec(a12, cmp));
+  h += part('Platniy', () => paidSec(a12, cmp));
+  h += part('Avtodrom', () => avdSec(avd, cmp, r));
+  h += part('Umumiy', () => totalSec(d, cmp, r));
+  h += part('Xarajatlar', () => expSec(a12, c, cmp));
   $('main').innerHTML = h;
 
   const t = d._fetched ? new Date(d._fetched) : new Date(d.generated_at);
-  const tm = `${String(t.getHours()).padStart(2, '0')}:${String(t.getMinutes()).padStart(2, '0')}`;
+  const tm = hm(t.toISOString());
   $('foot').innerHTML = `Yangilandi: ${tkYmd(t.toISOString()) === today() ? '' : dayName(tkYmd(t.toISOString())) + ', '}${tm}${fromCache && S.loading ? ' — yangilanmoqda…' : ''}<br>
     ${a12.ok ? `avtodrom12 ulangan${a12.host ? ` (${esc(a12.host)})` : ''}` : 'avtodrom12 ulanmagan'}<br><button id="btnLogout">Chiqish</button>`;
 }

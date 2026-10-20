@@ -144,8 +144,8 @@ describe('Boshliq ilovasi — kirish', () => {
     // Ikkinchi so'rov — o'sha havola
     expect((await h.call('GET', '/api/admin/boss-link', { cookie: admin })).body.url).toBe(r.body.url);
 
-    expect((await boss('GET', '/api/boss-hello?k=noto-gri-kalit-0000000000')).status).toBe(403);
-    expect((await boss('GET', `/api/boss-hello?k=${k}`)).body).toEqual({ ok: true, pin_set: false });
+    expect((await boss('POST', '/api/boss-hello', { payload: { k: 'noto-gri-kalit-0000000000' } })).status).toBe(403);
+    expect((await boss('POST', '/api/boss-hello', { payload: { k } })).body).toEqual({ ok: true, pin_set: false });
     expect((await boss('POST', '/api/boss-login', { payload: { k, pin: '1234' } })).status).toBe(409);
 
     expect((await h.call('POST', '/api/admin/boss-link', { cookie: admin, payload: { pin: '12a4' } })).status).toBe(400);
@@ -155,7 +155,7 @@ describe('Boshliq ilovasi — kirish', () => {
     expect(set.body).toMatchObject({ ok: true, pin_set: true });
     expect(set.body.url).toBe(r.body.url);                       // PIN qo'yish havolani o'zgartirmaydi
 
-    expect((await boss('GET', `/api/boss-hello?k=${k}`)).body.pin_set).toBe(true);
+    expect((await boss('POST', '/api/boss-hello', { payload: { k } })).body.pin_set).toBe(true);
     expect((await boss('POST', '/api/boss-login', { payload: { k, pin: '000000' } })).status).toBe(401);
     expect((await boss('POST', '/api/boss-login', { payload: { k: 'x'.repeat(24), pin: '482915' } })).status).toBe(403);
     const ok = await boss('POST', '/api/boss-login', { payload: { k, pin: '482915' } });
@@ -200,7 +200,7 @@ describe('Boshliq ilovasi — kirish', () => {
     const k2 = keyOf(reset.body.url);
     expect(k2).not.toBe(k);
     expect((await boss('GET', `/api/boss-data?from=${D}&to=${D}`, { token: t2 })).status).toBe(401);
-    expect((await boss('GET', `/api/boss-hello?k=${k}`)).status).toBe(403);
+    expect((await boss('POST', '/api/boss-hello', { payload: { k } })).status).toBe(403);
     expect((await boss('POST', '/api/boss-login', { payload: { k: k2, pin: '7777' } })).status).toBe(200);
     expect(h.db.admin_audit_logs.some((a: any) => a.action === 'BOSS_LINK_RESET')).toBe(true);
   });
@@ -260,8 +260,8 @@ describe('Boshliq ilovasi — raqamlar', () => {
     expect(c.series.find((s: any) => s.key === '08:00')).toMatchObject({ avtodrom: 250000 });
     expect(c.series.find((s: any) => s.key === '09:00')).toMatchObject({ paid: 80000 });
     const alerts = c.alerts.map((a: any) => a.text).join(' | ');
-    expect(alerts).toMatch(/urilmagan \(200 000 so‘m\)/);
-    expect(alerts).toMatch(/qarzlar: 35 000/);
+    expect(alerts).toMatch(/urilmagan \(200\s000 so‘m\)/);
+    expect(alerts).toMatch(/qarzlar: 35\s000/);
     expect(alerts).toMatch(/limitidan oshgan/);
   });
 
@@ -297,6 +297,39 @@ describe('Boshliq ilovasi — raqamlar', () => {
     delete process.env.AVTODROM12_URL;
     const r3 = await boss('GET', `/api/boss-data?from=${D}&to=${D}`, { token });
     expect(r3.body.avtodrom12.hint).toMatch(/AVTODROM12_URL/);
+  });
+
+  it('avtodrom12 da bir bo‘lim yiqilsa — ogohlantirish, xarajat noma’lum (sof foyda soxta chiqmaydi)', async () => {
+    const { token } = await setup();
+    bridgeReply = { status: 200, body: { ...owner(), warnings: [{ section: 'expenses', error: 'relation "expenses" does not exist' }] } };
+    const r = await boss('GET', `/api/boss-data?from=${D}&to=${D}`, { token });
+    expect(r.status).toBe(200);
+    expect(r.body.combined.expenses_known).toBe(false);
+    expect(r.body.combined.expenses).toBe(0);
+    expect(r.body.combined.alerts.some((a: any) => a.level === 'bad' && /expenses/.test(a.text))).toBe(true);
+  });
+
+  it('davr hali tugamagan bo‘lsa — oldingi davr ham shu vaqtgacha; o‘tgan kun — to‘liq', async () => {
+    const { token } = await setup();
+    const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Tashkent' }).format(new Date());
+    const r = await boss('GET', `/api/boss-data?from=${today}&to=${today}`, { token });
+    expect(r.status).toBe(200);
+    expect(r.body.combined.compare.partial).toBe(true);
+    expect(bridgeCalls.at(-1)).toMatch(/&cut=\d{4}-\d{2}-\d{2}T/);
+    const span = Date.parse(r.body.combined.compare.prev_to) - Date.parse(r.body.combined.compare.prev_from);
+    expect(span).toBeLessThan(864e5);
+    const past = await boss('GET', `/api/boss-data?from=${D}&to=${D}`, { token });
+    expect(past.body.combined.compare.partial).toBe(false);
+    expect(bridgeCalls.at(-1)).not.toMatch(/cut=/);
+  });
+
+  it('sof foyda o‘zgarishi: oldingi davr manfiy bo‘lsa ham yo‘nalish to‘g‘ri', async () => {
+    const { token } = await setup();
+    bridgeReply = { status: 200, body: { ...owner(), expenses: { ...owner().expenses, total: 300000, previous_total: 1000000 } } };
+    const r = await boss('GET', `/api/boss-data?from=${D}&to=${D}`, { token });
+    // oldingi: 160 000 − 1 000 000 = −840 000; hozir: 570 000 − 300 000 = 270 000 → o'sish
+    expect(r.body.combined.previous_net).toBe(-840000);
+    expect(r.body.combined.net_change).toBeGreaterThan(0);
   });
 
   it('noto‘g‘ri sana — 400', async () => {
