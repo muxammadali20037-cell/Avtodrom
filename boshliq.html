@@ -813,7 +813,7 @@ function schoolSec(a12, cmp){
   </div>`;
   const schools = (s.schools || []).map(x => ({ name: x.name, v: x.lessons,
     val: `${nf(x.lessons)} dars`, val2: `${nf(x.students)} o‘quvchi`,
-    sub: [dur(x.minutes), `faol ${nf(x.active_students)} o‘quvchi`, x.active_groups ? `${nf(x.active_groups)} guruh` : '', x.free_visits ? `limit ${x.free_visits}` : '',
+    sub: [dur(x.minutes), `faol ${nf(x.active_students)} o‘quvchi`, x.active_groups ? `${nf(x.active_groups)} guruh` : '', x.free_visits ? `limit ${nf(x.free_visits)}` : '',
       x.over_lessons ? `<span style="color:var(--warn)">limitdan oshgan ${nf(x.over_lessons)} (${money(x.over_due)})</span>` : ''].filter(Boolean).join(', ') }));
   h += `<div style="margin-top:10px">` + blk('Avtoshkolalar', rank('schools', schools, 'var(--school)'), `${schools.length} ta`);
   h += blk('QR cheklar', `<div class="kv">${kvc('Chiqarildi', nf(s.receipts.issued))}${kvc('Ishlatildi', nf(s.receipts.used))}${kvc('Ochiq', nf(s.receipts.open))}${kvc('Bekor', nf(s.receipts.cancelled))}</div>`);
