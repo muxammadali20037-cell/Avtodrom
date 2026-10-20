@@ -14,13 +14,15 @@ import type { SheetEvent } from './booking-sheet-routes.js';
  * bo'lsa albom) va «📋 Jadvalni ochish» tugmasini. Tugma telefonda jadval
  * sahifasini ochadi (/jadval) — u har doim ENG YANGI holatni ko'rsatadi.
  *
- * Qachon yuboriladi:
- *   • Excel bron sahifasidagi «Guruhga tashlash» tugmasi — yangi rasm(lar);
- *     o'sha kunning eski rasmi guruhdan o'chiriladi (chalkashmasin);
- *   • admin «Saqlash» bosganda — guruhda o'sha kun rasmi bo'lsa, JOYIDA
- *     yangilanadi (yangi xabar emas). Rasm soni o'zgarsa — «eski» deb
- *     belgilanadi, admin tugmani bosadi;
- *   • har kuni 20:00 da — ertangi kun.
+ * Qachon yuboriladi (foydalanuvchi so'rovi, 20.10: «har 3 soatda avtomatik,
+ * hamma instruktorlar 2 ta rasmda; har yangilaganda tashlash kerak emas»):
+ *   • HAR 3 SOATDA o'zi: 06, 09, 12, 15, 18 da — bugungi kun, 21 da —
+ *     ertangi kun. Hamma instruktorlar ko'pi bilan 2 ta rasmda (albom).
+ *     O'sha kunning guruhdagi eski rasmi o'chiriladi — guruhda bir kunga
+ *     bitta, eng yangi jadval;
+ *   • Excel bron sahifasidagi «Guruhga tashlash» tugmasi — xuddi shunday;
+ *   • saqlaganda (admin, instruktor boti, Nazorat) guruhga HECH NARSA
+ *     ketmaydi — eng yangi holat «📋 Jadvalni ochish» sahifasida.
  *
  * Havola imzolangan (HMAC): sanani o'zgartirib boshqa kunni ochib bo'lmaydi,
  * havola kun o'tgach 2 kundan keyin yopiladi.
@@ -35,8 +37,13 @@ const GROUP_KEY = 'sheet_group';
 const CODE_KEY = 'sheet_group_code';
 const MSG_PREFIX = 'sheet_group_msg:';
 const EVENING_PREFIX = 'sheet_group_evening:';
+const SLOT_PREFIX = 'sheet_group_slot:';
+/** Guruhga avtomatik yuborish soatlari (Toshkent): 21 da — ertangi kun */
+export const GROUP_SLOTS = [6, 9, 12, 15, 18, 21];
+/** Guruhga boradigan rasmlar soni: hamma instruktorlar ko'pi bilan shuncha rasmda */
+export const GROUP_IMAGES = 2;
 export const SHEET_SHARE_KEYS = [GROUP_KEY, CODE_KEY];
-export const SHEET_SHARE_PREFIXES = [MSG_PREFIX, EVENING_PREFIX];
+export const SHEET_SHARE_PREFIXES = [MSG_PREFIX, EVENING_PREFIX, SLOT_PREFIX];
 
 const TOKEN = () => String(process.env.INSTRUCTOR_BOT_TOKEN || process.env.TELEGRAM_INSTRUCTOR_BOT_TOKEN || '');
 const BASE = () => String(process.env.PUBLIC_BASE_URL || 'https://avtodrom.vercel.app').replace(/\/+$/, '');
@@ -173,7 +180,7 @@ export async function sheetContent(date: string, by?: string | null, nowMs = Dat
   const line = s.bron || s.band
     ? [s.bron ? `${s.bron} ta bron` : '', s.band ? `${s.band} ta band` : '', `${s.busy_instructors} instruktor`].filter(Boolean).join(' · ')
     : 'Hozircha bron yo‘q';
-  const parts = buildSheetParts(d, { title, line, at: `${hm(nowMs)} holati`, nowMs });
+  const parts = buildSheetParts(d, { title, line, at: `${hm(nowMs)} holati`, nowMs, maxImages: GROUP_IMAGES });
   const pngs = await renderSheetPngs(parts);
   const caption = [`📅 <b>${esc(title)}</b>`, `📋 ${esc(line)}`, `🕘 ${hm(nowMs)} holati${by ? ` (${esc(by)})` : ''}`].join('\n');
   const reply_markup = { inline_keyboard: [[{ text: '📋 Jadvalni ochish', url: sheetLinkUrl(date) }]] };
@@ -212,7 +219,7 @@ async function sendPost(chatId: number, c: Content): Promise<{ r: any; post?: Pi
 }
 
 /**
- * «Guruhga tashlash» (va 20:00): yangi rasm(lar). O'sha kunning guruhdagi
+ * «Guruhga tashlash» va har 3 soatda: yangi rasm(lar). O'sha kunning guruhdagi
  * eski xabarlari o'chiriladi — guruhda bir kunga bitta, eng yangi jadval.
  */
 export async function postSheetToGroup(date: string, o: { by?: string | null } = {}): Promise<{ ok: boolean; link: string; images: number; error?: string }> {
@@ -241,106 +248,53 @@ export async function postSheetToGroup(date: string, o: { by?: string | null } =
 }
 
 /**
- * Saqlaganda: guruhda o'sha kun rasmi bo'lsa — JOYIDA yangilanadi.
- * 'updated' — yangilandi; 'stale' — rasm soni o'zgardi yoki tahrirlab
- * bo'lmadi (admin «Guruhga tashlash»ni bosadi); null — guruhda xabar yo'q.
+ * Saqlashdan keyin guruh: endi HECH NARSA yuborilmaydi (foydalanuvchi so'rovi,
+ * 20.10 — «har yangilaganda tashlash kerak emas»). Guruhdagi jadval har 3
+ * soatda yangilanadi (runSheetGroupSchedule), oraliqda eng yangi holat —
+ * «📋 Jadvalni ochish» sahifasida. Chaqiruvchilar (Excel bron, instruktor
+ * boti, Nazorat) o'zgarmasin deb funksiya qoldirildi.
  */
-export async function refreshGroupPost(date: string, by?: string | null): Promise<'updated' | 'stale' | null> {
-  if (!TOKEN()) return null;
-  const g = await getSheetGroup();
-  const prev = await getPost(date);
-  if (!g || !prev || prev.chat_id !== g.chat_id) return null;
-  const c = await sheetContent(date, by);
-  const okOrSame = (r: any) => r?.ok || /not modified/i.test(String(r?.description || ''));
-  if (prev.photos.length && c.pngs.length === prev.photos.length) {
-    const single = prev.photos.length === 1;
-    for (let i = 0; i < prev.photos.length; i++) {
-      const media = { type: 'photo', media: 'attach://p', ...(i ? {} : { caption: c.caption, parse_mode: 'HTML' }) };
-      const r = await tgForm('editMessageMedia', { chat_id: g.chat_id, message_id: prev.photos[i], media, ...(single ? { reply_markup: c.reply_markup } : {}) }, [{ name: 'p', png: c.pngs[i] }]);
-      if (!okOrSame(r)) return 'stale';
-    }
-  } else if (!prev.photos.length && prev.text_id && !c.pngs.length) {
-    const r = await tg('editMessageText', { chat_id: g.chat_id, message_id: prev.text_id, text: `${c.caption}\n\n${TAIL_TEXT}`, parse_mode: 'HTML', reply_markup: c.reply_markup, disable_web_page_preview: true });
-    if (!okOrSame(r)) return 'stale';
-  } else return 'stale';
-  await setSetting(MSG_PREFIX + date, { ...prev, at: new Date().toISOString(), by: by || prev.by }).catch(() => {});
-  return 'updated';
+export async function afterSheetSave(_date: string, _events: Map<string, SheetEvent>, _by?: string | null): Promise<string | null> {
+  return null;
+}
+
+const tashHour = (ms: number) => Number(new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Tashkent', hour: '2-digit', hour12: false }).format(new Date(ms))) % 24;
+/** Hozirgi yuborish soati (06, 09 … 21) yoki null (tun: 00–05) */
+export function groupSlotOf(nowMs: number): number | null {
+  const h = tashHour(nowMs);
+  let slot: number | null = null;
+  for (const x of GROUP_SLOTS) if (h >= x) slot = x;
+  return slot;
 }
 
 /**
- * HAR SAQLASHDA (admin Excel bron yoki instruktor boti): guruhga YANGI xabar —
- * faqat o'zgargan instruktor(lar)ning o'sha kungi jadvali (tiniq rasm, o'zgargan
- * kataklar to'q sariq ramkada) va izohda nima o'zgargani. Foydalanuvchi
- * so'rovi: «har yangilanganda guruhga o'sha yangilangan instruktorniki borsin».
+ * HAR 3 SOATDA guruhga hamma instruktorlarning Excel bron jadvali (2 ta rasm).
+ * Har 5 daqiqalik cron va ochiq panellarning «tick»i chaqiradi; har soat-oraliq
+ * uchun BIR MARTA ishlaydi (bazadagi kalit — ikki server bir vaqtda chaqirsa ham).
  */
-export async function postSheetChanges(date: string, events: Map<string, SheetEvent>, by?: string | null): Promise<'sent' | null> {
-  if (!TOKEN()) return null;
-  const ids = [...events.entries()].filter(([, e]) => e.created.length || e.cancelled.length || e.notes.length).map(([id]) => id);
-  if (!ids.length) return null;
-  const g = await getSheetGroup();
-  if (!g) return null;
-  const { publicSheetData } = await import('./booking-sheet-routes.js');
-  const { dayTitle } = await import('./instructor-notify.js');
-  const { buildSheetParts, renderSheetPngs } = await import('./sheet-image.js');
-  const d = await publicSheetData(date);
-  const name = new Map(d.instructors.map((i) => [String(i.id), i.name]));
-  const hourOf = (iso: string) => Number(new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Tashkent', hour: '2-digit', hour12: false }).format(new Date(iso))) % 24;
-  const span = (start: string, minutes: number) => `${hm(Date.parse(start))}–${hm(Date.parse(start) + minutes * 60000)}`;
-  const ph = (p?: string | null) => { const m = /(\d{2})(\d{3})(\d{2})(\d{2})$/.exec(String(p || '').replace(/\D/g, '')); return m ? `${m[1]} ${m[2]} ${m[3]} ${m[4]}` : ''; };
-  const marks: Record<string, number[]> = {};
-  const lines: string[] = [];
-  for (const id of ids) {
-    const e = events.get(id)!, hs = new Set<number>(), out: string[] = [];
-    for (const c of e.created) {
-      for (let h = hourOf(c.start); h < hourOf(c.start) + Math.max(1, Math.ceil(c.minutes / 60)); h++) hs.add(h);
-      out.push(`✅ ${span(c.start, c.minutes)} ${ph(c.phone)}${c.category ? ` · ${esc(c.category)}` : ''}${c.minutes !== 60 ? ` · ${c.minutes < 60 ? `${c.minutes} daq` : `${c.minutes / 60} soat`}` : ''}`);
-    }
-    for (const c of e.cancelled) {
-      for (let h = hourOf(c.start); h < hourOf(c.start) + Math.max(1, Math.ceil(c.minutes / 60)); h++) hs.add(h);
-      out.push(`❌ ${span(c.start, c.minutes)} bekor`);
-    }
-    for (const n of e.notes) { hs.add(n.h); out.push(n.removed ? `🔓 ${n.h}:00 bo‘shadi` : `📌 ${n.h}:00 «${esc(n.text)}»`); }
-    marks[id] = [...hs];
-    lines.push(`👤 <b>${esc(name.get(id) || 'Instruktor')}</b>: ${out.join('; ')}`);
-  }
-  const title = dayTitle(date);
-  const parts = buildSheetParts(d, { title, line: `O‘zgardi: ${ids.map((id) => name.get(id) || '').filter(Boolean).join(', ')}`, at: `${hm(Date.now())} holati`, only: ids, marks });
-  const pngs = await renderSheetPngs(parts);
-  let caption = [`✏️ <b>Jadval yangilandi</b> — ${esc(title)}`, ...lines, `🕘 ${hm(Date.now())}${by ? ` (${esc(by)})` : ''}`].join('\n');
-  if (caption.length > 1000) caption = caption.slice(0, 990) + '…';
-  const reply_markup = { inline_keyboard: [[{ text: '📋 Butun jadvalni ochish', url: sheetLinkUrl(date) }]] };
-  let { r } = await sendPost(g.chat_id, { title, caption, reply_markup, pngs });
-  const moved = Number(r?.parameters?.migrate_to_chat_id);
-  if (!r?.ok && Number.isSafeInteger(moved) && moved) {
-    await setSetting(GROUP_KEY, { ...g, chat_id: moved });
-    ({ r } = await sendPost(moved, { title, caption, reply_markup, pngs }));
-  }
-  return r?.ok ? 'sent' : null;
-}
-
-/** Saqlashdan keyin guruh: o'zgarish xabari + o'sha kun rasmi joyida yangilanadi */
-export async function afterSheetSave(date: string, events: Map<string, SheetEvent>, by?: string | null): Promise<string | null> {
-  if (!(await getSheetGroup())) return null;
-  const sent = await postSheetChanges(date, events, by).catch((e) => { console.error('sheet changes post failed:', e); return null; });
-  const refreshed = await refreshGroupPost(date, by).catch(() => 'stale' as const);
-  return sent ? (refreshed === 'stale' ? 'sent+stale' : 'sent') : refreshed;
-}
-
-/** Har kuni 20:00 dan keyin — ertangi kun havolasi (kuniga bir marta) */
-export async function runSheetGroupEvening(nowMs = Date.now()): Promise<{ ran: boolean; reason?: string }> {
-  const h = Number(new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Tashkent', hour: '2-digit', hour12: false }).format(new Date(nowMs))) % 24;
-  if (h < 20) return { ran: false, reason: 'not time' };
+export async function runSheetGroupSchedule(nowMs = Date.now()): Promise<{ ran: boolean; reason?: string; date?: string; slot?: number }> {
+  const slot = groupSlotOf(nowMs);
+  if (slot === null) return { ran: false, reason: 'not time' };
   if (!(await getSheetGroup())) return { ran: false, reason: 'no group' };
-  const date = addDaysYmd(tashkentYmdOf(nowMs), 1);
-  const key = EVENING_PREFIX + date;
+  const today = tashkentYmdOf(nowMs);
+  const date = slot >= 21 ? addDaysYmd(today, 1) : today;
+  const key = `${SLOT_PREFIX}${today}T${String(slot).padStart(2, '0')}`;
   const done = await supabaseRest<any[]>('admin_settings', { query: `?key=eq.${q(key)}&select=key&limit=1` }).catch(() => null);
   if (!done || done.length) return { ran: false, reason: 'sent' };
+  const at = new Date(nowMs).toISOString();
   try {
-    await supabaseRest('admin_settings', { method: 'POST', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ key, value: { at: new Date(nowMs).toISOString() }, updated_at: new Date(nowMs).toISOString() }) });
+    await supabaseRest('admin_settings', { method: 'POST', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ key, value: { at, date }, updated_at: at }) });
   } catch { return { ran: false, reason: 'sent' }; }
+  /* eski belgilar (3 kundan oldingi) — sozlamalar jadvali o'smasin */
+  await supabaseRest('admin_settings', {
+    method: 'DELETE', headers: { Prefer: 'return=minimal' },
+    query: `?key=like.${q(SLOT_PREFIX)}*&updated_at=lt.${q(new Date(nowMs - 3 * 864e5).toISOString())}`,
+  }).catch(() => {});
   const r = await postSheetToGroup(date, { by: null });
-  return { ran: r.ok, reason: r.error };
+  return { ran: r.ok, reason: r.error, date, slot };
 }
+/** Eski nom (cron va tick chaqiradi) — endi har 3 soatlik yuborish */
+export const runSheetGroupEvening = runSheetGroupSchedule;
 
 /* ------------------------------------------------------------------ */
 /* API                                                                 */
@@ -353,12 +307,20 @@ export async function registerSheetShareRoutes(app: FastifyInstance, deps: Deps)
     const date = String(req.query?.d || '');
     const bad = checkSheetLink(date, String(req.query?.k || ''));
     if (bad) return reply.code(403).send({ ok: false, error: bad });
+    /* Sahifada kun tanlanadi (Бугун / Эртага / Кеча): guruhdagi har qanday
+       amaldagi havola shu uch kunni va o'zining kunini ochadi, boshqasini emas. */
+    const today = tashkentYmdOf(Date.now());
+    const day = String(req.query?.day || '') || date;
+    if (!YMD.test(day)) return reply.code(400).send({ ok: false, error: 'Sana noto‘g‘ri' });
+    if (day !== date && ![addDaysYmd(today, -1), today, addDaysYmd(today, 1)].includes(day)) {
+      return reply.code(403).send({ ok: false, error: 'Bu kun uchun havola yo‘q' });
+    }
     try {
       const { publicSheetData } = await import('./booking-sheet-routes.js');
       const { dayTitle } = await import('./instructor-notify.js');
       reply.header('Cache-Control', 'no-store');
       reply.header('X-Robots-Tag', 'noindex');
-      return { ok: true, title: dayTitle(date), ...(await publicSheetData(date)) };
+      return { ok: true, title: dayTitle(day), today, link_day: date, ...(await publicSheetData(day)) };
     } catch (e: any) {
       return reply.code(500).send({ ok: false, error: e?.message || 'Jadval yuklanmadi' });
     }

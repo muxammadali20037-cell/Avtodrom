@@ -89,6 +89,8 @@ export function buildSheetParts(d: SheetData, o: {
   only?: string[];
   /** o'zgargan soatlar: instruktor id → soatlar (ramka bilan belgilanadi) */
   marks?: Record<string, number[]>;
+  /** guruh uchun: hamma instruktorlar ko'pi bilan shuncha rasmda (A toifa alohida rasm emas) */
+  maxImages?: number;
 }): SheetPart[] {
   const maxCols = o.maxCols || MAX_COLS;
   const only = o.only ? new Set(o.only.map(String)) : null;
@@ -121,10 +123,29 @@ export function buildSheetParts(d: SheetData, o: {
      Har bo'lak teng bo'linadi: 7 ta → 4+3 (5+2 emas) */
   const isA = (g: string) => String(g || '').toUpperCase().startsWith('A');
   const chunks: Array<typeof perIns> = [];
-  for (const seg of [perIns.filter((x) => isA(x.ins.group)), perIns.filter((x) => !isA(x.ins.group))]) {
-    if (!seg.length) continue;
-    const k = Math.ceil(seg.length / maxCols), per = Math.ceil(seg.length / k);
-    for (let i = 0; i < k; i++) { const c = seg.slice(i * per, (i + 1) * per); if (c.length) chunks.push(c); }
+  if (o.maxImages && o.maxImages > 0) {
+    /* Guruh (foydalanuvchi so'rovi: «hamma instruktorlar 2 ta rasmda»): A toifa
+       birinchi, keyin qolganlari; ≤ maxCols bo'lsa 1 rasm, aks holda teng
+       bo'linadi — toifa chegarasi o'rtaga yaqin bo'lsa, shu yerdan. */
+    const all = [...perIns.filter((x) => isA(x.ins.group)), ...perIns.filter((x) => !isA(x.ins.group))];
+    const k = all.length <= maxCols ? 1 : Math.min(o.maxImages, all.length);
+    if (k === 2) {
+      let best = Math.ceil(all.length / 2), cost = Infinity;
+      for (let s = 1; s < all.length; s++) {
+        const c = Math.abs(s - all.length / 2) + (all[s].ins.group === all[s - 1].ins.group ? 1.01 : 0);
+        if (c < cost) { cost = c; best = s; }
+      }
+      chunks.push(all.slice(0, best), all.slice(best));
+    } else {
+      const per = Math.ceil(all.length / k);
+      for (let i = 0; i < k; i++) { const c = all.slice(i * per, (i + 1) * per); if (c.length) chunks.push(c); }
+    }
+  } else {
+    for (const seg of [perIns.filter((x) => isA(x.ins.group)), perIns.filter((x) => !isA(x.ins.group))]) {
+      if (!seg.length) continue;
+      const k = Math.ceil(seg.length / maxCols), per = Math.ceil(seg.length / k);
+      for (let i = 0; i < k; i++) { const c = seg.slice(i * per, (i + 1) * per); if (c.length) chunks.push(c); }
+    }
   }
   const k = chunks.length;
   const parts: SheetPart[] = [];
