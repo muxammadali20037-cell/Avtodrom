@@ -8,7 +8,7 @@ import { loadLedger, unscannedReceipts, pageAll } from './lesson-ledger.js';
 import { allKeys, seriesKey } from './unified-analytics.js';
 
 /**
- * BOSHLIQ ILOVASI — rahbar telefoniga (iPhone) o'rnatiladigan panel.
+ * AVTODROM BOSHQARUV — rahbar telefoniga (iPhone) o'rnatiladigan ilova.
  *
  *   /boshliq?k=<kalit>  — sahifa (boshliq.html, «Ekranga qo'shish» bilan ilova bo'ladi)
  *   POST /api/boss-hello {k}         — havola to'g'rimi, PIN qo'yilganmi
@@ -521,7 +521,7 @@ export async function registerBossRoutes(app: FastifyInstance, deps: Deps) {
       const b = req.body || {};
       const link = await readBossLink();
       if (!checkKey(link, String(b.k || ''))) return reply.code(403).send({ ok: false, error: BAD_LINK });
-      if (!link!.pin_hash) return reply.code(409).send({ ok: false, error: 'PIN hali qo‘yilmagan. Admin panel → Boshqaruv → Boshliq ilovasi.' });
+      if (!link!.pin_hash) return reply.code(409).send({ ok: false, error: 'PIN hali qo‘yilmagan. Admin panel → Boshqaruv → Boshqaruv ilovasi.' });
       const pin = String(b.pin ?? '').trim();
       if (!PIN_RE.test(pin) || !safeEq(bossPinHash(pin), link!.pin_hash)) {
         return reply.code(401).send({ ok: false, error: 'PIN noto‘g‘ri' });

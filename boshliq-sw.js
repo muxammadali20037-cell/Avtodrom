@@ -1,10 +1,10 @@
-/* BOSHLIQ ILOVASI — xizmat ishchisi (service worker)
+/* AVTODROM BOSHQARUV ilovasi — xizmat ishchisi (service worker)
    Faqat ilova qobig'ini (sahifa, belgi, manifest) saqlaydi: internet yo'q
    paytda ham ilova ochiladi va oxirgi raqamlar (sahifa o'zi saqlaydi)
    ko'rinadi. API so'rovlariga TEGMAYDI — raqamlar doim serverdan.
    Har doim avval tarmoq: yangi versiya chiqsa darhol ko'rinadi. */
-const CACHE = 'boshliq-v2';
-const SHELL = ['/boshliq', '/boshliq.webmanifest', '/boshliq-icon-180.png', '/boshliq-icon-192.png', '/boshliq-icon-512.png'];
+const CACHE = 'boshliq-v3';
+const SHELL = ['/boshliq', '/boshliq.webmanifest', '/boshliq-icon-180.png', '/boshliq-icon-192.png', '/boshliq-icon-512.png', '/boshliq-icon-maskable-512.png'];
 
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).catch(() => null).then(() => self.skipWaiting()));
