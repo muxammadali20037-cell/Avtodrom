@@ -227,6 +227,14 @@ describe('Boshliq ilovasi — raqamlar', () => {
     expect(k.durations.map((x: any) => x.name)).toEqual(['30 daqiqa', '1 soat']);
     expect(k.hours.map((x: any) => x.hour)).toEqual([8, 10]);
     expect(k.recent[0]).toMatchObject({ code: 'AVD-111111-BBBBB', register: 'P2', customer: 'Vali O‘quvchi', instructor: 'Aziz Karimov', method: 'mixed' });
+    // Har kassa o'z oynasi uchun: dinamika, soatlar, toifalar, oxirgi cheklar
+    expect(p1.series).toEqual([{ key: '08:00', total: 250000 }]);
+    expect(p1.hours).toEqual([{ hour: 8, total: 250000, receipts: 1 }]);
+    expect(p1.categories).toEqual([{ name: 'B toifa', total: 250000, receipts: 1 }]);
+    expect(p1.recent.map((x: any) => x.code)).toEqual(['AVD-111111-AAAAA']);
+    expect(p2.recent[0]).toMatchObject({ code: 'AVD-111111-BBBBB', cash: 50000, card: 150000, customer: 'Vali O‘quvchi' });
+    expect(p1.avg_check).toBe(250000);
+    expect(d.keys).toHaveLength(24);
 
     const b = d.avtodrom.bookings;
     expect(b.total).toBe(4);
@@ -236,10 +244,13 @@ describe('Boshliq ilovasi — raqamlar', () => {
     expect(b.customers).toBe(2);
     expect(b.new_customers).toBe(1);
     expect(b.no_show_rate).toBe(33);
+    expect(b.series.find((x: any) => x.key === '13:00')).toEqual({ key: '13:00', total: 1, completed: 0, no_show: 1, cancelled: 0 });
 
     // Avtoshkola darsi (AVS) Avtodrom bo'limida faqat ma'lumot — umumiyga avtodrom12 dan kiradi
     expect(d.avtodrom.lessons).toMatchObject({ paid: 1, school: 1, minutes: 60, students: 1, unscanned: { receipts: 1, amount: 200000 } });
     expect(d.avtodrom.instructors[0]).toMatchObject({ name: 'Aziz Karimov', lessons: 2, paid: 1, school: 1, revenue: 250000 });
+    expect(d.avtodrom.instructors[0].series).toEqual([{ key: '09:00', lessons: 1, revenue: 250000 }, { key: '11:00', lessons: 1, revenue: 0 }]);
+    expect(d.avtodrom.lessons.series).toEqual([{ key: '09:00', paid: 1, school: 0, minutes: 60 }, { key: '11:00', paid: 0, school: 1, minutes: 0 }]);
     expect(d.avtodrom.live.open_shifts[0]).toMatchObject({ register: 'P1', cashier: 'Kassir Nodira' });
 
     expect(d.avtodrom12.ok).toBe(true);

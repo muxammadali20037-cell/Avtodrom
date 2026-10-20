@@ -3,7 +3,7 @@
    paytda ham ilova ochiladi va oxirgi raqamlar (sahifa o'zi saqlaydi)
    ko'rinadi. API so'rovlariga TEGMAYDI — raqamlar doim serverdan.
    Har doim avval tarmoq: yangi versiya chiqsa darhol ko'rinadi. */
-const CACHE = 'boshliq-v1';
+const CACHE = 'boshliq-v2';
 const SHELL = ['/boshliq', '/boshliq.webmanifest', '/boshliq-icon-180.png', '/boshliq-icon-192.png', '/boshliq-icon-512.png'];
 
 self.addEventListener('install', (e) => {
