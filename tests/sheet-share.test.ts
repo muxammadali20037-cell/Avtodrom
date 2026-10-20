@@ -8,7 +8,7 @@
 import { describe, it, expect, beforeAll, beforeEach } from 'vitest';
 import { makeHarness, type Harness } from './harness.js';
 import { hashPassword } from '../backend/src/staff-auth.js';
-import { sheetLinkToken, sheetLinkUrl, checkSheetLink, runSheetGroupEvening } from '../backend/src/sheet-share.js';
+import { sheetLinkToken, sheetLinkUrl, checkSheetLink, runSheetGroupEvening, runSheetGroupSchedule, groupSlotOf } from '../backend/src/sheet-share.js';
 import { cellKey } from '../backend/src/booking-sheet.js';
 import { buildSheetParts, sheetPartSvg } from '../backend/src/sheet-image.js';
 
@@ -80,6 +80,30 @@ describe('Havola', () => {
     expect(j.stats).toMatchObject({ instructors: 2, busy_instructors: 2, band: 2 });
     expect(r.headers['cache-control']).toBe('no-store');
   });
+
+  it('bitta havola Кеча / Бугун / Эртага kunlarini ochadi, boshqasini emas', async () => {
+    const d = ymd(1), k = sheetLinkToken(d);
+    h.db.admin_settings.push({ key: `booking_sheet:${ymd(-1)}`, value: { cells: { [cellKey('ip-1', 9)]: { t: 'KECHA' } } } });
+    h.db.admin_settings.push({ key: `booking_sheet:${ymd(0)}`, value: { cells: { [cellKey('ip-2', 11)]: { t: 'BUGUN' } } } });
+    for (const [n, t] of [[-1, 'KECHA'], [0, 'BUGUN']] as const) {
+      const r = await h.app.inject({ method: 'GET', url: `/api/sheet-view?d=${d}&k=${k}&day=${ymd(n)}` });
+      expect(r.statusCode).toBe(200);
+      const j = JSON.parse(r.body);
+      expect(j).toMatchObject({ date: ymd(n), today: ymd(0), link_day: d });
+      expect(Object.values(j.cells).map((c: any) => c.t)).toEqual([t]);
+    }
+    const tm = await h.app.inject({ method: 'GET', url: `/api/sheet-view?d=${d}&k=${k}&day=${ymd(1)}` });
+    expect(JSON.parse(tm.body)).toMatchObject({ ok: true, date: ymd(1), title: expect.stringMatching(/^Ertaga, /) });
+    /* uch kundan tashqari — yopiq; noto'g'ri sana — 400; imzosiz — 403 */
+    expect((await h.app.inject({ method: 'GET', url: `/api/sheet-view?d=${d}&k=${k}&day=${ymd(2)}` })).statusCode).toBe(403);
+    expect((await h.app.inject({ method: 'GET', url: `/api/sheet-view?d=${d}&k=${k}&day=${ymd(-2)}` })).statusCode).toBe(403);
+    expect((await h.app.inject({ method: 'GET', url: `/api/sheet-view?d=${d}&k=${k}&day=bugun` })).statusCode).toBe(400);
+    expect((await h.app.inject({ method: 'GET', url: `/api/sheet-view?d=${d}&k=xx&day=${ymd(0)}` })).statusCode).toBe(403);
+    /* havolaning o'z kuni (masalan, 3 kun keyingi) uch kundan tashqarida bo'lsa ham ochiladi */
+    const far = ymd(3);
+    const f = await h.app.inject({ method: 'GET', url: `/api/sheet-view?d=${far}&k=${sheetLinkToken(far)}&day=${far}` });
+    expect(f.statusCode).toBe(200);
+  });
 });
 
 describe('Guruhni ulash', () => {
@@ -142,7 +166,7 @@ describe('Guruhga tashlash — tiniq rasm', () => {
     expect(h.db.admin_settings.find((x: any) => x.key === `sheet_group_msg:${d}`).value.photos).toEqual([78]);
   });
 
-  it('instruktor ko‘p — albom (har rasmda ≤5 ustun) va alohida tugmali xabar', async () => {
+  it('instruktor ko‘p — albom (hammasi 2 ta rasmda) va alohida tugmali xabar', async () => {
     const d = ymd(1);
     await linkGroup();
     for (let i = 3; i <= 8; i++) {
@@ -175,50 +199,33 @@ describe('Guruhga tashlash — tiniq rasm', () => {
     expect(msg.markup.inline_keyboard[0][0].url).toBe(sheetLinkUrl(d));
   });
 
-  it('har saqlashda: guruhga faqat o‘zgargan instruktor jadvali (yangi xabar); to‘liq rasm joyida yangilanadi', async () => {
+  it('saqlaganda guruhga HECH NARSA ketmaydi — na yangi xabar, na rasm tahriri', async () => {
     const d = ymd(1);
     await linkGroup();
-    h.tgResults.set('sendPhoto', { message_id: 90 });
-    let s = await h.call('PUT', '/api/admin/booking-sheet', { cookie: admin, payload: { date: d, changes: [{ key: cellKey('ip-1', 9), t: 'BAND', prev: '' }] } });
-    expect(s.status).toBe(200);
-    expect(s.body.result.group).toBe('sent');
-    const ch = groupMsgs().pop()!;
-    expect(ch.method).toBe('sendPhoto');
-    expect(ch.text).toMatch(/Jadval yangilandi/);
-    expect(ch.text).toMatch(/Aziz Karimov<\/b>: 📌 9:00 «BAND»/);
-    expect(ch.text).not.toMatch(/Komila/);
-    expect(ch.markup.inline_keyboard[0][0].url).toBe(sheetLinkUrl(d));
-    /* «Guruhga tashlash» — to'liq jadval (91) */
+    /* guruhda o'sha kunning rasmi bor */
     h.tgResults.set('sendPhoto', { message_id: 91 });
+    band(d, 'ip-1', 8);
     await h.call('POST', '/api/admin/sheet-share', { cookie: admin, payload: { date: d } });
     h.tgCalls.length = 0;
-    s = await h.call('PUT', '/api/admin/booking-sheet', { cookie: operator, payload: { date: d, changes: [{ key: cellKey('ip-2', 9), t: 'BAND', prev: '' }] } });
-    expect(s.body.result.group).toBe('sent');
-    const ed = h.tgCalls.find((c) => c.method === 'editMessageMedia')!;
-    expect(ed.body).toMatchObject({ chat_id: GROUP, message_id: 91, files: 1 });
-    expect(ed.body.text).toMatch(/2 ta band/);
-    const sent = h.tgCalls.filter((c) => c.method === 'sendPhoto' && c.body.chat_id === GROUP);
-    expect(sent).toHaveLength(1);
-    expect(sent[0].body.text).toMatch(/Komila Sobirova<\/b>: 📌 9:00/);
-    expect(sent[0].body.text).not.toMatch(/Aziz/);
+    const s = await h.call('PUT', '/api/admin/booking-sheet', { cookie: operator, payload: { date: d, changes: [{ key: cellKey('ip-2', 9), t: 'BAND', prev: '' }] } });
+    expect(s.status).toBe(200);
+    expect(s.body.result.group).toBeNull();
+    expect(h.tgCalls.filter((c) => c.body?.chat_id === GROUP)).toHaveLength(0);
   });
 
-  it('instruktor botga bron yozsa ham guruhga boradi', async () => {
+  it('instruktor botga bron yozsa ham guruhga hech narsa ketmaydi (instruktorning o‘ziga javob boradi)', async () => {
     await linkGroup();
     h.db.instructor_applications = h.db.instructor_applications || [];
     h.db.instructor_applications.push({ telegram_user_id: 880001, status: 'APPROVED', first_name: 'Aziz' });
-    const before = groupMsgs().length;
+    const before = groupMsgs().length, all = h.telegram.length;
     const r = await h.app.inject({
       method: 'POST', url: '/api/telegram/instructor/webhook',
       headers: { 'x-telegram-bot-api-secret-token': 'test-webhook-secret' },
       payload: { update_id: 9, message: { message_id: 9, chat: { id: 880001, type: 'private' }, from: { id: 880001, first_name: 'Aziz' }, text: 'ertaga 14:00 901234567' } },
     });
     expect(r.statusCode).toBe(200);
-    const g = groupMsgs().slice(before);
-    expect(g.length).toBeGreaterThanOrEqual(1);
-    expect(g[0].text).toMatch(/Jadval yangilandi/);
-    expect(g[0].text).toMatch(/Aziz Karimov<\/b>: ✅ 14:00–15:00 90 123 45 67 · B/);
-    expect(g[0].text).toMatch(/Bot · Aziz Karimov/);
+    expect(groupMsgs().length).toBe(before);
+    expect(h.telegram.slice(all).some((m) => m.chat === 880001 && /14:00/.test(m.text || ''))).toBe(true);
   });
 
   it('rasmni oldindan ko‘rish — PNG (faqat admin va operator)', async () => {
@@ -231,17 +238,38 @@ describe('Guruhga tashlash — tiniq rasm', () => {
     expect((await h.call('GET', `/api/admin/sheet-image?date=${d}`, { cookie: kassa })).status).toBe(403);
   });
 
-  it('20:00 dan keyin ertangi kun bir marta ketadi', async () => {
+  it('har 3 soatda: 06–18 da bugungi, 21 da ertangi kun; har oraliqda bir marta; tunda yo‘q; eskisi o‘chadi', async () => {
     await linkGroup();
-    const d = ymd(1);
-    const at20 = (hh: number) => Date.parse(`${ymd(0)}T${String(hh).padStart(2, '0')}:10:00+05:00`);
-    expect((await runSheetGroupEvening(at20(19))).ran).toBe(false);
+    const t = ymd(0), at = (hh: number, mm = 10) => Date.parse(`${t}T${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}:00+05:00`);
+    expect([0, 5, 6, 8, 9, 11, 12, 15, 18, 20, 21, 23].map((hh) => groupSlotOf(at(hh)))).toEqual([null, null, 6, 6, 9, 9, 12, 15, 18, 18, 21, 21]);
+    band(t, 'ip-1', 10);
+    expect(await runSheetGroupSchedule(at(5, 55))).toMatchObject({ ran: false, reason: 'not time' });
     const n0 = groupMsgs().length;
-    expect((await runSheetGroupEvening(at20(20))).ran).toBe(true);
-    expect((await runSheetGroupEvening(at20(21))).ran).toBe(false);
-    const sent = groupMsgs().slice(n0);
-    expect(sent).toHaveLength(1);
-    expect(sent[0].markup.inline_keyboard[0][0].url).toBe(sheetLinkUrl(d));
+    h.tgResults.set('sendPhoto', { message_id: 501 });
+    expect(await runSheetGroupSchedule(at(9, 5))).toMatchObject({ ran: true, date: t, slot: 9 });
+    expect(await runSheetGroupSchedule(at(10, 40))).toMatchObject({ ran: false, reason: 'sent' });   // o'sha oraliq — bir marta
+    expect(groupMsgs().slice(n0)).toHaveLength(1);
+    expect(groupMsgs().pop()!.markup.inline_keyboard[0][0].url).toBe(sheetLinkUrl(t));
+    /* 12:00 — yangi rasm, 09:00 dagisi guruhdan o'chadi */
+    h.tgCalls.length = 0;
+    h.tgResults.set('sendPhoto', { message_id: 502 });
+    expect((await runSheetGroupSchedule(at(12, 1))).ran).toBe(true);
+    expect(h.tgCalls.find((c) => c.method === 'deleteMessages')?.body).toMatchObject({ chat_id: GROUP, message_ids: [501] });
+    /* 21:00 — ertangi kun */
+    const r21 = await runSheetGroupSchedule(at(21, 3));
+    expect(r21).toMatchObject({ ran: true, date: ymd(1), slot: 21 });
+    expect(groupMsgs().pop()!.markup.inline_keyboard[0][0].url).toBe(sheetLinkUrl(ymd(1)));
+    /* eski nom (cron chaqiradi) — o'sha funksiya */
+    expect(runSheetGroupEvening).toBe(runSheetGroupSchedule);
+    /* belgilar sozlamalarda yashirin kalitda */
+    expect(h.db.admin_settings.filter((x: any) => String(x.key).startsWith('sheet_group_slot:')).map((x: any) => x.key))
+      .toEqual([`sheet_group_slot:${t}T09`, `sheet_group_slot:${t}T12`, `sheet_group_slot:${t}T21`]);
+  });
+
+  it('guruh ulanmagan bo‘lsa — hech narsa qilmaydi', async () => {
+    const r = await runSheetGroupSchedule(Date.parse(`${ymd(0)}T09:10:00+05:00`));
+    expect(r).toMatchObject({ ran: false, reason: 'no group' });
+    expect(h.db.admin_settings.some((x: any) => String(x.key).startsWith('sheet_group_slot:'))).toBe(false);
   });
 });
 
@@ -272,5 +300,20 @@ describe('Rasm: toifa va davomiylik', () => {
     expect(svg).toContain('10:00–12:00 · 2 soat');
     expect(svg).toContain('#c2410c');                                        // A toifa sarlavhasi o'z rangida
     expect(sheetPartSvg(parts[1])).toContain('#6d28d9');                     // «B, C» — aralash guruh
+  });
+
+  it('guruh uchun: hamma instruktorlar ko‘pi bilan 2 ta rasmda, A toifa birinchi rasmda (alohida emas)', () => {
+    const many = { ...d, instructors: [ins('b1', 'B'), ins('b2', 'B'), ins('b3', 'B'), ins('b4', 'B'), ins('b5', 'B'), ins('b6', 'B'), ins('a1', 'A'), ins('c1', 'C'), ins('c2', 'C'), ins('c3', 'C'), ins('c4', 'C')], cells: {} as Record<string, any> };
+    many.instructors.forEach((i, n) => { many.cells[K(i.id, 8 + (n % 6))] = { k: 'sheet', t: '901234567', phone: '+998901234567', code: `AVD-${n}`, cat: 'B', min: 60 }; });
+    const parts = buildSheetParts(many as any, { title: 'Bugun', line: '11 ta bron', at: '09:00 holati', maxImages: 2 });
+    expect(parts).toHaveLength(2);
+    expect(parts.map((p) => p.part)).toEqual(['1/2', '2/2']);
+    expect(parts[0].cols[0].group).toBe('A');
+    expect(parts.flatMap((p) => p.cols).length).toBe(11);
+    /* toifa chegarasi o'rtaga yaqin — B | C dan bo'linadi: 1 A + 6 B = 7, 4 C */
+    expect(parts.map((p) => p.cols.length)).toEqual([7, 4]);
+    /* 4 tagacha instruktor — bitta rasm (A toifa ham shu rasmda) */
+    expect(buildSheetParts(d as any, { title: 'Ertaga', line: '4', at: '09:00', maxImages: 2 })).toHaveLength(1);
+    expect(sheetPartSvg(parts[0])).toContain('A TOIFA');
   });
 });
