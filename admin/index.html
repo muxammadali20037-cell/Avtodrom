@@ -1683,7 +1683,7 @@ function sideDef(){
     ['bookings/new', 'Yangi bronlar', 'bell', 'pending'], ['bookings/cancels', 'Bekor so‘rovlari', 'ban', 'cancels'], ['bookings/all', 'Barcha bronlar', 'list'],
     ['xbron', 'Excel bron', 'sheet'], ['manual', 'Qo‘lda bron', 'phone'], ['schedule', 'Instruktorlar jadvali', 'cal'], ['chat', 'Mijozlar chati', 'chat', 'chat']] });
   if (isAdmin()) G.push({ title: 'Boshqaruv', items: [
-    ['analytics', 'Hisobot va tahlil', 'chart'], ['!/analytics', 'Analitika · 2 loyiha', 'chart'], ['insrep', 'Instruktorlar hisoboti', 'steer'], ['retention', 'O‘quvchini qaytarish', 'refresh'], ['instructors', 'Instruktorlar', 'users', 'apps'], ['grafik', 'Ish grafigi', 'clock'], ['@ctllink', 'Nazorat paneli', 'eye'], ['@bosslink', 'Boshliq ilovasi', 'mobile'], ['prices', 'Narxlar va ish vaqti', 'tag'],
+    ['analytics', 'Hisobot va tahlil', 'chart'], ['!/analytics', 'Analitika · 2 loyiha', 'chart'], ['insrep', 'Instruktorlar hisoboti', 'steer'], ['retention', 'O‘quvchini qaytarish', 'refresh'], ['instructors', 'Instruktorlar', 'users', 'apps'], ['grafik', 'Ish grafigi', 'clock'], ['@ctllink', 'Nazorat paneli', 'eye'], ['@bosslink', 'Boshqaruv ilovasi', 'mobile'], ['prices', 'Narxlar va ish vaqti', 'tag'],
     ['staff', 'Xodimlar', 'key'], ['!/admin/full', 'Kengaytirilgan panel', 'ext']] });
   return G;
 }
@@ -2015,7 +2015,7 @@ function vHome(){
       ${tile('instructors', 'users', 'Instruktorlar', 'faol / o‘chirilgan, arizalar', { id: 'apps' })}
       ${tile('grafik', 'clock', 'Ish grafigi', 'kim qachon ishlaydi, tanaffus', { cls: 'b' })}
       ${tile('', 'eye', 'Nazorat paneli', 'hamma instruktor — bitta havola', { cls: 'o', act: 'ctllink' })}
-      ${tile('', 'mobile', 'Boshliq ilovasi', 'rahbar telefoni: tushum, xarajat', { cls: 'b', act: 'bosslink' })}
+      ${tile('', 'mobile', 'Boshqaruv ilovasi', 'AVTODROM BOSHQARUV — rahbar telefoni', { cls: 'b', act: 'bosslink' })}
       ${tile('prices', 'tag', 'Narxlar', 'tarif, 5 soatlik paket, ish vaqti', { cls: 'g' })}
       ${tile('staff', 'key', 'Xodimlar', 'kassir, operator, parollar', { cls: 'b' })}
       ${tile('', 'ext', 'Kengaytirilgan panel', 'hamma bo‘limlar (eski)', { cls: 'dark', href: '/admin/full' })}
@@ -6645,15 +6645,15 @@ ACT.ctlreset = async () => {
 };
 
 /* =========================================================================
-   BOSHLIQ ILOVASI — rahbar telefoni (/boshliq?k=…, PIN bilan)
+   AVTODROM BOSHQARUV ilovasi — rahbar telefoni (/boshliq?k=…, PIN bilan)
    Avtoshkola, platniy, avtodrom (bronlar, kassa P1/P2), umumiy, xarajatlar.
    ========================================================================= */
 const BOSS = { url: '', pin_set: false, at: null, by: null, pin_at: null };
 function bossPaint(){
   const share = typeof navigator.share === 'function';
-  openSheet(`<h3>📱 Boshliq ilovasi</h3>
+  openSheet(`<h3>📱 AVTODROM BOSHQARUV ilovasi</h3>
     <p class="lead">Rahbar telefoniga o‘rnatiladigan panel: avtoshkola, platniy, avtodrom (bronlar, kassa P1 va P2), umumiy tushum va xarajatlar — bitta ekranda.</p>
-    <ul class="ctl-pts"><li>Havolani rahbarga yuboring — iPhone’da Safari bilan ochadi</li><li>Ulashish → «Ekranga qo‘shish» — telefonda alohida ilova bo‘ladi</li>
+    <ul class="ctl-pts"><li>Havolani rahbarga yuboring — iPhone’da Safari bilan ochadi</li><li>Ulashish → «Ekranga qo‘shish» — telefonda logotipli «AVTODROM BOSHQARUV» ilovasi paydo bo‘ladi</li>
       <li>Birinchi ochilganda PIN so‘raladi, keyin telefon 60 kun eslab qoladi</li><li>Faqat ko‘rish — hech narsani o‘zgartirib bo‘lmaydi</li></ul>
     <label class="field"><span>${BOSS.pin_set ? `PIN qo‘yilgan${BOSS.pin_at ? ` (${esc(whenText(BOSS.pin_at))})` : ''}. Yangisini yozsangiz almashtiriladi` : 'Avval PIN qo‘ying — 4–8 ta raqam'}</span>
       <input class="input" id="bossPin" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="8" autocomplete="new-password" placeholder="${BOSS.pin_set ? 'Yangi PIN' : 'Masalan: 482915'}"></label>
@@ -6690,7 +6690,7 @@ ACT.bosscopy = async () => {
     toast('Havolani belgilab, nusxalang', true);
   }
 };
-ACT.bossshare = async () => { try { await navigator.share({ title: 'Boshliq ilovasi — TASH INDEX AVTODROM', url: BOSS.url }); } catch { /* bekor qilindi */ } };
+ACT.bossshare = async () => { try { await navigator.share({ title: 'AVTODROM BOSHQARUV — TASH INDEX AVTODROM', url: BOSS.url }); } catch { /* bekor qilindi */ } };
 ACT.bossreset = async () => {
   const ok = await ask({ title: 'Havolani yangilaysizmi?', text: 'Eski havola va telefondagi ilova darhol ishlamay qoladi. Rahbarga yangi havolani yuborasiz, u yana «Ekranga qo‘shish» qiladi.', ok: 'Yangilash', danger: true });
   if (!ok) return bossPaint();
