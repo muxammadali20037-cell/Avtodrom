@@ -7,10 +7,61 @@ import { registerBookingRoutes } from './booking-routes.js';
 import { registerInstructorRoutes } from './instructor-routes.js';
 import { registerInstructorRegistrationRoutes } from './instructor-registration-routes.js';
 import { handleInstructorStart } from './instructor-start.js';
-import { registerAdminPasswordRoutes } from './admin-password-routes.js';
+import { handleInstructorSheetMessage, handleInstructorCallback, logBotEvent, readBotLog } from './instructor-sheet-bot.js';
+import { webhookSecret, resetWebhook, healWebhook, ensureCallbackUpdates } from './webhook-secret.js';
+import { registerAdminPasswordRoutes, guard as requireAdmin, guardAdmin, guardDesk, currentStaff, adminUser, audit, peekStaff, operatorMayCall } from './admin-password-routes.js';
 import { registerContentRoutes } from './content-routes.js';
+import { registerCourseRoutes } from './courses-routes.js';
+import { registerReviewRoutes } from './review-routes.js';
+import { registerSupportRoutes } from './support-routes.js';
+import { runRemindersNow, handleReminderCallback } from './reminders.js';
+import { registerCashierRoutes } from './cashier-routes.js';
+import { registerAnalyticsRoutes } from './analytics-routes.js';
+import { registerUnifiedAnalyticsRoutes } from './unified-analytics.js';
+import { registerShiftRoutes } from './shift-routes.js';
+import { registerMediaRoutes } from './media-routes.js';
+import { registerAdminBotRoutes, sendAdminChatInfo } from './admin-bot-routes.js';
+import { registerScheduleRoutes } from './schedule-routes.js';
+import { registerBookingSheetRoutes } from './booking-sheet-routes.js';
+import { registerSheetShareRoutes, handleGroupMessage } from './sheet-share.js';
+import { registerControlRoutes } from './control-view.js';
+import { registerBossRoutes } from './boss-dashboard.js';
 
 const app = Fastify({ logger: true });
+
+/** So'rov chegarasi kaliti: haqiqiy mijoz IP'si (Vercel sarlavhalaridan), bo'lmasa req.ip. */
+export function rateKey(req: any): string {
+  const h = req?.headers || {};
+  const real = String(h['x-real-ip'] || '').trim();
+  const fwd = String(h['x-forwarded-for'] || '').split(',')[0].trim();
+  return real || fwd || String(req?.ip || '');
+}
+
+/* Admin javoblari hech qachon keshlanmasin. Vercel yoki brauzer
+   eski javobni qaytarsa, saqlangan o'zgarish ko'rinmay qolardi. */
+app.addHook('onSend', async (req, reply, payload) => {
+  if (String(req.url || '').startsWith('/api/admin/')) {
+    reply.header('Cache-Control', 'no-store, no-cache, must-revalidate');
+    reply.header('Pragma', 'no-cache');
+  }
+  return payload;
+});
+/* OPERATOR PANELI BOSHQA PANELLARGA ULANMAYDI.
+   Operator hisobi bilan kelgan /api/admin/* so'rovi faqat oq ro'yxatdagi
+   yo'llarga o'tadi (bronlar, qo'lda bron, bekor so'rovlari, mijozlar
+   chati). Qolgan hammasi — kassa, hisobot, xodimlar, sozlamalar — 403.
+   Tekshiruv har bir marshrutdan OLDIN ishlaydi, shuning uchun yangi
+   endpoint qo'shilsa ham operatorga o'z-o'zidan ochilib qolmaydi. */
+app.addHook('onRequest', async (req, reply) => {
+  const url = String(req.url || '');
+  if (!url.startsWith('/api/admin/')) return;
+  const who = peekStaff(req);
+  if (!who || who.role !== 'operator') return;
+  if (!operatorMayCall(req.method, url)) {
+    return reply.code(403).send({ ok: false, error: 'Operator uchun bu bo‘lim yopiq' });
+  }
+});
+
 const CUSTOMER_BOT_TOKEN = process.env.CUSTOMER_BOT_TOKEN || process.env.TELEGRAM_CUSTOMER_BOT_TOKEN || '';
 const INSTRUCTOR_BOT_TOKEN = process.env.INSTRUCTOR_BOT_TOKEN || process.env.TELEGRAM_INSTRUCTOR_BOT_TOKEN || '';
 const ADMIN_BOT_TOKEN = process.env.ADMIN_BOT_TOKEN || process.env.TELEGRAM_ADMIN_BOT_TOKEN || '';
@@ -18,9 +69,23 @@ const CUSTOMER_MINI_APP_URL = process.env.CUSTOMER_MINI_APP_URL || process.env.M
 const INSTRUCTOR_MINI_APP_URL = process.env.INSTRUCTOR_MINI_APP_URL || 'https://avtodrom.vercel.app/instructor';
 const ADMIN_MINI_APP_URL = process.env.ADMIN_MINI_APP_URL || 'https://avtodrom.vercel.app/admin';
 const TELEGRAM_WEBHOOK_SECRET = process.env.TELEGRAM_WEBHOOK_SECRET || '';
+/** Har bir bot uchun webhook siri (env bo'lmasa — tokendan hosil qilinadi) */
+const secretFor = (token: string) => webhookSecret(TELEGRAM_WEBHOOK_SECRET, token);
+const INSTRUCTOR_WEBHOOK_URL = 'https://avtodrom.vercel.app/api/telegram/instructor/webhook';
 
-await app.register(cors, { origin: process.env.FRONTEND_ORIGIN ? [process.env.FRONTEND_ORIGIN] : true, credentials: true });
-await app.register(rateLimit, { max: 120, timeWindow: '1 minute' });
+/* CORS: FRONTEND_ORIGIN sozlanmagan bo'lsa cross-origin so'rovlarga
+   cookie yubormaymiz. Ilgari `origin: true` + `credentials: true`
+   birga ishlatilardi — har qanday sayt cookie bilan so'rov yubora olardi. */
+const ALLOWED_ORIGIN = String(process.env.FRONTEND_ORIGIN || '').trim();
+await app.register(cors, ALLOWED_ORIGIN
+  ? { origin: [ALLOWED_ORIGIN], credentials: true }
+  : { origin: false, credentials: false });
+/* So'rovlar chegarasi HAR MIJOZ (IP) uchun alohida. Vercel'da so'rov
+   Fastify'ga app.inject orqali keladi — req.ip hammada bir xil (127.0.0.1)
+   bo'lib, barcha foydalanuvchilar bitta umumiy chegarani bo'lishardi:
+   bir kishi 5 marta parolni xato tersa, hamma kira olmay qolardi.
+   Vercel x-real-ip / x-forwarded-for ni o'zi yozadi (mijoz soxtalashtira olmaydi). */
+await app.register(rateLimit, { max: 120, timeWindow: '1 minute', keyGenerator: rateKey });
 app.get('/api/health', async () => ({ ok: true, service: 'avtodrom-api', bots: { customer: Boolean(CUSTOMER_BOT_TOKEN), instructor: Boolean(INSTRUCTOR_BOT_TOKEN), admin: Boolean(ADMIN_BOT_TOKEN) }, supabase: Boolean(process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY) }));
 
 function authenticateWithToken(botToken: string) {
@@ -59,6 +124,27 @@ export const authenticateAnyBot = async (request: any) => {
 await registerBookingRoutes(app, authenticateCustomer, authenticateAnyBot);
 await registerInstructorRoutes(app, authenticateInstructor);
 await registerInstructorRegistrationRoutes(app, authenticateInstructor);
+await registerCourseRoutes(app, authenticateCustomer);
+await registerReviewRoutes(app, authenticateCustomer);
+await registerSupportRoutes(app, authenticateCustomer, requireAdmin, adminUser);
+await registerCashierRoutes(app, requireAdmin, adminUser, audit, authenticateInstructor);
+/* Analitika — faqat boshqaruv. Ilgari har qanday kirgan xodim
+   (kassir ham) butun biznes statistikasini ko'ra olardi.
+   ISTISNO: «Instruktor nazorati» (instructor-control) kassir
+   menyusida ham bor va uning kundalik ishi — unga requireAdmin
+   (har qanday kirgan xodim) beriladi. */
+await registerAnalyticsRoutes(app, guardAdmin, requireAdmin);
+/* Birlashgan analitika (Avtodrom + avtodrom12) — /analytics sahifasi, faqat administrator */
+await registerUnifiedAnalyticsRoutes(app, guardAdmin);
+await registerShiftRoutes(app, requireAdmin, adminUser, audit);
+/* Instruktorlar ish grafigi — faqat administrator */
+await registerScheduleRoutes(app, guardAdmin, adminUser, audit);
+await registerBookingSheetRoutes(app, { currentStaff, guardDesk, adminUser, audit });
+await registerSheetShareRoutes(app, { currentStaff, guardDesk });
+await registerControlRoutes(app, { guardAdmin, currentStaff, adminUser, audit });
+/* Boshliq ilovasi (iPhone) — maxfiy havola + PIN; admin havolani boshqaradi */
+await registerBossRoutes(app, { guardAdmin, currentStaff, adminUser, audit });
+await registerAdminBotRoutes(app);
 
 // IMPORTANT: admin-password-routes.ts is the single owner of the canonical
 // /api/admin/* endpoints. Do not register admin-routes.ts or
@@ -67,36 +153,166 @@ await registerInstructorRegistrationRoutes(app, authenticateInstructor);
 await registerAdminPasswordRoutes(app);
 await registerContentRoutes(app);
 
+/* Media endpointlari ilgari `api/admin/media/*` da Fastify'dan
+   TASHQARIDA edi — o'z auth'i va o'z xato formati bilan. Endi shu
+   yerda va umumiy rol tekshiruvi (guardAdmin) ostida. */
+registerMediaRoutes(app, guardAdmin);
+
 async function handleTelegramWebhook(request: any, reply: any, token: string, miniAppUrl: string, role: 'customer' | 'admin') {
+  /* FAIL-CLOSED: sir sozlanmagan bo'lsa webhook ISHLAMAYDI.
+     Ilgari tekshiruv o'tkazib yuborilardi va begona odam soxta
+     callback yuborib bron holatini o'zgartira olardi. */
   const secret = String(request.headers['x-telegram-bot-api-secret-token'] || '');
-  if (TELEGRAM_WEBHOOK_SECRET && secret !== TELEGRAM_WEBHOOK_SECRET) return reply.code(401).send({ ok: false, error: 'Invalid webhook secret' });
+  const expected = secretFor(token);
+  if (!expected) {
+    request.log.error(`${role} bot tokeni yo‘q — webhook yopiq`);
+    return reply.code(503).send({ ok: false, error: 'Webhook not configured' });
+  }
+  if (secret !== expected) return reply.code(401).send({ ok: false, error: 'Invalid webhook secret' });
   if (!token || !miniAppUrl) return reply.code(503).send({ ok: false, error: `${role} bot is not configured` });
   const message = (request.body as any)?.message;
   const text = typeof message?.text === 'string' ? message.text.trim() : '';
   const chatId = Number(message?.chat?.id);
-  if (Number.isSafeInteger(chatId) && chatId > 0 && /^\/start(?:@\w+)?(?:\s.*)?$/i.test(text)) await sendMiniAppStart(token, chatId, miniAppUrl, role);
+  const isStart = /^\/start(?:@\w+)?(?:\s.*)?$/i.test(text);
+  if (Number.isSafeInteger(chatId) && chatId > 0 && isStart) await sendMiniAppStart(token, chatId, miniAppUrl, role);
+  /* Mijoz botiga oddiy savol yozilsa — avto-javob (topilmasa adminga), yozishma admin chatida */
+  else if (role === 'customer' && Number.isSafeInteger(chatId) && chatId > 0 && text && !text.startsWith('/') && Number(message?.from?.id) === chatId) {
+    try { const { handleBotQuestion } = await import('./support-routes.js'); await handleBotQuestion(message.from, chatId, text); }
+    catch (e) { request.log.error({ err: e }, 'customer bot question failed'); }
+  }
+  /* Admin bot: /start yoki /id — chat ID ni aytadi, uni panelda
+     «Admin bot — yangi bron xabarlari» ga qo'shish mumkin (guruh ham). */
+  if (role === 'admin' && Number.isSafeInteger(chatId) && chatId !== 0 && (isStart || /^\/id(?:@\w+)?$/i.test(text))) {
+    await sendAdminChatInfo(token, chatId);
+  }
   return { ok: true };
 }
 
-async function webhookDiagnostic(token: string, role: string, expectedUrl: string) {
+const tgTime = (sec: unknown) => (Number(sec) > 0 ? new Date(Number(sec) * 1000).toISOString() : null);
+const webhookView = (info: any) => ({
+  url: info.url || '', pending_update_count: info.pending_update_count || 0,
+  last_error_date: info.last_error_date || null, last_error_at: tgTime(info.last_error_date), last_error_message: info.last_error_message || null,
+  max_connections: info.max_connections ?? null, allowed_updates: info.allowed_updates ?? null,
+});
+
+/**
+ * Webhook holati. `?kick=1` — webhook XUDDI SHU manzilga TO'G'RI sir bilan
+ * qayta o'rnatiladi va Telegram navbatda turgan xabarlarni darhol qayta
+ * yuboradi (xatodan keyin Telegram ba'zan soatlab kutib qoladi).
+ * Boshqa joyga ulangan webhook'ga tegilmaydi, navbat o'chirilmaydi.
+ * `secret` — sir qayerdan: «env» (TELEGRAM_WEBHOOK_SECRET) yoki «tokendan».
+ */
+async function webhookDiagnostic(token: string, role: string, expectedUrl: string, kick = false) {
   if (!token) return { configured: false, role, expected_url: expectedUrl, reason: 'bot token missing' };
-  try { const info = await telegramApi<any>(token, 'getWebhookInfo', {}); return { configured: true, role, expected_url: expectedUrl, telegram: { url: info.url || '', pending_update_count: info.pending_update_count || 0, last_error_date: info.last_error_date || null, last_error_message: info.last_error_message || null } }; }
-  catch (error: any) { return { configured: true, role, expected_url: expectedUrl, error: String(error?.message || error) }; }
+  try {
+    let info: any;
+    let kicked: string | null = null;
+    if (kick) {
+      const r = await resetWebhook(token, expectedUrl, secretFor(token));
+      info = r.info; kicked = r.note;
+    } else info = await telegramApi<any>(token, 'getWebhookInfo', {});
+    const out: any = {
+      configured: true, role, expected_url: expectedUrl, telegram: webhookView(info),
+      secret: TELEGRAM_WEBHOOK_SECRET ? 'env' : 'tokendan',
+    };
+    if (kicked) out.kick = kicked;
+    if (role === 'instructor') {
+      /* bot jurnalidan faqat vaqt va holat (matn/raqamlar ochiq ko'rsatilmaydi) */
+      const log = await readBotLog();
+      out.bot = { events: log.length, last_at: log[0]?.at || null, last_ok: log[0] ? !log[0].error : null };
+    }
+    return out;
+  } catch (error: any) { return { configured: true, role, expected_url: expectedUrl, error: String(error?.message || error) }; }
 }
+const wantKick = (req: any) => /^(1|true|ha)$/i.test(String(req?.query?.kick || ''));
 
-app.get('/api/telegram/instructor/webhook', async () => webhookDiagnostic(INSTRUCTOR_BOT_TOKEN, 'instructor', 'https://avtodrom.vercel.app/api/telegram/instructor/webhook'));
-app.get('/api/telegram/customer/webhook', async () => webhookDiagnostic(CUSTOMER_BOT_TOKEN, 'customer', 'https://avtodrom.vercel.app/api/telegram/customer/webhook'));
-app.get('/api/telegram/admin/webhook', async () => webhookDiagnostic(ADMIN_BOT_TOKEN, 'admin', 'https://avtodrom.vercel.app/api/telegram/admin/webhook'));
+app.get('/api/telegram/instructor/webhook', async (req) => webhookDiagnostic(INSTRUCTOR_BOT_TOKEN, 'instructor', INSTRUCTOR_WEBHOOK_URL, wantKick(req)));
+app.get('/api/telegram/customer/webhook', async (req) => webhookDiagnostic(CUSTOMER_BOT_TOKEN, 'customer', 'https://avtodrom.vercel.app/api/telegram/customer/webhook', wantKick(req)));
+app.get('/api/telegram/admin/webhook', async (req) => webhookDiagnostic(ADMIN_BOT_TOKEN, 'admin', 'https://avtodrom.vercel.app/api/telegram/admin/webhook', wantKick(req)));
 
-app.post('/api/telegram/customer/webhook', async (request, reply) => handleTelegramWebhook(request, reply, CUSTOMER_BOT_TOKEN, CUSTOMER_MINI_APP_URL, 'customer'));
+app.post('/api/telegram/customer/webhook', async (request, reply) => {
+  // Eslatma tugmalari («Kelaman» / «Bekor qilmoqchiman») shu yerga tushadi
+  const cb = (request.body as any)?.callback_query;
+  if (cb) {
+    const secret = String(request.headers['x-telegram-bot-api-secret-token'] || '');
+    if (TELEGRAM_WEBHOOK_SECRET && secret !== TELEGRAM_WEBHOOK_SECRET) {
+      return reply.code(401).send({ ok: false, error: 'Invalid webhook secret' });
+    }
+    await handleReminderCallback(cb);
+    return { ok: true };
+  }
+  return handleTelegramWebhook(request, reply, CUSTOMER_BOT_TOKEN, CUSTOMER_MINI_APP_URL, 'customer');
+});
 app.post('/api/telegram/instructor/webhook', async (request, reply) => {
+  /* FAIL-CLOSED: sir sozlanmagan bo'lsa webhook ISHLAMAYDI.
+     Ilgari tekshiruv o'tkazib yuborilardi va begona odam soxta
+     callback yuborib bron holatini o'zgartira olardi. */
   const secret = String(request.headers['x-telegram-bot-api-secret-token'] || '');
-  if (TELEGRAM_WEBHOOK_SECRET && secret !== TELEGRAM_WEBHOOK_SECRET) return reply.code(401).send({ ok: false, error: 'Invalid webhook secret' });
+  const expected = secretFor(INSTRUCTOR_BOT_TOKEN);
+  if (!INSTRUCTOR_BOT_TOKEN || !expected) {
+    request.log.error('INSTRUCTOR_BOT_TOKEN yo‘q — webhook yopiq');
+    return reply.code(503).send({ ok: false, error: 'Instructor bot is not configured' });
+  }
+  if (secret !== expected) {
+    /* So'rov rad etiladi. Lekin webhook sirsiz o'rnatib yuborilgan bo'lsa
+       (masalan, Supabase'dagi eski «setup» orqali) — o'zi tuzatadi:
+       Telegram keyingi safar to'g'ri sir bilan yuboradi. */
+    const healed = await healWebhook(INSTRUCTOR_BOT_TOKEN, INSTRUCTOR_WEBHOOK_URL, expected);
+    if (healed) request.log.warn(`instructor webhook: noto‘g‘ri sir — ${healed}`);
+    return reply.code(401).send({ ok: false, error: 'Invalid webhook secret' });
+  }
+  /* Tugma bosildi (masalan «bekor» → qaysi bron) */
+  const cbq = (request.body as any)?.callback_query;
+  if (cbq) {
+    const t0 = Date.now(), replies: string[] = [];
+    let error: string | null = null;
+    try { await handleInstructorCallback(INSTRUCTOR_BOT_TOKEN, cbq, replies); }
+    catch (e) {
+      error = e instanceof Error ? e.message : String(e);
+      request.log.error({ err: e }, 'instructor bot callback failed');
+      const cid = Number(cbq?.message?.chat?.id);
+      if (Number.isSafeInteger(cid) && cid > 0) {
+        await telegramApi(INSTRUCTOR_BOT_TOKEN, 'sendMessage', { chat_id: cid, text: `⚠️ Xatolik yuz berdi — bekor qilinmadi. Birozdan keyin qayta urinib ko‘ring.\n(${error.slice(0, 200)})` }).catch(() => {});
+      }
+    }
+    await logBotEvent({ sent_at: null, chat: Number(cbq?.from?.id) || 0, text: `[tugma] ${String(cbq?.data || '')}`, reply: replies.join(' | ') || (error ? '' : '(javob yo‘q)'), error, ms: Date.now() - t0 });
+    return { ok: true };
+  }
   const message = (request.body as any)?.message;
   const text = typeof message?.text === 'string' ? message.text.trim() : '';
   const chatId = Number(message?.chat?.id);
-  if (!INSTRUCTOR_BOT_TOKEN) return reply.code(503).send({ ok: false, error: 'Instructor bot is not configured' });
   if (Number.isSafeInteger(chatId) && chatId > 0 && /^\/start(?:@\w+)?(?:\s.*)?$/i.test(text)) await handleInstructorStart(INSTRUCTOR_BOT_TOKEN, chatId, { id: chatId, first_name: message?.from?.first_name, last_name: message?.from?.last_name, username: message?.from?.username }, INSTRUCTOR_MINI_APP_URL);
+  /* Instruktor botga «901234567 14:00» yozsa — shu instruktorga bron (Excel bron ustuniga).
+     Faqat shaxsiy chat; Telegram qayta yubormasligi uchun xato bo'lsa ham 200. */
+  /* GURUHDAN: faqat «/ulash 123456» — Excel bron havolasi keladigan guruhni ulash */
+  else if (Number.isSafeInteger(chatId) && chatId < 0 && text.startsWith('/')) {
+    try {
+      const answer = await handleGroupMessage({ id: chatId, title: message?.chat?.title, type: message?.chat?.type }, text);
+      if (answer) await telegramApi(INSTRUCTOR_BOT_TOKEN, 'sendMessage', { chat_id: chatId, text: answer }).catch(() => {});
+    } catch (e) { request.log.error({ err: e }, 'group link failed'); }
+  }
+  else if (Number.isSafeInteger(chatId) && chatId > 0 && text && Number(message?.from?.id) === chatId) {
+    const t0 = Date.now(), replies: string[] = [];
+    let error: string | null = null;
+    try {
+      await handleInstructorSheetMessage(INSTRUCTOR_BOT_TOKEN, chatId, chatId, text, replies, {
+        ensureButtons: () => ensureCallbackUpdates(INSTRUCTOR_BOT_TOKEN, INSTRUCTOR_WEBHOOK_URL, expected),
+      });
+    }
+    catch (e) {
+      /* Jim qolmasin: instruktor nima bo'lganini bilsin */
+      error = e instanceof Error ? e.message : String(e);
+      request.log.error({ err: e }, 'instructor bot booking failed');
+      await telegramApi(INSTRUCTOR_BOT_TOKEN, 'sendMessage', {
+        chat_id: chatId, text: `⚠️ Xatolik yuz berdi — bron yozilmadi. Birozdan keyin qayta yozing.\n(${error.slice(0, 200)})`,
+      }).catch(() => {});
+    }
+    const sentAt = Number(message?.date);
+    await logBotEvent({
+      sent_at: Number.isFinite(sentAt) && sentAt > 0 ? new Date(sentAt * 1000).toISOString() : null,
+      chat: chatId, text, reply: replies.join(' | ') || (error ? '' : '(javob yo‘q)'), error, ms: Date.now() - t0,
+    });
+  }
   return { ok: true };
 });
 app.post('/api/telegram/admin/webhook', async (request, reply) => handleTelegramWebhook(request, reply, ADMIN_BOT_TOKEN, ADMIN_MINI_APP_URL, 'admin'));
@@ -121,6 +337,129 @@ app.post<{ Body: { chatId?: number } }>('/api/telegram/admin/start', async (requ
   if (!Number.isSafeInteger(chatId)) return reply.code(400).send({ ok: false, error: 'Invalid chatId' });
   await sendAdminStart(ADMIN_BOT_TOKEN, chatId, ADMIN_MINI_APP_URL);
   return { ok: true };
+});
+
+/**
+ * Eslatma rejalashtiruvchisi.
+ * Har necha daqiqada bir marta chaqiriladi (Vercel Cron yoki tashqi cron).
+ * Idempotent — ortiqcha chaqiruv zarar qilmaydi.
+ *
+ * Himoya: CRON_SECRET o'rnatilgan bo'lsa, so'rov shu kalitsiz rad etiladi.
+ * (Vercel Cron `Authorization: Bearer <CRON_SECRET>` yuboradi.)
+ */
+async function runReminders(request: any, reply: any) {
+  /* FAIL-CLOSED: CRON_SECRET yo'q bo'lsa endpoint yopiq.
+     Bu endpoint Telegram xabar yuboradi — himoyasiz qoldirib
+     bo'lmaydi. */
+  const expected = String(process.env.CRON_SECRET || '').trim();
+  if (!expected) {
+    return reply.code(503).send({ ok: false, error: 'CRON_SECRET sozlanmagan' });
+  }
+  {
+    const auth = String(request.headers['authorization'] || '');
+    const hdr = String(request.headers['x-cron-secret'] || '');
+    const qs = String((request.query as any)?.key || '');
+    const ok = auth === `Bearer ${expected}` || hdr === expected || qs === expected;
+    if (!ok) return reply.code(401).send({ ok: false, error: 'Unauthorized' });
+  }
+  try {
+    const result = await runRemindersNow('cron');
+    /* Instruktorlarga kunlik ro'yxat: 20:00 dan ertangi, 07:00 dan bugungi */
+    const { runInstructorDigest } = await import('./instructor-notify.js');
+    const digest = await runInstructorDigest().catch((e) => ({ ran: false, error: e instanceof Error ? e.message : String(e) }));
+    /* 20:00 dan keyin — guruhga ertangi Excel bron havolasi */
+    const { runSheetGroupEvening } = await import('./sheet-share.js');
+    await runSheetGroupEvening().catch((e) => console.error('sheet group evening failed:', e));
+    return { ok: true, ...result, digest };
+  } catch (e) {
+    return reply.code(500).send({ ok: false, error: e instanceof Error ? e.message : 'Reminder run failed' });
+  }
+}
+app.get('/api/cron/reminders', runReminders);
+app.post('/api/cron/reminders', runReminders);
+
+
+/* ---------------- XATO KUZATUVI ----------------
+   Production'da xatolarni ko'rish uchun. Sentry DSN sozlangan
+   bo'lsa unga yuboriladi, bo'lmasa strukturali log sifatida
+   Vercel jurnaliga yoziladi.
+
+   Nima uchun tashqi paket emas: Sentry SDK serverless'da sovuq
+   start vaqtini oshiradi va yana bir bog'liqlik qo'shadi. Bu yerda
+   faqat kerakli minimum — HTTP orqali yuborish. */
+const SENTRY_DSN = String(process.env.SENTRY_DSN || '').trim();
+
+function sentryEndpoint(dsn: string) {
+  try {
+    const u = new URL(dsn);
+    const projectId = u.pathname.replace(/^\//, '');
+    return {
+      url: `${u.protocol}//${u.host}/api/${projectId}/store/`,
+      key: u.username,
+    };
+  } catch { return null; }
+}
+
+async function reportError(err: any, context: Record<string, unknown>) {
+  // Har doim jurnalga — Sentry bo'lmasa ham iz qolsin
+  app.log.error({ err, ...context }, 'unhandled error');
+
+  if (!SENTRY_DSN) return;
+  const ep = sentryEndpoint(SENTRY_DSN);
+  if (!ep) return;
+
+  try {
+    await fetch(ep.url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Sentry-Auth': `Sentry sentry_version=7, sentry_key=${ep.key}, sentry_client=avtodrom/1.0`,
+      },
+      body: JSON.stringify({
+        timestamp: new Date().toISOString(),
+        platform: 'node',
+        environment: process.env.VERCEL_ENV || 'production',
+        level: 'error',
+        logger: 'avtodrom',
+        exception: {
+          values: [{
+            type: err?.name || 'Error',
+            value: String(err?.message || err).slice(0, 500),
+            stacktrace: { frames: String(err?.stack || '').split('\n').slice(1, 12).map((l: string) => ({ function: l.trim() })) },
+          }],
+        },
+        extra: context,
+      }),
+    });
+  } catch {
+    // Kuzatuv yiqilsa ham so'rov javobiga ta'sir qilmasin
+  }
+}
+
+/* Ushlanmagan xatolar. Foydalanuvchiga texnik tafsilot BERILMAYDI —
+   faqat qisqa xabar; batafsili jurnalda qoladi. */
+app.setErrorHandler(async (error: any, request, reply) => {
+  const status = Number(error?.statusCode) || 500;
+
+  if (status >= 500) {
+    await reportError(error, {
+      url: request.url,
+      method: request.method,
+      requestId: request.id,
+    });
+    return reply.code(500).send({
+      ok: false,
+      error: 'Serverda xato yuz berdi. Qayta urinib ko‘ring.',
+      request_id: String(request.id),
+    });
+  }
+
+  return reply.code(status).send({ ok: false, error: error?.message || 'So‘rov bajarilmadi' });
+});
+
+/* Topilmagan yo'llar — HTML emas, JSON qaytadi */
+app.setNotFoundHandler((request, reply) => {
+  reply.code(404).send({ ok: false, error: `Topilmadi: ${request.method} ${request.url}` });
 });
 
 export default app;

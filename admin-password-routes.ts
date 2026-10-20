@@ -130,10 +130,19 @@ export const OPERATOR_ALLOWED: RegExp[] = [
   /^(GET) \/api\/admin\/(courses|settings)$/,
   // Instruktorlarning kunlik jadvali (Excel ham shu ma'lumotdan)
   /^(GET) \/api\/admin\/schedule$/,
+  // Excel bron: ko'rish va yozish (katakdagi raqamdan bron yaratiladi)
+  /^(GET|PUT) \/api\/admin\/booking-sheet$/,
+  // Excel bron → guruhga havola
+  /^(GET|DELETE) \/api\/admin\/sheet-group$/,
+  /^GET \/api\/admin\/sheet-image$/,
+  /^POST \/api\/admin\/booking-sheet-(cancel|move)$/,
+  /^(POST) \/api\/admin\/(sheet-group-code|sheet-share)$/,
   // Mijozlar chati
   /^(GET) \/api\/admin\/support$/,
   /^(GET) \/api\/admin\/support\/[^/]+$/,
   /^(POST) \/api\/admin\/support\/[^/]+\/reply$/,
+  /^(GET|PUT) \/api\/admin\/support-bot$/,
+  /^POST \/api\/admin\/support-bot-test$/,
   // Eslatmalarni «turtish» — xavfsiz, hech narsa ko'rsatmaydi
   /^(POST) \/api\/admin\/reminders\/tick$/,
 ];
@@ -831,11 +840,9 @@ export async function registerAdminPasswordRoutes(app: FastifyInstance) {
         });
       }
 
+      /* Faqat instruktor profili o'chadi. Odamning hisobi bloklanmaydi —
+         u mijoz sifatida bron qila oladi, yozishmasi va tarixi saqlanadi. */
       await supabaseRest('instructor_profiles', { method: 'DELETE', query: `?id=eq.${q(id)}` });
-      await supabaseRest('users', {
-        method: 'PATCH', query: `?id=eq.${q(String(ip.user_id))}`,
-        body: JSON.stringify({ is_active: false, is_blocked: true, updated_at: new Date().toISOString() }),
-      });
       await audit(admin.id, 'INSTRUCTOR_DELETED', 'instructor_profiles', id, ip,
         { forced: force, detached_bookings: bookings.length });
       return { ok: true, detached_bookings: bookings.length };
@@ -950,10 +957,18 @@ export async function registerAdminPasswordRoutes(app: FastifyInstance) {
           method: 'PATCH', query: `?id=eq.${q(id)}`,
           body: JSON.stringify({ is_available: b.active, updated_at: now }),
         });
-        await supabaseRest('users', {
-          method: 'PATCH', query: `?id=eq.${q(ip.user_id)}`,
-          body: JSON.stringify({ is_active: b.active, is_blocked: !b.active, updated_at: now }),
-        });
+        /* Instruktorni o'chirish faqat uni INSTRUKTOR sifatida yashiradi
+           (bron ro'yxati va instruktor paneli). Odamning hisobi BLOKLANMAYDI:
+           u mijoz sifatida Mini App'dan foydalanaveradi. Ilgari users ham
+           bloklanardi — o'sha odam (egasining o'zi ham) mijoz ilovasida
+           «Hisobingiz bloklangan» deb qolardi. Qayta yoqilganda esa
+           hisob ham faollashtiriladi (eski bloklar qolmasin). */
+        if (b.active) {
+          await supabaseRest('users', {
+            method: 'PATCH', query: `?id=eq.${q(ip.user_id)}`,
+            body: JSON.stringify({ is_active: true, is_blocked: false, updated_at: now }),
+          });
+        }
         await audit(admin.id, b.active ? 'INSTRUCTOR_RESTORED' : 'INSTRUCTOR_DISABLED', 'instructor_profiles', id, { active: ip.is_available }, { active: b.active });
       }
 
@@ -1209,6 +1224,12 @@ export async function registerAdminPasswordRoutes(app: FastifyInstance) {
               + `&start_at=lt.${q(String(old.end_at))}&end_at=gt.${q(String(old.start_at))}&id=neq.${q(id)}&select=id&limit=1`)
           : [];
         if (busy[0]) return reply.code(409).send({ ok: false, error: 'Bu vaqtda instruktorga boshqa bron yozilgan — avval uni ko‘rib chiqing' });
+        /* avtomat mashina (bitta) — shu vaqtda boshqa instruktorda bo'lsa, qayta ochilmaydi */
+        if (old.start_at && old.end_at) {
+          const { autoCarConflict } = await import('./booking-sheet-routes.js');
+          const ac = await autoCarConflict({ id, start_at: String(old.start_at), end_at: String(old.end_at) }).catch(() => null);
+          if (ac) return reply.code(409).send({ ok: false, error: ac });
+        }
         const at = new Date().toISOString();
         const rows = await supabaseRest<any[]>('bookings', {
           method: 'PATCH', headers: { Prefer: 'return=representation' }, query: `?id=eq.${q(id)}`,
@@ -1514,7 +1535,7 @@ async function notifyInstructorDecision(
     'paket5_a', 'paket5_b', 'paket5_c', 'krug_price', 'krug_min'];
   /* Tizim yozuvlari (paketlar, instruktor yopgan soatlar) sozlamalar
      ro'yxatiga kirmaydi — ular yuzlab bo'lishi mumkin. */
-  const HIDE_SYSTEM_KEYS = '&key=not.like.pack*&key=not.like.instructor_busy*&key=not.in.(mgmt_pin,price_pin)';
+  const HIDE_SYSTEM_KEYS = '&key=not.like.pack*&key=not.like.instructor_busy*&key=not.like.instructor_schedule*&key=not.like.booking_sheet*&key=not.like.instructor_digest*&key=not.like.instructor_bot_log*&key=not.like.sheet_group*&key=not.like.support_kb*&key=not.in.(mgmt_pin,price_pin,control_link,boss_link)';
   app.get('/api/admin/settings', async (req: any, reply: any) => {
     try {
       const me = await currentStaff(req);
