@@ -1,247 +1,543 @@
 <!doctype html>
-<html lang="uz">
+<html lang="uz-Cyrl">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
 <meta name="theme-color" content="#2b2f8f">
-<title>Excel bron — jadval</title>
+<title>Жадвал — Excel брон</title>
+<!--
+  EXCEL BRON — GURUHDAGI «📋 Jadvalni ochish» SAHIFASI
+  1) Kirganda kun tanlanadi: Бугун / Эртага / Кеча (kirill yozuvida, 3 ta qator).
+  2) Tanlangandan keyin — YOTIQ (albom) ko'rinish: barcha instruktorlar
+     ustun bo'lib, hamma bron bitta ekranda (aylantirmasdan ko'rinadi).
+     Telefon tik turgan bo'lsa ham jadval yotiq chiziladi — telefonni
+     yotqizib qaraladi (avto-burilish o'chiq bo'lsa ham ishlaydi).
+  3) Faqat Excel bron yozuvlari (Mini App / kassa bronlari, dam va yopiq
+     vaqtlar chiqmaydi). Katakni bosing — raqam, ism, kod, qo'ng'iroq tugmasi.
+-->
 <style>
   :root{
-    --bg:#f3f4f8; --card:#fff; --ink:#141833; --muted:#6b7188; --line:#e3e6ee;
-    --brand:#2b2f8f; --brand-ink:#fff; --hour:#e5484d; --head:#fde047;
-    --bron:#fff7c2; --bron-ink:#141833; --app:#fde2e4; --app-ink:#8a1c24;
-    --band:#eef0f4; --band-ink:#30364f; --off:#f1eefa; --off-ink:#6b5a97;
-    --ok:#15803d; --chip:#e8eaf4;
+    --bg:#eef0f6; --card:#fff; --ink:#141833; --muted:#646b85; --line:#dfe3ec; --grid:#cfd5e2;
+    --brand:#2b2f8f; --brand2:#1c2150; --sel:#3b5bdb; --hour:#e5484d; --hour-past:#f0a3a5;
+    --note:#e8ebf1; --note-ink:#30364f; --chip:#e9ecf6; --shadow:0 2px 10px rgba(16,24,40,.07);
   }
   @media (prefers-color-scheme: dark){
     :root{
-      --bg:#0f1220; --card:#181c2e; --ink:#eef0f8; --muted:#9aa1b8; --line:#2a2f45;
-      --brand:#4b51c9; --head:#c9a800; --bron:#3b3410; --bron-ink:#fff6c7; --app:#3d1c20; --app-ink:#ffc9cd;
-      --band:#262b40; --band-ink:#d4d8e8; --off:#2a2440; --off-ink:#c9bdf0; --ok:#4ade80; --chip:#262b40;
+      --bg:#0f1220; --card:#181c2e; --ink:#eef0f8; --muted:#9aa1b8; --line:#2a2f45; --grid:#353b55;
+      --brand:#3a40ae; --brand2:#1c2150; --sel:#7c8cff; --hour-past:#7d3437; --note:#2a3047; --note-ink:#d4d8e8; --chip:#262b40;
+      --shadow:0 2px 10px rgba(0,0,0,.3);
     }
+    .days .day .dn{color:#b4bcff}
   }
+  [hidden]{display:none!important}
   *{box-sizing:border-box}
-  html,body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;-webkit-text-size-adjust:100%}
+  html,body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;-webkit-text-size-adjust:100%;-webkit-tap-highlight-color:transparent}
+  html.lock,html.lock body{overflow:hidden;height:100%;overscroll-behavior:none}
+  button{font:inherit;color:inherit}
   a{color:inherit}
-  .top{background:var(--brand);color:var(--brand-ink);padding:14px 16px 16px;position:sticky;top:0;z-index:20;box-shadow:0 2px 10px rgba(0,0,0,.15)}
-  .top small{opacity:.75;font-size:12px;letter-spacing:.06em;font-weight:700}
-  .top h1{margin:2px 0 4px;font-size:21px;line-height:1.2}
-  .top .upd{font-size:13px;opacity:.85;display:flex;align-items:center;gap:6px}
-  .dot{width:8px;height:8px;border-radius:50%;background:#4ade80;display:inline-block;box-shadow:0 0 0 3px rgba(74,222,128,.25)}
-  .wrap{max-width:900px;margin:0 auto;padding:12px 16px 40px}
-  .stats{display:flex;gap:8px;flex-wrap:wrap;margin:2px 0 12px}
-  .stat{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:8px 12px;font-size:14px}
-  .stat b{font-size:17px}
-  .search{width:100%;padding:12px 14px;font-size:16px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--ink);outline:none}
-  .search:focus{border-color:var(--brand)}
-  .seg{display:flex;background:var(--chip);border-radius:12px;padding:4px;margin:12px 0}
-  .seg button{flex:1;border:0;background:transparent;color:var(--ink);font:inherit;font-weight:700;font-size:15px;padding:9px;border-radius:9px;cursor:pointer}
-  .seg button.on{background:var(--card);box-shadow:0 1px 4px rgba(0,0,0,.12)}
-  .chips{display:flex;gap:8px;overflow-x:auto;padding:2px 0 10px;margin:0 -16px;padding-left:16px;padding-right:16px;scrollbar-width:none}
-  .chips::-webkit-scrollbar{display:none}
-  .chip{flex:none;border:1px solid var(--line);background:var(--card);color:var(--ink);font:inherit;font-size:14px;font-weight:600;padding:7px 12px;border-radius:999px;cursor:pointer;white-space:nowrap}
-  .chip.on{background:var(--brand);border-color:var(--brand);color:#fff}
-  .chip i{font-style:normal;opacity:.7;margin-left:4px}
-  .ins{background:var(--card);border:1px solid var(--line);border-radius:16px;margin:0 0 12px;overflow:hidden}
-  .ins-h{background:var(--head);color:#141833;padding:11px 14px;display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
-  .ins-h b{font-size:17px;text-transform:uppercase;letter-spacing:.01em;display:block}
-  .ins-h a{font-size:15px;text-decoration:none;font-weight:600}
-  .ins-h .cnt{font-size:13px;font-weight:700;background:rgba(0,0,0,.08);border-radius:999px;padding:3px 9px;white-space:nowrap}
-  .row{display:flex;align-items:stretch;border-top:1px solid var(--line);min-height:52px}
-  .row .t{flex:none;width:76px;background:var(--hour);color:#fff;font-weight:800;font-size:16px;display:flex;flex-direction:column;justify-content:center;align-items:center;line-height:1.15}
-  .row .t small{font-weight:600;font-size:11.5px;opacity:.9}
-  .row .c{flex:1;padding:8px 12px;display:flex;flex-direction:column;justify-content:center;gap:2px;min-width:0}
-  .row.bron .c{background:var(--bron);color:var(--bron-ink)}
-  .row.app .c{background:var(--app);color:var(--app-ink)}
-  .row.band .c{background:var(--band);color:var(--band-ink)}
-  .row.past{opacity:.55}
-  .tel{font-size:19px;font-weight:800;text-decoration:none;letter-spacing:.01em}
-  .tel::before{content:"📞 ";font-size:15px}
-  .sub{font-size:13.5px;opacity:.85;overflow:hidden;text-overflow:ellipsis}
-  .pill{display:inline-block;font-size:11.5px;font-weight:800;border-radius:6px;padding:1px 6px;margin-left:6px;vertical-align:2px;background:rgba(0,0,0,.1)}
-  .pill.ok{background:var(--ok);color:#fff}
-  .free{padding:10px 14px;font-size:13.5px;color:var(--muted);border-top:1px solid var(--line)}
-  .empty{padding:14px;color:var(--muted);font-size:14.5px}
-  .grid-wrap{overflow:auto;border:1px solid var(--line);border-radius:14px;background:var(--card);max-height:calc(100vh - 230px);-webkit-overflow-scrolling:touch}
-  table{border-collapse:separate;border-spacing:0;font-size:14px}
-  th,td{border-right:1px solid var(--line);border-bottom:1px solid var(--line);padding:6px 8px;min-width:132px;max-width:170px;vertical-align:top;text-align:left}
-  thead th{position:sticky;top:0;background:var(--head);color:#141833;z-index:2;font-size:13px;text-transform:uppercase}
-  thead th small{display:block;text-transform:none;font-weight:600;font-size:12px}
-  td.h,th.h{position:sticky;left:0;min-width:58px;width:58px;background:var(--hour);color:#fff;font-weight:800;text-align:center;z-index:1}
-  thead th.h{z-index:3}
-  td.bron{background:var(--bron);color:var(--bron-ink)}
-  td.app{background:var(--app);color:var(--app-ink)}
-  td.band{background:var(--band);color:var(--band-ink)}
-  td.off{background:repeating-linear-gradient(-45deg,var(--off),var(--off) 6px,transparent 6px,transparent 11px);color:var(--off-ink);font-size:12px}
-  td a{font-weight:800;text-decoration:none}
-  td small{display:block;opacity:.8;font-size:12px}
-  .msg{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:22px;text-align:center;margin-top:30px}
-  .msg b{display:block;font-size:18px;margin-bottom:6px}
-  .foot{color:var(--muted);font-size:12.5px;text-align:center;margin-top:18px}
-  .skel{height:90px;border-radius:16px;background:linear-gradient(90deg,var(--card),var(--chip),var(--card));background-size:200% 100%;animation:sh 1.2s infinite;margin-bottom:12px}
+
+  /* ================= 1. KUN TANLASH ================= */
+  .ph{background:linear-gradient(160deg,var(--brand) 0%,var(--brand2) 100%);color:#fff;padding:22px 18px 34px}
+  .ph small{display:block;font-size:11.5px;letter-spacing:.12em;opacity:.72;font-weight:700}
+  .ph h1{margin:6px 0 4px;font-size:27px;line-height:1.15}
+  .ph p{margin:0;opacity:.82;font-size:14.5px;max-width:520px}
+  .days{display:flex;flex-direction:column;gap:12px;max-width:560px;margin:-20px auto 0;padding:0 16px}
+  .day{display:flex;align-items:center;gap:14px;width:100%;text-align:left;background:var(--card);border:1px solid var(--line);border-radius:18px;
+    padding:14px 14px 14px 14px;cursor:pointer;box-shadow:var(--shadow);transition:transform .15s ease,box-shadow .15s ease,border-color .15s ease;
+    animation:up .35s cubic-bezier(.2,.8,.2,1) backwards}
+  .day:nth-child(2){animation-delay:.05s}.day:nth-child(3){animation-delay:.1s}.day:nth-child(4){animation-delay:.15s}
+  .day:active{transform:scale(.98)}
+  @media (hover:hover){.day:hover{border-color:var(--sel);box-shadow:0 6px 20px rgba(43,47,143,.14)}}
+  .day .dn{flex:none;width:56px;height:56px;border-radius:14px;background:var(--chip);color:var(--brand);display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1}
+  .day .dn b{font-size:22px}
+  .day .dn i{font-style:normal;font-size:11px;font-weight:700;margin-top:3px;text-transform:uppercase;letter-spacing:.04em}
+  .day.today .dn{background:var(--brand);color:#fff}
+  .day .dl{flex:1;min-width:0}
+  .day .dl b{display:block;font-size:23px;line-height:1.15}
+  .day .dl span{display:block;font-size:14.5px;color:var(--muted);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .day{position:relative}
+  .day > em{position:absolute;top:-10px;left:84px;font-style:normal;font-size:11.5px;font-weight:800;background:var(--sel);color:#fff;border-radius:7px;padding:2px 8px;white-space:nowrap;box-shadow:0 2px 6px rgba(59,91,219,.3)}
+  .day .dc{text-align:right;font-weight:800;font-size:16px;white-space:nowrap}
+  .day .dc small{display:block;font-weight:600;font-size:12.5px;color:var(--muted)}
+  .day .ar{font-size:30px;color:var(--muted);line-height:1;margin-left:-4px}
+  .day.link{border-color:var(--sel);box-shadow:0 0 0 2px rgba(59,91,219,.18),var(--shadow)}
+  .ld{display:inline-block;width:46px;height:14px;border-radius:7px;background:linear-gradient(90deg,var(--chip),var(--line),var(--chip));background-size:200% 100%;animation:sh 1.1s infinite}
+  .hint{max-width:560px;margin:18px auto 30px;padding:0 20px;color:var(--muted);font-size:13.5px;text-align:center}
+  .msg{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:24px 18px;text-align:center;box-shadow:var(--shadow)}
+  .msg b{display:block;font-size:19px;margin-bottom:6px}
+  .msg span{color:var(--muted);font-size:15px}
+  @keyframes up{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
   @keyframes sh{0%{background-position:200% 0}100%{background-position:-200% 0}}
+
+  /* ================= 2. YOTIQ JADVAL ================= */
+  .land{position:fixed;top:0;left:0;background:var(--bg);transform-origin:0 0;overflow:hidden;display:flex;flex-direction:column;z-index:10;animation:fade .25s ease-out}
+  @keyframes fade{from{opacity:0}to{opacity:1}}
+  .lh{flex:none;display:flex;align-items:center;gap:8px;padding:0 8px;background:linear-gradient(160deg,var(--brand),var(--brand2));color:#fff;white-space:nowrap;overflow:hidden}
+  .lh .back{flex:none;border:0;background:rgba(255,255,255,.14);border-radius:9px;padding:0 10px;height:72%;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:2px}
+  .lh .back b{font-size:1.5em;line-height:0;margin-top:-.08em}
+  .lh .seg{flex:none;display:flex;background:rgba(0,0,0,.22);border-radius:9px;padding:2px;height:72%}
+  .lh .seg button{border:0;background:transparent;border-radius:7px;padding:0 9px;font-weight:700;cursor:pointer;opacity:.78}
+  .lh .seg button.on{background:#fff;color:var(--brand2);opacity:1}
+  .lh .ttl{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;line-height:1.15}
+  .lh .ttl b{font-size:1.06em}
+  .lh .ttl span{opacity:.8;margin-left:8px}
+  .lh .lg{flex:none;opacity:.8}
+  .lh .upd{flex:none;opacity:.75;display:flex;align-items:center;gap:5px}
+  .lh .dot{width:7px;height:7px;border-radius:50%;background:#4ade80;box-shadow:0 0 0 3px rgba(74,222,128,.25)}
+  .lh .dot.off{background:#f59e0b;box-shadow:0 0 0 3px rgba(245,158,11,.25)}
+  .gw{flex:1;position:relative;overflow:hidden}
+  .g{position:absolute;display:grid;background:var(--card);border:1px solid var(--grid);border-radius:6px;overflow:hidden}
+  .g .cn{grid-column:1;background:var(--card);color:var(--muted);font-weight:700;display:flex;align-items:flex-end;justify-content:center;padding-bottom:3px;border-right:1px solid var(--grid);border-bottom:1px solid var(--grid);text-transform:uppercase;letter-spacing:.04em}
+  .g .gb{color:#fff;font-weight:800;letter-spacing:.09em;display:flex;align-items:center;padding:0 6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border-right:2px solid var(--card)}
+  .g .hc{color:#141833;text-align:center;padding:1px 3px;overflow:hidden;display:flex;flex-direction:column;justify-content:center;border-right:1px solid rgba(0,0,0,.12);border-bottom:1px solid var(--grid);cursor:pointer;line-height:1.12}
+  .g .hc b{display:block;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:.01em}
+  .g .hc small{display:block;font-weight:700;opacity:.72;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .g .hr{grid-column:1;background:var(--hour);color:#fff;font-weight:800;display:flex;align-items:center;justify-content:center;border-bottom:1px solid rgba(255,255,255,.35);font-variant-numeric:tabular-nums}
+  .g .hr.past{background:var(--hour-past)}
+  .g .e{border-right:1px solid var(--grid);border-bottom:1px solid var(--grid)}
+  .g .e.gs{border-left:2px solid #8b93ad}
+  .g .b{margin:1px 2px 1px 1px;border-radius:5px;padding:0 3px 0 4px;overflow:hidden;display:flex;flex-direction:column;justify-content:center;color:#141833;cursor:pointer;
+    border-left:3px solid rgba(0,0,0,.38);position:relative;line-height:1.13;z-index:1;transition:filter .12s}
+  .g .b:active{filter:brightness(.93)}
+  .g .b .m{font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:clip;font-variant-numeric:tabular-nums;letter-spacing:-.01em;display:flex;align-items:baseline;gap:.25em}
+  .g .b .m .pn{min-width:0;overflow:hidden;text-overflow:clip}
+  .g .b .m .mk{flex:none;font-size:.78em}
+  .g .b.paid{border-left-color:#15803d}
+  .g .b .cr{position:absolute;top:0;right:2px;font-weight:800;line-height:1.05;pointer-events:none}
+  .g .b .s{font-weight:650;opacity:.84;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .g .b.note{background:var(--note)!important;color:var(--note-ink);border-left-color:#8b93ad;font-style:italic}
+  .g .b.past{opacity:.5}
+  .g .b.noshow .m{text-decoration:line-through}
+  .g .ok{color:#15803d}
+  .g .ft{grid-column:1/-1;color:var(--muted);font-weight:600;display:flex;align-items:center;padding:0 6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border-top:1px solid var(--grid)}
+  .g .now{position:absolute;height:2px;background:#e11d48;z-index:3;pointer-events:none;box-shadow:0 0 0 1px rgba(255,255,255,.6)}
+  .g .now::before{content:"";position:absolute;left:-4px;top:-3px;width:8px;height:8px;border-radius:50%;background:#e11d48}
+  .empty{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:20px}
+  .empty .msg{max-width:420px}
+
+  /* katak ma'lumoti */
+  .pop{position:absolute;inset:0;z-index:20;background:rgba(10,14,30,.42);display:flex;align-items:center;justify-content:center;padding:10px;animation:fade .15s ease-out}
+  .pc{background:var(--card);color:var(--ink);border-radius:16px;box-shadow:0 18px 50px rgba(0,0,0,.3);width:min(400px,100%);max-height:100%;overflow:auto;padding:14px 16px 16px;animation:pin .22s cubic-bezier(.2,.8,.2,1)}
+  @keyframes pin{from{opacity:0;transform:scale(.95)}to{opacity:1;transform:none}}
+  .pt{display:flex;align-items:center;gap:8px}
+  .pt .sw{width:12px;height:12px;border-radius:4px;flex:none;border:1px solid rgba(0,0,0,.2)}
+  .pt b{flex:1;font-size:17px;text-transform:uppercase;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .pt .x{border:0;background:var(--chip);width:32px;height:32px;border-radius:50%;font-size:15px;cursor:pointer;flex:none}
+  .pw{font-size:20px;font-weight:800;margin:6px 0 10px;font-variant-numeric:tabular-nums}
+  .pw span{font-size:14px;font-weight:600;color:var(--muted);margin-left:6px}
+  .call{display:flex;align-items:center;justify-content:space-between;gap:10px;background:#15803d;color:#fff;text-decoration:none;border-radius:12px;padding:11px 14px;margin:0 0 10px;font-weight:800;font-size:19px;font-variant-numeric:tabular-nums}
+  .call small{font-size:13px;font-weight:700;opacity:.9;white-space:nowrap}
+  .pr{display:flex;gap:10px;padding:6px 0;border-top:1px solid var(--line);font-size:14.5px}
+  .pr span{color:var(--muted);width:76px;flex:none}
+  .pr b{font-weight:650;min-width:0;overflow-wrap:anywhere}
+  .pl{border-top:1px solid var(--line);padding:7px 0;display:flex;gap:10px;align-items:center;font-size:14.5px}
+  .pl .tm{font-weight:800;width:96px;flex:none;font-variant-numeric:tabular-nums}
+  .pl a{font-weight:800;text-decoration:none;color:#15803d}
+  .turn{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:30;background:rgba(20,24,51,.88);color:#fff;border-radius:16px;padding:14px 20px;font-weight:700;font-size:16px;text-align:center;pointer-events:none;animation:turn 2.6s ease forwards}
+  .turn big{display:block;font-size:30px;margin-bottom:4px}
+  @keyframes turn{0%{opacity:0}10%{opacity:1}75%{opacity:1}100%{opacity:0}}
+  @media (prefers-reduced-motion:reduce){.day,.land,.pop,.pc,.turn{animation:none}}
 </style>
 </head>
 <body>
-<header class="top">
-  <small>TASH INDEX AVTODROM · EXCEL BRON</small>
-  <h1 id="title">Jadval</h1>
-  <div class="upd"><span class="dot"></span><span id="upd">yuklanmoqda…</span></div>
-</header>
-<main class="wrap">
-  <div id="app"><div class="skel"></div><div class="skel"></div><div class="skel"></div></div>
-  <div class="foot">Sahifa har 30 soniyada o‘zi yangilanadi — har doim eng so‘nggi holat.</div>
-</main>
+
+<div id="pick">
+  <header class="ph">
+    <small>ТАШ ИНДЕКС АВТОДРОМ · EXCEL БРОН</small>
+    <h1>Қайси кун?</h1>
+    <p>Кунни танланг — барча инструкторларнинг брони битта экранда, ётиқ кўринишда очилади.</p>
+  </header>
+  <div class="days" id="days"><div class="msg"><span class="ld"></span></div></div>
+  <p class="hint">📱 Жадвал очилгач телефонни ётқизиб қаранг. Катакни боссангиз — рақам ва қўнғироқ тугмаси чиқади.</p>
+</div>
+
+<div id="land" class="land" hidden>
+  <div class="lh" id="lh"></div>
+  <div class="gw" id="gw"></div>
+  <div class="pop" id="pop" hidden></div>
+</div>
+
 <script>
 (function () {
   'use strict';
   var P = new URLSearchParams(location.search);
   var D = P.get('d') || '', K = P.get('k') || '';
-  var S = { data: null, view: 'ins', ins: 'all', q: '', err: null };
-  try { var v = localStorage.getItem('jadval.view'); if (v === 'grid' || v === 'ins') S.view = v; } catch (e) {}
-  var app = document.getElementById('app');
+  var YMD = /^\d{4}-\d{2}-\d{2}$/;
+  var MON = ['январ', 'феврал', 'март', 'апрел', 'май', 'июн', 'июл', 'август', 'сентябр', 'октябр', 'ноябр', 'декабр'];
+  var MON3 = ['янв', 'фев', 'мар', 'апр', 'май', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек'];
+  var WD = ['якшанба', 'душанба', 'сешанба', 'чоршанба', 'пайшанба', 'жума', 'шанба'];
+  /* Admin paneldagi Excel bron va guruh rasmi bilan bir xil ustun ranglari */
+  var PAL = ['#fde047', '#86efac', '#cbd5e1', '#fdba74', '#93c5fd', '#a5b4fc', '#f9a8d4', '#5eead4', '#c4b5fd', '#fcd34d', '#7dd3fc', '#bef264'];
+  var AUTO_RX = /(?:^|[^\p{L}])(?:avtomat\p{L}*|avtamat\p{L}*|aftomat\p{L}*|aftamat\p{L}*|автомат\p{L}*|афтомат\p{L}*|автамат\p{L}*|automat\p{L}*|akpp|акпп|акп)(?=$|[^\p{L}])/iu;
+  var AUTO_NOT = /(?:avtomat|автомат|aftomat|automat)\p{L}*(?:siz|сиз)(?=$|[^\p{L}])|(?:avtomat|автомат|aftomat)\p{L}*\s+(?:emas|эмас)(?=$|[^\p{L}])|(?:^|[^\p{L}])(?:не|ne)\s+(?:автомат|avtomat)/iu;
+  var STATUS = { pending: 'кутилмоқда', confirmed: 'тасдиқланган', in_progress: '▶ дарсда', completed: '✔ тугаган', no_show: '✕ келмади' };
 
+  var S = { today: tashYmd(Date.now()), cache: {}, err: {}, loading: {}, cur: null, linkErr: null, offline: false, built: null, hinted: false };
+  var $ = function (id) { return document.getElementById(id); };
+  var land = $('land'), gw = $('gw'), pop = $('pop');
+
+  /* ---------- yordamchilar ---------- */
   function esc(v) { return String(v == null ? '' : v).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
   function digits(v) { return String(v || '').replace(/\D/g, ''); }
-  function telOf(v) { var d = digits(v); return d.length >= 9 ? '+998' + d.slice(-9) : ''; }
-  function pretty(v) { var d = digits(v).slice(-9); return d.length === 9 ? '+998 ' + d.slice(0, 2) + ' ' + d.slice(2, 5) + ' ' + d.slice(5, 7) + ' ' + d.slice(7) : String(v || ''); }
+  function nine(v) { var d = digits(v); return d.length >= 9 ? d.slice(-9) : ''; }
   function phoneInText(t) { var m = String(t || '').replace(/[\s()\-.]/g, '').match(/(?:\+?998)?(\d{9})(?!\d)/); return m ? m[1] : ''; }
-  function hh(h) { return (h < 10 ? '0' : '') + h + ':00'; }
-  function hmOf(iso) { try { return new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Tashkent', hour: '2-digit', minute: '2-digit' }).format(new Date(iso)); } catch (e) { return ''; } }
-  function key(id, h) { return id + '|' + (h < 10 ? '0' : '') + h; }
-  function nowH() { try { return Number(new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Tashkent', hour: '2-digit', hour12: false }).format(new Date())) % 24; } catch (e) { return -1; } }
-  function todayYmd() { try { return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Tashkent' }).format(new Date()); } catch (e) { return ''; } }
-
-  /* Katak → ko'rinish */
-  function cellView(c) {
-    if (!c) return null;
-    var ph = c.phone || phoneInText(c.t);
-    var kind = c.k === 'bk' ? 'app' : c.k === 'sheet' ? 'bron' : c.k === 'note' ? 'band' : c.k === 'off' || c.k === 'own' ? 'off' : 'band';
-    var name = c.name && !/^Mijoz \+?998/.test(c.name) ? c.name : '';
-    var tags = [];
-    if (c.paid) tags.push('<span class="pill ok">to‘langan</span>');
-    if (c.k === 'bk') tags.push('<span class="pill">' + (c.src === 'app' ? 'Mini App' : c.src === 'walk_in' ? 'kassa' : 'bron') + '</span>');
-    if (c.cat) tags.push('<span class="pill">' + esc(c.cat) + ' toifa</span>');
-    if (c.min && c.min < 60) tags.push('<span class="pill">' + c.min + ' daq</span>');
-    var text = c.k === 'note' ? (c.t || 'band') : c.k === 'off' ? 'dam (grafik)' : c.k === 'own' ? 'yopiq' : '';
-    return { kind: kind, phone: ph, name: name, code: c.code || '', tags: tags.join(''), text: text, id: (c.code || '') + '|' + ph, start: c.start, end: c.end };
+  function spaced(n9) { return n9.slice(0, 2) + ' ' + n9.slice(2, 5) + ' ' + n9.slice(5, 7) + ' ' + n9.slice(7); }
+  var mctx = null;
+  /** matn eni (px) — katakka sig'ishini aniq bilish uchun */
+  function tw(text, px) {
+    try { if (!mctx) mctx = document.createElement('canvas').getContext('2d'); mctx.font = '800 ' + px + 'px -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif'; return mctx.measureText(String(text)).width; }
+    catch (e) { return String(text).length * px * 0.6; }
   }
-
-  function matches(ins, d) {
-    var q = S.q.trim().toLowerCase(); if (!q) return true;
-    var qd = digits(q);
-    if (String(ins.name).toLowerCase().indexOf(q) >= 0) return true;
-    if (qd.length >= 3 && digits(ins.phone).indexOf(qd) >= 0) return true;
-    for (var i = 0; i < d.hours.length; i++) {
-      var c = d.cells[key(ins.id, d.hours[i])]; if (!c) continue;
-      if (qd.length >= 3 && (digits(c.phone).indexOf(qd) >= 0 || digits(c.t).indexOf(qd) >= 0)) return true;
-      if ((c.name || '').toLowerCase().indexOf(q) >= 0 || (c.t || '').toLowerCase().indexOf(q) >= 0 || (c.code || '').toLowerCase().indexOf(q) >= 0) return true;
-    }
-    return false;
+  function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
+  function pad(n) { return (n < 10 ? '0' : '') + n; }
+  function hh(h) { return pad(h) + ':00'; }
+  function key(id, h) { return id + '|' + pad(h); }
+  function tashYmd(ms) {
+    try { return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Tashkent' }).format(new Date(ms)); }
+    catch (e) { return new Date(ms + 5 * 3600e3).toISOString().slice(0, 10); }
   }
-
-  function countOf(ins, d) {
-    var bron = {}, band = 0;
-    d.hours.forEach(function (h) { var c = d.cells[key(ins.id, h)]; if (!c) return;
-      if (c.k === 'sheet' || c.k === 'bk') bron[(c.code || '') + '|' + (c.phone || c.t)] = 1; else if (c.k === 'note') band++; });
-    return { bron: Object.keys(bron).length, band: band };
+  function hm(iso) {
+    var t = Date.parse(iso); if (!isFinite(t)) return '';
+    var d = new Date(t + 5 * 3600e3); return pad(d.getUTCHours()) + ':' + pad(d.getUTCMinutes());
   }
-
-  function renderIns(d) {
-    var isToday = d.date === todayYmd(), nh = nowH();
-    var list = d.instructors.filter(function (i) { return (S.ins === 'all' || S.ins === i.id) && matches(i, d); });
-    if (!list.length) return '<div class="msg"><b>Topilmadi</b>Qidiruvni o‘zgartiring.</div>';
-    return list.map(function (ins) {
-      var n = countOf(ins, d), rows = [], free = [];
-      var i = 0;
-      while (i < d.hours.length) {
-        var h = d.hours[i], c = cellView(d.cells[key(ins.id, h)]);
-        if (!c || c.kind === 'off') { if (!c) free.push(h); i++; continue; }
-        var j = i + 1;
-        while (j < d.hours.length) { var c2 = cellView(d.cells[key(ins.id, d.hours[j])]); if (!c2 || c2.kind !== c.kind || c2.id !== c.id || c.kind === 'band') break; j++; }
-        var past = isToday && d.hours[j - 1] < nh;
-        var time = j - i > 1 ? hh(h) + '<small>' + hh(d.hours[j - 1] + 1) + ' gacha · ' + (j - i) + ' soat</small>' : hh(h);
-        var body = c.kind === 'band'
-          ? '<div style="font-weight:700">' + esc(c.text) + '</div>' + (c.phone ? '<a class="tel" href="tel:' + telOf(c.phone) + '">' + esc(pretty(c.phone)) + '</a>' : '')
-          : (c.phone ? '<a class="tel" href="tel:' + telOf(c.phone) + '">' + esc(pretty(c.phone)) + '</a>' : '<div style="font-weight:700">Mijoz</div>') +
-            '<div class="sub">' + esc([c.name, c.code].filter(Boolean).join(' · ')) + c.tags + '</div>';
-        rows.push('<div class="row ' + c.kind + (past ? ' past' : '') + '"><div class="t">' + time + '</div><div class="c">' + body + '</div></div>');
-        i = j;
-      }
-      var freeTxt = free.length ? 'Bo‘sh: ' + ranges(free) : '';
-      return '<section class="ins" id="ins-' + esc(ins.id) + '"><div class="ins-h"><div><b>' + esc(ins.name) + '</b>' +
-        (ins.phone ? '<a href="tel:' + telOf(ins.phone) + '">' + esc(pretty(ins.phone)) + '</a>' : '') +
-        '</div><span class="cnt">' + n.bron + ' bron' + (n.band ? ' · ' + n.band + ' band' : '') + '</span></div>' +
-        (rows.length ? rows.join('') : '<div class="empty">Hozircha yozuv yo‘q</div>') +
-        (freeTxt && rows.length ? '<div class="free">' + esc(freeTxt) + '</div>' : '') + '</section>';
-    }).join('');
+  function minOfDay(ms) { var d = new Date(ms + 5 * 3600e3); return d.getUTCHours() * 60 + d.getUTCMinutes(); }
+  function addDays(ymd, n) { return new Date(Date.parse(ymd + 'T12:00:00Z') + n * 864e5).toISOString().slice(0, 10); }
+  function parts(ymd) { var p = ymd.split('-').map(Number); return { y: p[0], m: p[1], d: p[2], wd: new Date(Date.UTC(p[0], p[1] - 1, p[2], 12)).getUTCDay() }; }
+  function dayLong(ymd) { var p = parts(ymd); return p.d + ' ' + MON[p.m - 1] + ', ' + WD[p.wd]; }
+  function relName(ymd) {
+    return ymd === S.today ? 'Бугун' : ymd === addDays(S.today, 1) ? 'Эртага' : ymd === addDays(S.today, -1) ? 'Кеча' : '';
   }
-  function ranges(hs) {
-    var out = [], s = hs[0], p = hs[0];
-    for (var i = 1; i <= hs.length; i++) {
-      var h = hs[i];
-      if (h === p + 1) { p = h; continue; }
-      out.push(s + '–' + (p + 1)); s = h; p = h;
-    }
-    return out.join(', ');
+  function dayList() {
+    var l = [S.today, addDays(S.today, 1), addDays(S.today, -1)];
+    if (YMD.test(D) && l.indexOf(D) < 0) l.push(D);
+    return l;
   }
-
-  function renderGrid(d) {
-    var list = d.instructors.filter(function (i) { return (S.ins === 'all' || S.ins === i.id) && matches(i, d); });
-    if (!list.length) return '<div class="msg"><b>Topilmadi</b>Qidiruvni o‘zgartiring.</div>';
-    var head = '<tr><th class="h">Soat</th>' + list.map(function (i) {
-      return '<th>' + esc(i.name) + (i.phone ? '<small>' + esc(pretty(i.phone)) + '</small>' : '') + '</th>'; }).join('') + '</tr>';
-    var body = d.hours.map(function (h) {
-      return '<tr><td class="h">' + hh(h) + '</td>' + list.map(function (i) {
-        var c = cellView(d.cells[key(i.id, h)]);
-        if (!c) return '<td></td>';
-        if (c.kind === 'off') return '<td class="off">' + esc(c.text) + '</td>';
-        if (c.kind === 'band') return '<td class="band"><b>' + esc(c.text) + '</b></td>';
-        return '<td class="' + c.kind + '">' + (c.phone ? '<a href="tel:' + telOf(c.phone) + '">' + esc(pretty(c.phone).replace('+998 ', '')) + '</a>' : '<b>Mijoz</b>') +
-          (c.name || c.code ? '<small>' + esc([c.name, c.code].filter(Boolean).join(' · ')) + '</small>' : '') + '</td>';
-      }).join('') + '</tr>';
-    }).join('');
-    return '<div class="grid-wrap"><table><thead>' + head + '</thead><tbody>' + body + '</tbody></table></div>';
+  function durTxt(min) {
+    if (!min) return '';
+    if (min < 60) return min + ' дақиқа';
+    var h = min / 60; return (h % 1 ? String(Math.round(h * 10) / 10).replace('.', ',') : h) + ' соат';
   }
-
-  function render() {
-    var d = S.data;
-    if (S.err && !d) { app.innerHTML = '<div class="msg"><b>Jadval ochilmadi</b>' + esc(S.err) + '</div>'; return; }
-    if (!d) return;
-    document.getElementById('title').textContent = d.title || d.date;
-    var st = d.stats || {};
-    var chips = '<div class="chips"><button class="chip ' + (S.ins === 'all' ? 'on' : '') + '" data-ins="all">Hammasi<i>' + d.instructors.length + '</i></button>' +
-      d.instructors.map(function (i) { var n = countOf(i, d); return '<button class="chip ' + (S.ins === i.id ? 'on' : '') + '" data-ins="' + esc(i.id) + '">' + esc(i.name.split(' ')[0]) + '<i>' + (n.bron + n.band) + '</i></button>'; }).join('') + '</div>';
-    var focus = document.activeElement && document.activeElement.id === 'q';
-    app.innerHTML =
-      '<div class="stats"><div class="stat"><b>' + (st.bron || 0) + '</b> bron</div>' + (st.band ? '<div class="stat"><b>' + st.band + '</b> band</div>' : '') +
-      '<div class="stat"><b>' + (st.busy_instructors || 0) + '</b> / ' + (st.instructors || 0) + ' instruktorda yozuv</div></div>' +
-      '<input class="search" id="q" type="search" inputmode="search" placeholder="Qidirish: instruktor, mijoz, raqam yoki kod" value="' + esc(S.q) + '" autocomplete="off">' +
-      '<div class="seg"><button data-view="ins" class="' + (S.view === 'ins' ? 'on' : '') + '">👤 Instruktorlar</button><button data-view="grid" class="' + (S.view === 'grid' ? 'on' : '') + '">▦ Jadval (Excel)</button></div>' +
-      chips + '<div id="list">' + (S.view === 'grid' ? renderGrid(d) : renderIns(d)) + '</div>';
-    var q = document.getElementById('q');
-    q.oninput = function () { S.q = q.value; document.getElementById('list').innerHTML = S.view === 'grid' ? renderGrid(d) : renderIns(d); };
-    if (focus) { q.focus(); try { q.setSelectionRange(q.value.length, q.value.length); } catch (e) {} }
-    app.querySelectorAll('[data-view]').forEach(function (b) { b.onclick = function () { S.view = b.getAttribute('data-view'); try { localStorage.setItem('jadval.view', S.view); } catch (e) {} render(); }; });
-    app.querySelectorAll('[data-ins]').forEach(function (b) { b.onclick = function () { S.ins = b.getAttribute('data-ins'); render(); window.scrollTo({ top: 0, behavior: 'smooth' }); }; });
+  function isAuto(t) { t = String(t || ''); return AUTO_RX.test(t) && !AUTO_NOT.test(t); }
+  function groupColor(g) {
+    var s = String(g || '').toUpperCase().replace(/\s+/g, '');
+    return s === 'A' ? '#c2410c' : s === 'B' ? '#2b2f8f' : s === 'C' ? '#047857' : '#6d28d9';
   }
+  function errText(status, e) {
+    e = String(e || '');
+    if (/eskirgan/i.test(e)) return 'Ҳавола эскирган — гуруҳдаги янги хабарни очинг.';
+    if (/noto.?g.?ri/i.test(e) && /havola/i.test(e)) return 'Ҳавола нотўғри — гуруҳдаги тугмани қайта босинг.';
+    if (/kun uchun havola/i.test(e)) return 'Бу кун учун ҳавола йўқ.';
+    return 'Жадвал юкланмади. Бироздан кейин қайта уриниб кўринг.';
+  }
+  function isLinkErr(e) { return /Ҳавола (эскирган|нотўғри)/.test(e || ''); }
 
-  function load() {
-    if (!D || !K) { S.err = 'Havola to‘liq emas — guruhdagi xabardagi tugmani bosing.'; render(); return; }
-    fetch('/api/sheet-view?d=' + encodeURIComponent(D) + '&k=' + encodeURIComponent(K), { cache: 'no-store' })
-      .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
+  /* ---------- ma'lumot ---------- */
+  function fetchDay(ymd, cb) {
+    if (S.loading[ymd]) return;
+    S.loading[ymd] = true;
+    fetch('/api/sheet-view?d=' + encodeURIComponent(D) + '&k=' + encodeURIComponent(K) + '&day=' + encodeURIComponent(ymd), { cache: 'no-store' })
+      .then(function (r) { return r.json().catch(function () { return {}; }).then(function (j) { return { ok: r.ok, status: r.status, j: j || {} }; }); })
       .then(function (x) {
-        if (!x.ok || !x.j.ok) { S.err = (x.j && x.j.error) || 'Xatolik'; S.data = null; render(); return; }
-        S.err = null; S.data = x.j;
-        document.getElementById('upd').textContent = 'Yangilandi: ' + hmOf(x.j.now) + (x.j.updated_at ? ' · admin saqlagan: ' + hmOf(x.j.updated_at) : '');
-        var y = window.scrollY; render(); window.scrollTo(0, y);
+        S.loading[ymd] = false; S.offline = false;
+        if (!x.ok || !x.j.ok) {
+          var t = errText(x.status, x.j.error);
+          S.err[ymd] = t; if (isLinkErr(t)) S.linkErr = t;
+        } else {
+          S.err[ymd] = null; S.cache[ymd] = x.j;
+          if (x.j.today && YMD.test(x.j.today) && x.j.today !== S.today) { S.today = x.j.today; prefetch(); }
+        }
+        if (cb) cb();
       })
-      .catch(function () { if (!S.data) { S.err = 'Internet aloqasini tekshiring.'; render(); } else document.getElementById('upd').textContent = 'Aloqa yo‘q — oxirgi holat ko‘rsatilmoqda'; });
+      .catch(function () { S.loading[ymd] = false; S.offline = true; if (!S.cache[ymd]) S.err[ymd] = 'Интернет алоқасини текширинг.'; if (cb) cb(); });
   }
-  load();
-  setInterval(function () { if (!document.hidden && !(document.activeElement && document.activeElement.id === 'q')) load(); }, 30000);
-  document.addEventListener('visibilitychange', function () { if (!document.hidden) load(); });
+  function prefetch() { dayList().forEach(function (y) { fetchDay(y, onData); }); }
+  function onData() { if (S.cur) renderLand(); else renderPick(); }
+
+  /** Kunning faqat Excel yozuvlari: instruktor ustunlari va ulardagi bloklar */
+  function build(d) {
+    var cols = [], free = [], bronIds = {}, notes = 0;
+    d.instructors.forEach(function (ins, idx) {
+      var blocks = [];
+      d.hours.forEach(function (h) {
+        var c = d.cells[key(ins.id, h)];
+        if (!c || (c.k !== 'sheet' && c.k !== 'note')) return;          // faqat Excel bron
+        var id = c.k === 'sheet' ? 'b:' + (c.code || c.phone || c.t || '') : 'n:' + (c.t || '');
+        var last = blocks[blocks.length - 1];
+        if (last && last.id === id && last.h1 === h) { last.h1 = h + 1; last.paid = last.paid || !!c.paid; return; }
+        blocks.push({ id: id, h0: h, h1: h + 1, c: c, kind: c.k === 'sheet' ? 'bron' : 'note', paid: !!c.paid });
+      });
+      blocks.forEach(function (b) { if (b.kind === 'bron') bronIds[b.id] = 1; else notes++; });
+      if (blocks.length) cols.push({ ins: ins, color: PAL[idx % PAL.length], blocks: blocks });
+      else free.push(ins.name);
+    });
+    var lo = 8, hi = 18;
+    cols.forEach(function (c) { c.blocks.forEach(function (b) { lo = Math.min(lo, b.h0); hi = Math.max(hi, b.h1); }); });
+    var first = d.hours[0], end = d.hours[d.hours.length - 1] + 1;
+    lo = Math.max(lo, first); hi = Math.min(hi, end);
+    var hours = d.hours.filter(function (h) { return h >= lo && h < hi; });
+    return { d: d, cols: cols, free: free, hours: hours, bron: Object.keys(bronIds).length, notes: notes };
+  }
+
+  /* ================= 1. KUN TANLASH ================= */
+  function renderPick() {
+    var box = $('days');
+    document.title = 'Жадвал — кунни танланг';
+    if (!D || !K) { box.innerHTML = '<div class="msg"><b>Ҳавола тўлиқ эмас</b><span>Гуруҳдаги хабардаги «📋 Jadvalni ochish» тугмасини босинг.</span></div>'; return; }
+    if (S.linkErr) { box.innerHTML = '<div class="msg"><b>Жадвал очилмади</b><span>' + esc(S.linkErr) + '</span></div>'; return; }
+    box.innerHTML = dayList().map(function (ymd) {
+      var p = parts(ymd), rel = relName(ymd), x = S.cache[ymd], cnt;
+      if (x) {
+        var B = build(x);
+        cnt = (B.bron ? B.bron + ' та брон' : 'брон йўқ') + '<small>' + (B.cols.length ? B.cols.length + ' инструктор' : 'Excel бўш') + '</small>';
+      } else if (S.err[ymd]) cnt = '<small>' + (S.offline ? 'алоқа йўқ' : 'очилмади') + '</small>';
+      else cnt = '<span class="ld"></span>';
+      return '<button class="day' + (ymd === S.today ? ' today' : '') + (ymd === D ? ' link' : '') + '" data-day="' + ymd + '" type="button">' +
+        '<span class="dn"><b>' + p.d + '</b><i>' + MON3[p.m - 1] + '</i></span>' +
+        (ymd === D ? '<em>📌 хабардаги кун</em>' : '') +
+        '<span class="dl"><b>' + esc(rel || (p.d + ' ' + MON[p.m - 1])) + '</b>' +
+        '<span>' + esc(rel ? dayLong(ymd) : WD[p.wd]) + '</span></span>' +
+        '<span class="dc">' + cnt + '</span><span class="ar">›</span></button>';
+    }).join('');
+  }
+  $('days').addEventListener('click', function (e) {
+    var b = e.target.closest('[data-day]'); if (!b) return;
+    open(b.getAttribute('data-day'), true);
+  });
+
+  /* ================= 2. YOTIQ JADVAL ================= */
+  function open(ymd, push) {
+    S.cur = ymd;
+    var url = location.pathname + location.search + '#' + ymd;
+    try { if (push) history.pushState({ day: ymd }, '', url); else history.replaceState({ day: ymd }, '', url); } catch (e) {}
+    $('pick').hidden = true; land.hidden = false; pop.hidden = true;
+    document.documentElement.classList.add('lock');
+    if (!S.cache[ymd]) fetchDay(ymd, onData);
+    fit(); renderLand();
+  }
+  function closeLand() {
+    S.cur = null; land.hidden = true; pop.hidden = true; $('pick').hidden = false;
+    document.documentElement.classList.remove('lock');
+    renderPick(); window.scrollTo(0, 0);
+  }
+  window.addEventListener('popstate', function () {
+    var y = location.hash.slice(1);
+    if (YMD.test(y) && dayList().indexOf(y) >= 0) open(y, false); else closeLand();
+  });
+
+  /* Telefon tik turgan bo'lsa — jadval 90° burilib chiziladi (yotqizib qaraladi) */
+  var L = { w: 0, h: 0, rot: false };
+  function fit() {
+    if (land.hidden) return;
+    var W = window.innerWidth, H = window.innerHeight;
+    var rot = H > W * 1.08;
+    L = { w: rot ? H : W, h: rot ? W : H, rot: rot };
+    land.style.width = L.w + 'px'; land.style.height = L.h + 'px';
+    land.style.transform = rot ? 'translateX(' + W + 'px) rotate(90deg)' : 'none';
+    if (rot && !S.hinted) {
+      S.hinted = true;
+      var t = document.createElement('div'); t.className = 'turn';
+      t.innerHTML = '<big>📱↻</big>Телефонни ётқизинг';
+      land.appendChild(t); setTimeout(function () { t.remove(); }, 2700);
+    }
+  }
+  var rq = 0;
+  function refit() { window.cancelAnimationFrame(rq); rq = window.requestAnimationFrame(function () { fit(); renderLand(); }); }
+  window.addEventListener('resize', refit);
+  window.addEventListener('orientationchange', function () { setTimeout(refit, 250); });
+
+  function headBar(B, fs) {
+    var y = S.cur, rel = relName(y), x = S.cache[y];
+    var seg = [addDays(S.today, -1), S.today, addDays(S.today, 1)].map(function (d) {
+      return '<button type="button" data-seg="' + d + '" class="' + (d === y ? 'on' : '') + '">' + relName(d) + '</button>';
+    }).join('');
+    var stats = B ? (B.bron ? B.bron + ' та брон' : 'брон йўқ') + (B.cols.length ? ' · ' + B.cols.length + ' инструктор' : '') : '';
+    var upd = x ? 'янгиланди ' + hm(x.now) : S.err[y] ? '' : 'юкланмоқда…';
+    var wide = L.w >= 980;
+    $('lh').style.height = Math.round(fs * 2.55) + 'px';
+    $('lh').style.fontSize = fs + 'px';
+    $('lh').innerHTML = '<button type="button" class="back" data-act="back"><b>‹</b> Кунлар</button>' +
+      '<div class="seg">' + seg + '</div>' +
+      '<div class="ttl"><b>' + esc(rel ? rel + ', ' + dayLong(y) : dayLong(y)) + '</b>' + (stats ? '<span>' + esc(stats) + '</span>' : '') + '</div>' +
+      (wide ? '<span class="lg">✓ тўланган · 🚗 автомат</span>' : '') +
+      '<span class="upd"><i class="dot' + (S.offline ? ' off' : '') + '"></i>' + esc(S.offline ? 'алоқа йўқ' : upd) + '</span>';
+  }
+
+  function renderLand() {
+    if (!S.cur || land.hidden) return;
+    var y = S.cur, x = S.cache[y];
+    var hfs = clamp(L.h / 26, 11, 15);
+    document.title = 'Жадвал — ' + (relName(y) ? relName(y) + ', ' : '') + dayLong(y);
+    if (!x) {
+      headBar(null, hfs);
+      gw.innerHTML = '<div class="empty"><div class="msg">' + (S.err[y] ? '<b>Жадвал очилмади</b><span>' + esc(S.err[y]) + '</span>' : '<span class="ld"></span>') + '</div></div>';
+      return;
+    }
+    var B = S.built = build(x);
+    headBar(B, hfs);
+    if (!B.cols.length) {
+      gw.innerHTML = '<div class="empty"><div class="msg"><b>Excel’да ёзув йўқ</b><span>' + esc(dayLong(y)) + (y < S.today ? ' — бу кунга брон ёзилмаган.' : ' — ҳали брон ёзилмаган.') + '</span></div></div>';
+      return;
+    }
+    var GW = gw.clientWidth || (L.w), GH = gw.clientHeight || (L.h - hfs * 2.55);
+    var n = B.cols.length, m = B.hours.length, gp = 4;
+    var aw = GW - gp * 2, ah = GH - gp * 2;
+    var groups = []; B.cols.forEach(function (c, i) { var g = String(c.ins.group || ''); if (!groups.length || groups[groups.length - 1].g !== g) groups.push({ g: g, i0: i, n: 1 }); else groups[groups.length - 1].n++; });
+    var hasFoot = B.free.length > 0;
+    /* shrift katak o'lchamidan: hamma narsa bitta ekranga sig'adi */
+    var fs = 13, hw, band, head, foot, colW, rowH;
+    for (var it = 0; it < 4; it++) {
+      hw = Math.round(clamp(fs * 3.15, 32, 60));
+      band = Math.round(clamp(fs * 1.2, 10, 18));
+      head = Math.round(clamp(fs * 2.5 + 2, 24, 48));
+      foot = hasFoot ? Math.round(clamp(fs * 1.35, 12, 20)) : 0;
+      colW = Math.min((aw - hw) / n, 280);
+      rowH = (ah - band - head - foot) / m;
+      fs = clamp(Math.min((colW - 8) / 6.15, rowH * 0.5), 7, 17);
+    }
+    colW = Math.floor(colW * 10) / 10; rowH = Math.floor(rowH * 10) / 10;
+    var gwPx = hw + colW * n + 2;
+    var left = Math.max(gp, Math.round((GW - gwPx) / 2));
+    /* telefon raqami katakka TO'LIQ sig'sin: o'lchab, kerak bo'lsa bo'shliqsiz va kichikroq */
+    var avail = colW - 14;
+    var compactPhone = tw('90 123 45 67', fs) > avail;
+    var sfs = Math.max(6.5, fs * 0.78);
+    var lineH = fs * 1.15, subH = sfs * 1.16;
+
+    var today = y === S.today, nowMs = Date.now(), nowMin = minOfDay(nowMs);
+    var h0 = B.hours[0], R0 = 3;                       // 1: guruh, 2: ism, 3.. soatlar
+    var o = [];
+    o.push('<div class="cn" style="grid-row:1/3;font-size:' + sfs + 'px">Соат</div>');
+    groups.forEach(function (g) {
+      o.push('<div class="gb" style="grid-row:1;grid-column:' + (g.i0 + 2) + '/span ' + g.n + ';background:' + groupColor(g.g) + ';font-size:' + Math.max(6.5, fs * 0.7) + 'px">' +
+        esc((g.g || '').toUpperCase() + ' ТОИФА') + '</div>');
+    });
+    B.cols.forEach(function (c, i) {
+      var ph = nine(c.ins.phone);
+      o.push('<div class="hc" data-i="' + i + '" style="grid-row:2;grid-column:' + (i + 2) + ';background:' + c.color + '">' +
+        '<b style="font-size:' + (fs * 0.86) + 'px">' + esc(c.ins.name) + '</b>' +
+        (ph ? '<small style="font-size:' + sfs + 'px">' + esc(compactPhone ? ph : spaced(ph)) + '</small>' : '') + '</div>');
+    });
+    B.hours.forEach(function (h, r) {
+      var past = today && (h + 1) * 60 <= nowMin;
+      o.push('<div class="hr' + (past ? ' past' : '') + '" style="grid-row:' + (R0 + r) + ';font-size:' + (fs * 0.92) + 'px">' + hh(h) + '</div>');
+      for (var i = 0; i < n; i++) {
+        var gs = i > 0 && B.cols[i].ins.group !== B.cols[i - 1].ins.group;
+        o.push('<div class="e' + (gs ? ' gs' : '') + '" style="grid-row:' + (R0 + r) + ';grid-column:' + (i + 2) + '"></div>');
+      }
+    });
+    B.cols.forEach(function (c, i) {
+      c.blocks.forEach(function (b, j) {
+        var a = Math.max(b.h0, h0), z = Math.min(b.h1, h0 + m); if (z <= a) return;
+        var cell = b.c, bh = (z - a) * rowH - 2, lines = Math.max(1, Math.floor((bh - 1) / lineH + 0.15));
+        var html = '', cls = 'b ' + b.kind, endMs = Date.parse(x.date + 'T' + pad(b.h1) + ':00:00+05:00');
+        if (today && endMs <= nowMs) cls += ' past';
+        if (b.paid) cls += ' paid';
+        if (b.kind === 'bron') {
+          if (cell.status === 'no_show') cls += ' noshow';
+          var ph = nine(cell.phone) || phoneInText(cell.t);
+          var nm = cell.name && !/^Mijoz\b/i.test(cell.name) ? cell.name : '';
+          var main = ph ? (compactPhone ? ph : spaced(ph)) : (nm || cell.t || 'Брон');
+          var mfs = ph ? Math.min(fs, fs * avail / Math.max(1, tw(main, fs))) : fs;
+          var tags = [];
+          var st = hm(cell.start), en = hm(cell.end);
+          if (st && (st.slice(3) !== '00' || (en && en.slice(3) !== '00'))) tags.push(st + '–' + en);
+          else if (b.h1 - b.h0 > 1) tags.push(pad(b.h0) + '–' + pad(b.h1));
+          if (cell.cat && c.ins.categories && c.ins.categories.length > 1) tags.push(cell.cat);
+          if (isAuto(cell.t)) tags.push('🚗');
+          if (cell.status === 'in_progress') tags.push('▶');
+          if (cell.status === 'no_show') tags.push('келмади');
+          var marks = (b.paid ? '<span class="ok">✓</span>' : '') + (isAuto(cell.t) ? '🚗' : '') + (cell.min && cell.min < 60 ? '½' : '') + (cell.status === 'in_progress' ? '▶' : '');
+          var one = lines <= 1 || Math.floor((bh - lineH) / subH + 0.1) <= 0;
+          var mkTxt = (b.paid ? '✓' : '') + (isAuto(cell.t) ? '🚗' : '') + (cell.min && cell.min < 60 ? '½' : '') + (cell.status === 'in_progress' ? '▶' : '');
+          var inl = one && marks && tw(main, mfs) + mfs * 0.25 + tw(mkTxt, mfs * 0.78) <= avail;
+          html = '<div class="m" style="font-size:' + mfs.toFixed(2) + 'px"><span class="pn">' + esc(main) + '</span>' + (inl ? '<span class="mk">' + marks + '</span>' : '') + '</div>' +
+            (one && marks && !inl ? '<span class="cr" style="font-size:' + Math.max(6.5, fs * 0.6).toFixed(2) + 'px">' + marks + '</span>' : '');
+          var rest = bh - lineH;
+          var subs = [];
+          var tagLine = (b.paid ? '<span class="ok">✓</span> ' : '') + esc(tags.join(' · '));
+          if (tags.length || b.paid) subs.push(tagLine);
+          var who = [ph ? nm : '', cell.code].filter(Boolean).join(' · ');
+          if (who) subs.push(esc(who));
+          var fitN = Math.floor(rest / subH + 0.1);
+          if (!one) subs.slice(0, fitN).forEach(function (s) { html += '<div class="s" style="font-size:' + sfs + 'px">' + s + '</div>'; });
+        } else {
+          html = '<div class="m" style="font-size:' + (fs * 0.92) + 'px">' + esc(cell.t || 'BAND') + '</div>';
+        }
+        o.push('<div class="' + cls + '" data-b="' + i + ':' + j + '" style="grid-row:' + (R0 + a - h0) + '/span ' + (z - a) + ';grid-column:' + (i + 2) +
+          (b.kind === 'bron' ? ';background:' + c.color : '') + '">' + html + '</div>');
+      });
+    });
+    if (hasFoot) o.push('<div class="ft" style="grid-row:' + (R0 + m) + ';font-size:' + sfs + 'px">Excel’да ёзуви йўқ: ' + esc(B.free.join(', ')) + '</div>');
+    if (today && nowMin >= h0 * 60 && nowMin < (h0 + m) * 60) {
+      var top = band + head + (nowMin - h0 * 60) / 60 * rowH;
+      o.push('<div class="now" style="top:' + top.toFixed(1) + 'px;left:' + hw + 'px;width:' + (colW * n) + 'px"></div>');
+    }
+    gw.innerHTML = '<div class="g" style="left:' + left + 'px;top:' + gp + 'px;grid-template-columns:' + hw + 'px repeat(' + n + ',' + colW + 'px);' +
+      'grid-template-rows:' + band + 'px ' + head + 'px repeat(' + m + ',' + rowH + 'px)' + (hasFoot ? ' ' + foot + 'px' : '') + '">' + o.join('') + '</div>';
+  }
+
+  /* ---------- bosish: kun almashtirish, orqaga, katak ma'lumoti ---------- */
+  land.addEventListener('click', function (e) {
+    var t = e.target;
+    if (t.closest('[data-act="back"]')) { if (history.state && history.state.day) history.back(); else { try { history.replaceState(null, '', location.pathname + location.search); } catch (er) {} closeLand(); } return; }
+    var sg = t.closest('[data-seg]'); if (sg) { open(sg.getAttribute('data-seg'), false); return; }
+    if (t.closest('[data-act="close"]') || t === pop) { pop.hidden = true; return; }
+    if (t.closest('.pc')) return;
+    var bl = t.closest('[data-b]'); if (bl) { var ij = bl.getAttribute('data-b').split(':'); showBlock(+ij[0], +ij[1]); return; }
+    var hc = t.closest('[data-i]'); if (hc) { showIns(+hc.getAttribute('data-i')); }
+  });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') pop.hidden = true; });
+
+  function row(k, v) { return v ? '<div class="pr"><span>' + esc(k) + '</span><b>' + v + '</b></div>' : ''; }
+  function callBtn(n9) { return n9 ? '<a class="call" href="tel:+998' + n9 + '">📞 +998 ' + esc(spaced(n9)) + '<small>Қўнғироқ қилиш</small></a>' : ''; }
+  function popHead(c) {
+    return '<div class="pt"><span class="sw" style="background:' + c.color + '"></span><b>' + esc(c.ins.name) + '</b><button type="button" class="x" data-act="close" aria-label="Ёпиш">✕</button></div>';
+  }
+  function showBlock(i, j) {
+    var B = S.built, c = B && B.cols[i], b = c && c.blocks[j]; if (!b) return;
+    var cell = b.c, html;
+    if (b.kind === 'bron') {
+      var ph = nine(cell.phone) || phoneInText(cell.t);
+      var nm = cell.name && !/^Mijoz\b/i.test(cell.name) ? cell.name : '';
+      var st = hm(cell.start), en = hm(cell.end);
+      var time = st && en ? st + '–' + en : hh(b.h0) + '–' + hh(b.h1);
+      html = popHead(c) + '<div class="pw">' + esc(time) + '<span>' + esc(durTxt(cell.min) || (b.h1 - b.h0) + ' соат') + '</span></div>' + callBtn(ph) +
+        row('Исм', esc(nm)) + row('Код', esc(cell.code)) + row('Тоифа', cell.cat ? esc(cell.cat + ' тоифа') : '') +
+        row('Машина', isAuto(cell.t) ? '🚗 Автомат' : '') + row('Ҳолат', esc(STATUS[cell.status] || '')) +
+        row('Тўлов', b.paid ? '<span style="color:#15803d">✓ тўланган</span>' : 'тўланмаган') + row('Excel', esc(cell.t));
+    } else {
+      var p2 = phoneInText(cell.t);
+      html = popHead(c) + '<div class="pw">' + hh(b.h0) + '–' + hh(b.h1) + '<span>Excel ёзуви</span></div>' + callBtn(p2) + row('Ёзув', esc(cell.t || 'BAND'));
+    }
+    pop.innerHTML = '<div class="pc">' + html + '</div>'; pop.hidden = false;
+  }
+  function showIns(i) {
+    var B = S.built, c = B && B.cols[i]; if (!c) return;
+    var list = c.blocks.map(function (b) {
+      var cell = b.c, st = hm(cell.start), en = hm(cell.end);
+      var time = b.kind === 'bron' && st && en ? st + '–' + en : pad(b.h0) + ':00–' + pad(b.h1) + ':00';
+      var ph = b.kind === 'bron' ? (nine(cell.phone) || phoneInText(cell.t)) : phoneInText(cell.t);
+      var what = ph ? '<a href="tel:+998' + ph + '">' + esc(spaced(ph)) + '</a>' : '<b>' + esc(cell.t || 'BAND') + '</b>';
+      return '<div class="pl"><span class="tm">' + esc(time) + '</span>' + what + (b.paid ? ' <span style="color:#15803d">✓</span>' : '') + (b.kind === 'bron' && isAuto(cell.t) ? ' 🚗' : '') + '</div>';
+    }).join('');
+    pop.innerHTML = '<div class="pc">' + popHead(c) + '<div class="pw">' + c.blocks.filter(function (b) { return b.kind === 'bron'; }).length + ' та брон<span>' + esc(dayLong(S.cur)) + '</span></div>' +
+      callBtn(nine(c.ins.phone)) + list + '</div>';
+    pop.hidden = false;
+  }
+
+  /* ---------- ishga tushish va yangilanish ---------- */
+  var startDay = location.hash.slice(1);
+  renderPick();
+  if (D && K) {
+    prefetch();
+    if (YMD.test(startDay) && dayList().indexOf(startDay) >= 0) open(startDay, false);
+  }
+  setInterval(function () {
+    if (document.hidden || !D || !K || S.linkErr) return;
+    if (S.cur) { if (pop.hidden) fetchDay(S.cur, onData); } else prefetch();
+  }, 30000);
+  document.addEventListener('visibilitychange', function () { if (!document.hidden && D && K && !S.linkErr) { if (S.cur) fetchDay(S.cur, onData); else prefetch(); } });
 })();
 </script>
 </body>
