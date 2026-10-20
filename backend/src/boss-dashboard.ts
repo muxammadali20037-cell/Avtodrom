@@ -8,7 +8,7 @@ import { loadLedger, unscannedReceipts, pageAll } from './lesson-ledger.js';
 import { allKeys, seriesKey } from './unified-analytics.js';
 
 /**
- * BOSHLIQ ILOVASI — rahbar telefoniga (iPhone) o'rnatiladigan panel.
+ * AVTODROM BOSHQARUV — rahbar telefoniga (iPhone) o'rnatiladigan ilova.
  *
  *   /boshliq?k=<kalit>  — sahifa (boshliq.html, «Ekranga qo'shish» bilan ilova bo'ladi)
  *   POST /api/boss-hello {k}         — havola to'g'rimi, PIN qo'yilganmi
@@ -190,7 +190,7 @@ export async function buildAvtodrom(from: Date, to: Date, prevFrom: Date, bucket
     safe('payments_prev', () => pageAll<any>('payments',
       `?status=eq.paid&paid_at=gte.${PF}&paid_at=lt.${PT}&select=id,amount,register_id&order=paid_at.asc,id.asc`), [] as any[]),
     safe('bookings', () => pageAll<any>('bookings',
-      `?start_at=gte.${F}&start_at=lt.${T}&select=id,status,source,category,customer_id,instructor_id,duration_minutes,school_receipt_code,customer_note&order=start_at.asc,id.asc`), [] as any[]),
+      `?start_at=gte.${F}&start_at=lt.${T}&select=id,status,source,category,customer_id,instructor_id,duration_minutes,school_receipt_code,customer_note,start_at&order=start_at.asc,id.asc`), [] as any[]),
     safe('bookings_prev', async () => (await supabaseRestPaged<any>('bookings', `?start_at=gte.${PF}&start_at=lt.${F}&select=id`, 1, 1)).total, 0),
     safe('new_customers', async () => (await supabaseRestPaged<any>('users', `?role=eq.customer&created_at=gte.${F}&created_at=lt.${T}&select=id`, 1, 1)).total, 0),
     safe('ledger', () => loadLedger({ from, to }), { rows: [], bookings: new Map(), courses: new Map() } as any),
@@ -212,7 +212,14 @@ export async function buildAvtodrom(from: Date, to: Date, prevFrom: Date, bucket
   ].filter(Boolean).map(String))];
   const ips = await safe('instructor_profiles', () => selectIn<any>('instructor_profiles', 'id', insIds, 'id,user_id'), [] as any[]);
   const recentPays = pays.slice(-40).reverse();
-  const userIds = [...ips.map((i: any) => i.user_id), ...inProgress.map((b: any) => b.customer_id), ...recentPays.map((p: any) => p.customer_id)];
+  /* Har kassaning oxirgi 20 cheki (P1, P2 oynasi uchun) */
+  const regRecent = new Map<string, any[]>();
+  for (let i = pays.length - 1; i >= 0; i--) {
+    const rk = String(pays[i].register_id || '-'), arr = regRecent.get(rk) || [];
+    if (arr.length < 20) { arr.push(pays[i]); regRecent.set(rk, arr); }
+  }
+  const userIds = [...ips.map((i: any) => i.user_id), ...inProgress.map((b: any) => b.customer_id), ...recentPays.map((p: any) => p.customer_id),
+    ...[...regRecent.values()].flat().map((p: any) => p.customer_id)];
   const users = await safe('users', () => selectIn<any>('users', 'id', userIds, 'id,full_name'), [] as any[]);
   const um = new Map(users.map((u: any) => [String(u.id), String(u.full_name || '')]));
   const insName = (id: unknown) => {
@@ -224,6 +231,9 @@ export async function buildAvtodrom(from: Date, to: Date, prevFrom: Date, bucket
   const regm = new Map(regs.map((r: any) => [String(r.id), r]));
   const blank = () => ({ receipts: 0, total: 0, cash: 0, card: 0 });
   const byReg = new Map<string, any>();
+  /* Har kassa bo'yicha tahlil: dinamika, soatlar, toifalar */
+  const regX = new Map<string, { series: Map<string, number>; hours: Map<number, { hour: number; total: number; receipts: number }>; cats: Map<string, any> }>();
+  const rx = (rk: string) => { if (!regX.has(rk)) regX.set(rk, { series: new Map(), hours: new Map(), cats: new Map() }); return regX.get(rk)!; };
   const tot = blank();
   const hours = Array.from({ length: 24 }, (_, h) => ({ hour: h, total: 0, receipts: 0 }));
   const series = new Map<string, number>();
@@ -243,6 +253,10 @@ export async function buildAvtodrom(from: Date, to: Date, prevFrom: Date, bucket
     const b: any = bkm.get(String(p.booking_id)) || {};
     const cn = `${String(b.category || 'B').toUpperCase()} toifa`;
     const c = cats.get(cn) || { name: cn, total: 0, receipts: 0 }; c.total += n(p.amount); c.receipts++; cats.set(cn, c);
+    const X = rx(rk);
+    X.series.set(k, (X.series.get(k) || 0) + n(p.amount));
+    const xh = X.hours.get(h) || { hour: h, total: 0, receipts: 0 }; xh.total += n(p.amount); xh.receipts++; X.hours.set(h, xh);
+    const xc = X.cats.get(cn) || { name: cn, total: 0, receipts: 0 }; xc.total += n(p.amount); xc.receipts++; X.cats.set(cn, xc);
     const min = n(b.duration_minutes), dn = durName(min);
     const d = durs.get(dn) || { name: dn, total: 0, receipts: 0, min }; d.total += n(p.amount); d.receipts++; durs.set(dn, d);
   }
@@ -252,6 +266,26 @@ export async function buildAvtodrom(from: Date, to: Date, prevFrom: Date, bucket
     const rk = p.register_id && known.has(String(p.register_id)) ? String(p.register_id) : '-';
     prevByReg.set(rk, (prevByReg.get(rk) || 0) + n(p.amount)); prevTotal += n(p.amount);
   }
+  const recentRow = (p: any) => {
+    const b: any = bkm.get(String(p.booking_id)) || {};
+    return {
+      at: p.paid_at, code: p.receipt_code || null, amount: n(p.amount), method: p.method || 'cash',
+      cash: cashOf(p), card: cardOf(p),
+      register: (regm.get(String(p.register_id)) as any)?.code || null,
+      customer: um.get(String(p.customer_id)) || null, instructor: insName(b.instructor_id),
+      category: b.category || null, minutes: n(b.duration_minutes) || null,
+    };
+  };
+  const recent = recentPays.slice(0, 30).map(recentRow);
+  const regDetail = (rk: string) => {
+    const X = regX.get(rk);
+    return {
+      series: X ? [...X.series.entries()].map(([key, total]) => ({ key, total })) : [],
+      hours: X ? [...X.hours.values()].sort((a, b) => a.hour - b.hour) : [],
+      categories: X ? [...X.cats.values()].sort((a, b) => b.total - a.total) : [],
+      recent: (regRecent.get(rk) || []).map(recentRow),
+    };
+  };
   const shiftOf = (rid: string) => shifts.find((s: any) => String(s.register_id) === rid) || null;
   const registers = regs
     .filter((r: any) => r.is_active !== false || byReg.has(String(r.id)))
@@ -260,29 +294,27 @@ export async function buildAvtodrom(from: Date, to: Date, prevFrom: Date, bucket
       const pv = prevByReg.get(String(r.id)) || 0;
       const sh: any = shiftOf(String(r.id));
       return { id: r.id, code: r.code, name: r.name || null, ...a, previous_total: pv, change: pct(a.total, pv),
-        shift: sh ? { open: true, cashier: sh.cashier_name || null, opened_at: sh.opened_at } : { open: false } };
+        avg_check: a.receipts ? Math.round(a.total / a.receipts) : 0,
+        shift: sh ? { open: true, cashier: sh.cashier_name || null, opened_at: sh.opened_at } : { open: false },
+        ...regDetail(String(r.id)) };
     });
   const unassigned = byReg.get('-') || blank();
-
-  const recent = recentPays.slice(0, 30).map((p: any) => {
-    const b: any = bkm.get(String(p.booking_id)) || {};
-    return {
-      at: p.paid_at, code: p.receipt_code || null, amount: n(p.amount), method: p.method || 'cash',
-      register: (regm.get(String(p.register_id)) as any)?.code || null,
-      customer: um.get(String(p.customer_id)) || null, instructor: insName(b.instructor_id),
-      category: b.category || null, minutes: n(b.duration_minutes) || null,
-    };
-  });
 
   /* --- BRONLAR (dars kuni shu davrda) --- */
   const by_status: Record<string, number> = Object.fromEntries(STATUS_KEYS.map((k) => [k, 0]));
   by_status.other = 0;
   const srcCount = new Map<string, number>(), catCount = new Map<string, number>();
   const customers = new Set<string>();
+  const bser = new Map<string, { key: string; total: number; completed: number; no_show: number; cancelled: number }>();
   for (const b of bookings) {
     const st = String(b.status || '');
     const s = st === 'customer_confirmed' ? 'confirmed' : st === 'rejected' ? 'cancelled' : st;
     if (s in by_status) by_status[s]++; else by_status.other++;
+    if (b.start_at) {
+      const k = keyOf(b.start_at, bucket), x = bser.get(k) || { key: k, total: 0, completed: 0, no_show: 0, cancelled: 0 };
+      x.total++; if (s === 'completed' || s === 'no_show' || s === 'cancelled') x[s]++;
+      bser.set(k, x);
+    }
     const src = String(b.source || 'boshqa');
     srcCount.set(src, (srcCount.get(src) || 0) + 1);
     const cat = String(b.category || 'B').toUpperCase();
@@ -298,6 +330,7 @@ export async function buildAvtodrom(from: Date, to: Date, prevFrom: Date, bucket
     cancel_rate: bTotal ? Math.round((by_status.cancelled / bTotal) * 100) : 0,
     by_source: [...srcCount.entries()].sort((a, b) => b[1] - a[1]).map(([key, v]) => ({ key, name: SOURCE_NAME[key] || key, n: v })),
     by_category: [...catCount.entries()].sort((a, b) => b[1] - a[1]).map(([key, v]) => ({ name: `${key} toifa`, n: v })),
+    series: [...bser.values()],
   };
 
   /* --- DARSLAR (urilgan chek bo'yicha — Instruktorlar hisoboti bilan bir xil) --- */
@@ -312,15 +345,20 @@ export async function buildAvtodrom(from: Date, to: Date, prevFrom: Date, bucket
     unscanned: { receipts: n(unscanned.receipts), amount: n(unscanned.amount) },
   };
   const im = new Map<string, any>();
+  const lser = new Map<string, { key: string; paid: number; school: number; minutes: number }>();
   for (const r of lrows) {
     const id = String(r.instructor_id || '-');
     const x = im.get(id) || { id, name: r.instructor_id ? insName(r.instructor_id) || 'Instruktor' : 'Instruktorsiz',
-      lessons: 0, paid: 0, school: 0, minutes: 0, revenue: 0, _st: new Set<string>() };
-    x.lessons++; x[r.school ? 'school' : 'paid']++; x.minutes += n(r.minutes); x.revenue += n(r.amount); x._st.add(who(r));
+      lessons: 0, paid: 0, school: 0, minutes: 0, revenue: 0, cash: 0, card: 0, _st: new Set<string>(), _ser: new Map<string, any>() };
+    x.lessons++; x[r.school ? 'school' : 'paid']++; x.minutes += n(r.minutes); x.revenue += n(r.amount); x.cash += n(r.cash); x.card += n(r.card); x._st.add(who(r));
+    const k = keyOf(r.scanned_at, bucket);
+    const xs = x._ser.get(k) || { key: k, lessons: 0, revenue: 0 }; xs.lessons++; xs.revenue += n(r.amount); x._ser.set(k, xs);
+    const ls = lser.get(k) || { key: k, paid: 0, school: 0, minutes: 0 }; ls[r.school ? 'school' : 'paid']++; if (!r.school) ls.minutes += n(r.minutes); lser.set(k, ls);
     im.set(id, x);
   }
+  (lessons as any).series = [...lser.values()];
   const instructors = [...im.values()]
-    .map(({ _st, ...x }) => ({ ...x, students: _st.size }))
+    .map(({ _st, _ser, ...x }) => ({ ...x, students: _st.size, series: [..._ser.values()] }))
     .sort((a, b) => b.lessons - a.lessons || b.revenue - a.revenue);
 
   /* --- HOZIR --- */
@@ -422,7 +460,7 @@ export async function buildBossData(query: any) {
   return {
     ok: true,
     generated_at: new Date().toISOString(),
-    period, label, bucket, from: from.toISOString(), to: to.toISOString(), from_day: fromYmd, to_day: toYmd,
+    period, label, bucket, from: from.toISOString(), to: to.toISOString(), from_day: fromYmd, to_day: toYmd, keys,
     combined: {
       revenue: total, previous_revenue: prevTotal, change: pct(total, prevTotal),
       by_part: revenue, previous_by_part: prevRevenue,
@@ -483,7 +521,7 @@ export async function registerBossRoutes(app: FastifyInstance, deps: Deps) {
       const b = req.body || {};
       const link = await readBossLink();
       if (!checkKey(link, String(b.k || ''))) return reply.code(403).send({ ok: false, error: BAD_LINK });
-      if (!link!.pin_hash) return reply.code(409).send({ ok: false, error: 'PIN hali qo‘yilmagan. Admin panel → Boshqaruv → Boshliq ilovasi.' });
+      if (!link!.pin_hash) return reply.code(409).send({ ok: false, error: 'PIN hali qo‘yilmagan. Admin panel → Boshqaruv → Boshqaruv ilovasi.' });
       const pin = String(b.pin ?? '').trim();
       if (!PIN_RE.test(pin) || !safeEq(bossPinHash(pin), link!.pin_hash)) {
         return reply.code(401).send({ ok: false, error: 'PIN noto‘g‘ri' });
@@ -506,7 +544,7 @@ export async function registerBossRoutes(app: FastifyInstance, deps: Deps) {
       const data = await buildBossData(req.query || {});
       return { ...data, session: makeBossToken(link!) };
     } catch (e: any) {
-      return reply.code(e?.statusCode ?? 500).send({ ok: false, error: e?.message || 'Ma’lumot yuklanmadi' });
+      if (!e?.statusCode) console.error('BOSS DATA', e); return reply.code(e?.statusCode ?? 500).send({ ok: false, error: e?.message || 'Ma’lumot yuklanmadi' });
     }
   });
 
