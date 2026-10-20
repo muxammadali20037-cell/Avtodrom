@@ -1,0 +1,16 @@
+{
+  "name": "Avtodrom — Boshliq",
+  "short_name": "Boshliq",
+  "description": "TASH INDEX AVTODROM: avtoshkola, platniy, avtodrom, umumiy tushum va xarajatlar",
+  "lang": "uz",
+  "scope": "/boshliq",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0f1340",
+  "theme_color": "#232883",
+  "icons": [
+    { "src": "/boshliq-icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/boshliq-icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/boshliq-icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

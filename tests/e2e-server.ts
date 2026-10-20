@@ -203,7 +203,7 @@ db.support_messages = [
 
 /* ---- HTTP: /api → Fastify, qolgani — statik fayllar ---- */
 const TYPES: Record<string, string> = { '.html': 'text/html; charset=utf-8', '.js': 'application/javascript', '.css': 'text/css',
-  '.png': 'image/png', '.jpg': 'image/jpeg', '.webp': 'image/webp', '.svg': 'image/svg+xml', '.json': 'application/json' };
+  '.png': 'image/png', '.jpg': 'image/jpeg', '.webp': 'image/webp', '.svg': 'image/svg+xml', '.json': 'application/json', '.webmanifest': 'application/manifest+json' };
 http.createServer(async (req, res) => {
   const url = String(req.url || '/');
   if (url.startsWith('/api/')) {
@@ -221,7 +221,9 @@ http.createServer(async (req, res) => {
   if (p === '/admin' || p === '/admin/') p = '/admin/index.html';
   if (p === '/admin/full' || p === '/admin/full/') p = '/admin/full.html';
   if (p === '/instructor' || p === '/instructor/') p = '/instructor/index.html';
-  const file = path.join(ROOT, p);
+  let file = path.join(ROOT, p);
+  /* Vercel cleanUrls kabi: /boshliq → boshliq.html */
+  if (!fs.existsSync(file) && fs.existsSync(`${file}.html`)) file = `${file}.html`;
   if (!file.startsWith(ROOT) || !fs.existsSync(file) || fs.statSync(file).isDirectory()) { res.writeHead(404); res.end('404'); return; }
   res.writeHead(200, { 'content-type': TYPES[path.extname(file)] || 'application/octet-stream' });
   fs.createReadStream(file).pipe(res);

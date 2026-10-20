@@ -25,6 +25,7 @@ import { registerScheduleRoutes } from './schedule-routes.js';
 import { registerBookingSheetRoutes } from './booking-sheet-routes.js';
 import { registerSheetShareRoutes, handleGroupMessage } from './sheet-share.js';
 import { registerControlRoutes } from './control-view.js';
+import { registerBossRoutes } from './boss-dashboard.js';
 
 const app = Fastify({ logger: true });
 
@@ -141,6 +142,8 @@ await registerScheduleRoutes(app, guardAdmin, adminUser, audit);
 await registerBookingSheetRoutes(app, { currentStaff, guardDesk, adminUser, audit });
 await registerSheetShareRoutes(app, { currentStaff, guardDesk });
 await registerControlRoutes(app, { guardAdmin, currentStaff, adminUser, audit });
+/* Boshliq ilovasi (iPhone) — maxfiy havola + PIN; admin havolani boshqaradi */
+await registerBossRoutes(app, { guardAdmin, currentStaff, adminUser, audit });
 await registerAdminBotRoutes(app);
 
 // IMPORTANT: admin-password-routes.ts is the single owner of the canonical
