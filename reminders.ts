@@ -102,7 +102,7 @@ export function reminderKeyboard(bookingId: string) {
   const cb = reminderCallbacksOn();
   const rows: any[] = [];
   if (cb) rows.push([{ text: '✅ Kelaman', callback_data: `come:${bookingId}` }], [{ text: '🚫 Bekor qilmoqchiman', callback_data: `cxl:${bookingId}` }]);
-  if (miniApp()) rows.push([{ text: cb ? '🚗 Mini Appni ochish' : '🚗 Bronlarimni ochish', web_app: { url: miniApp() } }]);
+  if (miniApp()) rows.push([{ text: cb ? '📱 Ilovani ochish' : '🚗 Bronlarimni ochish', web_app: { url: miniApp() } }]);
   return rows.length ? { inline_keyboard: rows } : undefined;
 }
 
@@ -311,7 +311,7 @@ async function notifyLateClosed(b: any, lateMin: number): Promise<boolean> {
     const info = [when && `📅 ${when}`, d.instructorName && `👨‍🏫 ${d.instructorName}`, code && `🔑 ${code}`].filter(Boolean);
     const cText = ['🚫 Broningiz bekor qilindi', '', ...info, '',
       `Dars vaqtidan ${lateMin} daqiqa o‘tdi, siz kelmadingiz — bron avtomatik bekor qilindi.`,
-      'Yangi vaqtga bron qilish uchun Mini Appni oching.'].join('\n');
+      'Yangi vaqtga bron qilish uchun ilovani oching.'].join('\n');
     await supabaseRest('notifications', {
       method: 'POST', headers: { Prefer: 'return=minimal' },
       body: JSON.stringify({ user_id: b.customer_id, type: 'booking', title: '🚫 Bron bekor qilindi',
@@ -325,7 +325,7 @@ async function notifyLateClosed(b: any, lateMin: number): Promise<boolean> {
     if (bot && Number.isSafeInteger(chatId) && chatId > 0) {
       await telegramApi(bot, 'sendMessage', {
         chat_id: chatId, text: cText,
-        ...(miniApp() ? { reply_markup: { inline_keyboard: [[{ text: '🚗 Mini Appni ochish', web_app: { url: miniApp() } }]] } } : {}),
+        ...(miniApp() ? { reply_markup: { inline_keyboard: [[{ text: '📱 Ilovani ochish', web_app: { url: miniApp() } }]] } } : {}),
       });
       sent = true;
     }
@@ -384,9 +384,12 @@ export async function runRemindersNow(source: string, nowMs = Date.now()) {
     checked: 0, closed: 0, no_show: 0, cancelled: 0, notified: 0, skipped: 0,
     details: [`kechikkanlarni yopish xatosi: ${e instanceof Error ? e.message : e}`],
   }));
+  /* Chek urilgandan keyin to'langan vaqt o'tgan darslar — avtomatik yopiladi */
+  const { finishDueLessons } = await import('./lesson-ledger.js');
+  const fin = await finishDueLessons(nowMs).catch((e) => ({ checked: 0, closed: 0, details: [`darslarni yopish xatosi: ${e instanceof Error ? e.message : e}`] }));
   const r = await sendDueReminders(nowMs, cfg);
   await recordRun(source, r, late);
-  return { ...r, late_closed: late.closed, late };
+  return { ...r, late_closed: late.closed, late, lessons_finished: fin.closed, finish: fin };
 }
 
 let lastTickAt = 0;
@@ -404,6 +407,11 @@ export async function tickReminders(source: string, minGapMs = 60_000) {
   tickRunning = runRemindersNow(source, now);
   try {
     const r = await tickRunning;
+    /* Instruktorlarga kunlik ro'yxat (kuniga bir marta; cron bo'lmasa ham ochiq panellar yetkazadi) */
+    const { runInstructorDigest } = await import('./instructor-notify.js');
+    await runInstructorDigest(now).catch((e) => console.error('instructor digest failed:', e));
+    const { runSheetGroupEvening } = await import('./sheet-share.js');
+    await runSheetGroupEvening(now).catch((e) => console.error('sheet group evening failed:', e));
     return { ran: true, sent: r.sent, checked: r.checked, failed: r.failed, late_closed: r.late_closed };
   } finally {
     tickRunning = null;

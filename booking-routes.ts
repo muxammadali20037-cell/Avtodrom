@@ -6,6 +6,7 @@
 import crypto from 'node:crypto';
 import type { FastifyInstance } from 'fastify';
 import { supabaseRest } from './supabase.js';
+import { testInstructorIds } from './test-instructors.js';
 import { loadTariffs, computePrice } from './pricing.js';
 import { loadBookingDetails, bookingMessage, inAppMessage, fmtWhen, fmtMoney, lateRuleLine, type BookingEvent } from './notify.js';
 import {
@@ -21,6 +22,36 @@ import {
 } from './identity.js';
 
 const ACTIVE_STATUSES = 'pending,confirmed,in_progress';
+
+/** Bandlik hisobidagi bronlar: kutilmoqda, tasdiqlangan, jarayonda, tugagan (bekor va kelmagan — yo'q) */
+const LOAD_STATUSES = 'pending,confirmed,in_progress,completed';
+const tkYmd = (ms: number) => new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Tashkent' }).format(new Date(ms));
+/** instruktor id → { 'YYYY-MM-DD': bronlar soni } — bugundan `days` kun */
+export async function instructorLoads(ids: string[], days = 14): Promise<Map<string, Record<string, number>>> {
+  const out = new Map<string, Record<string, number>>();
+  if (!ids.length) return out;
+  const from = new Date(`${tkYmd(Date.now())}T00:00:00+05:00`).getTime(), to = from + days * 864e5;
+  const rows: any[] = [];
+  for (let off = 0; off < 20000; off += 1000) {
+    const page = await supabaseRest<any[]>('bookings', {
+      query: `?instructor_id=in.(${ids.map(encodeURIComponent).join(',')})&status=in.(${LOAD_STATUSES})`
+        + `&start_at=gte.${encodeURIComponent(new Date(from).toISOString())}&start_at=lt.${encodeURIComponent(new Date(to).toISOString())}`
+        + `&select=id,instructor_id,start_at&order=start_at.asc,id.asc&limit=1000&offset=${off}`,
+    });
+    rows.push(...(page || []));
+    if (!page || page.length < 1000) break;
+  }
+  const seen = new Set<string>();
+  for (const b of rows) {
+    if (seen.has(String(b.id))) continue;
+    seen.add(String(b.id));
+    const id = String(b.instructor_id), d = tkYmd(Date.parse(b.start_at));
+    const m = out.get(id) || {};
+    m[d] = (m[d] || 0) + 1;
+    out.set(id, m);
+  }
+  return out;
+}
 
 /** O'zbekiston raqami: istalgan yozuvni +998XXXXXXXXX ga keltiradi. Noto'g'ri bo'lsa null. */
 export function normalizeUzPhone(v: unknown): string | null {
@@ -157,7 +188,7 @@ async function notifyBookingParties(booking: any, event: BookingEvent) {
     const cToken = String(process.env.CUSTOMER_BOT_TOKEN || process.env.TELEGRAM_CUSTOMER_BOT_TOKEN || '');
     const cUrl = String(process.env.CUSTOMER_MINI_APP_URL || process.env.MINI_APP_URL || '');
     if (cToken && Number.isSafeInteger(Number(customer?.telegram_id))) {
-      await sendBookingNotification(cToken, Number(customer.telegram_id), cMsg.full, cUrl, '🚗 Mini Appni ochish');
+      await sendBookingNotification(cToken, Number(customer.telegram_id), cMsg.full, cUrl, '📱 Ilovani ochish');
     }
 
     // --- Instruktor ---
@@ -200,7 +231,7 @@ async function notifyPackageParties(bookings: any[], rec: PackageRecord) {
     const cToken = String(process.env.CUSTOMER_BOT_TOKEN || process.env.TELEGRAM_CUSTOMER_BOT_TOKEN || '');
     const cUrl = String(process.env.CUSTOMER_MINI_APP_URL || process.env.MINI_APP_URL || '');
     if (cToken && Number.isSafeInteger(Number(customer?.telegram_id))) {
-      await sendBookingNotification(cToken, Number(customer.telegram_id), cText, cUrl, '🚗 Mini Appni ochish');
+      await sendBookingNotification(cToken, Number(customer.telegram_id), cText, cUrl, '📱 Ilovani ochish');
     }
     if (first.instructor_id) {
       const ip = await supabaseRest<any[]>('instructor_profiles', {
@@ -328,7 +359,7 @@ export async function registerBookingRoutes(
       const cat = String((request.query as any)?.category || '').trim().toUpperCase();
       const catFilter = /^[ABC]$/.test(cat) ? `&categories=cs.{${cat}}` : '';
       await authenticate(request);
-      const rows = await supabaseRest<any[]>('instructor_profiles', {
+      const [rows, hidden] = await Promise.all([supabaseRest<any[]>('instructor_profiles', {
         query:
           '?is_verified=eq.true&is_available=eq.true' + catFilter +
           /* `*` — eski photo_url ustuni bo'lmagan bazada ham so'rov yiqilmasin.
@@ -336,8 +367,14 @@ export async function registerBookingRoutes(
           '&select=*,' +
           'user:user_id(id,full_name,phone,telegram_id,is_active,is_blocked)' +
           '&order=created_at.desc',
-      });
-      const instructors = rows.map(toInstructorCard).filter((x) => x.active);
+      }), testInstructorIds()]);
+      /* Sinov akkauntlari mijozga ko'rinmaydi */
+      const instructors: any[] = rows.filter((r) => !hidden.has(String(r.id))).map(toInstructorCard).filter((x) => x.active);
+      /* Bandlik: har instruktorning kunlik bronlari soni (bugundan 14 kun).
+         Mini App broni kam instruktorni tepaga qo'yadi — ish teng taqsimlansin.
+         Mijozga faqat son ketadi (kim, qachon — yo'q). Xato bo'lsa — ro'yxat baribir. */
+      const loads = await instructorLoads(instructors.map((i) => String(i.id))).catch(() => null);
+      if (loads) for (const i of instructors) i.load = loads.get(String(i.id)) || {};
       return { ok: true, instructors };
     } catch (e) {
       return reply.code(400).send({ ok: false, error: e instanceof Error ? e.message : 'Instruktorlar yuklanmadi' });
@@ -366,9 +403,11 @@ export async function registerBookingRoutes(
           `&start_at=lt.${q(dayEnd.toISOString())}&end_at=gt.${q(dayStart.toISOString())}` +
           `&status=in.(${ACTIVE_STATUSES})&select=start_at,end_at`,
       });
-      /* Instruktor o'zi yopgan soatlar ham band ko'rinadi (sababi aytilmaydi) */
+      /* Instruktor o'zi yopgan soatlar va ISH GRAFIGI bo'yicha dam vaqtlar ham
+         band ko'rinadi (sababi aytilmaydi) — Mini App shu vaqtda bu instruktorni
+         ko'rsatmaydi. */
       const { loadBlocks } = await import('./instructor-blocks.js');
-      const own = ((await loadBlocks([instructorId])).get(instructorId) || [])
+      const own = ((await loadBlocks([instructorId], { from: dayStart, to: dayEnd })).get(instructorId) || [])
         .filter((b) => Date.parse(b.start_at) < dayEnd.getTime() && Date.parse(b.end_at) > dayStart.getTime())
         .map((b) => ({ start_at: b.start_at, end_at: b.end_at }));
       return { ok: true, busy: [...rows, ...own] };
@@ -480,7 +519,7 @@ export async function registerBookingRoutes(
       const ip = await supabaseRest<any[]>('instructor_profiles', {
         query: `?id=eq.${q(body.instructor_id)}&is_verified=eq.true&is_available=eq.true&select=id&limit=1`,
       });
-      if (!ip[0]) {
+      if (!ip[0] || (await testInstructorIds()).has(String(ip[0].id))) {
         return reply.code(400).send({ ok: false, error: 'Instruktor tasdiqlanmagan yoki faol emas' });
       }
 
@@ -585,7 +624,7 @@ export async function registerBookingRoutes(
       const ip = (await supabaseRest<any[]>('instructor_profiles', {
         query: `?id=eq.${q(String(body.instructor_id))}&is_verified=eq.true&is_available=eq.true&select=id,categories&limit=1`,
       }))[0];
-      if (!ip) return reply.code(400).send({ ok: false, error: 'Instruktor tasdiqlanmagan yoki faol emas' });
+      if (!ip || (await testInstructorIds()).has(String(ip.id))) return reply.code(400).send({ ok: false, error: 'Instruktor tasdiqlanmagan yoki faol emas' });
       const cats: string[] = Array.isArray(ip.categories) && ip.categories.length ? ip.categories.map((x: any) => String(x).toUpperCase()) : ['B'];
       if (!cats.includes(cat)) return reply.code(409).send({ ok: false, error: `Bu instruktor ${cat} toifani o‘rgatmaydi` });
 
@@ -733,6 +772,10 @@ export async function registerBookingRoutes(
       }
 
       if (user.role === 'instructor') {
+        /* Dars FAQAT kassa chekini urib boshlanadi (hisob urilgan chek bo'yicha) */
+        if (String(body.status) === 'in_progress') {
+          return reply.code(410).send({ ok: false, error: 'Darsni boshlash uchun mijozning chekini skanerlang.', scan_required: true });
+        }
         const ip = await instructorProfileForUser(String(user.id), false);
         if (!ip || String(current[0].instructor_id) !== String(ip.id)) {
           return reply.code(403).send({ ok: false, error: 'Bu bron sizga biriktirilmagan' });

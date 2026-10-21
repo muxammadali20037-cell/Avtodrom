@@ -288,7 +288,7 @@ async function notifyCustomer(booking: any, event: BookingEvent, extra: string) 
     const token = String(process.env.CUSTOMER_BOT_TOKEN || process.env.TELEGRAM_CUSTOMER_BOT_TOKEN || '');
     if (token && Number.isSafeInteger(Number(u?.telegram_id))) {
       await sendBookingNotification(token, Number(u.telegram_id), full,
-        String(process.env.CUSTOMER_MINI_APP_URL || process.env.MINI_APP_URL || ''), '🚗 Mini Appni ochish');
+        String(process.env.CUSTOMER_MINI_APP_URL || process.env.MINI_APP_URL || ''), '📱 Ilovani ochish');
     }
   } catch (e) { console.error('notifyCustomer failed:', e); }
 }
@@ -1304,7 +1304,7 @@ export async function registerAdminPasswordRoutes(app: FastifyInstance) {
         const cToken = String(process.env.CUSTOMER_BOT_TOKEN || process.env.TELEGRAM_CUSTOMER_BOT_TOKEN || '');
         if (cToken && Number.isSafeInteger(Number(cu?.telegram_id))) {
           await sendBookingNotification(cToken, Number(cu.telegram_id), cMsg.full,
-            String(process.env.CUSTOMER_MINI_APP_URL || process.env.MINI_APP_URL || ''), '🚗 Mini Appni ochish');
+            String(process.env.CUSTOMER_MINI_APP_URL || process.env.MINI_APP_URL || ''), '📱 Ilovani ochish');
         }
 
         if (old.instructor_id) {
