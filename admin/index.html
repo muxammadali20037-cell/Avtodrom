@@ -41,6 +41,11 @@ svg{display:block;flex:none}
 
 /* ---------- kirish ---------- */
 .login{min-height:100vh;min-height:100dvh;display:grid;place-items:center;padding:24px 16px;background:var(--hero)}
+/* admin yuklagan fon rasmi (Boshqaruv → Kirish sahifasi foni); yo'q bo'lsa — ko'k */
+.login.has-img{background:linear-gradient(160deg,rgba(10,14,46,.52),rgba(10,14,46,.22)),var(--login-img) center/cover no-repeat,var(--hero)}
+.lbg-prev{height:190px;border-radius:18px;background:var(--hero);background-size:cover;background-position:center;display:grid;place-items:center;margin:4px 0 14px;box-shadow:inset 0 0 0 1px rgba(0,0,0,.06)}
+.lbg-prev .mini{width:118px;background:#fff;border-radius:12px;padding:12px 10px;box-shadow:0 10px 24px rgba(0,0,0,.28);text-align:center;font-size:10px;font-weight:700;color:#1b1f3a}
+.lbg-prev .mini i{display:block;height:8px;border-radius:4px;background:#e6e8f2;margin-top:6px}.lbg-prev .mini i.b{background:#2b2f8f}
 .login-card{width:100%;max-width:400px;background:var(--card);border-radius:26px;padding:26px 22px 22px;box-shadow:0 30px 70px rgba(5,8,40,.35)}
 .login-card .logo{width:74px;height:74px;margin:0 auto 12px}
 .login-card h1{margin:0;text-align:center;font-size:22px;letter-spacing:-.4px}
@@ -1683,7 +1688,7 @@ function sideDef(){
     ['bookings/new', 'Yangi bronlar', 'bell', 'pending'], ['bookings/cancels', 'Bekor so‘rovlari', 'ban', 'cancels'], ['bookings/all', 'Barcha bronlar', 'list'],
     ['xbron', 'Excel bron', 'sheet'], ['manual', 'Qo‘lda bron', 'phone'], ['schedule', 'Instruktorlar jadvali', 'cal'], ['chat', 'Mijozlar chati', 'chat', 'chat']] });
   if (isAdmin()) G.push({ title: 'Boshqaruv', items: [
-    ['analytics', 'Hisobot va tahlil', 'chart'], ['!/analytics', 'Analitika · 2 loyiha', 'chart'], ['insrep', 'Instruktorlar hisoboti', 'steer'], ['retention', 'O‘quvchini qaytarish', 'refresh'], ['instructors', 'Instruktorlar', 'users', 'apps'], ['grafik', 'Ish grafigi', 'clock'], ['@ctllink', 'Nazorat paneli', 'eye'], ['@bosslink', 'Boshqaruv ilovasi', 'mobile'], ['prices', 'Narxlar va ish vaqti', 'tag'],
+    ['analytics', 'Hisobot va tahlil', 'chart'], ['!/analytics', 'Analitika · 2 loyiha', 'chart'], ['insrep', 'Instruktorlar hisoboti', 'steer'], ['retention', 'O‘quvchini qaytarish', 'refresh'], ['instructors', 'Instruktorlar', 'users', 'apps'], ['grafik', 'Ish grafigi', 'clock'], ['@ctllink', 'Nazorat paneli', 'eye'], ['@bosslink', 'Boshqaruv ilovasi', 'mobile'], ['@loginbg', 'Kirish sahifasi foni', 'img'], ['prices', 'Narxlar va ish vaqti', 'tag'],
     ['staff', 'Xodimlar', 'key'], ['!/admin/full', 'Kengaytirilgan panel', 'ext']] });
   return G;
 }
@@ -1834,6 +1839,26 @@ ACT.logout = async () => {
 /* =========================================================================
    KIRISH
    ========================================================================= */
+/* Kirish sahifasi foni — admin yuklagan rasm (bo'lmasa ko'k). Avval xotiradagisi darhol,
+   keyin serverdagi eng yangisi (rasm to'liq yuklangach almashadi — miltillamasin). */
+const LBG = 'adm_login_bg';
+function applyLoginBg(url){
+  const el = $('login'); if (!el) return;
+  if (url) { el.style.setProperty('--login-img', `url("${String(url).replace(/["\\]/g, '')}")`); el.classList.add('has-img'); }
+  else { el.style.removeProperty('--login-img'); el.classList.remove('has-img'); }
+}
+async function loginBg(){
+  try { const c = localStorage.getItem(LBG); if (c) applyLoginBg(c); } catch {}
+  try {
+    const r = await fetch('/api/admin/login-bg', { cache: 'no-store', credentials: 'same-origin' });
+    const j = await r.json();
+    if (!j || !j.ok) return;
+    const url = j.url || '';
+    if (url) { const im = new Image(); im.onload = () => applyLoginBg(url); im.src = url; } else applyLoginBg('');
+    try { url ? localStorage.setItem(LBG, url) : localStorage.removeItem(LBG); } catch {}
+  } catch { /* internet yo'q — xotiradagi yoki ko'k */ }
+}
+loginBg();
 function showLogin(){
   S.me = null; S.reg = null; S.stamp = ''; S.routeName = ''; acClear();
   $('app').classList.add('hidden'); $('login').classList.remove('hidden');
@@ -6698,6 +6723,78 @@ ACT.bossreset = async () => {
   catch (e) { fail(e); }
 };
 
+
+/* =========================================================================
+   KIRISH SAHIFASI FONI — xodimlar kirish oynasining orqa foni (rasm yuklash)
+   Rasm telefonda/kompyuterda kichraytiriladi (eng uzun tomoni 2400 px, JPEG) —
+   kirish sahifasi tez ochiladi. O'chirilsa — yana ko'k fon.
+   ========================================================================= */
+const LBGS = { url: '', id: null, at: null, busy: false };
+function lbgPaint(msg = ''){
+  openSheet(`<h3>🖼️ Kirish sahifasi foni</h3>
+    <p class="lead">Xodimlar (admin, operator, kassa) kirish oynasida orqada shu rasm turadi. Rasm bo‘lmasa — ko‘k fon.</p>
+    <div class="lbg-prev" id="lbgPrev" style="${LBGS.url ? `background-image:linear-gradient(160deg,rgba(10,14,46,.52),rgba(10,14,46,.22)),url('${esc(LBGS.url)}')` : ''}"><div class="mini">TASH INDEX AVTODROM<i></i><i></i><i class="b"></i></div></div>
+    <input type="file" id="lbgFile" accept="image/jpeg,image/png,image/webp" class="hidden">
+    <button class="btn btn-primary" data-act="lbgpick" ${LBGS.busy ? 'disabled' : ''}>${I('img', 18)} ${LBGS.url ? 'Boshqa rasm yuklash' : 'Rasm yuklash'}</button>
+    ${LBGS.url ? `<button class="btn btn-soft" data-act="lbgdel" style="margin-top:8px" ${LBGS.busy ? 'disabled' : ''}>Ko‘k fonga qaytarish</button>` : ''}
+    <p class="ctl-meta" id="lbgMsg" style="margin-top:10px">${esc(msg || (LBGS.url ? `Hozirgi rasm${LBGS.at ? ' · ' + whenText(LBGS.at) : ''}. Yangisi yuklansa, eskisi o‘chadi.` : 'JPG, PNG yoki WEBP. Keng (yotiq) rasm yaxshi chiqadi.'))}</p>`);
+  const f = $('lbgFile'); if (f) f.onchange = () => { if (f.files && f.files[0]) lbgUpload(f.files[0]); };
+}
+ACT.loginbg = async el => {
+  closeSide();
+  if (!isAdmin()) return toast('Faqat administrator uchun', true);
+  busyBtn(el, true);
+  try { const r = await api('/api/admin/login-bg', { fresh: true }); Object.assign(LBGS, { url: r.url || '', id: r.id || null, at: r.at || null }); lbgPaint(); }
+  catch (e) { fail(e); }
+  finally { busyBtn(el, false); }
+};
+ACT.lbgpick = () => { const f = $('lbgFile'); if (f) { f.value = ''; f.click(); } };
+/** Rasmni kichraytirish: eng uzun tomoni 2400 px, JPEG 0.86 (kichik PNG/WEBP o'zgarmaydi) */
+function lbgShrink(file){
+  return new Promise((resolve) => {
+    if (file.size < 600 * 1024 && file.type !== 'image/png') return resolve(file);
+    const url = URL.createObjectURL(file), im = new Image();
+    im.onload = () => {
+      const k = Math.min(1, 2400 / Math.max(im.naturalWidth, im.naturalHeight));
+      const c = document.createElement('canvas'); c.width = Math.round(im.naturalWidth * k); c.height = Math.round(im.naturalHeight * k);
+      c.getContext('2d').drawImage(im, 0, 0, c.width, c.height);
+      URL.revokeObjectURL(url);
+      c.toBlob((b) => resolve(b && b.size < file.size ? new File([b], (file.name || 'fon').replace(/\.[a-z0-9]+$/i, '') + '.jpg', { type: 'image/jpeg' }) : file), 'image/jpeg', 0.86);
+    };
+    im.onerror = () => { URL.revokeObjectURL(url); resolve(file); };
+    im.src = url;
+  });
+}
+async function lbgUpload(file0){
+  if (!/^image\/(jpeg|png|webp)$/.test(file0.type)) return toast('Faqat JPG, PNG yoki WEBP rasm', true);
+  LBGS.busy = true; lbgPaint('Tayyorlanmoqda…');
+  try {
+    const file = await lbgShrink(file0);
+    const sign = await post('/api/admin/media/sign', { title: 'Kirish sahifasi foni', media_type: 'image', slot: 'login', file_name: file.name || 'fon.jpg', content_type: file.type });
+    if (sign.max_file_size && file.size > sign.max_file_size) throw new Error('Rasm juda katta');
+    lbgPaint('Yuklanmoqda…');
+    const put = await fetch(sign.upload_url || sign.signed_url, { method: 'PUT', headers: { 'Content-Type': file.type }, body: file });
+    if (!put.ok) throw new Error(`Rasm yuklanmadi (${put.status})`);
+    const c = await post('/api/admin/media/commit', { title: 'Kirish sahifasi foni', media_type: 'image', slot: 'login', key: sign.key, path: sign.path, public_url: sign.public_url });
+    Object.assign(LBGS, { url: c.media?.public_url || sign.public_url, id: c.media?.id ? String(c.media.id) : LBGS.id, at: new Date().toISOString() });
+    try { localStorage.setItem(LBG, LBGS.url); } catch {}
+    applyLoginBg(LBGS.url);
+    LBGS.busy = false; lbgPaint('Saqlandi — kirish sahifasida endi shu rasm.');
+    toast('Kirish sahifasi foni yangilandi');
+  } catch (e) { LBGS.busy = false; lbgPaint(''); fail(e); }
+}
+ACT.lbgdel = async () => {
+  const ok = await ask({ title: 'Rasm o‘chirilsinmi?', text: 'Kirish sahifasida yana ko‘k fon bo‘ladi.', ok: 'O‘chirish', danger: true });
+  if (!ok) return lbgPaint();
+  LBGS.busy = true; lbgPaint('O‘chirilmoqda…');
+  try {
+    if (LBGS.id) await api(`/api/admin/media/${encodeURIComponent(LBGS.id)}`, { method: 'DELETE' });
+    Object.assign(LBGS, { url: '', id: null, at: null, busy: false });
+    try { localStorage.removeItem(LBG); } catch {}
+    applyLoginBg('');
+    lbgPaint('Ko‘k fon qaytdi.'); toast('Rasm o‘chirildi');
+  } catch (e) { LBGS.busy = false; lbgPaint(''); fail(e); }
+};
 (async function boot(){
   try{
     const me = await api('/api/admin/me');

@@ -1633,6 +1633,7 @@ pre.json{background:#F7FAFF;border:1px solid var(--line);border-radius:8px;paddi
         <option value="home">Rasm → bosh sahifa foni</option>
         <option value="location">Rasm → lokatsiya kartochkasi</option>
         <option value="guide">Video → qo‘llanma</option>
+        <option value="login">Rasm → xodimlar kirish sahifasi foni</option>
       </select>
       <input id="mediaFile" type="file" class="input" accept="video/mp4,video/webm,video/quicktime,image/jpeg,image/png,image/webp">
       <button id="uploadBtn" class="btn primary">Yuklash</button>
@@ -2844,7 +2845,7 @@ async function loadMedia(){
     const gal=S.media.filter(m=>String(m.key||'').startsWith('gallery_'))
       .sort((a,b)=>(a.sort_order??0)-(b.sort_order??0));
     const single=S.media.filter(m=>!String(m.key||'').startsWith('gallery_'));
-    const SLOT={guide_video:'Video qo‘llanma',home_image:'Bosh sahifa foni',location_image:'Lokatsiya kartochkasi'};
+    const SLOT={guide_video:'Video qo‘llanma',home_image:'Bosh sahifa foni',location_image:'Lokatsiya kartochkasi',login_bg:'Xodimlar kirish sahifasi foni'};
     const card=(m,badge)=>`<div class="media">
       ${m.media_type==='video'
         ? `<video controls preload="metadata" src="${esc(m.public_url)}"></video>`
@@ -6867,6 +6868,16 @@ document.querySelectorAll('.nav .count').forEach(el=>{
   const f=()=>el.classList.toggle('zero',!Number(String(el.textContent).trim()));
   f(); new MutationObserver(f).observe(el,{childList:true,characterData:true,subtree:true});
 });
+/* Kirish sahifasi foni (Media → «xodimlar kirish sahifasi foni»): chapdagi ko'k panelda rasm */
+(async function loginBg(){
+  const put=url=>{ const el=document.querySelector('#login .ultra-intro'); if(!el) return;
+    if(url){ el.style.background=`linear-gradient(160deg,rgba(10,16,40,.78),rgba(10,16,40,.45)),url("${String(url).replace(/["\\]/g,'')}") center/cover no-repeat`; }
+    else el.style.background=''; };
+  try{ const c=localStorage.getItem('adm_login_bg'); if(c) put(c); }catch{}
+  try{ const r=await fetch('/api/admin/login-bg',{cache:'no-store'}); const j=await r.json(); if(!j||!j.ok) return;
+    if(j.url){ const im=new Image(); im.onload=()=>put(j.url); im.src=j.url; } else put('');
+    try{ j.url?localStorage.setItem('adm_login_bg',j.url):localStorage.removeItem('adm_login_bg'); }catch{} }catch{}
+})();
 boot();
 </script>
 </body>
