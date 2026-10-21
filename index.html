@@ -2,7 +2,7 @@
 <html lang="uz">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="theme-color" content="#232883">
 <meta name="format-detection" content="telephone=no">
 <title>TASH INDEX AVTODROM</title>
@@ -22,7 +22,9 @@
   --star:#f5b400;
   --hero:linear-gradient(140deg,#0f1340 0%,#232883 55%,#3a40ae 100%);
   --shadow:0 1px 2px rgba(16,20,48,.04),0 6px 20px rgba(16,20,48,.06);
-  --sb:env(safe-area-inset-bottom,0px);
+  --sb:max(env(safe-area-inset-bottom,0px),var(--tg-safe-area-inset-bottom,0px));
+  /* to'liq ekran: telefonning yuqori zonasi + Telegram'ning «Yopish / ⋯» tugmalari */
+  --st:calc(max(env(safe-area-inset-top,0px),var(--tg-safe-area-inset-top,0px)) + var(--tg-content-safe-area-inset-top,0px));
   --nav-h:64px;
   color-scheme:light;
 }
@@ -43,7 +45,10 @@ button{cursor:pointer;border:0;background:none;padding:0;text-align:inherit}
 button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 svg{display:block;flex:none}
 .hidden{display:none!important}
-.wrap{max-width:560px;margin:0 auto;padding:10px 16px calc(var(--nav-h) + var(--sb) + 28px)}
+.wrap{max-width:560px;margin:0 auto;padding:calc(10px + var(--st)) 16px calc(var(--nav-h) + var(--sb) + 28px)}
+/* ilovadek: tugma va menyularni uzoq bosganda matn belgilanmasin, menyu chiqmasin */
+button,.nav,.tile,.choice,.row,.chip,.time,.opt,.seg,.pill,.card.next{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+img{-webkit-user-drag:none;-webkit-touch-callout:none}
 .view{animation:fade .18s ease}
 @keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
 .muted{color:var(--hint)}
@@ -84,6 +89,13 @@ svg{display:block;flex:none}
 .btn-soft{background:var(--card-2);color:var(--text)}
 .btn-danger{background:var(--danger-soft);color:var(--danger)}
 .btn-sm{min-height:40px;font-size:14px;border-radius:12px;padding:0 14px;width:auto}
+/* to'liq ekranda: telefon soati va Telegram tugmalari ostida matn aralashmasin */
+.sbar{position:fixed;top:0;left:0;right:0;height:var(--st);z-index:60;pointer-events:none;background:var(--bg);background:color-mix(in srgb,var(--bg) 86%,transparent);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px)}
+/* bosh ekranga qo'shish kartasi */
+.card.hs{display:flex;align-items:center;gap:12px;padding:12px 12px 12px 14px;margin:12px 0 4px;position:relative}
+.hs .hs-ic{flex:none;width:42px;height:42px;border-radius:13px;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center}
+.hs .hs-tx{flex:1;min-width:0}.hs .hs-tx b{display:block;font-size:14.5px}.hs .hs-tx small{display:block;color:var(--hint);font-size:12.5px;line-height:1.3}
+.hs .hs-x{position:absolute;top:-8px;right:-6px;width:26px;height:26px;border-radius:50%;background:var(--card);box-shadow:var(--shadow);color:var(--hint);display:grid;place-items:center}
 .btn-row{display:flex;gap:8px;margin-top:12px}
 .btn-row .btn{flex:1}
 .spin{width:18px;height:18px;border-radius:50%;border:2.5px solid currentColor;border-right-color:transparent;animation:rot .7s linear infinite}
@@ -363,7 +375,7 @@ textarea.input{min-height:88px;resize:none;line-height:1.4}
 /* ---------- pastdan chiquvchi oyna ---------- */
 .sheet-bg{position:fixed;inset:0;z-index:80;background:rgba(0,0,0,.45);opacity:0;transition:opacity .2s;pointer-events:none}
 .sheet-bg.show{opacity:1;pointer-events:auto}
-.sheet{position:fixed;left:0;right:0;bottom:0;z-index:90;max-width:560px;margin:0 auto;max-height:90vh;overflow:auto;
+.sheet{position:fixed;left:0;right:0;bottom:0;z-index:90;max-width:560px;margin:0 auto;max-height:min(90vh,calc(100vh - var(--st) - 16px));overflow:auto;
   background:var(--card);border-radius:24px 24px 0 0;padding:8px 18px calc(20px + var(--sb));
   transform:translateY(105%);visibility:hidden;transition:transform .26s cubic-bezier(.2,.8,.2,1),visibility 0s linear .26s;overscroll-behavior:contain}
 .sheet.show{transform:none;visibility:visible;transition:transform .26s cubic-bezier(.2,.8,.2,1)}
@@ -404,7 +416,7 @@ textarea.input{min-height:88px;resize:none;line-height:1.4}
 .stats span{display:block;font-size:12px;color:var(--hint)}
 .bio{white-space:pre-line;color:var(--text);font-size:14.5px;line-height:1.5;margin:0 0 14px}
 
-.toast{position:fixed;left:50%;top:calc(12px + env(safe-area-inset-top,0px) + var(--tg-content-safe-area-inset-top,0px));z-index:120;transform:translate(-50%,-16px);opacity:0;
+.toast{position:fixed;left:50%;top:calc(12px + var(--st));z-index:120;transform:translate(-50%,-16px);opacity:0;
   max-width:calc(100% - 32px);background:#161a3a;color:#fff;padding:12px 16px;border-radius:14px;font-size:14.5px;font-weight:600;
   box-shadow:0 10px 30px rgba(0,0,0,.25);transition:opacity .2s,transform .2s;pointer-events:none;text-align:center}
 .toast.show{opacity:1;transform:translate(-50%,0)}
@@ -631,7 +643,7 @@ body.onb-mode .wrap{padding-bottom:calc(120px + var(--sb))}
 
 /* --- media ko'ruvchi --- */
 .viewer{position:fixed;inset:0;z-index:140;background:#05060f;color:#fff;display:flex;flex-direction:column;animation:helloIn .2s ease}
-.viewer-top{display:flex;align-items:center;gap:10px;padding:calc(10px + env(safe-area-inset-top,0px)) 12px 10px}
+.viewer-top{display:flex;align-items:center;gap:10px;padding:calc(10px + var(--st)) 12px 10px}
 .viewer-top b{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:15px}
 .viewer-top span{opacity:.7;font-size:14px;font-variant-numeric:tabular-nums}
 .viewer-x{width:42px;height:42px;border-radius:50%;background:rgba(255,255,255,.12);color:#fff;display:grid;place-items:center}
@@ -748,6 +760,13 @@ const RU = /*RU*/{
   "Yuklanmoqda…": "Загрузка…",
   "Telegram orqali oching": "Откройте через Telegram",
   "Bu ilova TASH INDEX AVTODROM botidagi «Mini App» tugmasi orqali ishlaydi.": "Приложение работает через кнопку «Mini App» в боте TASH INDEX AVTODROM.",
+  "Bu ilova TASH INDEX AVTODROM botidagi «Ilovani ochish» tugmasi orqali ishlaydi.": "Приложение открывается кнопкой «Ilovani ochish» в боте TASH INDEX AVTODROM.",
+  "Ekranga qo‘shing": "Добавьте на экран",
+  "Telefonda ilova belgisi — bir bosishda ochiladi": "Значок на телефоне — открывается в одно касание",
+  "Telefon ekraniga qo‘shish": "Добавить на экран телефона",
+  "Ilova belgisi paydo bo‘ladi — bir bosishda ochiladi": "Появится значок приложения — открывается в одно касание",
+  "Qo‘shish": "Добавить",
+  "Ilova telefon ekraniga qo‘shildi": "Приложение добавлено на экран телефона",
   "Kirish amalga oshmadi": "Не удалось войти",
   "Qayta urinish": "Повторить",
   "Xabar yozing…": "Напишите сообщение…",
@@ -1139,6 +1158,7 @@ const P = {
   arrow: '<path d="M5 12h14M13 6l6 6-6 6"/>',
   check: '<path d="m5 12.5 4.5 4.5L19 7.5"/>',
   x: '<path d="M6.5 6.5l11 11M17.5 6.5l-11 11"/>',
+  mobile: '<rect x="6.5" y="2.5" width="11" height="19" rx="2.5"/><path d="M10.5 18h3"/>',
   edit: '<path d="M4 20h4.2L19.5 8.7a2.1 2.1 0 0 0-3-3L5.2 17H4z"/>',
   send: '<path d="M5 12 19.5 4.5 16 19.5l-4.5-6.2z"/><path d="m11.5 13.3 8-8.8"/>',
   star: '<path d="m12 3.6 2.6 5.3 5.8.8-4.2 4.1 1 5.8L12 16.9l-5.2 2.7 1-5.8-4.2-4.1 5.8-.8z" fill="currentColor"/>',
@@ -1365,7 +1385,10 @@ async function boot() {
   applyTheme();
   if (tg) {
     try { tg.ready(); tg.expand(); } catch (e) {}
+    goFull();
     try { if (ver('7.7')) tg.disableVerticalSwipes(); } catch (e) {}
+    try { tg.onEvent('fullscreenChanged', onFull); tg.onEvent('fullscreenFailed', onFull); } catch (e) {}
+    checkHs();
     try { tg.onEvent('themeChanged', applyTheme); } catch (e) {}
     try { tg.BackButton.onClick(onBack); } catch (e) {}
   }
@@ -1397,6 +1420,43 @@ async function boot() {
   if (needOnb()) return startOnb();
   enterApp();
 }
+/* ---------- haqiqiy ilovadek: to'liq ekran, portret, bosh ekranga qo'shish ----------
+   Telegram 8.0+: telefonda (iOS, Android) ilova to'liq ekranda ochiladi — Telegram
+   sarlavhasi yo'q, faqat o'ng/chap burchakda kichik «Yopish / ⋯». Kompyuterda —
+   oddiy oyna. Tepadagi zona (soat, kamera) --st CSS o'zgaruvchisida hisobga olinadi. */
+const MOBILE = () => /^(ios|android)$/i.test(String((tg && tg.platform) || ''));
+function goFull() {
+  if (!tg || !MOBILE() || !ver('8.0')) return;
+  try { if (!tg.isFullscreen) tg.requestFullscreen(); } catch (e) {}
+  try { if (tg.lockOrientation) tg.lockOrientation(); } catch (e) {}
+  onFull();
+}
+function onFull() { document.documentElement.classList.toggle('fs', !!(tg && tg.isFullscreen)); }
+/** Bron qilinayotganda ilovani tasodifan yopib qo'ymasin («O'zgarishlar yo'qoladi» so'raladi) */
+function syncClose() {
+  if (!tg || !ver('6.2')) return;
+  const on = S.view === 'book' && B.started && !B.done && B.step !== 'cat';
+  if (on === S.closeOn) return;
+  S.closeOn = on;
+  try { on ? tg.enableClosingConfirmation() : tg.disableClosingConfirmation(); } catch (e) {}
+}
+/** Bosh ekranga qo'shish (Telegram 8.0+): telefon ekranida alohida belgi — bir bosishda ochiladi */
+function checkHs() {
+  S.hs = 'unsupported';
+  if (!tg || !MOBILE() || !ver('8.0') || typeof tg.checkHomeScreenStatus !== 'function' || typeof tg.addToHomeScreen !== 'function') return;
+  S.hs = 'unknown';
+  try { tg.checkHomeScreenStatus((st) => { S.hs = st || 'unknown'; if (S.ready && (S.view === 'home' || S.view === 'profile')) render(); }); } catch (e) { S.hs = 'unsupported'; }
+  try { tg.onEvent('homeScreenAdded', () => { S.hs = 'added'; toast(T('Ilova telefon ekraniga qo‘shildi')); haptic.ok(); if (S.ready) render(); }); } catch (e) {}
+}
+const hsOffer = () => S.hs === 'missed' || S.hs === 'unknown';
+function hsCard() {
+  if (!hsOffer() || store.get('hs_hide') === '1') return '';
+  return `<div class="card hs rv"><span class="hs-ic">${ico('mobile', 22)}</span>
+    <span class="hs-tx"><b>${T('Ekranga qo‘shing')}</b><small>${T('Telefonda ilova belgisi — bir bosishda ochiladi')}</small></span>
+    <button class="btn btn-sm btn-primary" data-act="hsadd">${T('Qo‘shish')}</button>
+    <button class="hs-x" data-act="hshide" aria-label="${T('Yopish')}">${ico('x', 16)}</button></div>`;
+}
+
 /** Ilovaga kirish. Bot havolasidan kelgan bo'lsa: t.me/bot?startapp=book */
 function enterApp() {
   const sp = String((tg && tg.initDataUnsafe && tg.initDataUnsafe.start_param) || '').toLowerCase();
@@ -1435,6 +1495,7 @@ const NAV = [
 const VIEWS = ['home', 'about', 'book', 'bookings', 'support', 'profile', 'onb'];
 function renderShell() {
   $('#app').innerHTML = `
+    <div class="sbar" aria-hidden="true"></div>
     <main class="wrap" id="main"></main>
     <div id="dock"></div>
     <nav class="nav" aria-label="${T('Menyu')}"><div class="nav-in">
@@ -1450,7 +1511,7 @@ function renderSplash() {
 function renderFatal(kind, msg) {
   document.body.classList.remove('onb-mode');
   const txt = kind === 'tg'
-    ? { h: T('Telegram orqali oching'), p: T('Bu ilova TASH INDEX AVTODROM botidagi «Mini App» tugmasi orqali ishlaydi.') }
+    ? { h: T('Telegram orqali oching'), p: T('Bu ilova TASH INDEX AVTODROM botidagi «Ilovani ochish» tugmasi orqali ishlaydi.') }
     : { h: T('Kirish amalga oshmadi'), p: msg || T('Iltimos, ilovani yopib, bot orqali qayta oching.') };
   $('#app').innerHTML = `<div class="fatal"><div>${logoImg('logo big')}<h2>${esc(txt.h)}</h2><p>${esc(txt.p)}</p>
     ${kind === 'auth' ? `<button class="btn btn-primary btn-sm" data-act="reload" style="margin:0 auto">${ico('refresh', 18)} ${T('Qayta urinish')}</button>` : ''}</div></div>`;
@@ -1482,6 +1543,7 @@ function render() {
   renderDock();
   updateBadge();
   enhance();
+  syncClose();
 }
 function renderDock() {
   const d = $('#dock');
@@ -1829,6 +1891,7 @@ function renderHome() {
       <div class="meta">${esc(bkLine(next))}</div>
       ${next.pickup_code ? codeBox(next.pickup_code) : ''}
     </div>` : ''}
+    ${hsCard()}
 
     <div class="ask rv">${T('Katalog')}</div>
     <div class="tiles">
@@ -2819,8 +2882,9 @@ function renderProfile() {
       <button class="row" data-act="go" data-v="bookings"><span class="ic">${ico('list', 20)}</span><span class="tx"><b>${T('Bronlarim')}</b><small>${T('Kelgusi va o‘tgan darslar')}</small></span><span class="chev">${ico('chev', 18)}</span></button>
       <button class="row" data-act="location"><span class="ic">${ico('pin', 20)}</span><span class="tx"><b>${T('Avtodrom manzili')}</b><small>Google, Yandex, 2GIS</small></span><span class="chev">${ico('chev', 18)}</span></button>
       <button class="row" data-act="go" data-v="support"><span class="ic">${ico('chat', 20)}</span><span class="tx"><b>${T('Yordam')}</b><small>${T('Admin bilan yozishma')}</small></span><span class="chev">${ico('chev', 18)}</span></button>
+      ${hsOffer() ? `<button class="row" data-act="hsadd"><span class="ic">${ico('mobile', 20)}</span><span class="tx"><b>${T('Telefon ekraniga qo‘shish')}</b><small>${T('Ilova belgisi paydo bo‘ladi — bir bosishda ochiladi')}</small></span><span class="chev">${ico('chev', 18)}</span></button>` : ''}
     </div>
-    <p class="muted" style="text-align:center;font-size:12px;margin-top:20px">TASH INDEX AVTODROM · Mini App</p>`;
+    <p class="muted" style="text-align:center;font-size:12px;margin-top:20px">TASH INDEX AVTODROM</p>`;
 }
 function openEditMe() {
   const u = S.me || {};
@@ -2946,6 +3010,7 @@ const NOTE_TXT = [
   ['Belgilangan vaqtda avtodromga keling.', 'Приходите на автодром в назначенное время.'],
   ['Boshqa vaqt yoki instruktorni tanlashingiz mumkin.', 'Можно выбрать другое время или инструктора.'],
   ['Instruktorni baholashingiz mumkin — Mini Appni oching.', 'Вы можете оценить инструктора — откройте Mini App.'],
+  ['Instruktorni baholashingiz mumkin — ilovani oching.', 'Вы можете оценить инструктора — откройте приложение.'],
   ['Xatolik bo‘lsa, Chat orqali bizga yozing.', 'Если это ошибка, напишите нам в чат.'],
   ['So‘rovingiz tasdiqlandi — bron bekor qilindi.', 'Ваш запрос одобрен — бронь отменена.'],
   ['Bekor qilish so‘rovi rad etildi. Bron kuchda qoladi.', 'Запрос на отмену отклонён. Бронь остаётся в силе.'],
@@ -3062,6 +3127,8 @@ document.addEventListener('click', e => {
     case 'closesheet': closeSheet(); break;
     case 'lang': haptic.tap(); openLang(); break;
     case 'setlang': setLang(v); break;
+    case 'hsadd': haptic.tap(); try { tg.addToHomeScreen(); } catch (e) {} break;
+    case 'hshide': store.set('hs_hide', '1'); render(); break;
   }
 });
 
