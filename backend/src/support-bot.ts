@@ -169,24 +169,24 @@ export const INTENTS: Intent[] = [
     id: 'package', title: '5 soatlik paket',
     kw: [['paket', 1.5], ['5 soat', 1], ['besh soat', 1.2], ['pakyet', 1.5], ['chegirma', 1.3], ['skidk', 1.3], ['aktsiya', 1.2], ['aksiya', 1.2]],
     answer: (c) => c.pkg > 0 ? {
-      uz: `🎁 5 soatlik paket — faqat B toifa: ${money(c.pkg)} (alohida olganda ${money(c.tariff.B.hour * 5)}).\n5 soatni bir necha kunga bo‘lib olasiz. Mini App → «Bron» → B toifa → «5 soatlik paket».`,
-      ru: `🎁 Пакет 5 часов — только категория B: ${moneyRu(c.pkg)} (по отдельности ${moneyRu(c.tariff.B.hour * 5)}).\nЧасы можно разделить на несколько дней. Mini App → «Бронь» → категория B → «Пакет 5 часов».`,
+      uz: `🎁 5 soatlik paket — faqat B toifa: ${money(c.pkg)} (alohida olganda ${money(c.tariff.B.hour * 5)}).\n5 soatni bir necha kunga bo‘lib olasiz. Ilova → «Bron» → B toifa → «5 soatlik paket».`,
+      ru: `🎁 Пакет 5 часов — только категория B: ${moneyRu(c.pkg)} (по отдельности ${moneyRu(c.tariff.B.hour * 5)}).\nЧасы можно разделить на несколько дней. Приложение → «Бронь» → категория B → «Пакет 5 часов».`,
     } : null,
   },
   {
     id: 'hours', title: 'Ish vaqti',
     kw: [['ish vakt', 1.5], ['ish soat', 1.3], ['ishlaysiz', 1.2], ['ishlaysizlar', 1.2], ['nechagacha', 1.2], ['nechigacha', 1.2], ['soat nech', 1], ['ochik', 1], ['grafik', 0.8], ['rabota', 1.2], ['rabotaet', 1.2], ['vremya rabot', 1.5], ['vixodn', 1.2], ['dam olish kun', 1.2], ['yakshanba', 0.8], ['bayram', 0.8]],
     answer: (c) => ({
-      uz: `🕘 Ish vaqti: ${hoursOf(c.s)}.\nBo‘sh vaqtlarni Mini App’da «Bron» bo‘limida ko‘rasiz — u yerda faqat bo‘sh soatlar chiqadi.`,
-      ru: `🕘 Время работы: ${hoursOf(c.s)}.\nСвободное время видно в Mini App в разделе «Бронь» — там только свободные часы.`,
+      uz: `🕘 Ish vaqti: ${hoursOf(c.s)}.\nBo‘sh vaqtlarni ilovadagi «Bron» bo‘limida ko‘rasiz — u yerda faqat bo‘sh soatlar chiqadi.`,
+      ru: `🕘 Время работы: ${hoursOf(c.s)}.\nСвободное время видно в приложении в разделе «Бронь» — там только свободные часы.`,
     }),
   },
   {
     id: 'free_time', title: 'Bo‘sh vaqt va bronsiz kelish',
     kw: [['=bosh vakt', 1.4], ['=bosh joy', 1.4], ['=bosh soat', 1.4], ['=bosh instruktor', 1.4], ['=bosh mi', 1], ['=boshmi', 1], ['svobod', 1.3], ['kelsam', 1.1], ['kelaversam', 1.2], ['bronsiz', 1.3], ['bez zapis', 1.4], ['priyti', 1.1], ['xozir kel', 1.2]],
     answer: () => ({
-      uz: '🗓 Bo‘sh vaqtlar: Mini App → «Bron» → toifa → necha soat — kunni tanlasangiz faqat bo‘sh soatlar chiqadi (qaysi instruktor bo‘shligi bilan).\nBron qilib kelganingiz ma’qul — vaqtingiz kafolatlanadi. Bronsiz kelsangiz, kassada bo‘sh instruktor bo‘lsa darhol chek beriladi.',
-      ru: '🗓 Свободное время: Mini App → «Бронь» → категория → сколько часов — выберите день, и появятся только свободные часы (и свободные инструкторы).\nЛучше приходить по брони — время гарантировано. Без брони — в кассе выдадут чек, если есть свободный инструктор.',
+      uz: '🗓 Bo‘sh vaqtlar: Ilova → «Bron» → toifa → necha soat — kunni tanlasangiz faqat bo‘sh soatlar chiqadi (qaysi instruktor bo‘shligi bilan).\nBron qilib kelganingiz ma’qul — vaqtingiz kafolatlanadi. Bronsiz kelsangiz, kassada bo‘sh instruktor bo‘lsa darhol chek beriladi.',
+      ru: '🗓 Свободное время: Приложение → «Бронь» → категория → сколько часов — выберите день, и появятся только свободные часы (и свободные инструкторы).\nЛучше приходить по брони — время гарантировано. Без брони — в кассе выдадут чек, если есть свободный инструктор.',
     }),
   },
   {
@@ -196,8 +196,8 @@ export const INTENTS: Intent[] = [
       const L = locLinks(c.s);
       if (!L.address && !L.google) return null;
       return {
-        uz: ['📍 Manzil:', L.address, L.google ? `Google xarita: ${L.google}` : '', L.yandex ? `Yandex xarita: ${L.yandex}` : '', 'Mini App → «Avtodrom haqida» → «Manzil» — xarita va rasm.'].filter(Boolean).join('\n'),
-        ru: ['📍 Адрес:', L.address, L.google ? `Google Карты: ${L.google}` : '', L.yandex ? `Яндекс Карты: ${L.yandex}` : '', 'Mini App → «Об автодроме» → «Адрес» — карта и фото.'].filter(Boolean).join('\n'),
+        uz: ['📍 Manzil:', L.address, L.google ? `Google xarita: ${L.google}` : '', L.yandex ? `Yandex xarita: ${L.yandex}` : '', 'Ilova → «Avtodrom haqida» → «Manzil» — xarita va rasm.'].filter(Boolean).join('\n'),
+        ru: ['📍 Адрес:', L.address, L.google ? `Google Карты: ${L.google}` : '', L.yandex ? `Яндекс Карты: ${L.yandex}` : '', 'Приложение → «Об автодроме» → «Адрес» — карта и фото.'].filter(Boolean).join('\n'),
       };
     },
   },
@@ -207,15 +207,15 @@ export const INTENTS: Intent[] = [
     answer: (c) => {
       const list = c.bookings || [];
       if (!list.length) return {
-        uz: 'Hozircha faol broningiz yo‘q. Bron qilish: Mini App → «Bron» → toifa → vaqt → instruktor. Bron qilgach kassa kodi (AVD-1234) beriladi.',
-        ru: 'Сейчас активных броней нет. Забронировать: Mini App → «Бронь» → категория → время → инструктор. После брони вы получите код для кассы (AVD-1234).',
+        uz: 'Hozircha faol broningiz yo‘q. Bron qilish: Ilova → «Bron» → toifa → vaqt → instruktor. Bron qilgach kassa kodi (AVD-1234) beriladi.',
+        ru: 'Сейчас активных броней нет. Забронировать: Приложение → «Бронь» → категория → время → инструктор. После брони вы получите код для кассы (AVD-1234).',
       };
       const st = (x: string, ru: boolean) => ({ pending: ru ? 'ждёт подтверждения' : 'tasdiq kutilmoqda', confirmed: ru ? 'подтверждена' : 'tasdiqlangan', in_progress: ru ? 'идёт урок' : 'dars ketmoqda' }[x] || x);
       return {
         uz: ['📋 Bronlaringiz:', ...list.map((b) => `• ${fmtWhen(b.start_at)} · ${b.category || 'B'} toifa${b.instructor ? ` · ${b.instructor}` : ''} · ${st(b.status, false)}${b.code ? `\n  Kassa kodi: ${b.code}` : ''}`),
-          'Kassaga shu kodni aytasiz. Batafsil — Mini App → «Bronlarim».'].join('\n'),
+          'Kassaga shu kodni aytasiz. Batafsil — Ilova → «Bronlarim».'].join('\n'),
         ru: ['📋 Ваши брони:', ...list.map((b) => `• ${fmtWhen(b.start_at, true)} · категория ${b.category || 'B'}${b.instructor ? ` · ${b.instructor}` : ''} · ${st(b.status, true)}${b.code ? `\n  Код для кассы: ${b.code}` : ''}`),
-          'Назовите этот код в кассе. Подробнее — Mini App → «Мои брони».'].join('\n'),
+          'Назовите этот код в кассе. Подробнее — Приложение → «Мои брони».'].join('\n'),
       };
     },
   },
@@ -223,8 +223,8 @@ export const INTENTS: Intent[] = [
     id: 'book_how', title: 'Qanday bron qilaman',
     kw: [['kanday bron', 1.5], ['bron kanday', 1.5], ['bron kil', 1.2], ['yozil', 1.2], ['kanday yozil', 1.5], ['zapis', 1.2], ['zabronir', 1.5], ['kak zapis', 1.5], ['bron', 0.6]],
     answer: () => ({
-      uz: '📝 Bron qilish: Mini App → «Bron» → toifa (A, B, C) → necha soat → kun va vaqt → bo‘sh instruktor → «Tasdiqlash».\nBron qilgach sizga kassa kodi (AVD-1234) keladi — kassaga shuni aytasiz. Tasdiqlanganda Telegram’ga xabar keladi.',
-      ru: '📝 Как забронировать: Mini App → «Бронь» → категория (A, B, C) → сколько часов → день и время → свободный инструктор → «Подтвердить».\nПосле брони вы получите код для кассы (AVD-1234). Когда бронь подтвердят — придёт сообщение в Telegram.',
+      uz: '📝 Bron qilish: Ilova → «Bron» → toifa (A, B, C) → necha soat → kun va vaqt → bo‘sh instruktor → «Tasdiqlash».\nBron qilgach sizga kassa kodi (AVD-1234) keladi — kassaga shuni aytasiz. Tasdiqlanganda Telegram’ga xabar keladi.',
+      ru: '📝 Как забронировать: Приложение → «Бронь» → категория (A, B, C) → сколько часов → день и время → свободный инструктор → «Подтвердить».\nПосле брони вы получите код для кассы (AVD-1234). Когда бронь подтвердят — придёт сообщение в Telegram.',
     }),
   },
   {
@@ -239,8 +239,8 @@ export const INTENTS: Intent[] = [
     id: 'cancel', title: 'Bekor qilish',
     kw: [['bekor', 1.5], ['otmen', 1.5], ['kelolmay', 1.5], ['kela olmay', 1.5], ['borolmay', 1.2], ['bora olmay', 1.2], ['ne smogu', 1.2], ['ne pridu', 1.2]],
     answer: (c) => ({
-      uz: `❌ Bekor qilish: Mini App → «Bronlarim» → bronni tanlang → «Bekor qilish».\nTasdiqlanmagan bron darhol bekor bo‘ladi, tasdiqlangan bron uchun sabab yozib so‘rov yuborasiz — admin ko‘rib chiqadi.${c.lateMin > 0 ? `\n⚠️ Dars vaqtidan ${c.lateMin} daqiqa kechiksangiz, bron avtomatik bekor bo‘ladi.` : ''}`,
-      ru: `❌ Отмена: Mini App → «Мои брони» → выберите бронь → «Отменить».\nНеподтверждённая бронь отменяется сразу, для подтверждённой — отправьте запрос с причиной, администратор рассмотрит.${c.lateMin > 0 ? `\n⚠️ При опоздании на ${c.lateMin} минут бронь отменяется автоматически.` : ''}`,
+      uz: `❌ Bekor qilish: Ilova → «Bronlarim» → bronni tanlang → «Bekor qilish».\nTasdiqlanmagan bron darhol bekor bo‘ladi, tasdiqlangan bron uchun sabab yozib so‘rov yuborasiz — admin ko‘rib chiqadi.${c.lateMin > 0 ? `\n⚠️ Dars vaqtidan ${c.lateMin} daqiqa kechiksangiz, bron avtomatik bekor bo‘ladi.` : ''}`,
+      ru: `❌ Отмена: Приложение → «Мои брони» → выберите бронь → «Отменить».\nНеподтверждённая бронь отменяется сразу, для подтверждённой — отправьте запрос с причиной, администратор рассмотрит.${c.lateMin > 0 ? `\n⚠️ При опоздании на ${c.lateMin} минут бронь отменяется автоматически.` : ''}`,
     }),
   },
   {
@@ -298,8 +298,8 @@ export const INTENTS: Intent[] = [
     id: 'instructors', title: 'Instruktorlar',
     kw: [['instruktor', 1.2], ['ustoz', 1.2], ['uchitel', 1], ['ayol instr', 1.5], ['jenshchin', 1.2]],
     answer: () => ({
-      uz: '👨‍🏫 Instruktorni bron qilishda o‘zingiz tanlaysiz — rasmi, reytingi va tajribasi ko‘rinadi. Ro‘yxat: Mini App → «Avtodrom haqida» → «Instruktorlar».',
-      ru: '👨‍🏫 Инструктора вы выбираете сами при брони — видно фото, рейтинг и опыт. Список: Mini App → «Об автодроме» → «Инструкторы».',
+      uz: '👨‍🏫 Instruktorni bron qilishda o‘zingiz tanlaysiz — rasmi, reytingi va tajribasi ko‘rinadi. Ro‘yxat: Ilova → «Avtodrom haqida» → «Instruktorlar».',
+      ru: '👨‍🏫 Инструктора вы выбираете сами при брони — видно фото, рейтинг и опыт. Список: Приложение → «Об автодроме» → «Инструкторы».',
     }),
   },
   /* Ma'lumot yo'q — adminga (admin javobini «avto-javobga saqlash» bilan o'rgatsa bo'ladi) */

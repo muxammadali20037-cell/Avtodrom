@@ -102,7 +102,7 @@ export function reminderKeyboard(bookingId: string) {
   const cb = reminderCallbacksOn();
   const rows: any[] = [];
   if (cb) rows.push([{ text: '✅ Kelaman', callback_data: `come:${bookingId}` }], [{ text: '🚫 Bekor qilmoqchiman', callback_data: `cxl:${bookingId}` }]);
-  if (miniApp()) rows.push([{ text: cb ? '🚗 Mini Appni ochish' : '🚗 Bronlarimni ochish', web_app: { url: miniApp() } }]);
+  if (miniApp()) rows.push([{ text: cb ? '📱 Ilovani ochish' : '🚗 Bronlarimni ochish', web_app: { url: miniApp() } }]);
   return rows.length ? { inline_keyboard: rows } : undefined;
 }
 
@@ -311,7 +311,7 @@ async function notifyLateClosed(b: any, lateMin: number): Promise<boolean> {
     const info = [when && `📅 ${when}`, d.instructorName && `👨‍🏫 ${d.instructorName}`, code && `🔑 ${code}`].filter(Boolean);
     const cText = ['🚫 Broningiz bekor qilindi', '', ...info, '',
       `Dars vaqtidan ${lateMin} daqiqa o‘tdi, siz kelmadingiz — bron avtomatik bekor qilindi.`,
-      'Yangi vaqtga bron qilish uchun Mini Appni oching.'].join('\n');
+      'Yangi vaqtga bron qilish uchun ilovani oching.'].join('\n');
     await supabaseRest('notifications', {
       method: 'POST', headers: { Prefer: 'return=minimal' },
       body: JSON.stringify({ user_id: b.customer_id, type: 'booking', title: '🚫 Bron bekor qilindi',
@@ -325,7 +325,7 @@ async function notifyLateClosed(b: any, lateMin: number): Promise<boolean> {
     if (bot && Number.isSafeInteger(chatId) && chatId > 0) {
       await telegramApi(bot, 'sendMessage', {
         chat_id: chatId, text: cText,
-        ...(miniApp() ? { reply_markup: { inline_keyboard: [[{ text: '🚗 Mini Appni ochish', web_app: { url: miniApp() } }]] } } : {}),
+        ...(miniApp() ? { reply_markup: { inline_keyboard: [[{ text: '📱 Ilovani ochish', web_app: { url: miniApp() } }]] } } : {}),
       });
       sent = true;
     }

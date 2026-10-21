@@ -27,7 +27,7 @@ async function activeMedia() {
   try {
     const rows = await supabaseRest<any[]>('admin_media', {
       query:
-        '?is_active=eq.true' +
+        '?is_active=eq.true&key=neq.login_bg' +   /* xodimlar kirish foni — mijozga kerak emas */
         '&select=id,key,title,media_type,path,public_url,sort_order,created_at' +
         '&order=sort_order.asc,created_at.desc',
     });

@@ -79,7 +79,7 @@ export async function notifyBookingStatus(booking: any, status: NotifyStatus) {
     const token = String(process.env.CUSTOMER_BOT_TOKEN || process.env.TELEGRAM_CUSTOMER_BOT_TOKEN || '');
     const miniAppUrl = String(process.env.CUSTOMER_MINI_APP_URL || process.env.MINI_APP_URL || '');
     if (token && Number.isSafeInteger(Number(u?.telegram_id))) {
-      await sendBookingNotification(token, Number(u.telegram_id), msg.full, miniAppUrl, '🚗 Mini Appni ochish');
+      await sendBookingNotification(token, Number(u.telegram_id), msg.full, miniAppUrl, '📱 Ilovani ochish');
     }
   } catch (e) {
     console.error('Instructor booking notification failed:', e);

@@ -62,11 +62,11 @@ export async function telegramSendPhoto(token: string, chatId: number, png: Uint
 export async function sendMiniAppStart(token: string, chatId: number, miniAppUrl: string, role: 'customer' | 'instructor' | 'admin') {
   const config = {
     customer: {
-      text: '🚗 AVTODROM\n\nBron qilish, instruktor tanlash va darslaringizni boshqarish uchun Mini Appni oching.',
-      button: '🚗 Avtodromni ochish',
+      text: '🚗 TASH INDEX AVTODROM\n\nBron qilish, instruktor tanlash va darslaringizni boshqarish uchun ilovani oching.',
+      button: '📱 Ilovani ochish',
     },
     instructor: {
-      text: '👨‍🏫 AVTODROM INSTRUKTOR\n\nBronlar, mijozlar va dars jarayonini boshqarish uchun Mini Appni oching.',
+      text: '👨‍🏫 AVTODROM INSTRUKTOR\n\nBronlar, mijozlar va dars jarayonini boshqarish uchun panelni oching.',
       button: '👨‍🏫 Instruktor panelini ochish',
     },
     admin: {
@@ -85,7 +85,7 @@ export const sendCustomerStart = (token: string, chatId: number, miniAppUrl: str
 export const sendInstructorStart = (token: string, chatId: number, miniAppUrl: string) => sendMiniAppStart(token, chatId, miniAppUrl, 'instructor');
 export const sendAdminStart = (token: string, chatId: number, miniAppUrl: string) => sendMiniAppStart(token, chatId, miniAppUrl, 'admin');
 
-export async function sendBookingNotification(token: string, chatId: number, text: string, miniAppUrl?: string, buttonText = 'Mini Appni ochish') {
+export async function sendBookingNotification(token: string, chatId: number, text: string, miniAppUrl?: string, buttonText = '📱 Ilovani ochish') {
   return telegramApi(token, 'sendMessage', {
     chat_id: chatId,
     text,

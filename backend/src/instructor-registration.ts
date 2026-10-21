@@ -42,11 +42,11 @@ export async function submitInstructorRegistration(user: TelegramWebAppUser, bod
 export async function sendInstructorStatusMessage(chatId: number, status: 'APPROVED'|'REJECTED', reason?: string) {
   if (!INSTRUCTOR_BOT_TOKEN) return;
   const text = status === 'APPROVED'
-    ? '✅ Arizangiz Admin tomonidan tasdiqlandi! Endi Instructor Mini Appni ochib ishlatishingiz mumkin.'
+    ? '✅ Arizangiz Admin tomonidan tasdiqlandi! Endi instruktor panelini ochib ishlatishingiz mumkin.'
     : `❌ Arizangiz hozircha tasdiqlanmadi.${reason ? `\n\nSabab: ${reason}` : ''}\n\nMa’lumotlaringizni to‘g‘rilab qayta ariza yuborishingiz mumkin.`;
   await telegramApi(INSTRUCTOR_BOT_TOKEN, 'sendMessage', {
     chat_id: chatId,
     text,
-    reply_markup: { inline_keyboard: [[{ text: '👨‍🏫 Instructor Mini App', web_app: { url: INSTRUCTOR_MINI_APP_URL } }]] },
+    reply_markup: { inline_keyboard: [[{ text: '👨‍🏫 Instruktor panelini ochish', web_app: { url: INSTRUCTOR_MINI_APP_URL } }]] },
   });
 }

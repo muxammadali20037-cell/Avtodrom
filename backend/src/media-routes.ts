@@ -110,13 +110,31 @@ function mediaKeyFor(slot: string, mediaType: string) {
   if (slot === 'gallery') return `gallery_${Date.now()}_${randomUUID().slice(0, 8)}`;
   if (mediaType === 'video') return 'guide_video';
   if (slot === 'location') return 'location_image';
+  if (slot === 'login') return LOGIN_BG_KEY;
   return 'home_image';
 }
+
+/** Xodimlar kirish sahifasining fon rasmi (admin panel va kengaytirilgan panel) */
+export const LOGIN_BG_KEY = 'login_bg';
 
 export function registerMediaRoutes(
   app: FastifyInstance,
   guardAdmin: (req: any) => Promise<void>,
 ) {
+  /* ---------------- Kirish sahifasi foni (OCHIQ — kirishdan oldin kerak) ----------------
+     Faqat rasm manzili qaytadi, boshqa hech narsa. Rasm yo'q — url: null (ko'k fon). */
+  app.get('/api/admin/login-bg', async (_req: any, reply: any) => {
+    try {
+      const rows = await supabaseRest<any[]>('admin_media', {
+        query: `?key=eq.${LOGIN_BG_KEY}&is_active=eq.true&select=id,public_url,updated_at,created_at&limit=1`,
+      });
+      const m = rows?.[0];
+      return { ok: true, url: m?.public_url || null, id: m ? String(m.id) : null, at: m?.updated_at || m?.created_at || null };
+    } catch {
+      return { ok: true, url: null, id: null, at: null };
+    }
+  });
+
   /* ---------------- Ro'yxat ---------------- */
   app.get('/api/admin/media', async (req: any, reply: any) => {
     try {
@@ -151,6 +169,7 @@ export function registerMediaRoutes(
       }
 
       const slot = String(b.slot || 'home').trim();
+      if (slot === 'login' && mediaType !== 'image') return reply.code(400).send({ ok: false, error: 'Kirish sahifasi foni faqat rasm bo‘ladi' });
       const mediaKey = mediaKeyFor(slot, mediaType);
       const folder = slot === 'gallery' ? 'gallery' : mediaKey;
       const baseName = fileName.replace(/\.[a-z0-9]{2,6}$/i, '');
@@ -225,9 +244,10 @@ export function registerMediaRoutes(
 
       const slot = String(b.slot || 'home').trim();
       const isGallery = slot === 'gallery';
+      if (slot === 'login' && mediaType !== 'image') return reply.code(400).send({ ok: false, error: 'Kirish sahifasi foni faqat rasm bo‘ladi' });
       const key = isGallery
         ? String(b.key || '').trim()
-        : (mediaType === 'video' ? 'guide_video' : (slot === 'location' ? 'location_image' : 'home_image'));
+        : (mediaType === 'video' ? 'guide_video' : (slot === 'location' ? 'location_image' : slot === 'login' ? LOGIN_BG_KEY : 'home_image'));
 
       if (isGallery && !/^gallery_[0-9]+_[a-z0-9]{4,}$/i.test(key)) {
         return reply.code(400).send({ ok: false, error: 'Galereya kaliti noto‘g‘ri' });

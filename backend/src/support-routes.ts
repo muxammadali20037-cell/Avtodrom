@@ -81,7 +81,7 @@ export async function handleBotQuestion(from: any, chatId: number, text: string)
   const user = await userForTelegram({ id: Number(from?.id || chatId), first_name: from?.first_name, last_name: from?.last_name, username: from?.username } as any);
   if (!user || user.is_blocked) return;
   const r = await handleCustomerQuestion(user, body, 'bot');
-  if (r.reply?.body) await sendBookingNotification(token, chatId, r.reply.body, MINI_URL(), '🚗 Mini App').catch((e) => console.error('Support bot reply failed', e));
+  if (r.reply?.body) await sendBookingNotification(token, chatId, r.reply.body, MINI_URL(), '📱 Ilovani ochish').catch((e) => console.error('Support bot reply failed', e));
 }
 
 function clean(v: unknown) {
@@ -248,7 +248,7 @@ export async function registerSupportRoutes(
             token, chatId,
             `💬 AVTODROM javobi\n\n${body.slice(0, 500)}`,
             String(process.env.CUSTOMER_MINI_APP_URL || process.env.MINI_APP_URL || ''),
-            '🚗 Mini App',
+            '📱 Ilovani ochish',
           );
         }
       } catch (e) { console.error('Support: customer notify failed', e); }

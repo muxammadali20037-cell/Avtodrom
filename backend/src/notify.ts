@@ -69,7 +69,7 @@ const TAIL: Partial<Record<BookingEvent, { customer?: string; instructor?: strin
   created:     { customer: 'Admin tasdiqlashini kuting.' },
   confirmed:   { customer: 'Belgilangan vaqtda avtodromga keling.' },
   rejected:    { customer: 'Boshqa vaqt yoki instruktorni tanlashingiz mumkin.' },
-  completed:   { customer: 'Instruktorni baholashingiz mumkin — Mini Appni oching.' },
+  completed:   { customer: 'Instruktorni baholashingiz mumkin — ilovani oching.' },
   no_show:     { customer: 'Xatolik bo‘lsa, Chat orqali bizga yozing.' },
 };
 

@@ -188,7 +188,7 @@ async function notifyBookingParties(booking: any, event: BookingEvent) {
     const cToken = String(process.env.CUSTOMER_BOT_TOKEN || process.env.TELEGRAM_CUSTOMER_BOT_TOKEN || '');
     const cUrl = String(process.env.CUSTOMER_MINI_APP_URL || process.env.MINI_APP_URL || '');
     if (cToken && Number.isSafeInteger(Number(customer?.telegram_id))) {
-      await sendBookingNotification(cToken, Number(customer.telegram_id), cMsg.full, cUrl, '🚗 Mini Appni ochish');
+      await sendBookingNotification(cToken, Number(customer.telegram_id), cMsg.full, cUrl, '📱 Ilovani ochish');
     }
 
     // --- Instruktor ---
@@ -231,7 +231,7 @@ async function notifyPackageParties(bookings: any[], rec: PackageRecord) {
     const cToken = String(process.env.CUSTOMER_BOT_TOKEN || process.env.TELEGRAM_CUSTOMER_BOT_TOKEN || '');
     const cUrl = String(process.env.CUSTOMER_MINI_APP_URL || process.env.MINI_APP_URL || '');
     if (cToken && Number.isSafeInteger(Number(customer?.telegram_id))) {
-      await sendBookingNotification(cToken, Number(customer.telegram_id), cText, cUrl, '🚗 Mini Appni ochish');
+      await sendBookingNotification(cToken, Number(customer.telegram_id), cText, cUrl, '📱 Ilovani ochish');
     }
     if (first.instructor_id) {
       const ip = await supabaseRest<any[]>('instructor_profiles', {
