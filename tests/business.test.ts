@@ -63,6 +63,16 @@ describe('Fail-closed himoya', () => {
     expect(r.statusCode).toBe(401);
   });
 
+  it('Supabase mijoz boti uzatgan update (tokendan hosil qilingan sir) qabul qilinadi', async () => {
+    const { webhookSecret } = await import('../backend/src/webhook-secret.js');
+    const r = await h.app.inject({
+      method: 'POST', url: '/api/telegram/customer/webhook',
+      headers: { 'x-telegram-bot-api-secret-token': webhookSecret('', String(process.env.CUSTOMER_BOT_TOKEN)) },
+      payload: { message: { chat: { id: 1 }, text: '/start' } },
+    });
+    expect(r.statusCode).toBeLessThan(400);
+  });
+
   it('to‘g‘ri webhook siri bilan qabul qiladi', async () => {
     const r = await h.app.inject({
       method: 'POST', url: '/api/telegram/customer/webhook',
