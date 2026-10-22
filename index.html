@@ -836,6 +836,7 @@ const RU = /*RU*/{
   "A toifa — 15 kun.\nB toifa — 2 oy 15 kun.\nC toifa — to‘liq kurs yo‘q, faqat soatlik amaliy haydash.": "Категория A — 15 дней.\nКатегория B — 2 месяца 15 дней.\nКатегория C — полного курса нет, только почасовое практическое вождение.",
   "Qanday bron qilaman?": "Как забронировать?",
   "«Bron» tugmasini bosing: toifa → necha soat → vaqt → bo‘sh instruktor. Admin tasdiqlagach Telegram’ga xabar keladi.": "Нажмите «Бронь»: категория → сколько часов → время → свободный инструктор. После подтверждения администратором придёт сообщение в Telegram.",
+  "«Bron» tugmasini bosing: toifa → necha soat → vaqt → bo‘sh instruktor. Bron darhol tasdiqlanadi — Telegram’ga kassa kodi keladi.": "Нажмите «Бронь»: категория → сколько часов → время → свободный инструктор. Бронь подтверждается сразу — в Telegram придёт код для кассы.",
   "To‘lov qanday?": "Как оплатить?",
   "To‘lov avtodrom kassasida. Bron qilgach sizga kassa kodi (AVD-1234) beriladi — kassaga shuni aytasiz.": "Оплата — в кассе автодрома. После бронирования вы получите код для кассы (AVD-1234) — назовите его кассиру.",
   "Bu yerda imtihon topshiriladimi?": "Здесь сдают экзамен?",
@@ -943,6 +944,12 @@ const RU = /*RU*/{
   "Kassaga kelganda istalgan kodni ayting — kassir butun paketni bir marta qabul qiladi.": "В кассе назовите любой из кодов — кассир примет оплату за весь пакет сразу.",
   "Yana bron": "Ещё бронь",
   "Bron yuborildi!": "Бронь отправлена!",
+  "Bron tasdiqlandi!": "Бронь подтверждена!",
+  "Paket tasdiqlandi!": "Пакет подтверждён!",
+  "Kutish shart emas — belgilangan vaqtda keling, kassada kodni ayting va to‘g‘ri mashinaga chiqing.": "Ждать не нужно — приходите в назначенное время, назовите код в кассе и сразу садитесь в машину.",
+  "Tasdiq va kassa kodi Telegram’ga ham yuborildi.": "Подтверждение и код для кассы также отправлены в Telegram.",
+  "Bron darhol tasdiqlanadi — Telegram’ga kassa kodi keladi.": "Бронь подтверждается сразу — в Telegram придёт код для кассы.",
+  "Bronni bekor qilasizmi? Vaqt boshqa mijozlarga bo‘shaydi.": "Отменить бронь? Время освободится для других клиентов.",
   "Admin tasdiqlagach Telegram’ga xabar keladi.": "После подтверждения администратором придёт сообщение в Telegram.",
   "Kassa uchun kod": "Код для кассы",
   "Kassaga shu kodni ayting · bosib nusxalang": "Назовите этот код в кассе · нажмите, чтобы скопировать",
@@ -1457,10 +1464,13 @@ function hsCard() {
     <button class="hs-x" data-act="hshide" aria-label="${T('Yopish')}">${ico('x', 16)}</button></div>`;
 }
 
-/** Ilovaga kirish. Bot havolasidan kelgan bo'lsa: t.me/bot?startapp=book */
+/** Ilovaga kirish. Bot havolasidan kelgan bo'lsa: t.me/bot?startapp=book;
+    bot tugmasidan: avtodrom.vercel.app/?open=book (bronlar — ?open=bookings, yordam — ?open=support) */
 function enterApp() {
   const sp = String((tg && tg.initDataUnsafe && tg.initDataUnsafe.start_param) || '').toLowerCase();
-  const first = VIEWS.find(v => v !== 'onb' && sp.startsWith(v)) || (location.hash.slice(1) || 'home');
+  let qv = '';
+  try { qv = String(new URLSearchParams(location.search).get('open') || '').toLowerCase(); } catch (e) {}
+  const first = VIEWS.find(v => v !== 'onb' && sp.startsWith(v)) || VIEWS.find(v => v !== 'onb' && qv === v) || (location.hash.slice(1) || 'home');
   go(first, false);
   loadNotes();
 }
@@ -1945,7 +1955,7 @@ function faqList() {
   return [
     [T('Qaysi toifalar bor?'), T('A — mototsikl.\nB — yengil avtomobil.\nC — yuk avtomobili (faqat amaliy haydash).')],
     [T('Kurs qancha davom etadi?'), T('A toifa — 15 kun.\nB toifa — 2 oy 15 kun.\nC toifa — to‘liq kurs yo‘q, faqat soatlik amaliy haydash.')],
-    [T('Qanday bron qilaman?'), T('«Bron» tugmasini bosing: toifa → necha soat → vaqt → bo‘sh instruktor. Admin tasdiqlagach Telegram’ga xabar keladi.')],
+    [T('Qanday bron qilaman?'), T('«Bron» tugmasini bosing: toifa → necha soat → vaqt → bo‘sh instruktor. Bron darhol tasdiqlanadi — Telegram’ga kassa kodi keladi.')],
     [T('To‘lov qanday?'), T('To‘lov avtodrom kassasida. Bron qilgach sizga kassa kodi (AVD-1234) beriladi — kassaga shuni aytasiz.')],
     [T('Bu yerda imtihon topshiriladimi?'), T('Yo‘q. Bu — imtihonga TAYYORLOV maydonchasi. Imtihonning o‘zi rasmiy imtihon markazida topshiriladi.')],
     [T('Bronni bekor qila olamanmi?'), T('Ha. Tasdiqlanmagan bron darhol bekor bo‘ladi. Tasdiqlangan bron uchun sabab yozib so‘rov yuborasiz.')],
@@ -2578,6 +2588,7 @@ async function submitBooking() {
       /* Matn emas, xom qiymat saqlanadi — til almashsa ham to'g'ri chiqadi */
       B.done = {
         pkg: true,
+        ok: list.length > 0 && list.every(b => b.status === 'confirmed'),
         list: list.map(b => ({ code: b.pickup_code || '', start: b.start_at, min: b.duration_minutes })),
         opt: { cat: opt.cat, title: opt.title },
         ins: insName(who),
@@ -2607,6 +2618,7 @@ async function submitBooking() {
     const bk = r.booking || {};
     S.bookings = [bk, ...S.bookings.filter(x => x.id !== bk.id)];
     B.done = {
+      ok: bk.status === 'confirmed',
       code: bk.pickup_code || '',
       start: bk.start_at || `${B.date}T${B.time}:00+05:00`,
       opt: { cat: opt.cat, title: opt.title },
@@ -2636,8 +2648,10 @@ function renderDone() {
   if (d.pkg) {
     $('#main').innerHTML = `<div class="slide-f done">
       <div class="big-ok">${ico('check', 38, 2.6)}</div>
-      <h1 class="wz-h" style="text-align:center">${T('Paket bron qilindi!')}</h1>
-      <p class="wz-sub" style="text-align:center">${N(d.list.length, '5 soatlik paket · {n} ta mashg‘ulot. Admin tasdiqlagach Telegram’ga xabar keladi.', ['Пакет 5 часов · {n} занятие. После подтверждения администратором придёт сообщение в Telegram.', 'Пакет 5 часов · {n} занятия. После подтверждения администратором придёт сообщение в Telegram.', 'Пакет 5 часов · {n} занятий. После подтверждения администратором придёт сообщение в Telegram.'])}</p>
+      <h1 class="wz-h" style="text-align:center">${T(d.ok ? 'Paket tasdiqlandi!' : 'Paket bron qilindi!')}</h1>
+      <p class="wz-sub" style="text-align:center">${d.ok
+        ? N(d.list.length, '5 soatlik paket · {n} ta mashg‘ulot.', ['Пакет 5 часов · {n} занятие.', 'Пакет 5 часов · {n} занятия.', 'Пакет 5 часов · {n} занятий.']) + ' ' + T('Kutish shart emas — belgilangan vaqtda keling, kassada kodni ayting va to‘g‘ri mashinaga chiqing.')
+        : N(d.list.length, '5 soatlik paket · {n} ta mashg‘ulot. Admin tasdiqlagach Telegram’ga xabar keladi.', ['Пакет 5 часов · {n} занятие. После подтверждения администратором придёт сообщение в Telegram.', 'Пакет 5 часов · {n} занятия. После подтверждения администратором придёт сообщение в Telegram.', 'Пакет 5 часов · {n} занятий. После подтверждения администратором придёт сообщение в Telegram.'])}</p>
       <div class="done-list">${d.list.map((x, j) => `<div class="done-row" ${x.code ? `data-act="copy" data-v="${esc(x.code)}" role="button" tabindex="0"` : ''}>
         <span class="n">${j + 1}</span><span class="tx"><b>${esc(whenText(x.start))}</b><small>${esc(fmtDur(x.min))}${x.code ? T(' · kassa kodi — bosib nusxalang') : ''}</small></span>
         ${x.code ? `<span class="cd">${esc(x.code)}</span>` : ''}</div>`).join('')}</div>
@@ -2654,8 +2668,10 @@ function renderDone() {
   }
   $('#main').innerHTML = `<div class="slide-f done">
     <div class="big-ok">${ico('check', 38, 2.6)}</div>
-    <h1 class="wz-h" style="text-align:center">${T('Bron yuborildi!')}</h1>
-    <p class="wz-sub" style="text-align:center">${T('Admin tasdiqlagach Telegram’ga xabar keladi.')}</p>
+    <h1 class="wz-h" style="text-align:center">${T(d.ok ? 'Bron tasdiqlandi!' : 'Bron yuborildi!')}</h1>
+    <p class="wz-sub" style="text-align:center">${d.ok
+      ? `${T('Kutish shart emas — belgilangan vaqtda keling, kassada kodni ayting va to‘g‘ri mashinaga chiqing.')}<br><small style="opacity:.75">${T('Tasdiq va kassa kodi Telegram’ga ham yuborildi.')}</small>`
+      : T('Admin tasdiqlagach Telegram’ga xabar keladi.')}</p>
     ${d.code
       ? `<button class="code-big" data-act="copy" data-v="${esc(d.code)}"><small>${T('Kassa uchun kod')}</small><b>${esc(d.code)}</b><span>${T('Kassaga shu kodni ayting · bosib nusxalang')}</span></button>`
       : `<div class="note info" style="margin:14px 0">${T('Kassaga kelganda ismingizni ayting — kassir bronni topadi.')}</div>`}
@@ -2723,6 +2739,8 @@ function bkCard(b) {
   let foot = '';
   if (b.status === 'pending') foot = `<div class="foot">${T('Admin tasdiqlashini kutmoqda.')}</div>
       <div class="btn-row"><button class="btn btn-danger btn-sm" data-act="cancel" data-v="${esc(b.id)}">${T('Bekor qilish')}</button></div>`;
+  else if (b.status === 'confirmed' && b.can_cancel) foot =
+      `<div class="btn-row"><button class="btn btn-soft btn-sm" data-act="cancel" data-v="${esc(b.id)}">${T('Bekor qilish')}</button></div>`;
   else if (b.status === 'confirmed') foot = reqOpen
       ? `<div class="note warn" style="margin-top:10px">${T('Bekor qilish so‘rovi yuborilgan — admin javobini kuting.')}</div>`
       : `<div class="btn-row"><button class="btn btn-soft btn-sm" data-act="cancel" data-v="${esc(b.id)}">${T('Bekor qilishni so‘rash')}</button></div>`;
@@ -2746,11 +2764,12 @@ const REASONS = ['Vaqtim to‘g‘ri kelmadi', 'Boshqa kunga o‘tkazmoqchiman',
 function openCancel(id) {
   const b = S.bookings.find(x => String(x.id) === String(id));
   if (!b) return;
-  const req = b.status === 'confirmed';
+  const req = b.status === 'confirmed' && !b.can_cancel;
   openSheet(`
     <h3>${T(req ? 'Bekor qilishni so‘rash' : 'Bronni bekor qilish')}</h3>
     <p class="lead">${esc(whenText(b.start_at))} · ${esc(bkLine(b))}</p>
-    ${req ? `<div class="note info" style="margin-bottom:12px">${T('Bron tasdiqlangan, shuning uchun so‘rov adminga yuboriladi. Admin javobini Telegram’da olasiz.')}</div>` : ''}
+    ${req ? `<div class="note info" style="margin-bottom:12px">${T('Bron tasdiqlangan, shuning uchun so‘rov adminga yuboriladi. Admin javobini Telegram’da olasiz.')}</div>`
+      : `<div class="note info" style="margin-bottom:12px">${T('Bronni bekor qilasizmi? Vaqt boshqa mijozlarga bo‘shaydi.')}</div>`}
     <div class="reasons">${REASONS.map(r => `<button data-act="reason" data-v="${esc(T(r))}">${esc(T(r))}</button>`).join('')}</div>
     <label class="field"><span>${T('Sabab')}</span><textarea class="input" id="reasonIn" maxlength="300" placeholder="${T('Qisqacha yozing…')}"></textarea></label>
     <div class="btn-row"><button class="btn btn-soft" data-act="closesheet">${T('Ortga')}</button>
@@ -3007,6 +3026,7 @@ function setLang(l) {
 /* Bildirishnomalar bazada o'zbekcha saqlangan bo'lishi mumkin — ruschada o'giramiz */
 const NOTE_TXT = [
   ['Admin tasdiqlashini kuting.', 'Дождитесь подтверждения администратора.'],
+  ['Hech narsa kutish shart emas — belgilangan vaqtda keling, kassada kodni ayting va to‘g‘ri mashinaga chiqing.', 'Ждать ничего не нужно — приходите в назначенное время, назовите код в кассе и сразу садитесь в машину.'],
   ['Belgilangan vaqtda avtodromga keling.', 'Приходите на автодром в назначенное время.'],
   ['Boshqa vaqt yoki instruktorni tanlashingiz mumkin.', 'Можно выбрать другое время или инструктора.'],
   ['Instruktorni baholashingiz mumkin — Mini Appni oching.', 'Вы можете оценить инструктора — откройте Mini App.'],
