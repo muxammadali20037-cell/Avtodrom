@@ -67,12 +67,12 @@ function has(norm: string, kw: string): boolean {
 export type KbItem = { id: string; q: string[]; a: string; on?: boolean; hits?: number; at?: string; by?: string | null };
 export type BotCtx = {
   s: Record<string, any>;
-  tariff: Record<'A' | 'B' | 'C', { half: number; hour: number }>;
+  tariff: Record<'A' | 'B' | 'C', { half: number; hour: number; h3?: number }>;
   pkg: number; lateMin: number;
   bookings: Array<{ start_at: string; end_at: string; status: string; code: string | null; instructor: string | null; category: string | null }> | null;
 };
 const SETTING_KEYS = ['system_name', 'contact_phone', 'address', 'working_hours', 'location', 'work_start', 'work_end',
-  'half_a', 'half_b', 'half_c', 'rate_a', 'rate_b', 'rate_c', 'paket5_b', 'late_cancel_min', KB_KEY, BOT_KEY];
+  'half_a', 'half_b', 'half_c', 'rate_a', 'rate_b', 'rate_c', 'tarif3_a', 'tarif3_b', 'tarif3_c', 'paket5_b', 'late_cancel_min', KB_KEY, BOT_KEY];
 const DEF_T = { A: { half: 200000, hour: 350000 }, B: { half: 150000, hour: 250000 }, C: { half: 250000, hour: 400000 } };
 const val = (v: any) => (v && typeof v === 'object' && !Array.isArray(v) && 'value' in v ? v.value : v);
 
@@ -95,10 +95,12 @@ export const botOn = (s: Record<string, any>) => {
 
 async function ctxFor(s: Record<string, any>, userId: string | null, need: boolean): Promise<BotCtx> {
   const num = (k: string) => { const n = Number(s[k]); return Number.isFinite(n) && n > 0 ? n : 0; };
+  /* 3 soatlik tarif: sozlama yo'q — B 700 000, A/C yo'q; 0 — o'chiq (pricing.ts bilan bir xil) */
+  const h3 = (k: string, d: number) => { const v = s[k]; const n = Number(v); return v === undefined || v === null || v === '' || !Number.isFinite(n) ? d : Math.max(0, n); };
   const tariff = {
-    A: { half: num('half_a') || DEF_T.A.half, hour: num('rate_a') || DEF_T.A.hour },
-    B: { half: num('half_b') || DEF_T.B.half, hour: num('rate_b') || DEF_T.B.hour },
-    C: { half: num('half_c') || DEF_T.C.half, hour: num('rate_c') || DEF_T.C.hour },
+    A: { half: num('half_a') || DEF_T.A.half, hour: num('rate_a') || DEF_T.A.hour, h3: h3('tarif3_a', 0) },
+    B: { half: num('half_b') || DEF_T.B.half, hour: num('rate_b') || DEF_T.B.hour, h3: h3('tarif3_b', 700000) },
+    C: { half: num('half_c') || DEF_T.C.half, hour: num('rate_c') || DEF_T.C.hour, h3: h3('tarif3_c', 0) },
   };
   const pk = s.paket5_b === undefined || s.paket5_b === null || s.paket5_b === '' ? 1100000 : Number(s.paket5_b) || 0;
   const lm = s.late_cancel_min === undefined || s.late_cancel_min === null || s.late_cancel_min === '' ? 15 : Number(s.late_cancel_min);
@@ -155,8 +157,8 @@ export const INTENTS: Intent[] = [
     kw: [['narx', 1.2], ['tsen', 1.2], ['stoim', 1.2], ['tarif', 1], ['kancha tur', 1.2], ['kancha bol', 1], ['kancha pul', 1.2], ['necha pul', 1.2], ['soati kancha', 1.2], ['soat kancha', 1.2], ['soati necha', 1.2], ['skolko stoit', 1.5], ['skolk', 0.6], ['kancha', 0.6], ['pul', 0.6], ['som', 0.4], ['prays', 1]],
     answer: (c) => {
       const t = c.tariff;
-      const row = (k: 'A' | 'B' | 'C', uz: string) => `• ${k} toifa (${uz}): 30 daqiqa — ${money(t[k].half)}, 1 soat — ${money(t[k].hour)}`;
-      const rowRu = (k: 'A' | 'B' | 'C', ru: string) => `• Категория ${k} (${ru}): 30 минут — ${moneyRu(t[k].half)}, 1 час — ${moneyRu(t[k].hour)}`;
+      const row = (k: 'A' | 'B' | 'C', uz: string) => `• ${k} toifa (${uz}): 30 daqiqa — ${money(t[k].half)}, 1 soat — ${money(t[k].hour)}${Number(t[k].h3) > 0 ? `, 3 soat — ${money(Number(t[k].h3))}` : ''}`;
+      const rowRu = (k: 'A' | 'B' | 'C', ru: string) => `• Категория ${k} (${ru}): 30 минут — ${moneyRu(t[k].half)}, 1 час — ${moneyRu(t[k].hour)}${Number(t[k].h3) > 0 ? `, 3 часа — ${moneyRu(Number(t[k].h3))}` : ''}`;
       return {
         uz: ['💰 Narxlar (amaliy haydash):', row('A', 'mototsikl'), row('B', 'yengil avtomobil'), row('C', 'yuk avtomobili'),
           '2 soat va undan ko‘pi — soatlik narxdan.', c.pkg > 0 ? `🎁 5 soatlik paket (B toifa) — ${money(c.pkg)}.` : '', 'To‘lov — avtodrom kassasida.'].filter(Boolean).join('\n'),

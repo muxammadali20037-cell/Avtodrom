@@ -37,6 +37,8 @@ export async function registerCourseRoutes(
                        'about_text', 'facilities',
                        // Tariflar — mijoz narxni ko'rishi kerak
                        'half_a', 'half_b', 'half_c', 'rate_a', 'rate_b', 'rate_c',
+                       // 3 soatlik tarif (0 — yo'q, soatlik narx × 3)
+                       'tarif3_a', 'tarif3_b', 'tarif3_c',
                        // 5 soatlik paket narxi (0 — paket o'chirilgan)
                        'paket5_a', 'paket5_b', 'paket5_c'];
 

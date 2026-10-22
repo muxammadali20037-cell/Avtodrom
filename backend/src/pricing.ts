@@ -5,6 +5,8 @@ import { supabaseRest } from './supabase.js';
  *
  * Tarif tuzilmasi:
  *   · 30 daqiqa — ALOHIDA narx (soatning yarmi emas!)
+ *   · 3 soat — ALOHIDA tarif (tarif3_a/b/c; B uchun standart 700 000).
+ *     0 yoki yo'q — oddiy soatlik narx × 3
  *   · Undan uzun vaqt — soatlik tarifga proporsional
  *
  * Misol (A kategoriya, 30daq=200k, 1soat=350k):
@@ -20,33 +22,41 @@ import { supabaseRest } from './supabase.js';
 
 export type Category = 'A' | 'B' | 'C';
 
-/** Sozlanmagan holat uchun standart tariflar. */
-const DEFAULTS: Record<Category, { half: number; hour: number }> = {
-  A: { half: 200000, hour: 350000 },
-  B: { half: 150000, hour: 250000 },
-  C: { half: 250000, hour: 400000 },
+/** 3 soatlik tarif — davomiylik (daqiqa) */
+export const H3_MINUTES = 180;
+
+/** Sozlanmagan holat uchun standart tariflar. h3 — 3 soatlik tarif (0 — yo'q, soatlik × 3). */
+const DEFAULTS: Record<Category, { half: number; hour: number; h3: number }> = {
+  A: { half: 200000, hour: 350000, h3: 0 },
+  B: { half: 150000, hour: 250000, h3: 700000 },
+  C: { half: 250000, hour: 400000, h3: 0 },
 };
 
 export interface Tariffs {
-  A: { half: number; hour: number };
-  B: { half: number; hour: number };
-  C: { half: number; hour: number };
+  A: { half: number; hour: number; h3?: number };
+  B: { half: number; hour: number; h3?: number };
+  C: { half: number; hour: number; h3?: number };
 }
 
 /** Sozlamalardan tariflarni o'qiydi. Xato bo'lsa standartga qaytadi. */
 export async function loadTariffs(): Promise<Tariffs> {
   const out: Tariffs = JSON.parse(JSON.stringify(DEFAULTS));
   try {
-    const keys = ['half_a', 'half_b', 'half_c', 'rate_a', 'rate_b', 'rate_c'];
+    const keys = ['half_a', 'half_b', 'half_c', 'rate_a', 'rate_b', 'rate_c', 'tarif3_a', 'tarif3_b', 'tarif3_c'];
     const rows = await supabaseRest<any[]>('admin_settings', {
       query: `?key=in.(${keys.join(',')})&select=key,value`,
     });
     for (const r of rows) {
       const raw = r?.value?.value ?? r?.value;
       const n = Number(raw);
-      if (!Number.isFinite(n) || n <= 0) continue;
       const cat = String(r.key).slice(-1).toUpperCase() as Category;
       if (!['A', 'B', 'C'].includes(cat)) continue;
+      /* 3 soatlik tarif: 0 ham qiymat — «o'chiq, soatlik narx» */
+      if (String(r.key).startsWith('tarif3_')) {
+        if (raw !== null && raw !== undefined && raw !== '' && Number.isFinite(n) && n >= 0) out[cat].h3 = Math.round(n);
+        continue;
+      }
+      if (!Number.isFinite(n) || n <= 0) continue;
       if (String(r.key).startsWith('half_')) out[cat].half = n;
       else out[cat].hour = n;
     }
@@ -69,6 +79,9 @@ export function computePrice(category: string, minutes: number, tariffs: Tariffs
 
   // 30 daqiqa — maxsus narx
   if (m === 30) return Math.round(t.half);
+
+  // 3 soat — alohida tarif (sozlangan bo'lsa)
+  if (m === H3_MINUTES && Number(t.h3) > 0) return Math.round(Number(t.h3));
 
   // Qolgan hamma holat — soatlik tarifga proporsional
   return Math.round((t.hour * m) / 60);

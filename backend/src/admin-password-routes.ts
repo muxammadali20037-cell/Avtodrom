@@ -1532,7 +1532,7 @@ async function notifyInstructorDecision(
      faqat administratorga. */
   const WORK_SETTING_KEYS = ['system_name', 'contact_phone', 'address', 'working_hours', 'booking_enabled',
     'location', 'work_start', 'work_end', 'slot_step_min', 'half_a', 'half_b', 'half_c', 'rate_a', 'rate_b', 'rate_c',
-    'paket5_a', 'paket5_b', 'paket5_c', 'krug_price', 'krug_min'];
+    'paket5_a', 'paket5_b', 'paket5_c', 'krug_price', 'krug_min', 'tarif3_a', 'tarif3_b', 'tarif3_c'];
   /* Tizim yozuvlari (paketlar, instruktor yopgan soatlar) sozlamalar
      ro'yxatiga kirmaydi — ular yuzlab bo'lishi mumkin. */
   const HIDE_SYSTEM_KEYS = '&key=not.like.pack*&key=not.like.instructor_busy*&key=not.like.instructor_schedule*&key=not.like.booking_sheet*&key=not.like.instructor_digest*&key=not.like.instructor_bot_log*&key=not.like.sheet_group*&key=not.like.support_kb*&key=not.like.customer_bot*&key=not.in.(mgmt_pin,price_pin,control_link,boss_link)';

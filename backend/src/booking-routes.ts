@@ -482,10 +482,10 @@ export async function registerBookingRoutes(
          hali `hours` yuborishi mumkin — u ham ishlaydi. */
       const byMinutes = body.duration_minutes !== undefined && body.duration_minutes !== null;
       const reqMinutes = Math.round(Number(body.duration_minutes));
-      if (byMinutes && ![30, 60, 120].includes(reqMinutes)) {
+      if (byMinutes && ![30, 60, 120, 180].includes(reqMinutes)) {
         return reply.code(400).send({ ok: false, error: reqMinutes === PACKAGE_MINUTES
           ? '5 soat — paket. Uni paket sifatida bron qiling.'
-          : 'Davomiylik: 30 daqiqa, 1 soat yoki 2 soat' });
+          : 'Davomiylik: 30 daqiqa, 1, 2 yoki 3 soat' });
       }
       // Necha birlik (soat) olinayotgani. Kurs — bir birlik, narx soatlik.
       const hours = byMinutes ? Math.max(1, Math.round(reqMinutes / 60)) : Math.trunc(Number(body.hours ?? 1));
