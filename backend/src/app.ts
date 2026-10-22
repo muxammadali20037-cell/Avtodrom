@@ -71,6 +71,10 @@ const ADMIN_MINI_APP_URL = process.env.ADMIN_MINI_APP_URL || 'https://avtodrom.v
 const TELEGRAM_WEBHOOK_SECRET = process.env.TELEGRAM_WEBHOOK_SECRET || '';
 /** Har bir bot uchun webhook siri (env bo'lmasa — tokendan hosil qilinadi) */
 const secretFor = (token: string) => webhookSecret(TELEGRAM_WEBHOOK_SECRET, token);
+/* Mijoz botining webhook'i Supabase'da (telegram-start). U savol va eslatma
+   tugmalarini shu yerga TOKENDAN hosil qilingan sir bilan uzatadi — tokenni
+   faqat server biladi, demak bu sir ham ishonchli. */
+const customerSecretOk = (secret: string) => !!secret && (secret === secretFor(CUSTOMER_BOT_TOKEN) || secret === webhookSecret('', CUSTOMER_BOT_TOKEN));
 const INSTRUCTOR_WEBHOOK_URL = 'https://avtodrom.vercel.app/api/telegram/instructor/webhook';
 
 /* CORS: FRONTEND_ORIGIN sozlanmagan bo'lsa cross-origin so'rovlarga
@@ -168,7 +172,7 @@ async function handleTelegramWebhook(request: any, reply: any, token: string, mi
     request.log.error(`${role} bot tokeni yo‘q — webhook yopiq`);
     return reply.code(503).send({ ok: false, error: 'Webhook not configured' });
   }
-  if (secret !== expected) return reply.code(401).send({ ok: false, error: 'Invalid webhook secret' });
+  if (secret !== expected && !(role === 'customer' && customerSecretOk(secret))) return reply.code(401).send({ ok: false, error: 'Invalid webhook secret' });
   if (!token || !miniAppUrl) return reply.code(503).send({ ok: false, error: `${role} bot is not configured` });
   const message = (request.body as any)?.message;
   const text = typeof message?.text === 'string' ? message.text.trim() : '';
@@ -235,7 +239,7 @@ app.post('/api/telegram/customer/webhook', async (request, reply) => {
   const cb = (request.body as any)?.callback_query;
   if (cb) {
     const secret = String(request.headers['x-telegram-bot-api-secret-token'] || '');
-    if (TELEGRAM_WEBHOOK_SECRET && secret !== TELEGRAM_WEBHOOK_SECRET) {
+    if (TELEGRAM_WEBHOOK_SECRET && secret !== TELEGRAM_WEBHOOK_SECRET && !customerSecretOk(secret)) {
       return reply.code(401).send({ ok: false, error: 'Invalid webhook secret' });
     }
     await handleReminderCallback(cb);
