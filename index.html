@@ -553,6 +553,18 @@ body.onb-mode .wrap{padding-bottom:calc(120px + var(--sb))}
 .tile:active{transform:scale(.95)}
 .tile .ti{width:50px;height:50px;border-radius:16px;display:grid;place-items:center;color:#fff}
 .tile .n{position:absolute;top:8px;right:10px;min-width:20px;height:20px;padding:0 6px;border-radius:10px;background:var(--danger);color:#fff;font-size:11px;display:grid;place-items:center}
+/* Bo'limlar (Asosiy sahifa) — rasmiy, bir rangli kartalar */
+.ask.cat{font-size:13px;font-weight:700;letter-spacing:1.1px;text-transform:uppercase;color:var(--hint);margin:24px 4px 10px}
+.cgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.ccard{display:flex;flex-direction:column;align-items:flex-start;gap:10px;padding:13px 13px 12px;border-radius:14px;background:var(--card);border:1px solid var(--line);
+  text-align:left;position:relative;min-height:104px;transition:transform .12s,background .15s;-webkit-user-select:none;user-select:none}
+.ccard:active{transform:scale(.97)}
+.ccard:last-child:nth-child(odd){grid-column:span 2;min-height:0;flex-direction:row;align-items:center;gap:12px}
+.ccard .ci2{width:34px;height:34px;border-radius:9px;display:grid;place-items:center;background:var(--accent-soft);color:var(--accent);flex:none}
+.ccard .ct{min-width:0}
+.ccard b{display:block;font-size:14.5px;font-weight:650;line-height:1.2;color:var(--text)}
+.ccard small{display:block;font-size:12px;color:var(--hint);margin-top:2px;line-height:1.3}
+.ccard .n{position:absolute;top:12px;right:12px;min-width:20px;height:20px;padding:0 6px;border-radius:10px;background:var(--danger);color:#fff;font-size:11px;font-weight:700;font-style:normal;display:grid;place-items:center}
 .t1{background:linear-gradient(135deg,#2b2f8f,#4a50c8)}.t2{background:linear-gradient(135deg,#0f7a8a,#1fb3a6)}
 .t3{background:linear-gradient(135deg,#c2410c,#f59e0b)}.t4{background:linear-gradient(135deg,#7c3aed,#c084fc)}
 .t5{background:linear-gradient(135deg,#0e7a4f,#34c27b)}.t6{background:linear-gradient(135deg,#be123c,#fb7185)}
@@ -817,6 +829,19 @@ const RU = /*RU*/{
   "Rasmlar, videolar, narxlar, manzil": "Фото, видео, цены, адрес",
   "Keyingi darsingiz": "Ваше следующее занятие",
   "Katalog": "Каталог",
+  "Bo‘limlar": "Разделы",
+  "Tariflar va paketlar": "Тарифы и пакеты",
+  "Tajriba, mashina, reyting": "Опыт, машина, рейтинг",
+  "Avtodrom va mashinalar": "Автодром и машины",
+  "Kutish joyi va xizmatlar": "Зона ожидания и услуги",
+  "Bron qilish qo‘llanmasi": "Как забронировать",
+  "O‘qish bosqichlari": "Этапы обучения",
+  "Xarita va yo‘nalish": "Карта и маршрут",
+  "Administrator bilan aloqa": "Связь с администратором",
+  "Administratorga yozing": "Написать администратору",
+  "Kelgusi darslar va kassa kodi": "Предстоящие занятия и код",
+  "Ko‘p beriladigan savollar": "Частые вопросы",
+  "Ism, telefon va til": "Имя, телефон и язык",
   "Narxlar": "Цены",
   "Instruktorlar": "Инструкторы",
   "Rasmlar": "Фото",
@@ -1181,6 +1206,8 @@ const P = {
   star: '<path d="m12 3.6 2.6 5.3 5.8.8-4.2 4.1 1 5.8L12 16.9l-5.2 2.7 1-5.8-4.2-4.1 5.8-.8z" fill="currentColor"/>',
   refresh: '<path d="M20 12a8 8 0 1 1-2.4-5.7"/><path d="M20 4.5v5h-5"/>',
   info: '<circle cx="12" cy="12" r="8.5"/><path d="M12 11v5.5M12 7.8h.01"/>',
+  cash: '<rect x="2" y="6" width="20" height="12" rx="2.2"/><circle cx="12" cy="12" r="2.4"/><path d="M5.8 12h.01M18.2 12h.01"/>',
+  help: '<circle cx="12" cy="12" r="8.5"/><path d="M9.6 9.4a2.5 2.5 0 0 1 4.8.9c0 1.7-2.4 2.1-2.4 3.7M12 17h.01"/>',
   lock: '<rect x="5" y="10.5" width="14" height="10" rx="2.5"/><path d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5"/>',
   globe: '<circle cx="12" cy="12" r="8.5"/><path d="M3.5 12h17M12 3.5c2.4 2.3 3.6 5.1 3.6 8.5s-1.2 6.2-3.6 8.5c-2.4-2.3-3.6-5.1-3.6-8.5S9.6 5.8 12 3.5z"/>',
   wheel: '<circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="2.2"/><path d="M12 14.2v6.3M9.9 11.3 4 9.5M14.1 11.3 20 9.5"/>',
@@ -1875,8 +1902,9 @@ function renderHome() {
   const hr = Number(hhmm(new Date()).slice(0, 2));
   const hi = T(hr < 5 ? 'Xayrli tun' : hr < 11 ? 'Xayrli tong' : hr < 17 ? 'Xayrli kun' : 'Xayrli kech');
   const photo = safeUrl(tu.photo_url);
-  const tile = (cls, icon, label, act, v = '', extra = '') =>
-    `<button class="tile rv" style="--d:${tileN++ * 0.04}s" data-act="${act}" data-v="${esc(v)}" ${extra}><span class="ti ${cls}">${ico(icon, 25)}</span>${label}</button>`;
+  /* Bo'limlar — bir xil, rasmiy kartalar: ikonka, nom va qisqa izoh */
+  const tile = (icon, label, sub, act, v = '', extra = '') =>
+    `<button class="ccard rv" style="--d:${tileN++ * 0.04}s" data-act="${act}" data-v="${esc(v)}" ${extra}><span class="ci2">${ico(icon, 20, 1.9)}</span><span class="ct"><b>${label}</b><small>${sub}</small></span></button>`;
   let tileN = 0;
   const n = activeBookings().length;
 
@@ -1921,20 +1949,20 @@ function renderHome() {
     </div>` : ''}
     ${hsCard()}
 
-    <div class="ask rv">${T('Katalog')}</div>
-    <div class="tiles">
-      ${tile('t1', 'star', T('Narxlar'), 'about', 'a-prices')}
-      ${tile('t2', 'user', T('Instruktorlar'), 'about', 'a-ins')}
-      ${g.length ? tile('t4', 'copy', T('Rasmlar'), 'gallery', '0') : tile('t4', 'info', T('Sharoitlar'), 'about', 'a-fac')}
-      ${vid ? tile('t6', 'play', T('Video'), 'about', 'a-video') : tile('t6', 'clock', T('Kurs muddati'), 'about', 'a-course')}
-      ${tile('t5', 'pin', T('Manzil'), 'about', 'a-loc')}
-      ${tel ? tile('t7', 'phone', T('Qo‘ng‘iroq'), 'calls')
-            : tile('t7', 'chat', T('Savol berish'), 'go', 'support')}
-      ${tile('t3', 'list', T('Bronlarim'), 'go', 'bookings', '')}
-      ${tile('t8', 'info', T('Savollar'), 'about', 'a-faq')}
-      ${tile('t9', 'user', T('Profil'), 'go', 'profile')}
+    <div class="ask cat rv">${T('Bo‘limlar')}</div>
+    <div class="cgrid">
+      ${tile('cash', T('Narxlar'), T('Tariflar va paketlar'), 'about', 'a-prices')}
+      ${tile('user', T('Instruktorlar'), T('Tajriba, mashina, reyting'), 'about', 'a-ins')}
+      ${g.length ? tile('copy', T('Rasmlar'), T('Avtodrom va mashinalar'), 'gallery', '0') : tile('info', T('Sharoitlar'), T('Kutish joyi va xizmatlar'), 'about', 'a-fac')}
+      ${vid ? tile('play', T('Video'), T('Bron qilish qo‘llanmasi'), 'about', 'a-video') : tile('clock', T('Kurs muddati'), T('O‘qish bosqichlari'), 'about', 'a-course')}
+      ${tile('pin', T('Manzil'), T('Xarita va yo‘nalish'), 'about', 'a-loc')}
+      ${tel ? tile('phone', T('Qo‘ng‘iroq'), T('Administrator bilan aloqa'), 'calls')
+            : tile('chat', T('Savol berish'), T('Administratorga yozing'), 'go', 'support')}
+      ${tile('list', T('Bronlarim'), T('Kelgusi darslar va kassa kodi'), 'go', 'bookings', '')}
+      ${tile('help', T('Savollar'), T('Ko‘p beriladigan savollar'), 'about', 'a-faq')}
+      ${tile('user', T('Profil'), T('Ism, telefon va til'), 'go', 'profile')}
     </div>`;
-  if (n) { const b = document.querySelector('.tile[data-v="bookings"]'); if (b) b.insertAdjacentHTML('beforeend', `<i class="n">${n}</i>`); }
+  if (n) { const b = document.querySelector('.ccard[data-v="bookings"]'); if (b) b.insertAdjacentHTML('beforeend', `<i class="n">${n}</i>`); }
   updateNoteDot();
 }
 
