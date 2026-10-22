@@ -4125,8 +4125,8 @@ function renderControl(d){
    Bronli va bronsiz mijoz bir ekranda. Narx davomiylikka qarab avtomatik
    hisoblanadi (kurs birligiga nisbatan), kassir uni o'zgartira oladi.
    ========================================================================= */
-/* Kassada faqat shular: 30 daqiqa, 1 soat, 2 soat va 5 soatlik PAKET */
-const DURS = [30, 60, 120, 300];
+/* Kassada faqat shular: 30 daqiqa, 1, 2, 3 soat (3 soat — alohida tarif) va 5 soatlik PAKET */
+const DURS = [30, 60, 120, 180, 300];
 const PKG_MIN = 300;
 const SPLITS = [
   { k: '5',     m: [300],                t: 'Bir kunda — 5 soat',        s: 'hammasi bugun' },
@@ -4178,9 +4178,13 @@ function tariffFor(cat){
   const half = Number(settingVal('half_' + k.toLowerCase()));
   const hour = Number(settingVal('rate_' + k.toLowerCase()));
   const d = DEFAULT_TARIFF[k] || DEFAULT_TARIFF.B;
+  /* 3 soatlik tarif: sozlama yo'q — B 700 000, A/C yo'q; 0 — o'chiq */
+  const v3 = settingVal('tarif3_' + k.toLowerCase()), n3 = Number(v3);
+  const h3 = v3 === null || v3 === undefined || v3 === '' || !Number.isFinite(n3) ? ({ A: 0, B: 700000, C: 0 }[k] || 0) : Math.max(0, n3);
   return {
     half: Number.isFinite(half) && half > 0 ? half : d.half,
     hour: Number.isFinite(hour) && hour > 0 ? hour : d.hour,
+    h3,
   };
 }
 
@@ -4201,6 +4205,7 @@ function listPriceOf(cat, minutes){
   const t = tariffFor(cat);
   const m = Math.max(1, Math.round(Number(minutes) || 0));
   if (m === 30) return Math.round(t.half);
+  if (m === 180 && t.h3 > 0) return Math.round(t.h3);
   return Math.round((t.hour * m) / 60);
 }
 /** Narx: 30 daqiqa maxsus, 5 soat — paket, qolgani proporsional. Server bilan bir xil. */
@@ -5493,8 +5498,8 @@ function renderKdash(d){
    onlayn bron qilayotganlarga band ko'rinadi.
    ========================================================================= */
 const MB = { cat: 'B', minutes: 60, ins: null, free: [], busy: [], split: null, sess: [] };
-/* Faqat shular: 30 daqiqa, 1 soat, 2 soat va 5 soatlik PAKET */
-const MB_DURS = [30, 60, 120, 300];
+/* Faqat shular: 30 daqiqa, 1, 2, 3 soat va 5 soatlik PAKET */
+const MB_DURS = [30, 60, 120, 180, 300];
 const mbIsPkg = () => MB.minutes === PKG_MIN && pkgPrice(MB.cat) > 0;
 const mbSplit = () => MB.split || SPLITS[0];
 const mbFirstMin = () => mbIsPkg() ? mbSplit().m[0] : MB.minutes;
