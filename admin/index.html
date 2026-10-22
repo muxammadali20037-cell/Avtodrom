@@ -6392,6 +6392,7 @@ function vPrices(){
   const t = c => tariffFor(c);
   const pk = (() => { const v = sv('paket5_b'); return v === null || v === undefined || v === '' ? 1100000 : Number(v) || 0; })();
   const on = ![false, 'false', 0, '0', 'off', 'no'].includes(sv('booking_enabled'));
+  const autoOn = ![false, 'false', 0, '0', 'off', 'no'].includes(sv('booking_auto_confirm'));
   const rem = (() => { const v = sv('reminder_minutes'); const a = Array.isArray(v) ? v : String(v || '').split(/[^\d]+/).filter(Boolean); return a.length ? a.join(', ') : '60, 30, 20'; })();
   const late = (() => { const v = sv('late_cancel_min'); return v === null || v === '' ? 15 : Number(v); })();
   $('view').innerHTML = `<div class="view">
@@ -6423,7 +6424,8 @@ function vPrices(){
     <div class="card" style="margin-top:12px"><div class="sec-h"><h2>Ish vaqti</h2></div>
       <div class="grid2"><label class="field" style="margin-top:0"><span>Boshlanishi</span><input class="input" type="time" id="pr-ws" value="${esc(String(sv('work_start') || '07:00').slice(0, 5))}"></label>
       <label class="field" style="margin-top:0"><span>Tugashi</span><input class="input" type="time" id="pr-we" value="${esc(String(sv('work_end') || '19:00').slice(0, 5))}"></label></div>
-      <button class="row" data-act="prbook" style="padding:14px 0 2px;min-height:0"><span class="tx"><b>Mijozlar ilovadan bron qila oladi</b><small>O‘chirilsa — faqat kassa va operator orqali</small></span><span class="sw ${on ? 'on' : ''}" id="pr-on"></span></button></div>
+      <button class="row" data-act="prbook" style="padding:14px 0 2px;min-height:0"><span class="tx"><b>Mijozlar ilovadan bron qila oladi</b><small>O‘chirilsa — faqat kassa va operator orqali</small></span><span class="sw ${on ? 'on' : ''}" id="pr-on"></span></button>
+      <button class="row" data-act="prauto" style="padding:14px 0 2px;min-height:0"><span class="tx"><b>Ilovadagi bronlar avtomatik tasdiqlanadi</b><small>Yoqiq — mijoz darhol tasdiq va kassa kodini oladi, admin kutilmaydi. O‘chirilsa — bron «Kutilmoqda», admin tasdiqlaydi</small></span><span class="sw ${autoOn ? 'on' : ''}" id="pr-auto"></span></button></div>
     <button class="btn btn-primary" data-act="prsave" style="margin-top:16px">${I('check', 20, 2.4)} Saqlash</button></div>`;
   const hint = () => { const v = Number($('pr-pkg').value.replace(/\D/g, '')) || 0, lp = Math.round((Number($('pr-hour-B').value.replace(/\D/g, '')) || 0) * 5); $('pr-pkg-hint').textContent = v > 0 ? `Oddiy narx ${nf(lp)} so‘m — mijoz ${nf(Math.max(0, lp - v))} so‘m tejaydi.` : 'Paket o‘chiq — 5 soat oddiy tarif bilan.'; };
   $('pr-pkg').addEventListener('input', hint); $('pr-hour-B').addEventListener('input', hint); hint();
@@ -6514,6 +6516,7 @@ ACT.remcheck = async el => {
   finally{ busyBtn(el, false); }
 };
 ACT.prbook = () => $('pr-on').classList.toggle('on');
+ACT.prauto = () => $('pr-auto').classList.toggle('on');
 ACT.prsave = async el => {
   const num = id => Math.round(Number(String($(id).value).replace(/\D/g, '')) || 0);
   const vals = {};
@@ -6529,6 +6532,7 @@ ACT.prsave = async el => {
   if (ws >= we) return toast('Ish boshlanishi tugashidan oldin bo‘lsin', true);
   vals.work_start = ws; vals.work_end = we;
   vals.booking_enabled = $('pr-on').classList.contains('on');
+  vals.booking_auto_confirm = $('pr-auto').classList.contains('on');
   const remList = [...new Set(String($('pr-rem').value).split(/[^\d]+/).filter(Boolean).map(Number))].sort((a, b) => b - a);
   if (!remList.length || remList.length > 5 || remList.some(n => n < 5 || n > 720)) return toast('Eslatma vaqtlari: 1–5 ta son, har biri 5 dan 720 daqiqagacha (masalan: 60, 30, 20)', true);
   vals.reminder_minutes = remList;
