@@ -243,6 +243,11 @@ textarea.input{min-height:88px;resize:none;line-height:1.4}
 .dur small{display:block;color:var(--hint);font-weight:600;font-size:13.5px;margin-top:3px}
 .dur.on{background:var(--accent-soft);box-shadow:inset 0 0 0 2px var(--accent)}
 .dur.on b,.dur.on small{color:var(--accent)}
+.dur{position:relative}
+.dur .dtag{position:absolute;top:-9px;right:10px;padding:3px 8px;border-radius:99px;background:var(--ok,#16a34a);color:#fff;font-size:11px;font-weight:800;letter-spacing:.2px;box-shadow:0 4px 10px rgba(22,163,74,.3)}
+.dur small s{opacity:.65;margin-right:3px;font-weight:600}
+.dur.deal{box-shadow:var(--shadow),inset 0 0 0 1.5px var(--ok,#16a34a)}
+.dur.deal.on{box-shadow:inset 0 0 0 2px var(--accent)}
 /* Davomiylik: 30 daq, 1 soat, 2 soat — uchta; ostida yashil 5 soatlik PAKET */
 .dur-grid.three{grid-template-columns:repeat(3,minmax(0,1fr))}
 .dur-grid.three .dur{padding:15px 12px}
@@ -608,7 +613,10 @@ body.onb-mode .wrap{padding-bottom:calc(120px + var(--sb))}
 .prc-h .lt{width:48px;height:48px;border-radius:15px;background:var(--accent);color:var(--on-accent);display:grid;place-items:center;font-size:24px;font-weight:800;flex:none}
 .prc-h b{display:block;font-size:17px}
 .prc-h small{color:var(--hint)}
-.prow{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin-bottom:12px}
+.prow{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin-bottom:12px}
+.prow s{display:block;font-size:11px;color:var(--hint);font-weight:600}
+.prow .h3p{background:var(--accent-soft);box-shadow:inset 0 0 0 1.5px var(--accent)}
+.prow .h3p span,.prow .h3p b{color:var(--accent)}
 .prow div{background:var(--card-2);border-radius:12px;padding:8px 4px;text-align:center}
 .prow span{display:block;font-size:12px;color:var(--hint);font-weight:600}
 .prow b{display:block;font-size:13px;margin-top:2px;font-variant-numeric:tabular-nums}
@@ -945,6 +953,8 @@ const RU = /*RU*/{
   "Yana bron": "Ещё бронь",
   "Bron yuborildi!": "Бронь отправлена!",
   "Bron tasdiqlandi!": "Бронь подтверждена!",
+  "Tarif": "Тариф",
+  "3 soat · tarif": "3 часа · тариф",
   "Paket tasdiqlandi!": "Пакет подтверждён!",
   "Kutish shart emas — belgilangan vaqtda keling, kassada kodni ayting va to‘g‘ri mashinaga chiqing.": "Ждать не нужно — приходите в назначенное время, назовите код в кассе и сразу садитесь в машину.",
   "Tasdiq va kassa kodi Telegram’ga ham yuborildi.": "Подтверждение и код для кассы также отправлены в Telegram.",
@@ -1296,23 +1306,28 @@ function normSettings(s) {
 
 /* --- narx: server bilan BIR XIL formula (backend/src/pricing.ts) --- */
 const DEF_T = { A: { half: 200000, hour: 350000 }, B: { half: 150000, hour: 250000 }, C: { half: 250000, hour: 400000 } };
+/* 3 soatlik tarif: sozlama yo'q — B 700 000, A/C yo'q; 0 — o'chiq (soatlik × 3) */
+const DEF_H3 = { A: 0, B: 700000, C: 0 };
 function tariff(cat) {
   const k = String(cat || 'B').toLowerCase(), d = DEF_T[cat] || DEF_T.B;
   const h = Number(S.settings['half_' + k]), r = Number(S.settings['rate_' + k]);
-  return { half: h > 0 ? h : d.half, hour: r > 0 ? r : d.hour };
+  const v3 = S.settings['tarif3_' + k], n3 = Number(v3);
+  const h3 = v3 === undefined || v3 === null || v3 === '' || !Number.isFinite(n3) ? (DEF_H3[String(cat || 'B').toUpperCase()] || 0) : Math.max(0, n3);
+  return { half: h > 0 ? h : d.half, hour: r > 0 ? r : d.hour, h3 };
 }
 function priceOf(opt, hours) {
   if (!opt) return 0;
   const minutes = unitOf(opt) * hours;
   if (opt.cat) {
     const t = tariff(opt.cat), m = Math.max(1, Math.round(minutes));
+    if (m === 180 && t.h3 > 0) return Math.round(t.h3);
     return m === 30 ? Math.round(t.half) : Math.round(t.hour * m / 60);
   }
   return Math.round(Number(opt.course.price || 0) * hours);
 }
 const unitOf = opt => Math.max(15, Number(opt && opt.course && opt.course.duration_minutes) || 60);
-/* Toifali mashg'ulot: 30 daqiqa, 1 soat, 2 soat va 5 soatlik PAKET */
-const MINS = [30, 60, 120];
+/* Toifali mashg'ulot: 30 daqiqa, 1, 2, 3 soat (3 soat — alohida tarif) va 5 soatlik PAKET */
+const MINS = [30, 60, 120, 180];
 const PKG_MIN = 300;
 const SPLITS = [
   { k: '5',     m: [300],                t: 'Bir kunda — 5 soat',       s: 'Hammasini bir kunda haydaysiz' },
@@ -1323,8 +1338,11 @@ const SPLITS = [
 /** Tarif bo'yicha narx (daqiqada) — server bilan bir xil formula */
 function minPrice(cat, minutes) {
   const t = tariff(cat), m = Math.max(1, Math.round(minutes));
+  if (m === 180 && t.h3 > 0) return Math.round(t.h3);
   return m === 30 ? Math.round(t.half) : Math.round(t.hour * m / 60);
 }
+/** Oddiy (soatlik) narx — tarif bilan solishtirish uchun */
+const plainPrice = (cat, m) => (m === 30 ? Math.round(tariff(cat).half) : Math.round(tariff(cat).hour * m / 60));
 /** 5 soatlik paket — FAQAT B toifa. Sozlama yo'q — 1 100 000; 0 — o'chirilgan. */
 function pkgPrice(cat) {
   if (String(cat || '').toUpperCase() !== 'B') return 0;
@@ -2029,7 +2047,9 @@ function renderAbout() {
       ${opts.map((o, i) => { const t = tariff(o.cat); return `<div class="prc rv" style="--d:${i * 0.06}s">
         <div class="prc-h"><span class="lt">${o.cat}</span><span><b>${T('{c} toifa', { c: o.cat })}</b><small>${esc(T(CAT_LONG[o.cat]))} · ${T('narxlar so‘mda')}</small></span></div>
         <div class="prow"><div><span>${fmtDur(30)}</span><b>${num(t.half)}</b></div><div><span>${fmtDur(60)}</span><b>${num(t.hour)}</b></div>
-          <div><span>${fmtDur(120)}</span><b>${num(t.hour * 2)}</b></div>${pkgPrice(o.cat) > 0
+          <div><span>${fmtDur(120)}</span><b>${num(t.hour * 2)}</b></div>${t.h3 > 0 && t.h3 < t.hour * 3
+            ? `<div class="h3p"><span>${T('3 soat · tarif')}</span><b>${num(t.h3)}</b><s>${num(t.hour * 3)}</s></div>`
+            : `<div><span>${fmtDur(180)}</span><b>${num(t.h3 > 0 ? t.h3 : t.hour * 3)}</b></div>`}${pkgPrice(o.cat) > 0
             ? `<div class="pkgp"><span>${T('5 soat · paket')}</span><b>${num(pkgPrice(o.cat))}</b>${t.hour * 5 > pkgPrice(o.cat) ? `<s>${num(t.hour * 5)}</s>` : ''}</div>`
             : `<div><span>${fmtDur(300)}</span><b>${num(t.hour * 5)}</b></div>`}</div>
         <button class="btn btn-primary btn-sm" style="width:100%" data-act="quickcat" data-v="${o.key}">${T('{c} toifaga bron qilish', { c: o.cat })} ${ico('arrow', 17)}</button>
@@ -2382,9 +2402,10 @@ function stepDur() {
     const p = pkgPrice(opt.cat), list = minPrice(opt.cat, PKG_MIN);
     return `<h1 class="wz-h">${T('Necha soat haydaysiz?')}</h1>
     <p class="wz-sub">${T('Narx avtomatik hisoblanadi')}</p>
-    <div class="dur-grid three">${MINS.map(m => `
-      <button class="dur ${!B.pkg && B.min === m ? 'on' : ''}" data-act="wzmin" data-v="${m}">
-        <b>${fmtDur(m)}</b><small>${money(minPrice(opt.cat, m))}</small></button>`).join('')}</div>
+    <div class="dur-grid">${MINS.map(m => { const pr = minPrice(opt.cat, m), full = plainPrice(opt.cat, m), deal = pr < full; return `
+      <button class="dur ${!B.pkg && B.min === m ? 'on' : ''} ${deal ? 'deal' : ''}" data-act="wzmin" data-v="${m}">
+        ${deal ? `<span class="dtag">${T('Tarif')} · −${num(full - pr)}</span>` : ''}
+        <b>${fmtDur(m)}</b><small>${money(pr)}</small></button>`; }).join('')}</div>
     ${p > 0 ? `<button class="pkg-card ${B.pkg ? 'on' : ''}" data-act="wzpkg">
       <span class="badge">${T('PAKET')}${list > p ? ` · ${T('{m} tejaysiz', { m: money(list - p) })}` : ''}</span>
       <span class="ttl">${T('5 soat')}</span>
