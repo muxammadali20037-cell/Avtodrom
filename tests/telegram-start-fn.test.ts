@@ -210,6 +210,7 @@ describe('Xabarlar va tugmalar', () => {
     expect(e.body.text).toContain('Цены');
     expect(e.body.text).toContain('250 000');
     expect(e.body.text).toContain('1 100 000');
+    expect(e.body.text).toContain('3 часа — <b>700 000</b> <s>750 000</s>');   // 3 soatlik tarif (standart)
   });
 
   it('Manzil — xaritadagi joy va Google/Yandex tugmalari', async () => {

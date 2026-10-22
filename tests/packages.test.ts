@@ -113,9 +113,24 @@ describe('Mijoz: yangi davomiyliklar', () => {
     expect(r.body.booking.price).toBe(500000);
     expect(h.db.bookings[0].end_at).toBe(at(D2, '12:00'));
   });
-  it('3–4 soat endi yo‘q; 5 soat — faqat paket', async () => {
-    const r3 = await tg('POST', '/api/bookings', { instructor_id: 'ip-1', course_id: 'c-b', duration_minutes: 180, start_at: at(D2, '10:00') });
-    expect(r3.status).toBe(400);
+  it('3 soat — alohida tarif: B toifa 700 000 (sozlama bo‘lmasa), 3 soat band', async () => {
+    const r = await tg('POST', '/api/bookings', { instructor_id: 'ip-1', course_id: 'c-b', duration_minutes: 180, start_at: at(D2, '10:00') });
+    expect(r.status).toBe(201);
+    expect(r.body.booking.price).toBe(700000);
+    expect(r.body.booking.duration_minutes).toBe(180);
+    expect(h.db.bookings[0].end_at).toBe(at(D2, '13:00'));
+  });
+  it('3 soatlik tarif sozlamadan; 0 — soatlik narx × 3', async () => {
+    h.db.admin_settings.push({ key: 'tarif3_b', value: { value: 680000 } });
+    const a = await tg('POST', '/api/bookings', { instructor_id: 'ip-1', course_id: 'c-b', duration_minutes: 180, start_at: at(D2, '08:00') });
+    expect(a.body.booking.price).toBe(680000);
+    h.db.admin_settings.find((s: any) => s.key === 'tarif3_b').value = { value: 0 };
+    const b = await tg('POST', '/api/bookings', { instructor_id: 'ip-1', course_id: 'c-b', duration_minutes: 180, start_at: at(D3, '08:00') });
+    expect(b.body.booking.price).toBe(750000);
+  });
+  it('4 soat yo‘q; 5 soat — faqat paket', async () => {
+    const r4 = await tg('POST', '/api/bookings', { instructor_id: 'ip-1', course_id: 'c-b', duration_minutes: 240, start_at: at(D2, '10:00') });
+    expect(r4.status).toBe(400);
     const r5 = await tg('POST', '/api/bookings', { instructor_id: 'ip-1', course_id: 'c-b', duration_minutes: 300, start_at: at(D2, '10:00') });
     expect(r5.status).toBe(400);
     expect(r5.body.error).toMatch(/paket/i);
