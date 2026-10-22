@@ -14,6 +14,7 @@ import {
   type PackageRecord,
 } from './packages.js';
 import { sendBookingNotification } from './telegram.js';
+import { autoConfirmOn, autoConfirmedUntouched, paidBookingIds, canCancelNow } from './booking-auto.js';
 import { notifyAdmins, notifyAdminsNewBooking, notifyAdminsBookingClosed, escHtml } from './admin-notify.js';
 import type { TelegramWebAppUser } from './telegram.js';
 import {
@@ -216,16 +217,19 @@ async function notifyPackageParties(bookings: any[], rec: PackageRecord) {
   try {
     const first = bookings[0];
     if (!first) return;
+    const ok = String(first.status) === 'confirmed';
     const d = await loadBookingDetails(first);
     const lines = bookings.map((b, i) =>
       `${i + 1}) ${fmtWhen(b.start_at)} · ${durText(Number(b.duration_minutes) || 60)}${b.pickup_code ? ` · kod ${b.pickup_code}` : ''}`);
     const cText =
-      `📝 5 soatlik paketingiz qabul qilindi\n\n` +
+      (ok ? `✅ 5 soatlik paketingiz tasdiqlandi\n\n` : `📝 5 soatlik paketingiz qabul qilindi\n\n`) +
       (d.instructorName ? `👨‍🏫 ${d.instructorName}\n` : '') +
       `💵 ${fmtMoney(rec.price)}${rec.list_price > rec.price ? ` (odatda ${fmtMoney(rec.list_price)})` : ''}\n\n` +
-      `${lines.join('\n')}\n\nAdmin tasdiqlashini kuting. Kassaga kelganda mashg‘ulot kodini ayting.` +
+      `${lines.join('\n')}\n\n` +
+      (ok ? 'Kutish shart emas — belgilangan vaqtlarda keling. Kassaga kelganda mashg‘ulot kodini ayting.'
+        : 'Admin tasdiqlashini kuting. Kassaga kelganda mashg‘ulot kodini ayting.') +
       (lateRuleLine(d.lateMin ?? 15) ? `\n\n${lateRuleLine(d.lateMin ?? 15)}` : '');
-    await notifyUser(first.customer_id, 'booking', '📝 5 soatlik paket qabul qilindi',
+    await notifyUser(first.customer_id, 'booking', ok ? '✅ 5 soatlik paket tasdiqlandi' : '📝 5 soatlik paket qabul qilindi',
       `${bookings.length} ta mashg‘ulot · ${fmtWhen(first.start_at)} dan boshlab`);
     const customer = await telegramOf(first.customer_id);
     const cToken = String(process.env.CUSTOMER_BOT_TOKEN || process.env.TELEGRAM_CUSTOMER_BOT_TOKEN || '');
@@ -239,7 +243,7 @@ async function notifyPackageParties(bookings: any[], rec: PackageRecord) {
       });
       const iu = ip[0]?.user_id;
       const iText =
-        `📝 Yangi paket bron — 5 soat\n\n` +
+        (ok ? `🆕 Yangi paket bron — 5 soat · tasdiqlangan\n\n` : `📝 Yangi paket bron — 5 soat\n\n`) +
         (d.customerName ? `👤 ${d.customerName}\n` : '') + (d.customerPhone ? `📞 ${d.customerPhone}\n` : '') +
         `\n${lines.join('\n')}`;
       await notifyUser(iu, 'booking', '📝 Yangi paket bron', `${bookings.length} ta mashg‘ulot · ${fmtWhen(first.start_at)} dan`);
@@ -445,12 +449,15 @@ export async function registerBookingRoutes(
         reviews.forEach((r) => reviewed.add(String(r.booking_id)));
       }
       const packs = await packagesFor(rows.map((b) => b.id));
+      /* «Bekor qilish» (darhol) yoki «Bekor qilishni so‘rash» — server hal qiladi */
+      const paid = await paidBookingIds(rows.filter((b) => autoConfirmedUntouched(b)).map((b) => String(b.id)));
       return {
         ok: true,
         bookings: rows.map((b) => {
           const pk = packs.get(String(b.id));
           return {
             ...shapeBooking(b), reviewed: reviewed.has(String(b.id)),
+            can_cancel: ['pending', 'confirmed'].includes(String(b.status)) ? canCancelNow(b, paid) : false,
             package: pk ? { id: pk.id, n: pk.n, of: pk.of, price: pk.price, list_price: pk.list_price } : null,
           };
         }),
@@ -543,6 +550,8 @@ export async function registerBookingRoutes(
         }
       }
 
+      /* Avtomatik tasdiqlash: bandlik yuqorida tekshirildi — bron darhol tasdiqlangan */
+      const auto = await autoConfirmOn();
       const payload = {
           customer_id: user.id,
           instructor_id: body.instructor_id,
@@ -561,7 +570,8 @@ export async function registerBookingRoutes(
              mijozga aytilган narx o'zgarmaydi. */
           price: bookingPrice,
           customer_note: body.customer_note?.trim() || null,
-          status: 'pending',
+          status: auto ? 'confirmed' : 'pending',
+          ...(auto ? { confirmed_at: new Date().toISOString() } : {}),
       };
 
       /* Kod bilan yozamiz. Kod to'qnashsa (unikal indeks) — boshqasini olamiz;
@@ -587,9 +597,12 @@ export async function registerBookingRoutes(
       const booking = rows[0];
       if (booking) {
         /* Mijoz, instruktor va ADMIN BOTI — bir vaqtda */
-        await Promise.all([notifyBookingParties(booking, 'created'), notifyAdminsNewBooking([booking])]);
+        await Promise.all([notifyBookingParties(booking, auto ? 'booked' : 'created'), notifyAdminsNewBooking([booking])]);
       }
-      return reply.code(201).send({ ok: true, booking: shapeBooking(booking) });
+      return reply.code(201).send({
+        ok: true, auto_confirmed: auto,
+        booking: booking ? { ...shapeBooking(booking), can_cancel: canCancelNow(booking, new Set()) } : booking,
+      });
     } catch (e) {
       const msg = humanizeDbError(e, 'Bron yaratilmadi');
       const code = /band|boshqa bron/.test(msg) ? 409 : 400;
@@ -632,9 +645,11 @@ export async function registerBookingRoutes(
       if (!(packagePriceOf(cat, prices) > 0)) {
         return reply.code(400).send({ ok: false, error: cat === 'B' ? '5 soatlik paket hozir o‘chirilgan' : '5 soatlik paket faqat B toifa uchun' });
       }
+      const auto = await autoConfirmOn();
       const { bookings, record } = await createPackage({
         customerId: String(user.id), instructorId: String(ip.id), courseId: String(course.id), category: cat,
-        sessions: parsed.sessions, status: 'pending', source: 'app',
+        sessions: parsed.sessions, status: auto ? 'confirmed' : 'pending', source: 'app',
+        ...(auto ? { extra: { confirmed_at: new Date().toISOString() } } : {}),
         note: body.customer_note?.trim() || null, tariffs, prices, newCode: newPickupCode,
       });
       await Promise.all([
@@ -643,8 +658,8 @@ export async function registerBookingRoutes(
       ]);
       const pkg = { id: record.id, price: record.price, list_price: record.list_price, of: bookings.length };
       return reply.code(201).send({
-        ok: true, package: pkg,
-        bookings: bookings.map((b, i) => ({ ...shapeBooking(b), package: { ...pkg, n: i + 1 } })),
+        ok: true, package: pkg, auto_confirmed: auto,
+        bookings: bookings.map((b, i) => ({ ...shapeBooking(b), can_cancel: canCancelNow(b, new Set()), package: { ...pkg, n: i + 1 } })),
       });
     } catch (e: any) {
       const msg = humanizeDbError(e, 'Paket bron qilinmadi');
@@ -658,7 +673,9 @@ export async function registerBookingRoutes(
    * Mijoz bronni bekor qilmoqchi.
    *
    *  pending   -> darhol bekor qilinadi (admin hali tasdiqlamagan, yo'qotadigan narsa yo'q)
-   *  confirmed -> BEKOR QILINMAYDI, admin uchun SO'ROV yaratiladi.
+   *  confirmed, AVTOMATIK tasdiqlangan, xodim tegmagan, to'lanmagan, boshlanmagan
+   *            -> darhol bekor qilinadi (xuddi pending kabi)
+   *  confirmed (qolgan holatlar) -> BEKOR QILINMAYDI, admin uchun SO'ROV yaratiladi.
    *               Bron `confirmed` holatida qoladi, admin ko'rib chiqadi.
    *               Sabab majburiy (kamida 3 belgi) — DB constraint ham buni talab qiladi.
    */
@@ -685,8 +702,13 @@ export async function registerBookingRoutes(
 
       const now = new Date().toISOString();
 
-      // --- pending: darhol bekor ---
-      if (status === 'pending') {
+      /* Avtomatik tasdiqlangan, xodim tegmagan va to'lanmagan bron —
+         «Kutilmoqda»dagidek darhol bekor qilinadi (admin so'rov ko'rmaydi). */
+      const instant = status === 'pending'
+        || canCancelNow(booking, autoConfirmedUntouched(booking) ? await paidBookingIds([id]) : new Set());
+
+      // --- pending yoki avto-tasdiqlangan: darhol bekor ---
+      if (instant) {
         const rows = await supabaseRest<any[]>('bookings', {
           method: 'PATCH',
           headers: { Prefer: 'return=representation' },
@@ -694,6 +716,8 @@ export async function registerBookingRoutes(
           body: JSON.stringify({
             status: 'cancelled', cancelled_at: now, cancelled_by: user.id,
             cancellation_reason: reason, updated_at: now,
+            /* Ochiq bekor so'rovi bo'lsa — yopiladi */
+            ...(booking.cancel_requested_at && !booking.cancel_reviewed_at ? { cancel_reviewed_at: now } : {}),
           }),
         });
         const updated = rows[0] ?? booking;

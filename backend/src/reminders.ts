@@ -86,7 +86,7 @@ export function reminderText(minutesLeft: number, booking: any, d: any, from?: s
   if (String(booking.status) === 'pending') lines.push('', 'ℹ️ Broningiz qabul qilingan — kassada tasdiqlanadi.');
   const rule = lateRuleText(lateMin);
   if (rule) lines.push('', rule);
-  lines.push('', reminderCallbacksOn() ? 'Iltimos, javob bering:' : 'Kela olmasangiz, Mini App orqali bronni bekor qiling.');
+  lines.push('', reminderCallbacksOn() ? 'Iltimos, javob bering:' : 'Kela olmasangiz, ilovada bronni bekor qiling.');
   return lines.join('\n');
 }
 /** Callback tugmalari faqat webhook Vercel'ga ulanganda (REMINDER_CALLBACKS=1) */
@@ -102,7 +102,7 @@ export function reminderKeyboard(bookingId: string) {
   const cb = reminderCallbacksOn();
   const rows: any[] = [];
   if (cb) rows.push([{ text: '✅ Kelaman', callback_data: `come:${bookingId}` }], [{ text: '🚫 Bekor qilmoqchiman', callback_data: `cxl:${bookingId}` }]);
-  if (miniApp()) rows.push([{ text: cb ? '📱 Ilovani ochish' : '🚗 Bronlarimni ochish', web_app: { url: miniApp() } }]);
+  if (miniApp()) rows.push([{ text: '📱 Ilovani ochish', web_app: { url: miniApp() } }]);
   return rows.length ? { inline_keyboard: rows } : undefined;
 }
 

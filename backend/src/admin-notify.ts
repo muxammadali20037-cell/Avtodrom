@@ -198,10 +198,12 @@ export function adminNewBookingText(
 ): string {
   const first = bookings[0] ?? {};
   const isPkg = bookings.length > 1 || opts.packagePrice !== undefined;
+  /* Avtomatik tasdiqlangan (admin_settings.booking_auto_confirm) — admin harakati shart emas */
+  const auto = bookings.length > 0 && bookings.every((b) => String(b?.status) === 'confirmed');
   const totalMin = bookings.reduce((s, b) => s + (Number(b?.duration_minutes) || Math.round((Date.parse(b?.end_at) - Date.parse(b?.start_at)) / 60000) || 0), 0);
   const L: string[] = [];
 
-  L.push(`🆕 <b>YANGI BRON</b>${isPkg ? ' · 5 soatlik paket' : ''} · Mini App`);
+  L.push(`🆕 <b>YANGI BRON</b>${isPkg ? ' · 5 soatlik paket' : ''} · Mini App${auto ? ' · ✅ tasdiqlangan' : ''}`);
   L.push('');
   L.push(`👤 <b>${escHtml(ctx.customer.name || 'Mijoz')}</b>`);
   if (ctx.customer.phone) L.push(`📞 ${escHtml(ctx.customer.phone)}`);
@@ -229,7 +231,7 @@ export function adminNewBookingText(
   /* Dars yaqin bo'lsa — admin darhol ko'rsin */
   const startMs = Date.parse(first.start_at || first.booking_date);
   const leftMin = Number.isFinite(startMs) ? Math.round((startMs - (opts.nowMs ?? Date.now())) / 60000) : Infinity;
-  if (leftMin < 180) L.push(`⚡ <b>Dars ${escHtml(untilText(startMs, opts.nowMs))}</b> — tezroq tasdiqlang`);
+  if (leftMin < 180) L.push(`⚡ <b>Dars ${escHtml(untilText(startMs, opts.nowMs))}</b>${auto ? '' : ' — tezroq tasdiqlang'}`);
   else if (leftMin < 1440) L.push(`⏰ Dars ${escHtml(untilText(startMs, opts.nowMs))}`);
 
   const price = isPkg ? Number(opts.packagePrice ?? 0) : Number(first.price ?? 0);
@@ -244,7 +246,9 @@ export function adminNewBookingText(
   if (!isPkg && first.pickup_code) L.push(`🎫 Bron kodi: <code>${escHtml(first.pickup_code)}</code>`);
 
   L.push('');
-  L.push('⏳ <b>Tasdiqlash kutilmoqda</b> — admin panelda tasdiqlang yoki rad eting.');
+  L.push(auto
+    ? '✅ <b>Avtomatik tasdiqlandi</b> — mijozga tasdiq va kassa kodi yuborildi. Kerak bo‘lsa admin panelda ko‘chiring yoki bekor qiling.'
+    : '⏳ <b>Tasdiqlash kutilmoqda</b> — admin panelda tasdiqlang yoki rad eting.');
   const created = fmtWhen(first.created_at || new Date(opts.nowMs ?? Date.now()).toISOString());
   if (created) L.push(`🕒 Bron qilindi: ${escHtml(created)}`);
   return L.join('\n');

@@ -52,11 +52,13 @@ export function shortCode(id: unknown): string {
 }
 
 export type BookingEvent =
-  | 'created' | 'confirmed' | 'rejected' | 'cancelled'
+  | 'created' | 'booked' | 'confirmed' | 'rejected' | 'cancelled'
   | 'in_progress' | 'completed' | 'no_show';
 
 const HEAD: Record<BookingEvent, { customer: string; instructor: string }> = {
   created:     { customer: '📝 Broningiz qabul qilindi',     instructor: '📝 Yangi bron keldi' },
+  /* Mini App bronini tizim o'zi tasdiqladi (admin_settings.booking_auto_confirm) */
+  booked:      { customer: '✅ Broningiz tasdiqlandi',        instructor: '🆕 Yangi bron · tasdiqlangan' },
   confirmed:   { customer: '✅ Broningiz tasdiqlandi',        instructor: '✅ Bron tasdiqlandi' },
   rejected:    { customer: '❌ Broningiz rad etildi',         instructor: '❌ Bron rad etildi' },
   cancelled:   { customer: '🚫 Bron bekor qilindi',           instructor: '🚫 Bron bekor qilindi' },
@@ -67,6 +69,7 @@ const HEAD: Record<BookingEvent, { customer: string; instructor: string }> = {
 
 const TAIL: Partial<Record<BookingEvent, { customer?: string; instructor?: string }>> = {
   created:     { customer: 'Admin tasdiqlashini kuting.' },
+  booked:      { customer: 'Hech narsa kutish shart emas — belgilangan vaqtda keling, kassada kodni ayting va to‘g‘ri mashinaga chiqing.' },
   confirmed:   { customer: 'Belgilangan vaqtda avtodromga keling.' },
   rejected:    { customer: 'Boshqa vaqt yoki instruktorni tanlashingiz mumkin.' },
   completed:   { customer: 'Instruktorni baholashingiz mumkin — ilovani oching.' },
@@ -184,12 +187,12 @@ export function bookingMessage(
      shortCode(id) eski usul edi va mos kelmasdi. */
   const pickup = booking?.pickup_code ? String(booking.pickup_code) : '';
 
-  const codeLine = (audience === 'customer' && pickup && (event === 'created' || event === 'confirmed'))
+  const codeLine = (audience === 'customer' && pickup && (event === 'created' || event === 'booked' || event === 'confirmed'))
     ? `\n🎫 Kassa uchun kod: ${pickup}\nKassaga shu kodni ayting.`
     : (pickup ? `\nBron kodi: ${pickup}` : '');
 
   /* Bron qabul qilinganda / tasdiqlanganda mijoz qoidani oldindan bilsin */
-  const rule = audience === 'customer' && (event === 'created' || event === 'confirmed')
+  const rule = audience === 'customer' && (event === 'created' || event === 'booked' || event === 'confirmed')
     ? lateRuleLine(d.lateMin ?? 15) : '';
 
   const body = [
