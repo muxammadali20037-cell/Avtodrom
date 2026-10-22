@@ -77,7 +77,9 @@ describe('Mini App bron → admin boti', () => {
     expect(t).toContain(code);
     expect(t).toContain('Parkovkani ko‘proq');
     expect(t).toMatch(/Yangi mijoz — birinchi broni/);
-    expect(t).toMatch(/Tasdiqlash kutilmoqda/);
+    /* Avtomatik tasdiqlash (standart): admin harakati shart emas */
+    expect(t).toMatch(/Avtomatik tasdiqlandi/);
+    expect(t).not.toMatch(/Tasdiqlash kutilmoqda/);
 
     // Tugma: web_app, panel «Yangi bronlar» bo'limida ochiladi
     const btn = m[0].markup.inline_keyboard[0][0];
@@ -153,7 +155,9 @@ describe('Mini App bron → admin boti', () => {
   it('bekor qilish so‘rovi ham admin botiga — «Bekor so‘rovlari» bo‘limiga tugma', async () => {
     const r = await tg('POST', '/api/bookings', { instructor_id: 'ip-1', course_id: 'c-b', duration_minutes: 60, start_at: at(D3, '10:00') });
     const id = r.body.booking.id;
+    /* Xodim qo'lda tasdiqlagan bron — bekor qilish faqat so'rov orqali */
     h.db.bookings[0].status = 'confirmed';
+    h.db.bookings[0].confirmed_by = 'u-admin';
     h.telegram.length = 0;
     const c = await tg('PATCH', `/api/bookings/${id}/cancel`, { reason: 'Kasal bo‘lib qoldim' });
     expect(c.status).toBe(200);

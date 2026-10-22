@@ -160,7 +160,9 @@ describe('Mijoz: 5 soatlik paket', () => {
     expect(b.price).toBe(440000);
     expect(a.duration_minutes).toBe(180);
     expect(h.db.bookings.map((x) => x.end_at)).toEqual([at(D2, '12:00'), at(D3, '16:00')]);
-    expect(h.db.bookings.every((x) => x.status === 'pending' && /^AVD-\d+$/.test(x.pickup_code))).toBe(true);
+    /* Avtomatik tasdiqlash (standart yoqiq): paket darhol tasdiqlangan */
+    expect(h.db.bookings.every((x) => x.status === 'confirmed' && x.confirmed_at && !x.confirmed_by && /^AVD-\d+$/.test(x.pickup_code))).toBe(true);
+    expect(r.body.auto_confirmed).toBe(true);
     expect(h.db.bookings[0].customer_note).toMatch(/paket · 1\/2/);
     // Mijozga BITTA xabar — ikkala kod bilan
     const msgs = h.telegram.filter((m) => m.text.includes('5 soatlik paket'));
