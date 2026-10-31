@@ -121,6 +121,24 @@ describe('Ochiq chek — istalgan kuni, istalgan instruktor', () => {
     expect(h.db.bookings.every((b) => b.status === 'confirmed')).toBe(true);
   });
 
+  it('oddiy chek ham urilguncha yaroqli: 2 kun o‘tsa ham «Kelmadi» bo‘lmaydi, urilganda dars HOZIRDAN', async () => {
+    const r = await h.call('POST', '/api/admin/cashier/issue', { cookie: kassa1, payload: {
+      register_token: makeRegisterToken('reg-p1'), full_name: 'Kech Keldi', course_id: 'c-b', category: 'B',
+      duration_minutes: 60, amount: 250000, cash_amount: 250000, card_amount: 0 } });
+    expect(r.status).toBe(201);
+    const b = bk(r.body.receipt.booking_id);
+    /* chek 2 kun oldin chiqarilgan bo'lsin */
+    const ago = (iso: string) => new Date(Date.parse(iso) - 2 * 864e5).toISOString();
+    Object.assign(b, { start_at: ago(b.start_at), end_at: ago(b.end_at), booking_date: ago(b.booking_date), created_at: ago(b.created_at) });
+    await closeLateBookings(Date.now());
+    expect(b.status).toBe('confirmed');
+    const s = await A('POST', '/api/instructor/scan/start', { code: r.body.receipt.short_code });
+    expect(s.status).toBe(200);
+    expect(b.status).toBe('in_progress');
+    expect(Math.abs(Date.parse(b.start_at) - Date.now())).toBeLessThan(10_000);
+    expect(Date.parse(b.end_at) - Date.parse(b.start_at)).toBe(60 * 60000);
+  });
+
   it('oldingi darsning vaqti tugagan bo‘lsa — keyingi chek urilganda o‘zi yopiladi', async () => {
     const receipts = await sellPackage();
     expect((await A('POST', '/api/instructor/scan/start', { code: receipts[0].short_code })).status).toBe(200);

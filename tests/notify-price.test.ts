@@ -125,7 +125,7 @@ describe('Bron bekor / yopildi — admin botiga', () => {
     expect(m[0].markup.inline_keyboard[0][0].web_app.url).toMatch(/open=bookings%2Fall/);
   });
 
-  it('avtomatik yopilganda: to‘lanmagan — «mijoz kelmadi»; to‘langan — «pul kassada» ogohlantirishi', async () => {
+  it('avtomatik yopilganda: to‘lanmagan — «mijoz kelmadi»; to‘langan chek YOPILMAYDI (urilguncha yaroqli)', async () => {
     const mk = (id: string, startMin: number, extra: any = {}) => {
       const s = new Date(Date.now() + startMin * 60000).toISOString();
       h.db.bookings.push({ id, customer_id: 'u-anna', instructor_id: 'ip-1', course_id: 'c-b', start_at: s, booking_date: s,
@@ -138,7 +138,8 @@ describe('Bron bekor / yopildi — admin botiga', () => {
     await h.app.inject({ method: 'GET', url: '/api/cron/reminders', headers: { authorization: 'Bearer test-cron-secret' } });
     const m = to(ADMIN_CHAT).map((x) => x.text);
     expect(m.some((t) => /BRON YOPILDI/.test(t) && t.includes('AVD-late'))).toBe(true);
-    expect(m.some((t) => /TO‘LANGAN BRON YOPILDI/.test(t) && t.includes('AVD-paid') && /Pul kassada/.test(t))).toBe(true);
+    expect(m.some((t) => t.includes('AVD-paid'))).toBe(false);
+    expect(h.db.bookings.find((b: any) => b.id === 'paid').status).toBe('confirmed');
   });
 });
 

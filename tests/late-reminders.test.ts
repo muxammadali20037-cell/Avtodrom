@@ -121,7 +121,7 @@ describe('15 daqiqa kechikish — bron avtomatik yopiladi', () => {
     expect(st('b-pkg')).toBe('no_show');
   });
 
-  it('TO‘LANGAN bron 15 daqiqada yopilmaydi — instruktor chekni kechroq skanerlashi mumkin; dars tugagach 12 soatdan keyin jimgina yopiladi', async () => {
+  it('TO‘LANGAN bron (chek) HECH QACHON avtomatik yopilmaydi — chek urilguncha yaroqli', async () => {
     h.db.cash_registers.push({ id: 'reg-p1', code: 'P1', name: '1-kassa' });
     bk('b-paid', -30);                                    // 30 daqiqa oldin boshlanishi kerak edi, to'langan
     bk('b-paid-old', -14 * 60);                          // kecha to'langan, dars 13 soat oldin tugagan
@@ -132,9 +132,8 @@ describe('15 daqiqa kechikish — bron avtomatik yopiladi', () => {
     const r = await cron();
     expect(st('b-paid')).toBe('confirmed');               // to'langan — ochiq qoladi
     expect(st('b-free')).toBe('no_show');
-    expect(st('b-paid-old')).toBe('no_show');             // 12 soat o'tdi — yopildi
-    expect(h.db.bookings.find((b: any) => b.id === 'b-paid-old').status).toBe('no_show');
-    expect(r.late_closed).toBe(2);
+    expect(st('b-paid-old')).toBe('confirmed');           // kecha to'langan — hamon yaroqli
+    expect(r.late_closed).toBe(1);
     expect(h.db.payments.every((p: any) => p.status === 'paid')).toBe(true);   // pul kassa hisobotida qoladi
     // To'langan bronning yopilishi haqida mijozga xabar KETMAYDI (u kelmagan emas — dars boshlanmagan)
     const cust = (h.telegram as any[]).filter((m) => m.chat === CUST_TG && /bekor qilindi/.test(m.text));
