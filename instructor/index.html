@@ -206,6 +206,11 @@ details.list[open] summary::after{content:"▴"}
 @keyframes sk{to{background-position:-200% 0}}
 .scanres{border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:12px;background:#fff}
 .scanres .big{font-size:19px;font-weight:900;margin:6px 0 2px}
+.pin4{font-family:ui-monospace,Menlo,monospace;font-size:34px!important;font-weight:900;letter-spacing:.5em;text-align:center;padding:12px 0 12px .5em!important}
+.mcmode{margin:-4px 0 12px}
+.spinner{display:inline-block;width:26px;height:26px;border:3px solid rgba(46,49,146,.18);border-top-color:var(--brand);border-radius:50%;animation:spn .7s linear infinite;vertical-align:middle;margin:0 8px 4px 0}
+.spinner.sm{width:16px;height:16px;border-width:2.5px;margin:0 6px 2px 0;border-color:rgba(255,255,255,.35);border-top-color:#fff}
+@keyframes spn{to{transform:rotate(360deg)}}
 .codebox{font-family:ui-monospace,Menlo,monospace;font-weight:900;letter-spacing:.1em;font-size:17px;text-align:center;background:var(--soft);color:var(--brand);border-radius:11px;padding:11px;margin:10px 0}
 
 /* ---------- BOSH MENYU: katta bo'limlar ---------- */
@@ -361,9 +366,9 @@ details.list[open] summary::after{content:"▴"}
   <button class="scan" id="scanBtn">
     <span class="ic">▣</span>
     Chekni skanerlash
-    <small>Chekdagi QR kodni kameraga tuting</small>
+    <small>QR kodni kameraga tuting · yoki raqamni botga yozing</small>
   </button>
-  <button class="linkbtn" id="manualBtn">⌨️ Kodni qo‘lda kiritish</button>
+  <button class="linkbtn" id="manualBtn">⌨️ Chek raqamini yozish (1234)</button>
   <div class="mini">
     <div><span>Bugun</span><b id="mToday">0</b></div>
     <div><span>Qoldi</span><b id="mLeft">0</b></div>
@@ -1112,8 +1117,9 @@ $('scanBtn').onclick = () => {
   try {
     tg.showScanQrPopup({ text: 'Chekdagi QR kodni kameraga tuting' }, (raw) => {
       const code = extractCode(raw);
-      if (!code) return true;
       try { tg.closeScanQrPopup(); } catch (e) {}
+      /* Tanilmagan QR — jim yopilib qolmasin: raqam bilan kiritish oynasi */
+      if (!code) { manualCode('QR tanilmadi. Chek ostidagi 4 xonali raqamni yozing.'); return true; }
       verifyCode(code);
       return true;
     });
@@ -1121,36 +1127,52 @@ $('scanBtn').onclick = () => {
 };
 $('manualBtn').onclick = () => manualCode();
 
-/** Kodlar: AVD-260901-6KBCQ (avtodrom cheki), AVD-1234 (bron kodi), AVS-12345 (avtoshkola cheki). */
+/** Kodlar: 1234 (chekdagi 4 xonali raqam), AVD-260901-6KBCQ (avtodrom cheki),
+    AVD-1234 (bron kodi), AVS-12345 (avtoshkola cheki). */
 function extractCode(raw){
   const s = String(raw || '').toUpperCase();
   const full = s.match(/AVD-\d{6}-[0-9A-Z]{5}/); if (full) return full[0];
   const school = s.match(/AVS-\d{5}/); if (school) return school[0];
   const pickup = s.match(/AVD-\d{4,5}(?!\d|-)/); if (pickup) return pickup[0];
-  const bare = s.trim().match(/^\d{5}$/);
-  return bare ? 'AVS-' + bare[0] : '';
+  const digits = s.trim().replace(/[\s-]/g, '');
+  if (/^\d{4}$/.test(digits)) return digits;
+  return /^\d{5}$/.test(digits) ? 'AVS-' + digits : '';
 }
-function manualCode(){
-  sheet(`<h2 style="margin:0 0 4px">Chek kodini kiriting</h2>
-    <p class="sub">Avtodrom cheki: AVD-260901-6KBCQ · Bron kodi: AVD-1234 · Avtoshkola: AVS-12345</p>
-    <div class="field"><input id="mcInput" placeholder="AVD-… yoki AVS-12345" autocapitalize="characters" autocomplete="off"></div>
+/* QO'LDA: avval 4 xonali raqam (raqamli klaviatura, 4-raqamda o'zi tekshiradi);
+   kerak bo'lsa — harfli to'liq kod */
+function manualCode(note, letters = false){
+  sheet(`<h2 style="margin:0 0 4px">${letters ? 'Chek kodini kiriting' : 'Chek raqami'}</h2>
+    <p class="sub">${letters ? 'Avtodrom cheki: AVD-260901-6KBCQ · Bron kodi: AVD-1234 · Avtoshkola: AVS-12345' : 'QR ostidagi 4 xonali raqam'}</p>
+    ${note ? `<div class="alert a-warn" style="margin:10px 0">${esc(note)}</div>` : ''}
+    <div class="field"><input id="mcInput" ${letters
+      ? 'placeholder="AVD-… yoki AVS-12345" autocapitalize="characters"'
+      : 'class="pin4" inputmode="numeric" pattern="[0-9]*" maxlength="4" placeholder="• • • •"'} autocomplete="off"></div>
     <div id="mcAlert"></div>
+    <button class="linkbtn mcmode" id="mcMode">${letters ? '← 4 xonali raqam bilan' : 'Harfli kod (AVD-…, AVS-…) bilan'}</button>
     <div class="acts two" style="padding:0">
       <button class="btn" id="mcNo">Bekor</button>
       <button class="btn go" id="mcYes">Tekshirish</button></div>`);
   const inp = $('mcInput');
-  inp.addEventListener('input', () => { inp.value = inp.value.toUpperCase(); });
-  inp.addEventListener('keydown', e => { if (e.key === 'Enter') $('mcYes').click(); });
-  setTimeout(() => inp.focus(), 120);
-  $('mcNo').onclick = closeSheet;
-  $('mcYes').onclick = () => {
+  let sent = false;
+  const go = () => {
     const code = extractCode(inp.value) || inp.value.trim().toUpperCase();
-    if (!code) { $('mcAlert').innerHTML = '<div class="alert a-err">Kodni kiriting</div>'; return; }
+    if (!code) { $('mcAlert').innerHTML = `<div class="alert a-err">${letters ? 'Kodni kiriting' : '4 ta raqamni kiriting'}</div>`; return; }
+    if (sent) return; sent = true;
     verifyCode(code);
   };
+  inp.addEventListener('input', () => {
+    if (letters) { inp.value = inp.value.toUpperCase(); return; }
+    inp.value = inp.value.replace(/\D/g, '').slice(0, 4);
+    if (inp.value.length === 4) go();
+  });
+  inp.addEventListener('keydown', e => { if (e.key === 'Enter') go(); });
+  setTimeout(() => inp.focus(), 120);
+  $('mcNo').onclick = closeSheet;
+  $('mcMode').onclick = () => manualCode('', !letters);
+  $('mcYes').onclick = go;
 }
 async function verifyCode(code){
-  sheet(`<div class="empty"><span class="big">▣</span>Tekshirilmoqda…</div>`);
+  sheet(`<div class="empty"><span class="spinner"></span>Tekshirilmoqda… <b>${esc(code)}</b></div>`);
   try {
     const d = await api('/api/instructor/scan', { method:'POST', body: JSON.stringify({ code }) });
     showScanResult(d, code);
@@ -1171,9 +1193,11 @@ function showScanResult(d, code){
   const school = !!(d.school_lesson || b.school_lesson);
   const name = b.customer?.full_name || (school ? 'Avtoshkola o‘quvchisi' : 'Mijoz');
   const phone = String(b.customer?.phone || '').replace(/[^+\d]/g, '');
-  const when = school ? 'Hozir' : hhmm(b.start_at || b.booking_date);
+  const open = !!(d.open || b.open);
+  const when = school || open ? 'Hozir' : hhmm(b.start_at || b.booking_date);
   let action = '', hint = '';
-  if (d.transfer_from !== null && d.transfer_from !== undefined && d.can_start) hint = `<div class="alert a-info" style="margin:12px 0">${d.transfer_from
+  if (open && d.can_start) hint = `<div class="alert a-info" style="margin:12px 0">Ochiq chek (5 soatlik paket). Ursangiz — dars <b>hozir</b> boshlanadi va <b>sizga</b> yoziladi.</div>`;
+  else if (d.transfer_from !== null && d.transfer_from !== undefined && d.can_start) hint = `<div class="alert a-info" style="margin:12px 0">${d.transfer_from
     ? `Bu bron <b>${esc(d.transfer_from)}</b> ga yozilgan edi. Chekni ursangiz — dars va hisob <b>sizga</b> o‘tadi.`
     : 'Kassada instruktor tanlanmagan. Chekni ursangiz — dars <b>sizga</b> yoziladi.'}</div>`;
   if (d.can_start)       action = `<button class="btn ok" id="scStart">${school ? '🎓 Darsni boshlash' : '🚗 Darsni boshlash'}</button>`;
@@ -1189,23 +1213,25 @@ function showScanResult(d, code){
         : esc(b.course?.name || 'Mashg‘ulot') + (b.duration_minutes ? ' · ' + esc(fmtDur(b.duration_minutes)) : '')}</div>
       ${phone ? `<div class="callrow" style="padding:12px 0 0"><a class="call" href="tel:${esc(phone)}">📞 Qo‘ng‘iroq</a></div>` : ''}
     </div>
-    <div class="codebox">${esc(code)}</div>
+    <div class="codebox">${d.short_code ? `<span style="font-size:1.3em">${esc(d.short_code)}</span> · ` : ''}${esc(d.receipt_code || code)}</div>
     ${hint}
     <div class="acts ${action ? '' : 'two'}" style="padding:0">${action}<button class="btn" id="scClose">Yopish</button></div>`);
   $('scClose').onclick = closeSheet;
-  if (d.can_start) $('scStart').onclick = () => startFromScan(code);
+  if (d.can_start) $('scStart').onclick = () => startFromScan(d.receipt_code || code);
   if (d.can_finish) $('scFinish').onclick = async () => {
     try {
       await api(`/api/instructor/bookings/${encodeURIComponent(b.id)}/departed`, { method:'POST', body:'{}' });
-      closeSheet(); toast('Dars yakunlandi'); S.calc = null; await Promise.allSettled([loadBookings(), loadMonth()]); renderMenu();
+      closeSheet(); toast('Dars yakunlandi'); S.calc = null; Promise.allSettled([loadBookings(), loadMonth()]).then(renderMenu);
     } catch (e) { toast(e.message); }
   };
 }
 async function startFromScan(code){
-  const btn = $('scStart'); if (btn) { btn.disabled = true; btn.textContent = '…'; }
+  const btn = $('scStart'); if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spinner sm"></span> Boshlanmoqda…'; }
   try {
     const d = await api('/api/instructor/scan/start', { method:'POST', body: JSON.stringify({ code }) });
-    S.calc = null; await loadBookings();
+    /* Oyna DARHOL yopiladi — ro'yxat orqada yangilanadi (ilgari shu kutilib, «qotib» turardi) */
+    S.calc = null; loadBookings();
+    try { tg?.HapticFeedback?.notificationOccurred?.('success'); } catch (e) {}
     if (d && d.note) {
       sheet(`<h2 style="margin:0 0 4px">Dars boshlandi</h2>
         <div class="alert a-warn" style="margin:12px 0">${esc(d.note)}</div>
@@ -1229,8 +1255,8 @@ async function startFromScan(code){
         const b2 = $('fbFinish'); b2.disabled = true; b2.textContent = '…';
         try {
           await api(`/api/instructor/bookings/${encodeURIComponent(active.id)}/departed`, { method:'POST', body:'{}' });
-          closeSheet(); toast('Avvalgi dars yakunlandi'); await loadBookings();
-          setTimeout(() => verifyCode(code), 400);
+          closeSheet(); toast('Avvalgi dars yakunlandi'); loadBookings();
+          setTimeout(() => verifyCode(code), 250);
         } catch (err) { b2.disabled = false; b2.textContent = 'Avvalgisini yakunlash'; toast(err.message); }
       };
       return;
