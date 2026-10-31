@@ -264,32 +264,60 @@ describe('Operator: qo‘lda paket', () => {
 describe('Kassa: paket', () => {
   const tok = () => makeRegisterToken('reg-p1');
 
-  it('ko‘chadan kelgan mijoz: 5 soat — 1 100 000, bitta chek', async () => {
+  it('ko‘chadan kelgan mijoz: 5 soat — 5 ta OCHIQ 1 soatlik chek (5 × 220 000), kun ham instruktor ham yo‘q', async () => {
     const now = new Date(Date.now() + 60e3).toISOString();
     const r = await h.call('POST', '/api/admin/cashier/issue', { cookie: kassa1, payload: {
       register_token: tok(), full_name: 'Yangi Mijoz', phone: '+998901230077', instructor_id: 'ip-1', course_id: 'c-b',
       category: 'B', duration_minutes: 300, start_at: now, amount: 1_100_000, cash_amount: 1_100_000, card_amount: 0 } });
     expect(r.status).toBe(201);
-    expect(r.body.receipts).toHaveLength(1);
-    expect(r.body.receipt.amount).toBe(1_100_000);
-    expect(r.body.receipt.package_text).toMatch(/paket/);
-    expect(h.db.bookings[0].duration_minutes).toBe(300);
+    expect(r.body.receipts).toHaveLength(5);
+    expect(r.body.receipts.map((x: any) => x.amount)).toEqual([220000, 220000, 220000, 220000, 220000]);
+    expect(r.body.receipts.map((x: any) => x.package_text)).toEqual([1, 2, 3, 4, 5].map((n) => `5 soatlik paket · ${n}/5`));
+    expect(r.body.receipts.every((x: any) => x.open === true && x.starts_at === null && x.instructor_name === '')).toBe(true);
+    expect(r.body.package).toMatchObject({ of: 5, price: 1_100_000, open: true });
+    /* 4 xonali raqamlar — har chekda boshqa */
+    const shorts = r.body.receipts.map((x: any) => x.short_code);
+    expect(shorts.every((c: string) => /^\d{4}$/.test(c))).toBe(true);
+    expect(new Set(shorts).size).toBe(5);
+    expect(h.db.payments.map((p) => p.short_code).sort()).toEqual([...shorts].sort());
+    /* Bronlar: 1 soatdan, instruktorsiz, 2099-yil belgisi bilan, bir-biriga tegmaydi */
+    expect(h.db.bookings).toHaveLength(5);
+    expect(h.db.bookings.every((b) => b.duration_minutes === 60 && b.instructor_id === null && b.price === 220000 && b.status === 'confirmed')).toBe(true);
+    expect(h.db.bookings.every((b) => new Date(b.start_at).getUTCFullYear() === 2099)).toBe(true);
+    expect(new Set(h.db.bookings.map((b) => b.start_at)).size).toBe(5);
+    /* Ochiq chekda instruktorga «yangi bron» xabari ketmaydi */
+    expect(h.telegram.some((m) => /Yangi bron/.test(m.text))).toBe(false);
   });
 
-  it('3 + 2 soat, naqd + terminal — ikki chek, summalar to‘g‘ri bo‘lingan', async () => {
+  it('paket, naqd + terminal — 5 chek, naqd/terminal to‘g‘ri bo‘lingan; yuborilgan kunlar e’tiborsiz', async () => {
     const r = await h.call('POST', '/api/admin/cashier/issue', { cookie: kassa1, payload: {
-      register_token: tok(), full_name: 'Paket Mijoz', phone: '+998901230078', instructor_id: 'ip-1', course_id: 'c-b',
+      register_token: tok(), full_name: 'Paket Mijoz', phone: '+998901230078', course_id: 'c-b',
       category: 'B', duration_minutes: 300, start_at: at(D2, '09:00'),
-      sessions: [{ start_at: at(D2, '09:00'), minutes: 180 }, { start_at: at(D3, '09:00'), minutes: 120 }],
+      sessions: [{ start_at: at(D2, '09:00'), minutes: 180 }, { start_at: '2020-01-02T08:00:00.000Z', minutes: 120 }],
       amount: 1_100_000, cash_amount: 600_000, card_amount: 500_000 } });
     expect(r.status).toBe(201);
-    expect(r.body.receipts.map((x: any) => x.amount)).toEqual([660000, 440000]);
+    expect(r.body.receipts).toHaveLength(5);
     const pays = h.db.payments;
-    expect(pays).toHaveLength(2);
+    expect(pays).toHaveLength(5);
     expect(pays.reduce((a, p) => a + p.cash_amount, 0)).toBe(600000);
     expect(pays.reduce((a, p) => a + p.card_amount, 0)).toBe(500000);
     expect(pays.every((p) => p.cash_amount + p.card_amount === p.amount && p.cash_amount >= 0 && p.card_amount >= 0)).toBe(true);
-    expect(new Set(pays.map((p) => p.receipt_code)).size).toBe(2);
+    expect(new Set(pays.map((p) => p.receipt_code)).size).toBe(5);
+    expect(h.db.bookings.every((b) => new Date(b.start_at).getUTCFullYear() === 2099)).toBe(true);
+    /* Audit — har chekka bitta yozuv, bitta so'rovda */
+    expect(h.db.admin_audit_logs.filter((x) => x.action === 'RECEIPT_ISSUED')).toHaveLength(5);
+  });
+
+  it('o‘sha mijoz ikkinchi paket olsa — ochiq cheklar ustma-ust tushmaydi', async () => {
+    for (let i = 0; i < 2; i++) {
+      const r = await h.call('POST', '/api/admin/cashier/issue', { cookie: kassa1, payload: {
+        register_token: tok(), full_name: 'Ali Valiyev', phone: '+998901112233', course_id: 'c-b',
+        category: 'B', duration_minutes: 300, amount: 1_100_000, cash_amount: 1_100_000, card_amount: 0 } });
+      expect(r.status).toBe(201);
+    }
+    const mine = h.db.bookings.filter((b) => b.customer_id === 'u-ali');
+    expect(mine).toHaveLength(10);
+    expect(new Set(mine.map((b) => b.start_at)).size).toBe(10);
   });
 
   it('mijoz ilovadan olgan paketni kassada bir yo‘la to‘laydi', async () => {
@@ -396,22 +424,15 @@ describe('Bronsiz chek — doim HOZIRGI vaqt', () => {
       expect(Date.parse(b.end_at) - Date.parse(b.start_at)).toBe(30 * 60000);
     }
   });
-  it('paket: 1-mashg‘ulot hozir, keyingilari tanlangan kunda; o‘tgan kun rad etiladi', async () => {
+  it('paket kassada kun tanlamaydi — hammasi ochiq chek, dars chek urilganda boshlanadi', async () => {
     const ok = await h.call('POST', '/api/admin/cashier/issue', { cookie: kassa1, payload: {
       register_token: tok(), full_name: 'Paket Keldi', instructor_id: 'ip-1', course_id: 'c-b', category: 'B', duration_minutes: 300,
       start_at: at(D3, '08:00'), sessions: [{ start_at: at(D3, '08:00'), minutes: 180 }, { start_at: at(D4, '09:00'), minutes: 120 }],
       amount: 1_100_000, cash_amount: 1_100_000, card_amount: 0 } });
     expect(ok.status).toBe(201);
-    const bs = [...h.db.bookings].sort((a, b) => String(a.start_at).localeCompare(String(b.start_at)));
-    expect(bs).toHaveLength(2);
-    expect(Math.abs(Date.parse(bs[0].start_at) - Date.now())).toBeLessThan(10_000);
-    expect(bs[1].start_at).toBe(at(D4, '09:00'));
-    const bad = await h.call('POST', '/api/admin/cashier/issue', { cookie: kassa1, payload: {
-      register_token: tok(), full_name: 'Paket Eski', instructor_id: 'ip-2', course_id: 'c-b', category: 'B', duration_minutes: 300,
-      sessions: [{ start_at: at(D3, '08:00'), minutes: 180 }, { start_at: '2020-01-02T08:00:00.000Z', minutes: 120 }],
-      amount: 1_100_000, cash_amount: 1_100_000, card_amount: 0 } });
-    expect(bad.status).toBe(400);
-    expect(bad.body.error).toMatch(/o‘tib ketgan/);
+    expect(h.db.bookings).toHaveLength(5);
+    expect(h.db.bookings.every((b) => b.instructor_id === null && b.duration_minutes === 60)).toBe(true);
+    expect(ok.body.receipts[0].starts_at_text).toMatch(/Istalgan kun/);
   });
 });
 
