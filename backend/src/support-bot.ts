@@ -129,6 +129,8 @@ const money = (n: number) => `${Math.round(n).toLocaleString('ru-RU').replace(/�
 const moneyRu = (n: number) => `${Math.round(n).toLocaleString('ru-RU').replace(/ /g, ' ')} сум`;
 const fmtWhen = (iso: string, ru = false) => {
   const d = new Date(iso);
+  /* Kassadagi paketning ochiq cheki — kuni yo'q (2099-yil belgisi) */
+  if (d.getUTCFullYear() >= 2090) return ru ? 'Открытый чек · любой день' : 'Ochiq chek · istalgan kun';
   const day = new Intl.DateTimeFormat('ru-RU', { timeZone: 'Asia/Tashkent', day: '2-digit', month: '2-digit' }).format(d);
   const t = new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Tashkent', hour: '2-digit', minute: '2-digit' }).format(d);
   return `${day}, ${t}`;

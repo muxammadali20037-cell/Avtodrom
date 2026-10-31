@@ -156,40 +156,145 @@ export async function sessionConflict(instructorId: string, customerId: string |
 }
 
 /**
- * Bronlarni ketma-ket yozadi. Bittasi yozilmasa — oldin yozilganlari
- * O'CHIRILADI: paketning yarmi yaratilib qolmasin.
+ * Bronlarni BITTA so'rov bilan yozadi (ko'p qatorli INSERT — yoki hammasi
+ * yoziladi, yoki hech biri: paketning yarmi yaratilib qolmaydi).
+ * Bron kodlari ham parallel olinadi. Kod takrorlansa — yangi kodlar bilan qayta.
  */
 export async function insertBookings(payloads: any[], newCode: () => Promise<string>): Promise<any[]> {
-  const created: any[] = [];
-  const post = async (body: any) => (await supabaseRest<any[]>('bookings', {
-    method: 'POST', headers: { Prefer: 'return=representation' }, body: JSON.stringify(body),
-  }))[0];
-  try {
-    for (const p of payloads) {
-      let row: any = null;
-      for (let attempt = 0; attempt < 3 && !row; attempt++) {
-        try {
-          row = await post({ ...p, pickup_code: await newCode() });
-        } catch (e) {
-          const m = e instanceof Error ? e.message : String(e ?? '');
-          if (/bookings_pickup_code_key/.test(m)) continue;         // kod takrorlandi — boshqasi
-          if (/pickup_code/.test(m)) { row = await post(p); break; } // eski baza: kod ustuni yo'q
-          throw e;
-        }
-      }
-      if (!row) row = await post(p);
-      if (!row) throw new Error('Bron yozilmadi');
-      created.push(row);
+  if (!payloads.length) return [];
+  const post = async (rows: any[]) => {
+    const out = await supabaseRest<any[]>('bookings', {
+      method: 'POST', headers: { Prefer: 'return=representation' }, body: JSON.stringify(rows),
+    });
+    if (!Array.isArray(out) || out.length !== rows.length) throw new Error('Bron yozilmadi');
+    return out;
+  };
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const codes = await Promise.all(payloads.map(() => newCode()));
+    if (new Set(codes).size !== codes.length) continue;              // bir xil kod chiqdi — qaytadan
+    try {
+      return await post(payloads.map((p, i) => ({ ...p, pickup_code: codes[i] })));
+    } catch (e) {
+      const m = e instanceof Error ? e.message : String(e ?? '');
+      if (/bookings_pickup_code_key/.test(m)) continue;              // kod band — boshqasi
+      if (/pickup_code/.test(m)) return await post(payloads);         // eski baza: kod ustuni yo'q
+      throw e;
     }
-    return created;
-  } catch (e) {
-    if (created.length) {
-      await supabaseRest('bookings', {
-        method: 'DELETE', query: `?id=in.(${created.map((b) => q(String(b.id))).join(',')})`,
-      }).catch((x) => console.error('Paket bronlarini qaytarib bo‘lmadi:', x));
-    }
-    throw e;
   }
+  return await post(payloads);
+}
+
+/* =======================================================================
+   OCHIQ CHEK — kassada sotilgan 5 soatlik paket
+
+   5 ta alohida 1 soatlik chek. Kuni ham, instruktori ham YO'Q: mijoz
+   istalgan kuni keladi, istalgan instruktor chekni uradi va dars o'sha
+   paytdan boshlanadi. Muddati yo'q.
+
+   Bazada bron vaqti majburiy, shu sabab ochiq chek uzoq kelajakdagi
+   «joy egallovchi» vaqtga yoziladi (2099-yil, har biri alohida soatda —
+   mijozning bronlari ustma-ust tushmasin). Shu vaqt tufayli ochiq chek
+   jadvalda ko'rinmaydi, eslatma ketmaydi, «kech qoldi» deb yopilmaydi.
+   Chek urilganda vaqt HOZIRGA ko'chiriladi.
+   ======================================================================= */
+export const OPEN_FROM_MS = Date.UTC(2090, 0, 1);
+const OPEN_BASE_MS = Date.UTC(2099, 0, 1);
+export const OPEN_TEXT = 'Ochiq chek · istalgan kun';
+export const OPEN_MINUTES = 60;
+
+/** Vaqt «ochiq chek» belgisimi (2090-yildan keyin) */
+export function isOpenAt(v: unknown): boolean {
+  if (v === null || v === undefined || v === '') return false;
+  const t = typeof v === 'number' ? v : Date.parse(String(v));
+  return Number.isFinite(t) && t >= OPEN_FROM_MS;
+}
+export const isOpenBooking = (b: any) => !!b && isOpenAt(b.start_at || b.booking_date);
+
+/** Mijozning ochiq cheklari bilan ustma-ust tushmaydigan n ta joy */
+export async function openSlots(customerId: string | null, n: number, minutes = OPEN_MINUTES): Promise<Session[]> {
+  const busy: { s: number; e: number }[] = [];
+  if (customerId) {
+    const rows = await supabaseRest<any[]>('bookings', {
+      query: `?customer_id=eq.${q(customerId)}&start_at=gte.${q(new Date(OPEN_FROM_MS).toISOString())}` +
+             '&status=not.in.(cancelled,rejected)&select=start_at,end_at&limit=1000',
+    }).catch(() => [] as any[]);
+    for (const r of rows || []) busy.push({ s: Date.parse(r.start_at), e: Date.parse(r.end_at || r.start_at) });
+  }
+  const out: Session[] = [];
+  for (let k = 0; out.length < n && k < 200000; k++) {
+    const s = OPEN_BASE_MS + k * 3600e3, e = s + minutes * 60000;
+    if (busy.some((x) => x.s < e && x.e > s)) continue;
+    out.push({ start: new Date(s), end: new Date(e), minutes });
+  }
+  return out;
+}
+
+/**
+ * Kassada 5 soatlik paket: 5 ta ochiq 1 soatlik chek (har biri paket
+ * narxining 1/5 qismi — 1 100 000 → 220 000). Paket yozuvi saqlanmaydi —
+ * uni chaqirgan joy `savePackage` ni boshqa ishlar bilan parallel qiladi.
+ */
+export async function createOpenPackage(o: {
+  customerId: string;
+  courseId: string | null;
+  category: string;
+  status: string;
+  source: string;
+  extra?: Record<string, unknown>;
+  total?: number;
+  tariffs: Tariffs;
+  prices: PackagePrices;
+  /** Oldindan topilgan joylar (openSlots) — bo'lmasa shu yerda topiladi */
+  slots?: Session[];
+}): Promise<{ bookings: any[]; record: PackageRecord }> {
+  const cat = String(o.category || '').toUpperCase();
+  const total = Math.round(Number(o.total ?? packagePriceOf(cat, o.prices)));
+  if (!(total > 0)) {
+    const e: any = new Error(PACKAGE_CATEGORIES.includes(cat as Cat)
+      ? `${cat} toifada 5 soatlik paket hozir o‘chirilgan`
+      : '5 soatlik paket faqat B toifa uchun');
+    e.statusCode = 400; throw e;
+  }
+  const n = Math.round(PACKAGE_MINUTES / OPEN_MINUTES);
+  const slots = o.slots && o.slots.length >= n ? o.slots.slice(0, n) : await openSlots(o.customerId, n);
+  const parts = shares(total, slots.map((s) => s.minutes));
+  const payloads = slots.map((s, i) => ({
+    customer_id: o.customerId,
+    instructor_id: null,
+    course_id: o.courseId,
+    booking_date: s.start.toISOString(),
+    start_at: s.start.toISOString(),
+    end_at: s.end.toISOString(),
+    hours: 1,
+    duration_minutes: s.minutes,
+    category: cat || null,
+    price: parts[i],
+    status: o.status,
+    source: o.source,
+    customer_note: `${packageNote(i + 1, n)} · ochiq chek`,
+    ...(o.extra || {}),
+  }));
+  const bookings = await supabaseRest<any[]>('bookings', {
+    method: 'POST', headers: { Prefer: 'return=representation' }, body: JSON.stringify(payloads),
+  });
+  if (!Array.isArray(bookings) || bookings.length !== n) throw new Error('Paket cheklari yozilmadi');
+  const record: PackageRecord = {
+    id: newPackageId(),
+    customer_id: o.customerId,
+    instructor_id: null,
+    category: cat,
+    minutes: PACKAGE_MINUTES,
+    price: total,
+    list_price: computePrice(cat, PACKAGE_MINUTES, o.tariffs),
+    source: o.source,
+    created_at: new Date().toISOString(),
+    open: true,
+    sessions: bookings.map((b, i) => ({
+      booking_id: String(b.id), start_at: String(b.start_at), minutes: slots[i].minutes,
+      price: parts[i], pickup_code: b.pickup_code || null,
+    })),
+  };
+  return { bookings, record };
 }
 
 export interface PackageRecord {
@@ -202,6 +307,8 @@ export interface PackageRecord {
   list_price: number;
   source: string;
   created_at: string;
+  /** Kassada sotilgan ochiq cheklar (kuni yo'q) */
+  open?: boolean;
   sessions: { booking_id: string; start_at: string; minutes: number; price: number; pickup_code: string | null }[];
 }
 

@@ -321,6 +321,8 @@ export const BOT_HELP = [
   'Faqat <code>bekor</code> deb yozsangiz — bronlaringiz tugma bo‘lib chiqadi, bosasiz va bekor bo‘ladi',
   '<code>bugun</code>, <code>ertaga</code> yoki <code>12.10</code> — o‘quvchilaringiz (rasm + raqamlar)',
   '',
+  '🧾 <code>1234</code> — chekdagi 4 xonali raqam: chek uriladi, dars shu zahoti boshlanadi',
+  '',
   'Kirillda ham bo‘ladi: <code>эртага 14:00 901234567</code>, <code>бекор 14:00</code>',
   '',
   '👇 Pastdagi menyu: bugungi/ertangi jadval va bronlaringiz — raqamni bosib qo‘ng‘iroq qilasiz.',
@@ -357,6 +359,15 @@ export async function handleInstructorSheetMessage(token: string, chatId: number
   }
   const insId = String(prof.id);
   const today = tashkentYmdOf(Date.now());
+
+  /* CHEK RAQAMI: chekdagi 4 xonali raqam (1234) yoki to'liq chek kodi
+     (AVD-…) yozilsa — chek o'zi uriladi va dars boshlanadi */
+  const plain = String(text || '').trim();
+  if (/^\d{4}$/.test(plain) || /^AVD-\d{6}-[0-9A-Z]{5}$/i.test(plain)) {
+    const { startFromBot } = await import('./cashier-routes.js');
+    await send(token, chatId, await startFromBot(user, prof, telegramId, plain));
+    return true;
+  }
 
   /* Menyu tugmalari va «/» buyruqlari: jadval (rasm), bronlar (soat + raqam) */
   const menu = parseMenu(text, today);

@@ -277,6 +277,31 @@ export async function registerAnalyticsRoutes(
       }).sort((a, b) => b.students - a.students || b.lessons - a.lessons || String(a.name).localeCompare(String(b.name), 'uz'));
 
       const { _st: tst, school: ts, paid: tp, ...trest } = tot;
+
+      /* ?rows=1 — Excel uchun: HAR BIR dars alohida qatorda (hamma instruktorlar) */
+      let lessons: any[] | undefined;
+      if (String(req.query?.rows || '') === '1') {
+        const list = ledger.rows.filter((r) => r.instructor_id);
+        const custs = await selectIn<any>('users', 'id', list.map((r) => r.customer_id).filter(Boolean), 'id,full_name,phone');
+        const cm = new Map(custs.map((u) => [String(u.id), u]));
+        const insName = (id: string | null) => {
+          if (!id) return null;
+          const i: any = ipm.get(String(id)); const u: any = i ? um.get(String(i.user_id)) : null;
+          return u?.full_name || i?.full_name || 'boshqa instruktor';
+        };
+        lessons = list
+          .map((r) => {
+            const c: any = r.customer_id ? cm.get(String(r.customer_id)) : null;
+            return {
+              instructor_id: r.instructor_id, at: r.scanned_at, day: r.day,
+              customer: c?.full_name || null, phone: c?.phone || null,
+              school: r.school, status: r.status, category: r.category, minutes: r.minutes,
+              amount: r.amount, cash: r.cash, card: r.card, method: r.method,
+              receipt_code: r.receipt_code, transferred_from: r.from_instructor_id ? insName(r.from_instructor_id) : null,
+            };
+          })
+          .sort((a, b) => String(a.at).localeCompare(String(b.at)));
+      }
       return {
         ok: true, period, label, anchor,
         from: from.toISOString(), to: to.toISOString(),
@@ -291,6 +316,7 @@ export async function registerAnalyticsRoutes(
         instructors,
         days: [...days.values()].map((d) => { const { _st, ...r } = d; return { ...r, students: _st.size }; })
           .sort((a, b) => a.day.localeCompare(b.day)),
+        ...(lessons ? { lessons } : {}),
       };
     } catch (e: any) {
       return reply.code(e?.statusCode ?? 500).send({ ok: false, error: e?.message || 'Instruktorlar hisoboti yuklanmadi' });

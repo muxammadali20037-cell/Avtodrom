@@ -20,6 +20,8 @@ export function fmtWhen(value: unknown): string {
   if (!value) return '';
   const d = new Date(String(value));
   if (Number.isNaN(d.getTime())) return '';
+  /* Ochiq chek (kassadagi 5 soatlik paket) — kuni yo'q, vaqti 2099-yil belgisi */
+  if (d.getUTCFullYear() >= 2090) return 'Ochiq chek · istalgan kun';
   const p = new Intl.DateTimeFormat('en-CA', {
     timeZone: TZ, year: 'numeric', month: '2-digit', day: '2-digit',
     hour: '2-digit', minute: '2-digit', weekday: 'short', hour12: false,
