@@ -239,13 +239,16 @@ export async function closeLateBookings(nowMs = Date.now(), cfg?: ReminderConfig
   const out = { checked: 0, closed: 0, no_show: 0, cancelled: 0, notified: 0, skipped: 0, details: [] as string[] };
   if (!(lateMin > 0)) return out;
   const cutoff = new Date(nowMs - lateMin * 60000).toISOString();
+  /* Oxirgi 14 kun: urilmagan to'langan cheklar yopilmay ro'yxatda qoladi —
+     ular ko'payib, yangi kechikkan bronlarni «siqib chiqarmasin» */
+  const since = new Date(nowMs - 14 * 864e5).toISOString();
   const rows = await supabaseRest<any[]>('bookings', {
-    query: `?status=in.(pending,confirmed)&start_at=lt.${q(cutoff)}&select=*&order=start_at.asc&limit=300`,
+    query: `?status=in.(pending,confirmed)&start_at=lt.${q(cutoff)}&start_at=gte.${q(since)}&select=*&order=start_at.desc&limit=1000`,
   });
   out.checked = rows.length;
-  /* TO'LANGAN bronlar 15 daqiqa qoidasi bilan yopilmaydi: mijoz pulini
-     to'lagan (oldindan yoki kassada), instruktor chekni kechroq skanerlashi
-     mumkin. Ular faqat dars tugagandan 12 soat o'tib, jimgina yopiladi. */
+  /* TO'LANGAN bron (chek chiqarilgan) HECH QACHON avtomatik yopilmaydi:
+     chek URILGUNCHA yaroqli. Mijoz ertaga yoki bir haftadan keyin kelsa
+     ham instruktor uradi — dars o'sha paytdan boshlanadi. */
   const paid = new Set<string>();
   try {
     const pays = await selectIn<any>('payments', 'booking_id', rows.map((b) => String(b.id)), 'booking_id,status');
@@ -258,8 +261,9 @@ export async function closeLateBookings(nowMs = Date.now(), cfg?: ReminderConfig
     if (b.arrived_at) { out.skipped++; continue; }
     const createdMs = new Date(b.created_at || '').getTime();
     const walkNow = String(b.source || '') === 'walk_in' && Number.isFinite(createdMs) && startMs - createdMs < 10 * 60000;
-    const isPaid = paid.has(String(b.id));
-    if (walkNow || isPaid) {
+    if (paid.has(String(b.id))) { out.skipped++; continue; }
+    /* Kassada «hozir» ochilgan, lekin TO'LANMAGAN bron — ertasi kuni tozalanadi */
+    if (walkNow) {
       const endMs = new Date(b.end_at || '').getTime() || startMs + 3600e3;
       if (nowMs < endMs + 12 * 3600e3) { out.skipped++; continue; }
     }
@@ -267,7 +271,6 @@ export async function closeLateBookings(nowMs = Date.now(), cfg?: ReminderConfig
     const at = new Date(nowMs).toISOString();
     const reason = walkNow
       ? 'Avtomatik yopildi: chek skanerlanmadi'
-      : isPaid ? 'Avtomatik yopildi: to‘langan, lekin dars boshlanmadi (chek skanerlanmadi)'
       : `Avtomatik: mijoz dars vaqtidan ${lateMin} daqiqa o‘tguncha kelmadi`;
     const patch: any = { status: next, updated_at: at };
     if (next === 'cancelled') { patch.cancelled_at = at; patch.cancellation_reason = reason; }
@@ -292,12 +295,10 @@ export async function closeLateBookings(nowMs = Date.now(), cfg?: ReminderConfig
         old_data: { status: b.status, start_at: b.start_at }, new_data: { status: next, reason },
       }),
     }).catch(() => {});
-    if (!walkNow && !isPaid && nowMs - startMs < 3 * 3600e3) {
+    if (!walkNow && nowMs - startMs < 3 * 3600e3) {
       if (await notifyLateClosed({ ...b, ...upd[0] }, lateMin)) out.notified++;
       await notifyAdminsBookingClosed({ ...b, ...upd[0] }, 'auto_late', reason);
     }
-    /* To'langan, lekin dars o'tmagan — pul masalasi, admin albatta bilsin */
-    if (isPaid) await notifyAdminsBookingClosed({ ...b, ...upd[0] }, 'auto_paid', reason);
   }
   return out;
 }

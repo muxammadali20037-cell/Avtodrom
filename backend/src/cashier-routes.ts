@@ -527,8 +527,12 @@ async function startPaidLesson(o: { user: any; ip: any; tgId: number; found: Fou
   const minutes = minutesOf(booking);
   const nowMs = Date.now();
   const now = new Date(nowMs).toISOString();
-  const winStart = open ? now : String(booking.start_at);
-  const winEnd = open ? new Date(nowMs + minutes * 60000).toISOString() : String(booking.end_at);
+  /* Chek vaqtidan KECH urilsa (mijoz ertaga yoki keyinroq keldi) — dars ham
+     ochiq chek kabi HOZIRDAN boshlanadi: jadvalda real vaqtda ko'rinadi */
+  const late = !open && Number.isFinite(Date.parse(booking.end_at)) && Date.parse(booking.end_at) <= nowMs;
+  const move = open || late;
+  const winStart = move ? now : String(booking.start_at);
+  const winEnd = move ? new Date(nowMs + minutes * 60000).toISOString() : String(booking.end_at);
 
   /* Toifa mosligi, oldingi dars, vaqt bandligi — BIR VAQTDA */
   const [bad, activeRow, clashRows] = await Promise.all([
@@ -536,7 +540,7 @@ async function startPaidLesson(o: { user: any; ip: any; tgId: number; found: Fou
     supabaseRest<any[]>('bookings', {
       query: `?instructor_id=eq.${q(String(ip.id))}&status=eq.in_progress&select=id,start_at,end_at,arrived_at,duration_minutes,customer_id&limit=1`,
     }).then((r) => r?.[0] || null),
-    mine ? Promise.resolve([] as any[]) : supabaseRest<any[]>('bookings', {
+    mine && !move ? Promise.resolve([] as any[]) : supabaseRest<any[]>('bookings', {
       query: `?instructor_id=eq.${q(String(ip.id))}&id=neq.${q(String(booking.id))}&status=in.(pending,confirmed)` +
              `&start_at=lt.${q(winEnd)}&end_at=gt.${q(winStart)}&select=id,start_at&limit=1`,
     }).then((r) => r || []),
@@ -574,8 +578,8 @@ async function startPaidLesson(o: { user: any; ip: any; tgId: number; found: Fou
       body: JSON.stringify({
         status: 'in_progress', arrived_at: now, updated_at: now,
         ...(mine ? {} : { instructor_id: ip.id, ...(insName ? { instructor_name: insName } : {}) }),
-        /* Ochiq chek — dars HOZIR boshlanadi */
-        ...(open ? { start_at: winStart, end_at: winEnd, booking_date: winStart } : {}),
+        /* Ochiq chek yoki kech urilgan chek — dars HOZIR boshlanadi */
+        ...(move ? { start_at: winStart, end_at: winEnd, booking_date: winStart } : {}),
       }),
     });
   } catch (e: any) {
@@ -607,7 +611,7 @@ async function startPaidLesson(o: { user: any; ip: any; tgId: number; found: Fou
         body: JSON.stringify({
           status: 'confirmed', arrived_at: booking.arrived_at || null, updated_at: new Date().toISOString(),
           ...(mine ? {} : { instructor_id: booking.instructor_id ?? null, instructor_name: booking.instructor_name ?? null }),
-          ...(open ? { start_at: booking.start_at, end_at: booking.end_at, booking_date: booking.booking_date ?? booking.start_at } : {}),
+          ...(move ? { start_at: booking.start_at, end_at: booking.end_at, booking_date: booking.booking_date ?? booking.start_at } : {}),
         }),
       }).catch((err) => console.error('[scan] revert failed:', err));
       return fail(500, 'Chek yozilmadi — qayta urinib ko‘ring.', { detail: msg.slice(0, 300) });
