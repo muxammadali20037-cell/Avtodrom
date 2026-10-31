@@ -1168,7 +1168,7 @@ function dayName(date, withWd = true) {
   const p = dp(date), L = dt();
   return `${p.day}${LANG === 'ru' ? ' ' : '-'}${L.mon[p.mon]}${withWd ? ', ' + L.wd[p.wd] : ''}`;
 }
-const whenText = iso => { if (!iso) return '—'; const d = new Date(iso); return `${dayName(ymd(d))} · ${hhmm(d)}`; };
+const whenText = iso => { if (!iso) return '—'; const d = new Date(iso); if (d.getUTCFullYear() >= 2090) return 'Ochiq chek · istalgan kun'; return `${dayName(ymd(d))} · ${hhmm(d)}`; };
 /* Raqam ichida bo'linmas bo'shliq, «so‘m» oldida oddiy — tor ekranda so‘m keyingi qatorga tushadi */
 const money = v => new Intl.NumberFormat('ru-RU').format(Math.round(Number(v) || 0)).replace(/[\s\u202f]/g, '\u00a0') + (LANG === 'ru' ? ' сум' : ' so‘m');
 const num = v => new Intl.NumberFormat('ru-RU').format(Math.round(Number(v) || 0)).replace(/[\s\u202f]/g, '\u00a0');
