@@ -1,0 +1,116 @@
+const BOT_TOKEN = Deno.env.get('TELEGRAM_BOT_TOKEN') || '';
+const SUPABASE_URL = Deno.env.get('SUPABASE_URL') || '';
+const SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
+const WEBHOOK_URL = `${SUPABASE_URL}/functions/v1/telegram-start`;
+const MINI_APP_URL = 'https://avtodrom.vercel.app/';
+const INSTAGRAM_URL = 'https://www.instagram.com/avtodrom_index_/';
+const CHANNEL_URL = 'https://t.me/avtodromindex';
+
+const json = (data:any, status=200) => new Response(JSON.stringify(data), {status, headers:{'content-type':'application/json; charset=utf-8'}});
+
+async function tg(method:string, body:any){
+  if(!BOT_TOKEN) return {ok:false,error:'TELEGRAM_BOT_TOKEN mavjud emas'};
+  try{
+    const r = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/${method}`, {
+      method:'POST', headers:{'content-type':'application/json'}, body:JSON.stringify(body)
+    });
+    const text = await r.text();
+    try { return JSON.parse(text); } catch { return {ok:false,error:text}; }
+  }catch(e){ return {ok:false,error:String(e)}; }
+}
+
+async function saveUser(user:any){
+  if(!SUPABASE_URL || !SERVICE_KEY || !user?.id) return;
+  try{
+    await fetch(`${SUPABASE_URL}/rest/v1/telegram_users`, {
+      method:'POST',
+      headers:{apikey:SERVICE_KEY,Authorization:`Bearer ${SERVICE_KEY}`,'Content-Type':'application/json',Prefer:'resolution=merge-duplicates'},
+      body:JSON.stringify({telegram_id:user.id,first_name:user.first_name||null,last_name:user.last_name||null,username:user.username||null,language_code:user.language_code||null,updated_at:new Date().toISOString()})
+    });
+  }catch(e){ console.error('saveUser:',e); }
+}
+
+async function setMenu(){
+  if(!BOT_TOKEN) return;
+  await tg('setChatMenuButton',{menu_button:{type:'web_app',text:'🚗 AVTODROM',web_app:{url:MINI_APP_URL}}});
+}
+
+async function mainMenu(chatId:number,name:string){
+  return tg('sendMessage',{
+    chat_id:chatId,
+    text:`👋 Assalomu alaykum, ${name || 'foydalanuvchi'}!\n\n🚗 AVTODROM INDEX ga xush kelibsiz!\n\nHaydovchilik darsingizni qulay tarzda bron qiling.\n\nKerakli bo‘limni tanlang:`,
+    reply_markup:{inline_keyboard:[
+      [{text:'🚗 AVTODROM INDEXni ochish',web_app:{url:MINI_APP_URL}}],
+      [{text:'📅 Bronlarim',callback_data:'my_bookings'}],
+      [{text:'📸 Instagram',url:INSTAGRAM_URL},{text:'📢 Telegram kanal',url:CHANNEL_URL}]
+    ]}
+  });
+}
+
+async function bookingsMenu(chatId:number){
+  return tg('sendMessage',{
+    chat_id:chatId,
+    text:'📅 BRONLARIM\n\nBarcha bronlaringizni ko‘rish va holatini tekshirish uchun AVTODROM INDEX Mini Appni oching.',
+    reply_markup:{inline_keyboard:[
+      [{text:'🚗 Bronlarimni ochish',web_app:{url:MINI_APP_URL}}],
+      [{text:'⬅️ Asosiy menyu',callback_data:'main_menu'}]
+    ]}
+  });
+}
+
+Deno.serve(async(req)=>{
+  try{
+    if(req.method==='GET'){
+      const url=new URL(req.url);
+      if(url.searchParams.get('setup')==='1'){
+        await setMenu();
+        const r=await tg('setWebhook',{url:WEBHOOK_URL,drop_pending_updates:true,allowed_updates:['message','callback_query']});
+        return json({ok:r?.ok===true,webhook_url:WEBHOOK_URL,telegram:r});
+      }
+      const r=await tg('getWebhookInfo');
+      return json({ok:r?.ok===true,expected_url:WEBHOOK_URL,telegram:r});
+    }
+
+    if(req.method!=='POST') return json({ok:false,error:'Method not allowed'},405);
+    if(!BOT_TOKEN) return json({ok:false,error:'TELEGRAM_BOT_TOKEN mavjud emas'},500);
+
+    let update:any;
+    try { update=await req.json(); } catch { return json({ok:true,action:'invalid_json'}); }
+
+    if(update?.message){
+      const m=update.message;
+      const user=m.from;
+      const chatId=m.chat?.id || user?.id;
+      if(!chatId) return json({ok:true,action:'no_chat'});
+      await saveUser(user);
+      const text=String(m.text||'').trim();
+
+      if(text==='/start' || text.startsWith('/start ')){
+        const result=await mainMenu(chatId,user?.first_name||'foydalanuvchi');
+        console.log('START telegram result:',JSON.stringify(result));
+        return json({ok:true,action:'start',telegram_ok:result?.ok===true});
+      }
+
+      if(text){
+        const result=await tg('sendMessage',{chat_id:chatId,text:'🚗 AVTODROM INDEX\n\nDars bron qilish uchun Mini Appni oching.',reply_markup:{inline_keyboard:[[{text:'🚗 Mini Appni ochish',web_app:{url:MINI_APP_URL}}]]}});
+        return json({ok:true,action:'mini_app_prompt',telegram_ok:result?.ok===true});
+      }
+    }
+
+    if(update?.callback_query){
+      const c=update.callback_query;
+      const chatId=c.message?.chat?.id || c.from?.id;
+      const data=String(c.data||'');
+      await saveUser(c.from);
+      await tg('answerCallbackQuery',{callback_query_id:c.id});
+      if(data==='my_bookings'){ await bookingsMenu(chatId); return json({ok:true,action:'my_bookings'}); }
+      if(data==='main_menu'){ await mainMenu(chatId,c.from?.first_name||'foydalanuvchi'); return json({ok:true,action:'main_menu'}); }
+    }
+
+    return json({ok:true,action:'ignored'});
+  }catch(e){
+    console.error('telegram-start error:',e);
+    // Telegram webhook must receive HTTP 200 so it does not repeatedly retry a bad update.
+    return json({ok:true,error:String(e)});
+  }
+});
