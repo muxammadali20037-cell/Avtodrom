@@ -3468,8 +3468,9 @@ function receiptModal(r){
       <div class="row"><span>Sana</span><span>${esc(x.paid_at_text)}</span></div>
       <div class="hr"></div>
       <div class="c qrBox" data-code="${esc(x.code)}"></div>
-      <div class="code">${esc(x.code)}</div>
-      <div class="c" style="font-size:10px;margin-top:6px">Instruktorga ushbu chekni ko‘rsating</div>
+      ${x.short_code ? `<div class="c" style="font-size:10px;margin-top:4px">CHEK RAQAMI</div><div class="code" style="font-size:28px;margin-top:0">${esc(x.short_code)}</div>` : ''}
+      <div class="code" style="font-size:13px">${esc(x.code)}</div>
+      <div class="c" style="font-size:10px;margin-top:6px">${x.open ? 'Istalgan kuni, istalgan instruktor uradi · ' : ''}Instruktorga ko‘rsating${x.short_code ? ' · QR o‘qilmasa — raqamni botga yozing' : ''}</div>
     </div>`;
   const total = list.reduce((a, x) => a + (Number(x.amount) || 0), 0);
   openModal(list.length > 1 ? `${list.length} ta chek` : 'Chek', `
@@ -3543,7 +3544,7 @@ async function drawQR(box, text){
     // 4 = modul o'lchami (nuqta kattaligi), 0 = chekda joy tejash uchun kichik hoshiya
     box.innerHTML = qr.createSvgTag({ cellSize: 4, margin: 8, scalable: false });
     const svg = box.querySelector('svg');
-    if (svg) { svg.style.width = '46mm'; svg.style.height = 'auto'; svg.style.display = 'block'; svg.style.margin = '0 auto'; }
+    if (svg) { svg.style.width = '30mm'; svg.style.height = 'auto'; svg.style.display = 'block'; svg.style.margin = '0 auto'; }
   }catch(e){
     box.innerHTML = '<div style="font-size:10px;color:#888">QR chizilmadi — kodni qo‘lda kiriting</div>';
   }
