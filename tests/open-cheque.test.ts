@@ -282,3 +282,28 @@ describe('Kassa: Excel bron va Instruktorlar nazorati', () => {
     expect(Math.abs(Date.parse(a.now.started) - Date.now())).toBeLessThan(15_000);
   });
 });
+
+describe('Chekni bekor qilish (pul qaytarish)', () => {
+  it('kassir — faqat maxsus parol bilan; chek urilmaydi, ro‘yxatda «Bekor»', async () => {
+    h.db.admin_settings.push({ key: 'mgmt_pin', value: { hash: mgmtPinHashOf('4321') } });
+    const r = await h.call('POST', '/api/admin/cashier/issue', { cookie: kassa1, payload: {
+      register_token: makeRegisterToken('reg-p1'), full_name: 'Xato Chek', course_id: 'c-b', category: 'B',
+      duration_minutes: 60, amount: 250000, cash_amount: 250000, card_amount: 0 } });
+    expect(r.status).toBe(201);
+    const day = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Tashkent' }).format(new Date());
+    const list = await h.call('GET', `/api/admin/cashier/receipts?token=${makeRegisterToken('reg-p1')}&date=${day}`, { cookie: kassa1 });
+    const row = list.body.receipts.find((x: any) => x.code === r.body.receipt.code);
+    expect(row.payment_id).toBeTruthy();
+    const no = await h.call('POST', `/api/admin/payments/${row.payment_id}/refund`, { cookie: kassa1, payload: { reason: 'Xato chek chiqarildi' } });
+    expect(no.status).toBe(403);
+    expect(no.body.needs_price_pin).toBe(true);
+    const t = await h.call('POST', '/api/admin/price-unlock', { cookie: kassa1, payload: { pin: '4321' } });
+    const yes = await h.call('POST', `/api/admin/payments/${row.payment_id}/refund`, { cookie: kassa1, payload: { reason: 'Xato chek chiqarildi', price_token: t.body.token } });
+    expect(yes.status).toBe(200);
+    expect(h.db.payments.find((p: any) => p.id === row.payment_id).status).toBe('refunded');
+    const s = await A('POST', '/api/instructor/scan/start', { code: r.body.receipt.short_code });
+    expect(s.status).toBe(404);                                   // bekor qilingan chek urilmaydi
+    const after = await h.call('GET', `/api/admin/cashier/receipts?token=${makeRegisterToken('reg-p1')}&date=${day}`, { cookie: kassa1 });
+    expect(after.body.receipts.find((x: any) => x.code === r.body.receipt.code).state).toBe('cancelled');
+  });
+});
