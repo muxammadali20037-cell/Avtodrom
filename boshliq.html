@@ -36,6 +36,7 @@
   /* Uch qism — doimiy ranglar (rang ko'rlik uchun tekshirilgan juftlik) */
   --avd:#2a78d6;--paid:#eb6834;--school:#1baf7a;--exp:#14183a;--total:#232883;
   --avd-bg:#e9f1fc;--paid-bg:#fdefe8;--school-bg:#e5f6ef;--exp-bg:#eceef5;--total-bg:#eceefb;
+  --fb:#c98a00;--fb-bg:#fff4d6;--star:#e0a100;
   --shadow:0 1px 2px rgba(16,20,48,.05),0 8px 24px rgba(16,20,48,.06);
   --r:16px;
 }
@@ -48,6 +49,7 @@
     --good:#5fd39b;--good-bg:#173126;--bad:#f07070;--bad-bg:#3a1f22;--warn:#f0c060;--warn-bg:#352b17;--info:#7db8f5;--info-bg:#1a2738;
     --avd:#3987e5;--paid:#d95926;--school:#199e70;--exp:#e6e7ef;--total:#8f95ff;
     --avd-bg:#18263a;--paid-bg:#33211a;--school-bg:#14302a;--exp-bg:#262833;--total-bg:#22244a;
+    --fb:#f0c060;--fb-bg:#352b17;--star:#f5c542;
     --shadow:0 1px 2px rgba(0,0,0,.4);
   }
 }
@@ -59,6 +61,7 @@
   --good:#5fd39b;--good-bg:#173126;--bad:#f07070;--bad-bg:#3a1f22;--warn:#f0c060;--warn-bg:#352b17;--info:#7db8f5;--info-bg:#1a2738;
   --avd:#3987e5;--paid:#d95926;--school:#199e70;--exp:#e6e7ef;--total:#8f95ff;
   --avd-bg:#18263a;--paid-bg:#33211a;--school-bg:#14302a;--exp-bg:#262833;--total-bg:#22244a;
+  --fb:#f0c060;--fb-bg:#352b17;--star:#f5c542;
   --shadow:0 1px 2px rgba(0,0,0,.4);
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -118,7 +121,22 @@ main.bck{animation:inL .22s ease-out}
 .home-h{margin:14px 4px 2px;font-size:15px;color:var(--muted);font-weight:600}
 .sw-school{background:var(--school)}.sw-paid{background:var(--paid)}.sw-avd{background:var(--avd)}
 .sw-total{background:linear-gradient(180deg,var(--school) 0 33%,var(--paid) 33% 66%,var(--avd) 66%)}
-.sw-exp{background:var(--exp)}
+.sw-exp{background:var(--exp)}.sw-fb{background:var(--fb)}
+/* Sharhlar */
+.fbi{padding:12px 0;border-top:1px solid var(--line)}
+.fbi:first-of-type{border-top:0;padding-top:2px}
+.fbi-h{display:flex;align-items:baseline;gap:8px}
+.fbi-h b{font-weight:600;flex:1;min-width:0}
+.fbi-h time{font-size:13px;color:var(--muted);white-space:nowrap}
+.fbi-t{font-size:14px;color:var(--muted);margin-top:1px}
+.fbi-t a{color:var(--info);font-weight:600;text-decoration:none}
+.fbi-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:7px}
+.fbi-tags span{background:var(--card-2);border-radius:9px;padding:4px 8px;font-size:13.5px;font-weight:600}
+.fbi-tags span.ins{background:var(--avd-bg);color:var(--avd)}
+.fbi-tags i{font-style:normal;color:var(--star);letter-spacing:1px}
+.fbi p{margin:7px 0 0;font-size:15px;line-height:1.45;white-space:pre-wrap;word-break:break-word}
+.fbi p.sg{background:var(--fb-bg);border-radius:10px;padding:7px 10px}
+.fbi p.sg b{color:var(--fb)}
 
 .alerts{margin-top:12px;display:grid;gap:8px}
 .alert{display:flex;gap:10px;align-items:flex-start;padding:11px 12px;border-radius:12px;font-size:15px;line-height:1.35}
@@ -167,7 +185,7 @@ main.bck{animation:inL .22s ease-out}
 .nav .ch{width:16px;height:16px;color:var(--muted)}
 .c-school{--c:var(--school);--tint:var(--school-bg)}.c-paid{--c:var(--paid);--tint:var(--paid-bg)}.c-avd{--c:var(--avd);--tint:var(--avd-bg)}
 .c-total{--c:var(--total);--tint:var(--total-bg)}.c-exp{--c:var(--exp);--tint:var(--exp-bg)}
-.c-warn{--c:var(--warn);--tint:var(--warn-bg)}.c-bad{--c:var(--bad);--tint:var(--bad-bg)}
+.c-warn{--c:var(--warn);--tint:var(--warn-bg)}.c-fb{--c:var(--fb);--tint:var(--fb-bg)}.c-bad{--c:var(--bad);--tint:var(--bad-bg)}
 
 .blk h3{margin:0 0 10px;font-size:17px;font-weight:600;display:flex;justify-content:space-between;align-items:baseline;gap:8px}
 .blk h3 small{color:var(--muted);font-weight:500}
@@ -699,6 +717,7 @@ const IC = {
   phone: sv('<rect x="6" y="2" width="12" height="20" rx="2.5"/><path d="M11 18h2"/>'),
   call: sv('<path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8 9.8a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2z"/>'),
   info: sv('<circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/>'),
+  star: sv('<path d="M12 3l2.8 5.7 6.2.9-4.5 4.4 1 6.2L12 17.3 6.5 20.2l1-6.2L3 9.6l6.2-.9z"/>'),
 };
 
 /* ======================================================================
@@ -934,8 +953,52 @@ function homeScreen(x){
   h += card('exp', 'exp', 'Xarajatlar', c.expenses_known ? `Sof foyda: ${compact(c.net)}` : 'avtodrom12 dan', c.expenses_known ? compact(c.expenses) : na,
     c.expenses_known ? delta(c.expenses_change, { badUp: true }) : '', c.expenses_known && d.bucket !== 'hour' ? align(keys, c.series, r => r.expenses) : null, 'var(--exp)');
   h += `</div>`;
+  const fb = d.feedback;
+  if (fb) {
+    const txt = (fb.items || []).filter(z => z.comment || z.suggestion).length, last = (fb.items || [])[0];
+    h += `<div class="home-h">Mijozlar fikri</div><div class="home">`;
+    h += card('fb', 'fb', 'Sharhlar', `${nf(fb.total)} ta sharh, ${nf(txt)} tasida izoh yoki taklif`, fb.place?.avg != null ? `${stars1(fb.place.avg)} ★` : `${nf(fb.total)}`,
+      last ? `oxirgisi: ${fbWhen(last.at)}` : 'hali sharh yo‘q', null);
+    h += `</div>`;
+  }
   h += alertsBlock(c.alerts);
   return h;
+}
+
+/* ---------- SHARHLAR — kim yozdi, kim haqida (hamma vaqt, davrga bog'liq emas) ---------- */
+const stars1 = v => String(v).replace('.', ',');
+const fbStarsI = n => n ? `<i>${'★'.repeat(n)}${'☆'.repeat(5 - n)}</i>` : '';
+const fbTel = v => { const m = /^(?:\+?998)?(\d{2})(\d{3})(\d{2})(\d{2})$/.exec(String(v || '').replace(/\D/g, '')); return m ? `+998 ${m[1]} ${m[2]} ${m[3]} ${m[4]}` : String(v || ''); };
+const fbWhen = iso => `${tkYmd(iso) === today() ? 'bugun' : dayName(tkYmd(iso))}, ${hm(iso)}`;
+function fbRow(z){
+  const c = z.customer || {}, tel = String(c.phone || '').replace(/[^\d+]/g, '');
+  return `<div class="fbi"><div class="fbi-h"><b>${esc(c.name || 'Mijoz')}</b><time>${esc(fbWhen(z.at))}</time></div>
+    <div class="fbi-t">${tel ? `<a href="tel:${esc(tel)}">${esc(fbTel(c.phone))}</a>` : 'telefon yo‘q'}</div>
+    <div class="fbi-tags">${z.place_rating ? `<span>Avtodrom ${fbStarsI(z.place_rating)}</span>` : ''}${z.instructor ? `<span class="ins">${esc(z.instructor)} ${fbStarsI(z.instructor_rating)}</span>` : ''}${!z.place_rating && !z.instructor ? '<span>Umumiy fikr</span>' : ''}</div>
+    ${z.comment ? `<p>${esc(z.comment)}</p>` : ''}${z.suggestion ? `<p class="sg"><b>Taklif:</b> ${esc(z.suggestion)}</p>` : ''}</div>`;
+}
+function fbScreen(x, p){
+  const fb = x.d.feedback;
+  if (!fb) return { title: 'Sharhlar', parent: '', html: title('fb', 'Sharhlar', '') + `<div class="err"><b>Sharhlar yuklanmadi</b>Yangilash tugmasini bosing.</div>` };
+  const items = fb.items || [], ins = fb.instructors || [];
+  if (p[0] === 'ins' || p[0] === 'place') {
+    const one = p[0] === 'ins' ? ins.find(i => String(i.id) === String(p[1])) : null;
+    const list_ = p[0] === 'place' ? items.filter(z => !z.instructor_id) : items.filter(z => String(z.instructor_id) === String(p[1]));
+    const name = p[0] === 'place' ? 'Avtodrom haqida' : (one?.name || 'Instruktor');
+    let h = title('fb', name, p[0] === 'place' ? 'Instruktor tanlanmagan sharhlar — avtodrom, mashina, xizmat haqida.' : 'Shu instruktor haqida yozilgan sharhlar.');
+    if (one) h += hero('Instruktor bahosi', `${stars1(one.avg)}`, '★', null, `${nf(one.count)} ta baho`);
+    h += blk('Sharhlar', list(`fb-${p.join('-')}`, list_, fbRow, 15), `${nf(list_.length)} ta`);
+    return { title: name, parent: 'fb', html: h };
+  }
+  const pl = fb.place || {};
+  let h = title('fb', 'Sharhlar', 'Mijozlar Mini App’da yozgan fikrlar: kim yozgani va kim haqida. Hamma vaqt uchun, eng yangisi tepada.');
+  h += hero('Avtodrom bahosi', pl.avg != null ? stars1(pl.avg) : '—', '★', null, `${nf(pl.count)} ta baho, jami ${nf(fb.total)} ta sharh`);
+  h += tiles([tile('Izohli sharhlar', nf(items.filter(z => z.comment).length), 'matn yozilgan'), tile('Takliflar', nf(items.filter(z => z.suggestion).length), 'yaxshilash uchun')]);
+  if (ins.length) h += blk('Instruktorlar bahosi', rank('fbins', ins.map(i => ({ name: i.name, v: i.avg, go: `fb/ins/${seg(i.id)}`, val: `${stars1(i.avg)} ★`, val2: `${nf(i.count)} ta` })), 'var(--fb)', 30), `${ins.length} ta`, 'Bossangiz — shu instruktor haqidagi sharhlar.');
+  const placeN = items.filter(z => !z.instructor_id).length;
+  if (placeN) h += navs('', [nav('fb/place', 'fb', 'star', 'Avtodrom haqida', 'instruktor tanlanmagan sharhlar', nf(placeN), 'ta')]);
+  h += blk('Hamma sharhlar', list('fbitems', items, fbRow, 10), `${nf(items.length)} ta`);
+  return { title: 'Sharhlar', parent: '', html: h };
 }
 
 /* ---------- 1. AVTOSHKOLA ---------- */
@@ -1320,7 +1383,7 @@ function expScreen(x, p){
   return { title: 'Xarajatlar', parent: '', html: h };
 }
 
-const SCREENS = { school: schoolScreen, paid: paidScreen, avd: avdScreen, total: totalScreen, exp: expScreen };
+const SCREENS = { school: schoolScreen, paid: paidScreen, avd: avdScreen, total: totalScreen, exp: expScreen, fb: fbScreen };
 
 /* ======================================================================
    Chizish
