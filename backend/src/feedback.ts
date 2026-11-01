@@ -76,15 +76,26 @@ async function loadCampaign(): Promise<any | null> {
   return unwrap(r?.[0]?.value) || null;
 }
 
-/** Nazorat paneli uchun: hamma sharhlar (mijoz ismisiz), o'rtacha baholar */
-export async function feedbackSummary(limit = 500) {
+/**
+ * Sharhlar va o'rtacha baholar.
+ *  - Nazorat paneli (kassa, instruktorlar ham ochishi mumkin) — mijoz ismisiz.
+ *  - withCustomer: admin panel va rahbar ilovasi — kim yozgani (ism, telefon) ham.
+ *    Mijozga «ismingiz instruktorga ko'rsatilmaydi» deyilgan — shu sababli
+ *    ism faqat shu ikki joyda chiqadi.
+ */
+export async function feedbackSummary(limit = 500, opt: { withCustomer?: boolean } = {}) {
   const rows = await supabaseRest<any[]>('feedback', {
-    query: `?select=id,instructor_id,place_rating,instructor_rating,comment,suggestion,created_at&order=created_at.desc&limit=${Math.min(1000, limit)}`,
+    query: `?select=id,customer_id,instructor_id,place_rating,instructor_rating,comment,suggestion,created_at&order=created_at.desc&limit=${Math.min(1000, limit)}`,
   });
   const ips = await selectIn<any>('instructor_profiles', 'id', rows.map((r) => r.instructor_id).filter(Boolean), 'id,user_id');
   const us = await selectIn<any>('users', 'id', ips.map((i) => i.user_id).filter(Boolean), 'id,full_name');
   const um = new Map(us.map((u) => [String(u.id), u.full_name]));
   const nameOf = new Map(ips.map((i) => [String(i.id), um.get(String(i.user_id)) || 'Instruktor']));
+  const cm = new Map<string, any>();
+  if (opt.withCustomer) {
+    const cs = await selectIn<any>('users', 'id', [...new Set(rows.map((r) => r.customer_id).filter(Boolean).map(String))], 'id,full_name,phone');
+    for (const c of cs) cm.set(String(c.id), c);
+  }
   const avg = (xs: number[]) => (xs.length ? Math.round((xs.reduce((a, b) => a + b, 0) / xs.length) * 10) / 10 : null);
   const place = rows.map((r) => Number(r.place_rating)).filter((n) => n >= 1);
   const byIns = new Map<string, number[]>();
@@ -99,13 +110,19 @@ export async function feedbackSummary(limit = 500) {
     instructors: [...byIns.entries()].map(([id, xs]) => ({ id, name: nameOf.get(id) || 'Instruktor', avg: avg(xs), count: xs.length }))
       .sort((a, b) => (b.avg ?? 0) - (a.avg ?? 0) || b.count - a.count),
     items: rows.map((r) => ({
-      id: r.id, at: r.created_at,
+      id: r.id, at: r.created_at, instructor_id: r.instructor_id ? String(r.instructor_id) : null,
+      ...(opt.withCustomer ? { customer: customerOf(cm.get(String(r.customer_id))) } : {}),
       place_rating: r.place_rating ?? null,
       instructor: r.instructor_id ? (nameOf.get(String(r.instructor_id)) || 'Instruktor') : null,
       instructor_rating: r.instructor_rating ?? null,
       comment: r.comment || null, suggestion: r.suggestion || null,
     })),
   };
+}
+
+function customerOf(u: any) {
+  if (!u) return { name: 'Noma’lum mijoz', phone: null };
+  return { name: String(u.full_name || '').trim() || 'Mijoz', phone: u.phone || null };
 }
 
 const SEND_BUDGET_MS = 40_000;
@@ -191,6 +208,17 @@ export async function registerFeedbackRoutes(app: FastifyInstance, deps: {
       return { ok: true, ...(await feedbackSummary()) };
     } catch (e: any) {
       return reply.code(500).send({ ok: false, error: e?.message || 'Sharhlar yuklanmadi' });
+    }
+  });
+
+  /* Admin panel → Boshqaruv → Sharhlar: kim yozgani va kim haqida */
+  app.get('/api/admin/feedback', async (req: any, reply: any) => {
+    reply.header('Cache-Control', 'no-store');
+    try {
+      await deps.guardAdmin(req);
+      return { ok: true, ...(await feedbackSummary(1000, { withCustomer: true })) };
+    } catch (e: any) {
+      return reply.code(e?.statusCode ?? 500).send({ ok: false, error: e?.message || 'Sharhlar yuklanmadi' });
     }
   });
 

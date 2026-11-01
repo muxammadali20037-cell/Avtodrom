@@ -6,6 +6,7 @@ import { tashkentYmd } from './lesson-math.js';
 import { rangeFromQuery } from './analytics-routes.js';
 import { loadLedger, unscannedReceipts, pageAll } from './lesson-ledger.js';
 import { allKeys, seriesKey } from './unified-analytics.js';
+import { feedbackSummary } from './feedback.js';
 
 /**
  * AVTODROM BOSHQARUV — rahbar telefoniga (iPhone) o'rnatiladigan ilova.
@@ -541,8 +542,11 @@ export async function registerBossRoutes(app: FastifyInstance, deps: Deps) {
       if (!verifyBossToken(link, bearer(req))) {
         return reply.code(401).send({ ok: false, error: 'Qayta kiring — PIN kerak', relogin: true });
       }
-      const data = await buildBossData(req.query || {});
-      return { ...data, session: makeBossToken(link!) };
+      const [data, feedback] = await Promise.all([
+        buildBossData(req.query || {}),
+        feedbackSummary(300, { withCustomer: true }).catch((e) => { console.error('BOSS FEEDBACK', e); return null; }),
+      ]);
+      return { ...data, feedback, session: makeBossToken(link!) };
     } catch (e: any) {
       if (!e?.statusCode) console.error('BOSS DATA', e); return reply.code(e?.statusCode ?? 500).send({ ok: false, error: e?.message || 'Ma’lumot yuklanmadi' });
     }
