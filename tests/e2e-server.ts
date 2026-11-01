@@ -197,6 +197,12 @@ bk('u-8', 'ip-1', '17:00', 'confirmed', { start: at('15:00', tomorrow),
 bk('u-2', 'ip-2', '17:00', 'confirmed', { start: at('10:00', tomorrow), end_at: at('12:00', tomorrow), duration_minutes: 120, hours: 2, price: 500000 });
 // Instruktor o'zi yopgan soat: bugun 13:00–14:00
 db.admin_settings.push({ key: 'instructor_busy:ip-2', value: { blocks: [{ start_at: at('13:00'), end_at: at('14:00') }] } });
+// Sharhlar (Nazorat → 💬 Sharhlar)
+db.feedback = [
+  { id: 'fb-1', customer_id: 'u-2', instructor_id: 'ip-1', place_rating: 5, instructor_rating: 5, comment: 'Aziz aka juda sabrli tushuntiradi, rahmat!', suggestion: null, source: 'mini_app', created_at: at('09:40') },
+  { id: 'fb-2', customer_id: 'u-3', instructor_id: 'ip-2', place_rating: 4, instructor_rating: 4, comment: 'Mashina toza, hammasi yaxshi.', suggestion: 'Kutish joyiga choy qo‘ysangiz yaxshi bo‘lardi', source: 'mini_app', created_at: at('08:55') },
+  { id: 'fb-3', customer_id: 'u-4', instructor_id: null, place_rating: 3, instructor_rating: null, comment: null, suggestion: 'Kechqurun 21:00 gacha ishlasangiz', source: 'mini_app', created_at: at('08:10') },
+];
 db.support_messages = [
   { id: 'sm-1', user_id: 'u-2', sender: 'customer', body: 'Assalomu alaykum, ertaga soat 10 ga bo‘sh joy bormi?', created_at: at('09:12'), is_read: false },
 ];

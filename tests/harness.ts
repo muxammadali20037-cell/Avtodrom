@@ -230,6 +230,20 @@ export async function makeHarness(): Promise<Harness> {
 
     if (method === 'POST') {
       const items = Array.isArray(body) ? body : [body];
+      /* Upsert: ?on_conflict=col + Prefer: resolution=merge-duplicates — mavjud qator yangilanadi */
+      const conflict = /[?&]on_conflict=([a-z_]+)/.exec(query)?.[1];
+      const prefer = String(o.headers?.get?.('Prefer') || o.headers?.Prefer || o.headers?.prefer || '');
+      if (conflict && /merge-duplicates/.test(prefer)) {
+        const out = items.map((it: any) => {
+          const ex = db[table].find((r: any) => String(r[conflict]) === String(it[conflict]));
+          if (ex) { Object.assign(ex, it); return ex; }
+          const now = new Date().toISOString();
+          const row = { id: it.id ?? `${table}-${db[table].length + 1}`, created_at: now, updated_at: now, ...it };
+          db[table].push(row);
+          return row;
+        });
+        return { ok: true, status: 201, text: async () => JSON.stringify(out), headers: H } as any;
+      }
       const created = items.map((it: any) => {
         const now = new Date().toISOString();
         const row = { id: it.id ?? `${table}-${db[table].length + 1}`, created_at: now, updated_at: now, ...it };
