@@ -9,7 +9,7 @@ import { describe, it, expect, beforeAll, beforeEach } from 'vitest';
 import crypto from 'node:crypto';
 import { makeHarness, type Harness } from './harness.js';
 import { hashPassword } from '../backend/src/staff-auth.js';
-import { makeRegisterToken } from '../backend/src/shift-routes.js';
+import { makeRegisterToken, mgmtPinHashOf } from '../backend/src/shift-routes.js';
 import { fmtWhen } from '../backend/src/notify.js';
 import { isOpenAt } from '../backend/src/packages.js';
 import { shortCodeOf, findByShortCode } from '../backend/src/short-code.js';
@@ -208,5 +208,77 @@ describe('Instruktor boti: 4 xonali raqam — chek uriladi', () => {
     await handleInstructorSheetMessage('1:instructor', A_TG, A_TG, '0000', replies);
     expect(replies.join('\n')).toMatch(/0000 raqamli chek topilmadi/);
     expect(h.db.bookings).toHaveLength(0);
+  });
+});
+
+describe('Eski 5 soatlik bitta chek → 5 ta 1 soatlik ochiq chek (maxsus parol bilan)', () => {
+  const old = () => {
+    const s0 = '2026-10-31T10:30:00.000Z', e0 = '2026-10-31T15:30:00.000Z';
+    h.db.users.push({ id: 'u-ab', full_name: 'ABDULBOSITGA', role: 'customer', is_active: true, is_blocked: false });
+    h.db.bookings.push({ id: 'bk-5h', customer_id: 'u-ab', instructor_id: null, course_id: 'c-b', category: 'B', status: 'confirmed', source: 'walk_in',
+      start_at: s0, end_at: e0, booking_date: s0, duration_minutes: 300, hours: 5, price: 1100000 });
+    h.db.payments.push({ id: 'pay-5h', booking_id: 'bk-5h', customer_id: 'u-ab', amount: 1100000, method: 'mixed', cash_amount: 600000, card_amount: 500000,
+      status: 'paid', receipt_code: 'AVD-261031-EQ6LP', register_id: 'reg-p1', paid_at: '2026-10-31T10:30:00.000Z', cashier_id: 'u-admin' });
+    h.db.admin_settings.push({ key: 'mgmt_pin', value: { hash: mgmtPinHashOf('4321') } });
+  };
+  it('parolsiz — rad; parol bilan — 5 ta chek, summa va to‘lov kuni o‘zgarmaydi', async () => {
+    old();
+    const no = await h.call('POST', '/api/admin/cashier/split-package', { cookie: kassa1, payload: { code: 'AVD-261031-EQ6LP' } });
+    expect(no.status).toBe(403);
+    expect(h.db.payments).toHaveLength(1);
+    const t = await h.call('POST', '/api/admin/price-unlock', { cookie: kassa1, payload: { pin: '4321' } });
+    expect(t.status).toBe(200);
+    const r = await h.call('POST', '/api/admin/cashier/split-package', { cookie: kassa1, payload: { code: 'AVD-261031-EQ6LP', price_token: t.body.token } });
+    expect(r.status).toBe(200);
+    expect(r.body.receipts).toHaveLength(5);
+    expect(r.body.receipts.map((x: any) => x.amount)).toEqual([220000, 220000, 220000, 220000, 220000]);
+    expect(r.body.receipts[0].code).toBe('AVD-261031-EQ6LP');                          // eski kod — 1-chek
+    expect(r.body.receipts.every((x: any) => x.open && /^\d{4}$/.test(x.short_code))).toBe(true);
+    const pays = h.db.payments.filter((p: any) => p.status === 'paid');
+    expect(pays).toHaveLength(5);
+    expect(pays.reduce((a: number, p: any) => a + p.amount, 0)).toBe(1100000);
+    expect(pays.reduce((a: number, p: any) => a + p.cash_amount, 0)).toBe(600000);
+    expect(pays.reduce((a: number, p: any) => a + p.card_amount, 0)).toBe(500000);
+    expect(pays.every((p: any) => p.paid_at === '2026-10-31T10:30:00.000Z' && p.register_id === 'reg-p1')).toBe(true);
+    const bks = h.db.bookings.filter((b: any) => b.customer_id === 'u-ab');
+    expect(bks).toHaveLength(5);
+    expect(bks.every((b: any) => b.duration_minutes === 60 && b.status === 'confirmed' && new Date(b.start_at).getUTCFullYear() === 2099)).toBe(true);
+    expect(h.db.admin_audit_logs.some((x: any) => x.action === 'CHEQUE_SPLIT')).toBe(true);
+    /* yangi cheklardan biri raqam bilan uriladi */
+    const s = await A('POST', '/api/instructor/scan/start', { code: r.body.receipts[3].short_code });
+    expect(s.status).toBe(200);
+    /* ikkinchi marta bo'lib bo'lmaydi */
+    const again = await h.call('POST', '/api/admin/cashier/split-package', { cookie: kassa1, payload: { code: 'AVD-261031-EQ6LP', price_token: t.body.token } });
+    expect(again.status).toBe(409);
+  });
+});
+
+describe('Kassa: Excel bron va Instruktorlar nazorati', () => {
+  it('kassir Excel bronga yoza oladi (can_edit) va nazorat havolasini oladi', async () => {
+    const day = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Tashkent' }).format(new Date(Date.now() + 864e5));
+    const g = await h.call('GET', `/api/admin/booking-sheet?date=${day}`, { cookie: kassa1 });
+    expect(g.status).toBe(200);
+    expect(g.body.can_edit).toBe(true);
+    const put = await h.call('PUT', '/api/admin/booking-sheet', { cookie: kassa1, payload: { date: day, changes: [{ key: 'ip-a|10', t: '901234567', prev: '' }] } });
+    expect(put.status).toBe(200);
+    expect(h.db.bookings.some((b: any) => b.instructor_id === 'ip-a' && b.status === 'confirmed')).toBe(true);
+    const link = await h.call('GET', '/api/admin/control-link', { cookie: kassa1 });
+    expect(link.status).toBe(200);
+    expect(link.body.url).toMatch(/\/nazorat\?k=/);
+    const reset = await h.call('POST', '/api/admin/control-link', { cookie: kassa1, payload: { reset: true } });
+    expect(reset.status).toBe(403);                                                     // yangilash — faqat admin
+  });
+
+  it('nazoratda darsdagi instruktor: tugash vaqti = chek urilgan vaqt + daqiqa', async () => {
+    const receipts = await sellPackage('Nazorat Mijoz', '+998901230033');
+    expect((await A('POST', '/api/instructor/scan/start', { code: receipts[0].short_code })).status).toBe(200);
+    const link = await h.call('GET', '/api/admin/control-link', { cookie: kassa1 });
+    const k = new URL(link.body.url).searchParams.get('k');
+    const v = await h.call('GET', `/api/control-view?k=${k}`);
+    expect(v.status).toBe(200);
+    const a = v.body.instructors.find((i: any) => i.id === 'ip-a');
+    expect(a.now.state).toBe('lesson');
+    expect(Date.parse(a.now.ends) - Date.parse(a.now.started)).toBe(60 * 60000);
+    expect(Math.abs(Date.parse(a.now.started) - Date.now())).toBeLessThan(15_000);
   });
 });

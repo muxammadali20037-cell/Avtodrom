@@ -104,16 +104,16 @@ describe('Excel bron — matnni o‘qish', () => {
 });
 
 describe('Excel bron — kim nima qila oladi', () => {
-  it('admin va operator yozadi, kassa faqat ko‘radi', async () => {
+  it('admin, operator va KASSA yozadi (kassada ham Excel bron qilinadi)', async () => {
     const g = await get(kassa);
     expect(g.status).toBe(200);
-    expect(g.body.can_edit).toBe(false);
+    expect(g.body.can_edit).toBe(true);
     expect(g.body.instructors.map((i: any) => i.name)).toEqual(['Aziz Karimov', 'Komila Sobirova']);
     expect(g.body.hours[0]).toBe(6);
     expect(g.body.hours[g.body.hours.length - 1]).toBe(21);
     expect((await get(operator)).body.can_edit).toBe(true);
-    expect((await save({ [K('ip-1', 10)]: 'BAND' }, kassa)).status).toBe(403);
-    expect((await save({ [K('ip-1', 10)]: 'BAND' }, operator)).status).toBe(200);
+    expect((await save({ [K('ip-1', 10)]: 'BAND' }, kassa)).status).toBe(200);
+    expect((await save({ [K('ip-1', 11)]: 'BAND' }, operator)).status).toBe(200);
     expect((await h.call('GET', `/api/admin/booking-sheet?date=${day}`)).status).toBe(401);
   });
   it('o‘tgan kunga yozib bo‘lmaydi', async () => {
@@ -314,14 +314,14 @@ describe('Excel bron — bekor qilish va ko‘chirish (tugmalar)', () => {
     expect(h.db.admin_audit_logs.some((a: any) => a.action === 'BOOKING_SHEET_CANCEL')).toBe(true);
   });
 
-  it('to‘langan bronni bekor qilib bo‘lmaydi; kassa ham qila olmaydi', async () => {
+  it('to‘langan bronni bekor qilib bo‘lmaydi (kassa ham)', async () => {
     await save({ [K('ip-1', 10)]: '901234567' });
     const b = active()[0];
-    expect((await cancel(K('ip-1', 10), kassa)).status).toBe(403);
     h.db.payments.push({ id: 'p1', booking_id: b.id, status: 'paid', amount: 250000 });
     const r = await cancel(K('ip-1', 10));
     expect(r.status).toBe(409);
     expect(r.body.error).toMatch(/to‘langan/);
+    expect((await cancel(K('ip-1', 10), kassa)).status).toBe(409);
     expect(b.status).toBe('confirmed');
   });
 
