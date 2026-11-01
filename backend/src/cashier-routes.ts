@@ -501,6 +501,68 @@ const minutesOf = (b: any) => Number(b?.duration_minutes) > 0 ? Number(b.duratio
   : Math.max(15, Math.round((Date.parse(b?.end_at) - Date.parse(b?.start_at)) / 60000)) || 60;
 
 /**
+ * CHEK URILADIGAN VAQTNI BO'SHATISH. Chek urilayotgan oraliqqa tushgan,
+ * hali boshlanmagan yozuvlar:
+ *  · instruktorning TO'LANMAGAN broni (telefon/ilova) → bekor (sabab yoziladi);
+ *  · instruktorga yozilgan, lekin urilmagan TO'LANGAN chek → instruktorsiz
+ *    qoladi (chek yaroqli, istalgan instruktor uradi);
+ *  · «kelmadi» / tugagan yozuv → vaqti qisqartiriladi (holati, hisobi o'zgarmaydi);
+ *  · o'quvchining o'zining to'lanmagan broni → bekor (u chek bilan keldi).
+ * Bazadagi bandlik cheklovi shu tufayli chek urishni to'smaydi.
+ * Qaytaradi: instruktorga ko'rsatiladigan qisqa ro'yxat («09:00 bron»).
+ */
+async function freeSlotForScan(ip: any, booking: any, rows: any[], nowMs: number, winStartMs: number): Promise<string[]> {
+  if (!rows.length) return [];
+  const ids = rows.map((r) => String(r.id));
+  const paidSet = new Set((await selectIn<any>('payments', 'booking_id', ids, 'booking_id,status').catch(() => [] as any[]))
+    .filter((p) => String(p.status) === 'paid').map((p) => String(p.booking_id)));
+  const at = new Date(nowMs).toISOString();
+  const hmOf = (iso: string) => new Intl.DateTimeFormat('en-GB', { timeZone: TZ, hour: '2-digit', minute: '2-digit' }).format(new Date(iso));
+  const out: string[] = [];
+  const logs: any[] = [];
+  await Promise.all(rows.map(async (r) => {
+    const mineIns = String(r.instructor_id || '') === String(ip.id);
+    const sameCust = !!booking.customer_id && String(r.customer_id || '') === String(booking.customer_id);
+    const st = String(r.status);
+    let patch: any = null, label = '';
+    if (st === 'pending' || st === 'confirmed') {
+      if (paidSet.has(String(r.id))) {
+        if (!mineIns) return;                                   // boshqa instruktorning cheki — tegmaymiz
+        patch = { instructor_id: null, instructor_name: null, updated_at: at };
+        label = `${hmOf(r.start_at)} chek (instruktorsiz qoldi)`;
+      } else {
+        patch = { status: 'cancelled', cancelled_at: at, updated_at: at,
+          cancellation_reason: 'Vaqt bo‘shatildi: shu vaqtda chek bilan kelgan o‘quvchi haydaldi' };
+        label = `${hmOf(r.start_at)} bron`;
+      }
+    } else if ((mineIns || sameCust) && (st === 'no_show' || st === 'completed')) {
+      /* Bazada end_at > start_at shart — kamida 1 daqiqa qoladi */
+      const s0 = Date.parse(r.start_at);
+      const cut = Math.min(Date.parse(r.end_at), winStartMs, st === 'completed' && r.departed_at ? Date.parse(r.departed_at) : Infinity);
+      const end = Math.max(s0 + 60000, cut);
+      if (!(end < Date.parse(r.end_at))) return;
+      patch = { end_at: new Date(end).toISOString(), updated_at: at };
+    } else return;
+    try {
+      const upd = await supabaseRest<any[]>('bookings', {
+        method: 'PATCH', headers: { Prefer: 'return=representation' },
+        query: `?id=eq.${q(String(r.id))}&status=eq.${q(st)}`, body: JSON.stringify(patch),
+      });
+      if (upd?.length && label) out.push(label);
+      if (upd?.length) logs.push({
+        admin_id: null, action: 'BOOKING_FREED_BY_SCAN', entity_type: 'bookings', entity_id: r.id,
+        old_data: { status: st, instructor_id: r.instructor_id, start_at: r.start_at, end_at: r.end_at },
+        new_data: { ...patch, by_scan_of: booking.id, scanner: ip.id },
+      });
+    } catch (e) {
+      console.error('[scan] slot free failed:', e instanceof Error ? e.message : e);
+    }
+  }));
+  if (logs.length) await supabaseRest('admin_audit_logs', { method: 'POST', headers: { Prefer: 'return=minimal' }, body: JSON.stringify(logs) }).catch(() => {});
+  return out;
+}
+
+/**
  * Darsni boshlash. Ochiq chek (kassadagi paket) — vaqti HOZIRGA
  * ko'chiriladi. Boshqa instruktorga yozilgan chek — urgan instruktorga
  * o'tadi. Oldingi darsning vaqti tugagan-u, hali yopilmagan bo'lsa
@@ -530,7 +592,9 @@ async function startPaidLesson(o: { user: any; ip: any; tgId: number; found: Fou
   /* Chek vaqtidan KECH urilsa (mijoz ertaga yoki keyinroq keldi) — dars ham
      ochiq chek kabi HOZIRDAN boshlanadi: jadvalda real vaqtda ko'rinadi */
   const late = !open && Number.isFinite(Date.parse(booking.end_at)) && Date.parse(booking.end_at) <= nowMs;
-  const move = open || late;
+  /* Boshqa instruktorga yozilgan yoki instruktorsiz chek ham — urilgan
+     paytdan («o'sha vaqtdan») boshlanadi */
+  const move = open || late || !mine;
   const winStart = move ? now : String(booking.start_at);
   const winEnd = move ? new Date(nowMs + minutes * 60000).toISOString() : String(booking.end_at);
 
@@ -540,10 +604,12 @@ async function startPaidLesson(o: { user: any; ip: any; tgId: number; found: Fou
     supabaseRest<any[]>('bookings', {
       query: `?instructor_id=eq.${q(String(ip.id))}&status=eq.in_progress&select=id,start_at,end_at,arrived_at,duration_minutes,customer_id&limit=1`,
     }).then((r) => r?.[0] || null),
+    /* Shu oraliqqa tushgan boshqa yozuvlar: instruktorniki va o'quvchiniki */
     mine && !move ? Promise.resolve([] as any[]) : supabaseRest<any[]>('bookings', {
-      query: `?instructor_id=eq.${q(String(ip.id))}&id=neq.${q(String(booking.id))}&status=in.(pending,confirmed)` +
-             `&start_at=lt.${q(winEnd)}&end_at=gt.${q(winStart)}&select=id,start_at&limit=1`,
-    }).then((r) => r || []),
+      query: `?or=(instructor_id.eq.${q(String(ip.id))},customer_id.eq.${q(String(booking.customer_id || '00000000-0000-0000-0000-000000000000'))})` +
+             `&id=neq.${q(String(booking.id))}&status=not.in.(cancelled,rejected,in_progress)` +
+             `&start_at=lt.${q(winEnd)}&end_at=gt.${q(winStart)}&select=id,instructor_id,customer_id,status,start_at,end_at,departed_at,pickup_code&limit=50`,
+    }).then((r) => r || []).catch(() => [] as any[]),
   ]);
   if (bad) return fail(409, bad);
 
@@ -562,11 +628,10 @@ async function startPaidLesson(o: { user: any; ip: any; tgId: number; found: Fou
       : null;
     return fail(409, `Avvalgi dars yakunlanmagan${who ? ` (${who})` : ''}. Avval uni yakunlang, keyin yangisini boshlang.`, { active_booking_id: active.id });
   }
-  /* Boshqa instruktorning (yoki ochiq) cheki: urgan instruktorning o'zida
-     shu vaqtda boshqa bron bo'lsa — o'tkazib bo'lmaydi */
-  if (clashRows.length) {
-    return fail(409, `Sizda ${fmtWhen(clashRows[0].start_at)} da boshqa bron bor — bu chekni ura olmaysiz. Boshqa instruktor ursin.`);
-  }
+  /* BRON BO'LSA HAM CHEK URILADI — vaqt bo'shatiladi. Ko'pincha bron
+     qilgan o'quvchi kassaga «brondan keldim» demay, oddiy chek oladi. */
+  const freed = await freeSlotForScan(ip, booking, clashRows, nowMs, Date.parse(winStart));
+  const warning = freed.length ? `Shu vaqtdagi bron bo‘shatildi: ${freed.join(', ')}` : null;
 
   const fromId = !mine && booking.instructor_id ? String(booking.instructor_id) : null;
   const insName = String(user?.full_name || '').trim() || null;
@@ -584,7 +649,7 @@ async function startPaidLesson(o: { user: any; ip: any; tgId: number; found: Fou
     });
   } catch (e: any) {
     const msg = String(e?.message || '');
-    if (/no_instructor_overlap/i.test(msg)) return fail(409, 'Sizda shu vaqtda boshqa bron bor — bu chekni ura olmaysiz.');
+    if (/no_instructor_overlap/i.test(msg)) return fail(409, 'Bazadagi cheklov: sizda shu vaqtda boshqa bron bor. Administratorga ayting (bandlik cheklovini yangilash kerak).');
     if (/no_customer_overlap/i.test(msg)) return fail(409, 'Bu o‘quvchining hozir boshqa darsi bor (oldingi dars hali tugamagan).');
     if (/bookings_one_active_lesson/i.test(msg)) return fail(409, 'Avvalgi dars yakunlanmagan. Avval uni yakunlang.');
     throw e;
@@ -636,7 +701,7 @@ async function startPaidLesson(o: { user: any; ip: any; tgId: number; found: Fou
     ]);
     fromName = name;
   }
-  return { status: 200, body: { ok: true, booking: started, open, minutes, receipt_code: code, short_code: payment.short_code || null, transferred_from: fromId ? (fromName || '') : null } };
+  return { status: 200, body: { ok: true, booking: started, open, minutes, receipt_code: code, short_code: payment.short_code || null, transferred_from: fromId ? (fromName || '') : null, warning } };
 }
 
 /**
@@ -666,6 +731,7 @@ export async function startFromBot(user: any, ip: any, telegramId: number, raw: 
     `⏱ ${dur}${b.category ? ` · ${b.category} toifa` : ''} · ${end} gacha`,
     `🧾 ${r.body.short_code ? `${r.body.short_code} · ` : ''}${r.body.receipt_code}`,
     ...(r.body.transferred_from !== null && r.body.transferred_from !== undefined ? [`↪️ Bron ${esc(r.body.transferred_from || 'boshqa instruktor')}dan sizga o‘tdi`] : []),
+    ...(r.body.warning ? [`⚠️ ${esc(r.body.warning)}`] : []),
   ].join('\n');
 }
 
@@ -1977,10 +2043,8 @@ export async function registerCashierRoutes(
            boshqa broni bo'lsa bron yozilmay, chek esa yonib ketardi. */
         const peek = await verifySchoolReceipt(code);
         const mins = Math.max(15, Math.min(600, Math.round(Number(peek.planned_minutes || 60))));
+        /* Boshqa broni bo'lsa ham chek uriladi — faqat eslatma */
         const clash = await instructorBusyAt(String(ip.id), new Date(), mins);
-        if (clash) {
-          return reply.code(409).send({ ok: false, error: clash });
-        }
 
         const insName = String(user?.full_name || '').trim() || null;
         const { receipt: rec, note } = await redeemSchoolReceipt({
@@ -2026,7 +2090,8 @@ export async function registerCashierRoutes(
           minutes: Number(booking?.duration_minutes) || mins,
         }).catch((e) => console.error('[school-receipt] attendance write failed:', e?.message || e));
 
-        return { ok: true, school_lesson: true, booking: shapeSchool(rec, code, booking), note: note || null };
+        return { ok: true, school_lesson: true, booking: shapeSchool(rec, code, booking), note: note || null,
+          warning: clash ? clash.replace(/\. Avval uni yakunlang.*$/, '.') : null };
       }
 
       if (!found || 'error' in found) return reply.code(found?.status ?? 404).send({ ok: false, error: found?.error || 'To‘langan chek topilmadi' });
