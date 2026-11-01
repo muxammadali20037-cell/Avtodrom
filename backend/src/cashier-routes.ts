@@ -1305,6 +1305,8 @@ export async function registerCashierRoutes(
         else if (['in_progress', 'completed'].includes(bst) || scan) state = 'used';
         return {
           code: p.receipt_code,
+          payment_id: p.id,
+          short_code: p.short_code || null,
           register: regCode.get(String(p.register_id)) || (p.register_id ? '?' : '—'),
           booking_cancelled: ['cancelled', 'rejected'].includes(bst),
           paid_at: p.paid_at,

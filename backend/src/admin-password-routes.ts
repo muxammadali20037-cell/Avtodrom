@@ -637,6 +637,11 @@ export async function registerAdminPasswordRoutes(app: FastifyInstance) {
             error: 'Eski to‘lovni faqat administrator bekor qila oladi',
           });
         }
+        /* Kassir chekni faqat MAXSUS PAROL bilan bekor qiladi (narxni o'zgartirish paroli) */
+        const { verifyPriceToken } = await import('./shift-routes.js');
+        if (!(await verifyPriceToken(req, (req.body as any)?.price_token))) {
+          return reply.code(403).send({ ok: false, needs_price_pin: true, error: 'Chekni bekor qilish uchun maxsus parol kerak' });
+        }
       }
 
       const now = new Date().toISOString();
