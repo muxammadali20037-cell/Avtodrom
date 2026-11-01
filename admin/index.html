@@ -69,6 +69,22 @@ svg{display:block;flex:none}
 .live.off{background:#d14343}
 .wrap{max-width:760px;margin:0 auto;padding:6px 16px calc(var(--nav-h) + var(--sb) + 28px)}
 .wrap.wide{max-width:1500px}
+/* Sharhlar (admin) */
+.fb-it{background:var(--card);border-radius:18px;box-shadow:var(--shadow);padding:13px 15px;margin-bottom:10px}
+.fb-who{display:flex;align-items:center;gap:10px}
+.fb-who .ava{width:38px;height:38px;font-size:13px}
+.fb-who .tx{flex:1;min-width:0}
+.fb-who b{display:block;font-size:15px}
+.fb-who small{display:block;font-size:12.5px;color:var(--hint)}
+.fb-who time{font-size:12px;color:var(--hint);font-weight:650;white-space:nowrap}
+.fb-about{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.fb-tag{display:inline-flex;align-items:center;gap:6px;background:var(--card-2);border-radius:10px;padding:5px 9px;font-size:13px;font-weight:700}
+.fb-tag i{font-style:normal;color:var(--star);letter-spacing:1px}
+.fb-tag.ins{background:var(--accent-soft);color:var(--accent)}
+.fb-txt{margin:9px 0 0;font-size:14.5px;line-height:1.45;white-space:pre-wrap;word-break:break-word}
+.fb-sg{margin:8px 0 0;background:var(--warn-soft);color:var(--text);border-radius:12px;padding:8px 11px;font-size:14px;line-height:1.4;white-space:pre-wrap;word-break:break-word}
+.fb-sg b{color:var(--warn)}
+a.fb-tel{color:var(--accent);font-weight:700;text-decoration:none}
 /* Sharh so'rovi */
 .fbi-prev{background:var(--card-2);border-radius:16px;padding:12px;margin:4px 0 10px}
 .fbi-msg{background:var(--card);border-radius:14px 14px 14px 4px;padding:10px 12px;font-size:14px;line-height:1.45;white-space:pre-wrap;box-shadow:0 1px 2px rgba(0,0,0,.08)}
@@ -1629,6 +1645,7 @@ const ROUTES = {
   grafik:      { t: 'Ish grafigi', roles: ['admin'], render: a => vGrafik(a), live: a => { if (a) wpLoad(a, true); else wpLoadList(true); }, parent: a => a ? 'grafik' : 'home' },
   prices:      { t: 'Narxlar va ish vaqti', roles: ['admin'], render: () => vPrices() },
   staff:       { t: 'Xodimlar', roles: ['admin'], render: () => vStaff(), live: () => loadStaff(true) },
+  feedback:    { t: 'Sharhlar', roles: ['admin'], render: () => vFeedback(), live: () => fbLoad(true) },
 };
 function go(r){ const h = '#/' + r; if (location.hash === h) render(); else location.hash = h; }
 function parseHash(){
@@ -1720,7 +1737,7 @@ function sideDef(){
     ['bookings/new', 'Yangi bronlar', 'bell', 'pending'], ['bookings/cancels', 'Bekor so‘rovlari', 'ban', 'cancels'], ['bookings/all', 'Barcha bronlar', 'list'],
     ['xbron', 'Excel bron', 'sheet'], ['manual', 'Qo‘lda bron', 'phone'], ['schedule', 'Instruktorlar jadvali', 'cal'], ['chat', 'Mijozlar chati', 'chat', 'chat']] });
   if (isAdmin()) G.push({ title: 'Boshqaruv', items: [
-    ['analytics', 'Hisobot va tahlil', 'chart'], ['!/analytics', 'Analitika · 2 loyiha', 'chart'], ['insrep', 'Instruktorlar hisoboti', 'steer'], ['retention', 'O‘quvchini qaytarish', 'refresh'], ['instructors', 'Instruktorlar', 'users', 'apps'], ['grafik', 'Ish grafigi', 'clock'], ['@ctllink', 'Nazorat paneli', 'eye'], ['@fbinvite', 'Sharh so‘rovi', 'chat'], ['@bosslink', 'Boshqaruv ilovasi', 'mobile'], ['@loginbg', 'Kirish sahifasi foni', 'img'], ['prices', 'Narxlar va ish vaqti', 'tag'],
+    ['analytics', 'Hisobot va tahlil', 'chart'], ['!/analytics', 'Analitika · 2 loyiha', 'chart'], ['insrep', 'Instruktorlar hisoboti', 'steer'], ['retention', 'O‘quvchini qaytarish', 'refresh'], ['instructors', 'Instruktorlar', 'users', 'apps'], ['grafik', 'Ish grafigi', 'clock'], ['@ctllink', 'Nazorat paneli', 'eye'], ['feedback', 'Sharhlar', 'star'], ['@fbinvite', 'Sharh so‘rovi', 'chat'], ['@bosslink', 'Boshqaruv ilovasi', 'mobile'], ['@loginbg', 'Kirish sahifasi foni', 'img'], ['prices', 'Narxlar va ish vaqti', 'tag'],
     ['staff', 'Xodimlar', 'key'], ['!/admin/full', 'Kengaytirilgan panel', 'ext']] });
   return G;
 }
@@ -2072,6 +2089,7 @@ function vHome(){
       ${tile('instructors', 'users', 'Instruktorlar', 'faol / o‘chirilgan, arizalar', { id: 'apps' })}
       ${tile('grafik', 'clock', 'Ish grafigi', 'kim qachon ishlaydi, tanaffus', { cls: 'b' })}
       ${tile('', 'eye', 'Nazorat paneli', 'hamma instruktor — bitta havola', { cls: 'o', act: 'ctllink' })}
+      ${tile('feedback', 'star', 'Sharhlar', 'kim yozdi, kim haqida, baholar', { cls: 'o' })}
       ${tile('', 'chat', 'Sharh so‘rovi', 'Mini App mijozlariga — sir saqlanadi', { cls: 'g', act: 'fbinvite' })}
       ${tile('', 'mobile', 'Boshqaruv ilovasi', 'AVTODROM BOSHQARUV — rahbar telefoni', { cls: 'b', act: 'bosslink' })}
       ${tile('prices', 'tag', 'Narxlar', 'tarif, 5 soatlik paket, ish vaqti', { cls: 'g' })}
@@ -6977,6 +6995,53 @@ ACT.bossreset = async () => {
   catch (e) { fail(e); }
 };
 
+
+/* =========================================================================
+   SHARHLAR — Boshqaruv → Sharhlar: kim yozdi (ism, telefon), kim haqida
+   (avtodrom yoki instruktor), baholar, izoh va taklif. Faqat administrator.
+   (Nazorat panelida esa ismsiz — u yerni kassa va instruktorlar ham ochadi.)
+   ========================================================================= */
+const FBV = { d: null, f: 'all' };
+const fbStars = n => n ? `<i>${'★'.repeat(n)}${'☆'.repeat(5 - n)}</i>` : '';
+function vFeedback(){
+  $('view').innerHTML = `<div class="view"><div id="fbTop">${skel(1)}</div><div id="fbF" class="sec" style="margin-top:14px"></div><div id="fbL" class="sec" style="margin-top:12px"></div></div>`;
+  fbLoad();
+}
+async function fbLoad(quiet){
+  try { FBV.d = await api('/api/admin/feedback'); fbPaint(); }
+  catch (e) { if (!quiet && $('fbTop')) $('fbTop').innerHTML = `<div class="note err">${esc(e.message)}</div>`; }
+}
+function fbPaint(){
+  const d = FBV.d; if (!d || !$('fbTop')) return;
+  const items = d.items || [], ins = d.instructors || [], p = d.place || {};
+  const avg = v => v != null ? String(v).replace('.', ',') : '—';
+  const texts = items.filter(x => x.comment || x.suggestion).length;
+  $('fbTop').innerHTML = `<div class="kpis">
+    <div class="kpi"><span>Sharhlar</span><b>${nf(d.total || 0)}</b><small>${nf(texts)} tasida izoh yoki taklif</small></div>
+    <div class="kpi"><span>Avtodrom bahosi</span><b>${avg(p.avg)} ★</b><small>${nf(p.count || 0)} ta baho</small></div>
+    <div class="kpi"><span>Instruktorlar</span><b>${nf(ins.length)}</b><small>baholangan</small></div>
+    <div class="kpi"><span>Takliflar</span><b>${nf(items.filter(x => x.suggestion).length)}</b><small>yaxshilash uchun</small></div></div>`;
+  if (FBV.f !== 'all' && FBV.f !== 'place' && !ins.some(i => i.id === FBV.f)) FBV.f = 'all';
+  $('fbF').innerHTML = `<div class="chips">
+    <button class="chip ${FBV.f === 'all' ? 'on' : ''}" data-act="fbf" data-v="all">Hammasi <span class="n">${nf(items.length)}</span></button>
+    <button class="chip ${FBV.f === 'place' ? 'on' : ''}" data-act="fbf" data-v="place">Avtodrom haqida <span class="n">${nf(items.filter(x => x.place_rating && !x.instructor_id).length)}</span></button>
+    ${ins.map(i => `<button class="chip ${FBV.f === i.id ? 'on' : ''}" data-act="fbf" data-v="${esc(i.id)}">${esc(i.name)} <span class="n">${avg(i.avg)} ★ · ${nf(i.count)}</span></button>`).join('')}</div>`;
+  const list = items.filter(x => FBV.f === 'all' ? true : FBV.f === 'place' ? !x.instructor_id : x.instructor_id === FBV.f);
+  $('fbL').innerHTML = list.length ? list.map(x => {
+    const c = x.customer || {}, tel = String(c.phone || '').replace(/[^\d+]/g, '');
+    return `<div class="fb-it">
+      <div class="fb-who"><span class="ava">${esc(ini(c.name || 'M'))}</span>
+        <span class="tx"><b>${esc(c.name || 'Mijoz')}</b><small>${tel ? `<a class="fb-tel" href="tel:${esc(tel)}">+998 ${esc(xbShortPhone(c.phone))}</a>` : 'telefon yo‘q'}</small></span>
+        <time>${esc(whenText(x.at))}</time></div>
+      <div class="fb-about">
+        ${x.place_rating ? `<span class="fb-tag">Avtodrom ${fbStars(x.place_rating)}</span>` : ''}
+        ${x.instructor ? `<span class="fb-tag ins">${I('steer', 14)} ${esc(x.instructor)} ${fbStars(x.instructor_rating)}</span>` : ''}
+        ${!x.place_rating && !x.instructor ? '<span class="fb-tag">Umumiy fikr</span>' : ''}</div>
+      ${x.comment ? `<p class="fb-txt">${esc(x.comment)}</p>` : ''}
+      ${x.suggestion ? `<p class="fb-sg"><b>💡 Taklif:</b> ${esc(x.suggestion)}</p>` : ''}</div>`;
+  }).join('') : emptyHtml('star', 'Hali sharh yo‘q', FBV.f === 'all' ? 'Mijozlarga «Sharh so‘rovi»ni yuboring — sharhlar shu yerda chiqadi.' : 'Bu tanlov bo‘yicha sharh yo‘q.');
+}
+ACT.fbf = el => { FBV.f = el.dataset.v; fbPaint(); };
 
 /* =========================================================================
    SHARH SO'ROVI — Mini App orqali bron qilgan hamma mijozga Telegram xabar:
