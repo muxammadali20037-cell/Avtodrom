@@ -69,6 +69,10 @@ svg{display:block;flex:none}
 .live.off{background:#d14343}
 .wrap{max-width:760px;margin:0 auto;padding:6px 16px calc(var(--nav-h) + var(--sb) + 28px)}
 .wrap.wide{max-width:1500px}
+/* Instruktorlar nazorati — nazorat sahifasi panel ichida */
+.nz-wrap{margin:0 -16px;height:calc(100vh - 78px)}
+.nz-frame{display:block;width:100%;height:100%;border:0;background:var(--bg)}
+@media (min-width:960px){.nz-wrap{margin:0 -10px}}
 .wrap.has-bar{padding-bottom:calc(var(--nav-h) + var(--sb) + 116px)}
 .view{animation:fade .18s ease}
 @keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
@@ -1607,6 +1611,7 @@ const ROUTES = {
   insrep:      { t: 'Instruktorlar hisoboti', roles: ['cashier', 'admin'], render: a => vInsRep(a), live: a => { if (perLive(IR)) { if (a) loadIrDetail(true); else loadInsRep(true); } }, parent: a => a ? 'insrep' : 'home' },
   schedule:    { t: 'Instruktorlar jadvali', roles: ALL, wide: true, render: () => vSchedule(), live: () => loadSchedule(true) },
   xbron:       { t: 'Excel bron', roles: ALL, wide: true, render: () => vXbron(), live: () => xbLoad(true) },
+  nazorat:     { t: 'Instruktorlar nazorati', roles: ['cashier', 'admin'], wide: true, render: () => vNazorat() },
   bookings:    { t: 'Bronlar', roles: ['operator', 'admin'], render: a => vBookings(a), live: () => loadBookings(true) },
   manual:      { t: 'Qo‘lda bron', roles: ['operator', 'admin'], focus: true, render: () => vManual(), live: () => wzLive(MB) },
   chat:        { t: 'Mijozlar chati', roles: ['operator', 'admin'], render: a => vChat(a), live: a => chatLive(a), parent: a => a ? 'chat' : 'home' },
@@ -1702,7 +1707,7 @@ function sideDef(){
   const G = [{ items: [['home', 'Bosh sahifa', 'home']] }];
   if (canKassa()) G.push({ title: isCashier() ? `Kassa ${S.reg?.r?.code || ''}` : 'Kassa', reg: isAdmin(), items: [
     ['issue', 'Chek chiqarish', 'receipt'], ['receipts', 'Cheklar', 'list', 'receipts'], ['live', 'Jarayonda', 'play', 'live'], ['report', 'Kassa hisoboti', 'chart'],
-    ...(isCashier() ? [['insrep', 'Instruktorlar hisoboti', 'steer'], ['schedule', 'Instruktorlar jadvali', 'cal'], ['xbron', 'Excel bron', 'sheet']] : [])] });
+    ...(isCashier() ? [['nazorat', 'Instruktorlar nazorati', 'eye'], ['insrep', 'Instruktorlar hisoboti', 'steer'], ['schedule', 'Instruktorlar jadvali', 'cal'], ['xbron', 'Excel bron', 'sheet']] : [])] });
   if (canDesk()) G.push({ title: 'Bronlar', items: [
     ['bookings/new', 'Yangi bronlar', 'bell', 'pending'], ['bookings/cancels', 'Bekor so‘rovlari', 'ban', 'cancels'], ['bookings/all', 'Barcha bronlar', 'list'],
     ['xbron', 'Excel bron', 'sheet'], ['manual', 'Qo‘lda bron', 'phone'], ['schedule', 'Instruktorlar jadvali', 'cal'], ['chat', 'Mijozlar chati', 'chat', 'chat']] });
@@ -2566,7 +2571,8 @@ async function loadIns(W){
     if (!W.ins && W.pref?.ins && ids.has(String(W.pref.ins))) W.ins = free.find(i => String(i.id) === String(W.pref.ins));
   }catch(e){ if (seq !== W.insSeq) return; W.insErr = e.message; W.insRes = { free: [], busy: [] }; }
   if (ONE(W)) {
-    if (!W.ins && !W.noIns && W.insRes?.free?.length) { W.ins = W.insRes.free[0]; W.insAuto = true; }
+    /* Kassada instruktor AVTOMATIK TANLANMAYDI — chek instruktorsiz, kim ursa
+       o'shaniki. Kerak bo'lsa kassir bo'limni ochib o'zi tanlaydi. */
     if (S.routeName === 'issue' && CO === W) coPaintIns();
     return;
   }
@@ -3114,7 +3120,8 @@ function coRender(){
   payBind(W);
   if (!b) {
     if (W.open === 'time' && W.sess.length > 1) ensureTimes(W, W.day);
-    if (coReady(W) && !coOpen(W) && !W.insRes && !W.insLoading) coLoadIns(W);
+    /* Bo'sh instruktorlar ro'yxati faqat bo'lim ochilganda yuklanadi (tezroq) */
+    if (coReady(W) && !coOpen(W) && (W.open === 'ins' || W.ins) && !W.insRes && !W.insLoading) coLoadIns(W);
   }
 }
 /* Soat yuradi: «Hozir 11:02» har daqiqada yangilanadi, bo'sh instruktorlar
@@ -3125,7 +3132,7 @@ setInterval(() => {
   const t = nowHM(); if (t === coMinute) return;
   coMinute = t; coNowSync(CO);
   document.querySelectorAll('.co-now-t').forEach(e => { e.textContent = t; });
-  if (coReady(CO) && !coOpen(CO) && !CO.insLoading && !sheetOpen()) coLoadIns(CO);
+  if (coReady(CO) && !coOpen(CO) && (CO.open === 'ins' || CO.ins) && !CO.insLoading && !sheetOpen()) coLoadIns(CO);
 }, 10000);
 function coLoadIns(W){
   W.insLoading = true;
@@ -3201,6 +3208,7 @@ function coDone(W, from, keys, open = null){ W.open = open; coPatch(from, [from,
 ACT.coopen = el => {
   const W = CO, s = el.dataset.s, prev = W.open;
   W.open = prev === s ? null : s;
+  if (W.open === 'ins' && coReady(W) && !coOpen(W) && !W.insLoading) { W.insRes = null; coLoadIns(W); }
   const side = !!el.closest?.('.wz-side');
   coPatch(side ? null : s, [prev, s].filter(Boolean));
   /* o'ng paneldan bosilsa — bo'lim ko'rinmayotgan bo'lsa, unga olib boradi */
@@ -3813,7 +3821,38 @@ ACT.rcopen = el => {
       <div class="sum-row"><span>Summa</span><b>${esc(money(r.amount))}</b></div>
       <div class="sum-row"><span>To‘lov</span><b>${r.method === 'mixed' ? `Naqd ${nf(r.cash_amount)} + karta ${nf(r.card_amount)}` : r.method === 'card' ? 'Karta' : 'Naqd'}</b></div>
       <div class="sum-row"><span>Chiqarilgan</span><b>${esc(whenText(r.paid_at))}</b></div></div>
-    <button class="btn btn-primary" style="margin-top:14px" data-act="rcprint" data-code="${esc(r.code)}">${I('print', 20)} Qayta chop etish</button>`);
+    <button class="btn btn-primary" style="margin-top:14px" data-act="rcprint" data-code="${esc(r.code)}">${I('print', 20)} Qayta chop etish</button>
+    ${r.state === 'active' && Number(r.duration_minutes) === PKG_MIN && !isOpenIso(r.start_at) ? `<button class="btn btn-soft" style="margin-top:10px" data-act="rcsplit" data-code="${esc(r.code)}">${I('lock', 18, 2.2)} 5 ta 1 soatlik chekka bo‘lish</button>
+      <div class="muted" style="font-size:12.5px;margin-top:6px">Maxsus parol bilan. Summa o‘zgarmaydi — 5 ta ochiq chek (istalgan kun, istalgan instruktor), har biri ${esc(money(Math.round(r.amount / 5)))}.</div>` : ''}`);
+};
+/* 5 SOATLIK BITTA CHEK → 5 TA 1 SOATLIK OCHIQ CHEK (maxsus parol bilan) */
+ACT.rcsplit = el => {
+  const code = el.dataset.code;
+  openSheet(`<h3 style="display:flex;align-items:center;gap:8px">${I('lock', 20, 2.2)}<span>5 ta chekka bo‘lish</span></h3>
+    <p class="lead">${esc(code)} — 5 soatlik chek 5 ta alohida 1 soatlik ochiq chekka bo‘linadi. Summa va to‘lov kuni o‘zgarmaydi. Maxsus parolni kiriting.</p>
+    <input class="input" id="spIn" type="password" inputmode="numeric" autocomplete="off" maxlength="8" placeholder="••••" style="text-align:center;font-size:24px;letter-spacing:8px">
+    <div id="spErr" class="note err hidden" style="margin-top:10px;font-size:13.5px"></div>
+    <div class="btn-row" style="margin-top:14px"><button class="btn btn-soft" data-act="sheetx">Bekor</button><button class="btn btn-primary" id="spOk">Bo‘lish</button></div>`);
+  const inp = $('spIn'), ok = $('spOk'), err = $('spErr');
+  const go = async () => {
+    const pin = String(inp.value || '').trim();
+    if (!priceTokOk() && !/^\d{4,8}$/.test(pin)) { err.textContent = 'Parol 4–8 ta raqam'; err.classList.remove('hidden'); return; }
+    busyBtn(ok, true, 'Bo‘linmoqda');
+    try{
+      if (!priceTokOk()) { const t = await post('/api/admin/price-unlock', { pin }); S.priceTok = { t: t.token, exp: Date.parse(t.expires_at) || Date.now() + 14 * 60000 }; }
+      const d = await post('/api/admin/cashier/split-package', { code, price_token: S.priceTok.t });
+      closeSheet(); toast('5 ta chek tayyor');
+      showReceipts(d.receipts, { autoPrint: true, title: '5 ta chek' });
+      RC.d = null; if (S.routeName === 'receipts') loadReceipts(true);
+    }catch(e){
+      busyBtn(ok, false);
+      if (e.status === 403) S.priceTok = null;
+      err.textContent = e.message; err.classList.remove('hidden'); inp.value = ''; inp.focus();
+    }
+  };
+  ok.onclick = go;
+  inp.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); go(); } });
+  setTimeout(() => inp.focus(), 80);
 };
 ACT.rcprint = el => { closeSheet(); reprint(el.dataset.code); };
 
@@ -6792,6 +6831,20 @@ ACT.sfactive = async el => {
    NAZORAT PANELI — hamma instruktor bitta maxfiy havolada (/nazorat?k=…)
    ========================================================================= */
 const CTL = { url: '', at: null, by: null };
+/* INSTRUKTORLAR NAZORATI (kassa va admin) — hamma instruktor: kim darsda va
+   qachon tugaydi, kim bo'sh, Excel bron, bron qilish. Nazorat sahifasi panel
+   ichida ochiladi (havolani alohida bilish shart emas). */
+async function vNazorat(){
+  $('view').innerHTML = `<div class="view">${skel(4)}</div>`;
+  try{
+    if (!CTL.url) Object.assign(CTL, await api('/api/admin/control-link'));
+    if (S.routeName !== 'nazorat') return;
+    /* Shu domendagi manzil (havola boshqa domen bilan yozilgan bo'lsa ham) */
+    let src = CTL.url;
+    try { const u = new URL(CTL.url, location.origin); src = u.pathname + u.search; } catch {}
+    $('view').innerHTML = `<div class="nz-wrap"><iframe class="nz-frame" src="${esc(src)}" title="Instruktorlar nazorati"></iframe></div>`;
+  }catch(e){ if (S.routeName === 'nazorat') $('view').innerHTML = `<div class="view"><div class="note err">${esc(e.message)}</div></div>`; }
+}
 function ctlPaint(){
   const share = typeof navigator.share === 'function';
   openSheet(`<h3>👁 Nazorat paneli</h3>
