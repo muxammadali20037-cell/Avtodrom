@@ -153,6 +153,24 @@ a{color:inherit}
 .sr-m{margin-top:6px;font-size:12.5px;color:var(--hint);line-height:1.45}
 .sr-m .w{color:var(--text-2);font-weight:650;display:block}
 .sv-empty{text-align:center;color:var(--hint);padding:30px 10px;font-size:14px}
+/* Sharhlar */
+.fv-top{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin-bottom:10px}
+.fv-k{background:var(--card);border-radius:14px;padding:11px 13px;box-shadow:0 0 0 1px var(--line)}
+.fv-k span{display:block;font-size:12px;font-weight:700;color:var(--hint)}
+.fv-k b{display:block;font-size:22px;font-weight:850;margin-top:2px}
+.fv-k small{display:block;font-size:12px;color:var(--text-2);margin-top:1px}
+.fv-ins{background:var(--card);border-radius:14px;box-shadow:0 0 0 1px var(--line);margin-bottom:10px}
+.fv-ins h3{margin:0;padding:10px 13px 6px;font-size:13px;color:var(--hint);font-weight:800;letter-spacing:.02em}
+.fv-ir{display:flex;justify-content:space-between;gap:10px;padding:7px 13px;border-top:1px solid var(--line);font-size:14px;font-weight:650}
+.fv-ir b{font-variant-numeric:tabular-nums;white-space:nowrap}
+.fv-it{background:var(--card);border-radius:14px;padding:11px 13px;box-shadow:0 0 0 1px var(--line);margin-bottom:8px}
+.fv-it .h{display:flex;flex-wrap:wrap;gap:6px 12px;align-items:center;font-size:13px;color:var(--text-2);font-weight:650}
+.fv-it .h time{margin-left:auto;color:var(--hint);font-weight:600;font-size:12px}
+.fv-it .st{color:#e0a100;letter-spacing:1px;font-size:14px}
+.fv-it p{margin:7px 0 0;font-size:14.5px;line-height:1.45;white-space:pre-wrap;word-break:break-word}
+.fv-it p.sg{background:var(--card-2);border-radius:10px;padding:7px 10px}
+.fv-it p.sg::before{content:'💡 Taklif: ';font-weight:800}
+.fv-note{font-size:12.5px;color:var(--text-2);padding:2px 4px 10px}
 
 /* bron qilish oynasi */
 .xg td.fb{cursor:pointer}
@@ -316,6 +334,7 @@ table.xg{border-collapse:separate;border-spacing:0;table-layout:fixed;width:max-
     <button class="nav srch" id="srchBtn" aria-label="Bronni qidirish" title="Bronni qidirish (telefon oxiri)">🔍</button>
     <button class="add" id="bkBtn">＋ Bron qilish</button>
     <button class="see" id="allBtn">📋 Bronlarni ko‘rish</button>
+    <button class="see" id="fbBtn" title="Mijozlarning avtodrom va instruktorlar haqidagi sharhlari">💬 Sharhlar</button>
   </div>
 </header>
 
@@ -338,6 +357,14 @@ table.xg{border-collapse:separate;border-spacing:0;table-layout:fixed;width:max-
       <input id="svIn" type="search" inputmode="search" autocomplete="off" placeholder="Telefon oxiri (4567), ism yoki bron kodi" aria-label="Qidirish">
       <button class="x" id="svX" aria-label="Yopish">✕</button></div>
     <div class="sv-b" id="svB"><div class="sv-tip">Mijoz telefonining oxirgi 3–4 raqamini yozing — kimga (qaysi instruktorga), qachon bron qilingani va kim yozgani chiqadi. 30 kun oldingi va 60 kun keyingi bronlar qidiriladi.</div></div>
+  </div>
+</div>
+
+<div class="sv hidden" id="fv" role="dialog" aria-modal="true" aria-label="Sharhlar">
+  <div class="sv-box">
+    <div class="sv-h"><span class="sv-ic">💬</span><b style="flex:1;color:#fff;font-size:17px">Mijozlar sharhlari</b>
+      <button class="x" id="fvX" aria-label="Yopish">✕</button></div>
+    <div class="sv-b" id="fvB"><div class="sv-tip">Yuklanmoqda…</div></div>
   </div>
 </div>
 
@@ -1031,6 +1058,49 @@ function closeSv(fromPop, keepHistory){
   S.sv = false; $('sv').classList.add('hidden'); if (!S.ov) document.body.style.overflow = '';
   if (!fromPop && !keepHistory && history.state?.sv) history.back();
 }
+/* ---------- 💬 SHARHLAR — mijozlar fikri (ismsiz, sir saqlanadi) ---------- */
+const FV = { open: false };
+const starsTxt = n => n ? '★'.repeat(n) + '☆'.repeat(5 - n) : '';
+async function openFv(){
+  if (!FV.open) { FV.open = true; history.pushState({ fv: 1 }, '', location.href); }
+  $('fv').classList.remove('hidden'); document.body.style.overflow = 'hidden';
+  $('fvB').innerHTML = '<div class="sv-tip">Yuklanmoqda…</div>';
+  try{
+    const r = await fetch(`/api/control-feedback?k=${encodeURIComponent(K)}`, { cache: 'no-store', headers: { Accept: 'application/json' } });
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok || !d.ok) throw new Error(d.error || `Xato (${r.status})`);
+    paintFv(d);
+  }catch(e){ $('fvB').innerHTML = `<div class="sv-empty">${esc(e.message)}</div>`; }
+}
+function closeFv(fromPop){
+  if (!FV.open) return;
+  FV.open = false; $('fv').classList.add('hidden'); if (!S.ov && !S.sv) document.body.style.overflow = '';
+  if (!fromPop && history.state?.fv) history.back();
+}
+function paintFv(d){
+  const p = d.place || {}, items = d.items || [];
+  const dt = iso => {
+    const p = Object.fromEntries(new Intl.DateTimeFormat('en-GB', { timeZone: TZ, day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })
+      .formatToParts(new Date(iso)).map(x => [x.type, x.value]));
+    return `${p.day}.${p.month} ${p.hour}:${p.minute}`;
+  };
+  $('fvB').innerHTML = `
+    <div class="fv-note">Sharhlar sir saqlanadi — mijoz ismi ko‘rsatilmaydi. Mijozlar Mini App → «Sharh qoldirish» orqali yozadi.</div>
+    <div class="fv-top">
+      <div class="fv-k"><span>Sharhlar</span><b>${d.total || 0}</b><small>jami</small></div>
+      <div class="fv-k"><span>Avtodrom bahosi</span><b>${p.avg != null ? `${String(p.avg).replace('.', ',')} ★` : '—'}</b><small>${p.count || 0} ta baho</small></div>
+    </div>
+    ${(d.instructors || []).length ? `<div class="fv-ins"><h3>INSTRUKTORLAR BAHOSI</h3>${d.instructors.map(i => `<div class="fv-ir"><span>${esc(i.name)}</span><b>${String(i.avg).replace('.', ',')} ★ · ${i.count} ta</b></div>`).join('')}</div>` : ''}
+    ${items.length ? items.map(x => `<div class="fv-it"><div class="h">
+        ${x.place_rating ? `<span>Avtodrom <span class="st">${starsTxt(x.place_rating)}</span></span>` : ''}
+        ${x.instructor ? `<span>${esc(x.instructor)}${x.instructor_rating ? ` <span class="st">${starsTxt(x.instructor_rating)}</span>` : ''}</span>` : ''}
+        <time>${esc(dt(x.at))}</time></div>
+        ${x.comment ? `<p>${esc(x.comment)}</p>` : ''}${x.suggestion ? `<p class="sg">${esc(x.suggestion)}</p>` : ''}</div>`).join('')
+      : '<div class="sv-empty">Hali sharh yo‘q.</div>'}`;
+}
+$('fbBtn').onclick = () => openFv();
+$('fvX').onclick = () => closeFv();
+$('fv').addEventListener('click', e => { if (e.target === $('fv')) closeFv(); });
 /** Telefonni chiroyli ko'rinishda, yozilgan oxirgi raqamlarni belgilab */
 function telMarked(p, digits){
   const pretty = prettyTel(p); let n = Math.min(String(digits || '').length, 9), i = pretty.length;
@@ -1092,6 +1162,7 @@ document.addEventListener('click', e => {
 });
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape' && BK.open) { e.preventDefault(); closeBk(); return; }
+  if (e.key === 'Escape' && FV.open) { e.preventDefault(); closeFv(); return; }
   if (e.key === 'Escape' && S.sv) { e.preventDefault(); closeSv(); return; }
   if (e.key === 'Escape' && S.ov) { e.preventDefault(); closeOv(); }
   if ((e.key === 'Enter' || e.key === ' ') && e.target.classList?.contains('fr')) { e.preventDefault(); openOv(e.target.dataset.ins); }
@@ -1100,7 +1171,7 @@ $('ov').addEventListener('click', e => { if (e.target === $('ov')) closeOv(); })
 $('ovX').onclick = () => closeOv();
 $('ovDl').onclick = () => { try { downloadXlsx(S.ov && S.ov !== 'all' ? S.ov : null); } catch (err) { alert('Excel fayl tayyorlanmadi: ' + (err?.message || err)); } };
 $('allBtn').onclick = () => openOv('all');
-window.addEventListener('popstate', () => { if (BK.open) { closeBk(true); syncUrl(); return; } if (S.sv) closeSv(true); if (S.ov) closeOv(true); syncUrl(); });
+window.addEventListener('popstate', () => { if (BK.open) { closeBk(true); syncUrl(); return; } if (FV.open) { closeFv(true); return; } if (S.sv) closeSv(true); if (S.ov) closeOv(true); syncUrl(); });
 $('srchBtn').onclick = () => openSv();
 $('svX').onclick = () => closeSv();
 $('sv').addEventListener('click', e => { if (e.target === $('sv')) closeSv(); });

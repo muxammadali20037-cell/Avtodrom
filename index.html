@@ -402,6 +402,8 @@ textarea.input{min-height:88px;resize:none;line-height:1.4}
 .stars button{color:var(--line)}
 .stars button.on{color:var(--star)}
 .reasons{display:flex;gap:8px;flex-wrap:wrap;margin-top:4px}
+.fb-l{font-weight:750;font-size:14.5px;margin:14px 2px 2px;text-align:center}
+.fb-l small{font-weight:600;color:var(--hint)}
 .reasons button{padding:8px 12px;border-radius:12px;background:var(--card-2);font-size:14px;font-weight:600}
 .reasons button.on{background:var(--accent-soft);color:var(--accent)}
 .notes .n{padding:12px 0}
@@ -756,6 +758,20 @@ function trErr(msg) {
   return m0;
 }
 const RU = /*RU*/{
+  "Sharh qoldirish": "Оставить отзыв",
+  "Avtodrom va instruktorlar haqida · sir saqlanadi": "Об автодроме и инструкторах · анонимно",
+  "Fikringiz biz uchun muhim": "Ваше мнение важно для нас",
+  "Sharhingiz sir saqlanadi: ismingiz instruktorga ko‘rsatilmaydi.": "Отзыв анонимный: инструктор не увидит ваше имя.",
+  "Avtodrom sizga qanday yoqdi?": "Как вам автодром?",
+  "Qaysi instruktor haqida?": "О каком инструкторе?",
+  "(ixtiyoriy)": "(необязательно)",
+  "Izoh": "Комментарий",
+  "Nima yoqdi, nima yoqmadi…": "Что понравилось, что нет…",
+  "Taklifingiz": "Ваше предложение",
+  "Nimani yaxshilashimiz kerak?": "Что нам улучшить?",
+  "Baho qo‘ying yoki fikringizni yozing": "Поставьте оценку или напишите отзыв",
+  "Rahmat! Sharhingiz yuborildi": "Спасибо! Отзыв отправлен",
+  "Bugun yetarlicha sharh yozdingiz — rahmat!": "Вы уже оставили достаточно отзывов сегодня — спасибо!",
   "Bugun": "Сегодня",
   "Ertaga": "Завтра",
   "Kecha": "Вчера",
@@ -1515,9 +1531,12 @@ function enterApp() {
   const sp = String((tg && tg.initDataUnsafe && tg.initDataUnsafe.start_param) || '').toLowerCase();
   let qv = '';
   try { qv = String(new URLSearchParams(location.search).get('open') || '').toLowerCase(); } catch (e) {}
-  const first = VIEWS.find(v => v !== 'onb' && sp.startsWith(v)) || VIEWS.find(v => v !== 'onb' && qv === v) || (location.hash.slice(1) || 'home');
+  /* ?open=feedback — sharh oynasi (botdagi «✍️ Sharh qoldirish» tugmasi) */
+  const fb = qv === 'feedback' || sp.startsWith('feedback');
+  const first = fb ? 'home' : VIEWS.find(v => v !== 'onb' && sp.startsWith(v)) || VIEWS.find(v => v !== 'onb' && qv === v) || (location.hash.slice(1) || 'home');
   go(first, false);
   loadNotes();
+  if (fb) setTimeout(openFeedback, 250);
 }
 
 function applyTheme() {
@@ -2862,6 +2881,38 @@ async function doReview(id, btn) {
 }
 
 /* =========================================================================
+   SHARH — avtodrom va instruktorlar haqida (sir saqlanadi: ism ko'rsatilmaydi)
+   ========================================================================= */
+const FB = { place: 0, ins: '', insR: 0, list: [] };
+const fbStars = (g, val) => `<div class="stars" style="margin:6px 0 2px">${[1, 2, 3, 4, 5].map(n => `<button data-act="fbstar" data-g="${g}" data-v="${n}" class="${n <= val ? 'on' : ''}" aria-label="${N(n, '{n} yulduz', ['{n} звезда', '{n} звезды', '{n} звёзд'])}">${ico('star', 36, 1.2)}</button>`).join('')}</div>`;
+async function openFeedback() {
+  FB.place = 0; FB.ins = ''; FB.insR = 0;
+  openSheet(`<h3 style="text-align:center">${T('Fikringiz biz uchun muhim')}</h3><div class="sk" style="height:200px;margin-top:12px"></div>`);
+  try { const d = await req('/api/feedback/form'); FB.list = d.instructors || []; } catch (e) { FB.list = []; }
+  if (!sheetOpen()) return;
+  openSheet(`
+    <h3 style="text-align:center">${T('Fikringiz biz uchun muhim')}</h3>
+    <p class="lead" style="text-align:center">🔒 ${T('Sharhingiz sir saqlanadi: ismingiz instruktorga ko‘rsatilmaydi.')}</p>
+    <div class="fb-l">${T('Avtodrom sizga qanday yoqdi?')}</div>
+    ${fbStars('place', 0)}
+    ${FB.list.length ? `<div class="fb-l">${T('Qaysi instruktor haqida?')} <small>${T('(ixtiyoriy)')}</small></div>
+      <div class="reasons" id="fbIns">${FB.list.map(i => `<button data-act="fbins" data-v="${esc(i.id)}">${esc(i.name)}</button>`).join('')}</div>
+      <div id="fbInsStars" class="hidden">${fbStars('ins', 0)}</div>` : ''}
+    <label class="field" style="margin-top:12px"><span>${T('Izoh')}</span><textarea class="input" id="fbC" maxlength="2000" placeholder="${T('Nima yoqdi, nima yoqmadi…')}"></textarea></label>
+    <label class="field"><span>${T('Taklifingiz')}</span><textarea class="input" id="fbS" maxlength="2000" placeholder="${T('Nimani yaxshilashimiz kerak?')}"></textarea></label>
+    <div class="btn-row"><button class="btn btn-primary" data-act="fbsend">${T('Yuborish')}</button></div>`);
+}
+async function sendFeedback(btn) {
+  const comment = (($('#fbC') || {}).value || '').trim(), suggestion = (($('#fbS') || {}).value || '').trim();
+  if (!FB.place && !FB.insR && !comment && !suggestion) { haptic.err(); toast(T('Baho qo‘ying yoki fikringizni yozing'), true); return; }
+  btn.disabled = true; btn.innerHTML = '<span class="spin"></span>';
+  try {
+    await req('/api/feedback', { method: 'POST', body: { place_rating: FB.place || undefined, instructor_id: FB.ins || undefined, instructor_rating: FB.ins ? FB.insR || undefined : undefined, comment: comment || undefined, suggestion: suggestion || undefined } });
+    haptic.ok(); closeSheet(); toast(T('Rahmat! Sharhingiz yuborildi'));
+  } catch (e) { haptic.err(); toast(e.message, true); btn.disabled = false; btn.textContent = T('Qayta urinish'); }
+}
+
+/* =========================================================================
    YORDAM — admin bilan yozishma
    ========================================================================= */
 let chatTimer = 0;
@@ -2950,6 +3001,7 @@ function renderProfile() {
       <button class="row" data-act="go" data-v="bookings"><span class="ic">${ico('list', 20)}</span><span class="tx"><b>${T('Bronlarim')}</b><small>${T('Kelgusi va o‘tgan darslar')}</small></span><span class="chev">${ico('chev', 18)}</span></button>
       <button class="row" data-act="location"><span class="ic">${ico('pin', 20)}</span><span class="tx"><b>${T('Avtodrom manzili')}</b><small>Google, Yandex, 2GIS</small></span><span class="chev">${ico('chev', 18)}</span></button>
       <button class="row" data-act="go" data-v="support"><span class="ic">${ico('chat', 20)}</span><span class="tx"><b>${T('Yordam')}</b><small>${T('Admin bilan yozishma')}</small></span><span class="chev">${ico('chev', 18)}</span></button>
+      <button class="row" data-act="feedback"><span class="ic">${ico('star', 20)}</span><span class="tx"><b>${T('Sharh qoldirish')}</b><small>${T('Avtodrom va instruktorlar haqida · sir saqlanadi')}</small></span><span class="chev">${ico('chev', 18)}</span></button>
       ${hsOffer() ? `<button class="row" data-act="hsadd"><span class="ic">${ico('mobile', 20)}</span><span class="tx"><b>${T('Telefon ekraniga qo‘shish')}</b><small>${T('Ilova belgisi paydo bo‘ladi — bir bosishda ochiladi')}</small></span><span class="chev">${ico('chev', 18)}</span></button>` : ''}
     </div>
     <p class="muted" style="text-align:center;font-size:12px;margin-top:20px">TASH INDEX AVTODROM</p>`;
@@ -3194,6 +3246,19 @@ document.addEventListener('click', e => {
     case 'send': { const t = $('#chatIn'); if (t) sendChat(t.value); break; }
     case 'quick': sendChat(v); break;
     case 'closesheet': closeSheet(); break;
+    case 'feedback': haptic.tap(); openFeedback(); break;
+    case 'fbstar': {
+      const g = el.dataset.g, n = Number(v) || 0;
+      if (g === 'ins') FB.insR = n; else FB.place = n;
+      el.parentElement.querySelectorAll('button').forEach((b, i) => b.classList.toggle('on', i < n)); haptic.tap(); break;
+    }
+    case 'fbins': {
+      FB.ins = FB.ins === v ? '' : v; FB.insR = 0;
+      document.querySelectorAll('#fbIns button').forEach(b => b.classList.toggle('on', b.dataset.v === FB.ins));
+      const box = $('#fbInsStars'); if (box) { box.classList.toggle('hidden', !FB.ins); box.querySelectorAll('button').forEach(b => b.classList.remove('on')); }
+      haptic.tap(); break;
+    }
+    case 'fbsend': sendFeedback(el); break;
     case 'lang': haptic.tap(); openLang(); break;
     case 'setlang': setLang(v); break;
     case 'hsadd': haptic.tap(); try { tg.addToHomeScreen(); } catch (e) {} break;
