@@ -1238,7 +1238,9 @@ async function startFromScan(code){
         <div class="acts" style="padding:0"><button class="btn go" id="snOk">Tushunarli</button></div>`);
       $('snOk').onclick = closeSheet; return;
     }
-    closeSheet(); toast(d && d.transferred_from !== null && d.transferred_from !== undefined ? 'Dars boshlandi — bron sizga o‘tdi' : 'Dars boshlandi');
+    closeSheet();
+    const started = d && d.transferred_from !== null && d.transferred_from !== undefined ? 'Dars boshlandi — bron sizga o‘tdi' : 'Dars boshlandi';
+    toast(d && d.warning ? `${started}. ${d.warning}` : started);
   } catch (e) {
     if (btn) { btn.disabled = false; btn.textContent = '🚗 Darsni boshlash'; }
     if (/yakunlanmagan/i.test(String(e.message))) {
