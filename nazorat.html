@@ -81,7 +81,20 @@ a{color:inherit}
 .wrap{max-width:1180px;margin:0 auto;padding:14px 16px 50px;transition:opacity .15s}
 .wrap.busy{opacity:.6}
 .layout{display:grid;gap:14px;grid-template-columns:1fr}
-@media (min-width:900px){.layout{grid-template-columns:minmax(0,1fr) 340px;align-items:start}.free{position:sticky;top:132px}}
+@media (min-width:900px){.layout{grid-template-columns:minmax(0,1fr) 340px;align-items:start}.side{position:sticky;top:132px}}
+.side{display:grid;gap:14px;align-content:start}
+.busy .panel-h{background:var(--s-warn-soft)}
+.busy .panel-h h2{color:var(--s-warn-ink)}
+.lr{display:flex;align-items:center;gap:10px;padding:10px 16px;width:100%;text-align:left}
+.lr + .lr{border-top:1px solid var(--line)}
+.lr .dot{width:10px;height:10px;border-radius:50%;background:var(--s-warn);box-shadow:0 0 0 3px var(--s-warn-soft);flex:none}
+.lr .nm{flex:1;min-width:0;font-weight:750;font-size:14.5px;line-height:1.25}
+.lr .nm small{display:block;font-weight:600;font-size:12px;color:var(--hint)}
+.lr .end{flex:none;text-align:right;font-weight:850;font-size:16px;font-variant-numeric:tabular-nums;line-height:1.15}
+.lr .end small{display:block;font-weight:700;font-size:11.5px;color:var(--hint)}
+.lr .end.over{color:#d92d35}.lr .end.over small{color:#d92d35}
+.ir .nm .les{color:var(--s-warn-ink);font-weight:750}
+.ir .nm .les.over{color:#d92d35}
 .panel{background:var(--card);border-radius:20px;box-shadow:var(--shadow);overflow:hidden}
 .panel-h{display:flex;align-items:center;gap:10px;padding:13px 16px;border-bottom:1px solid var(--line)}
 .panel-h h2{margin:0;font-size:16.5px;letter-spacing:-.2px;flex:1;min-width:0}
@@ -100,7 +113,7 @@ a{color:inherit}
 .chev{color:var(--hint);flex:none;font-size:18px;margin-left:-4px}
 .free .panel-h{background:var(--s-good-soft)}
 .free .panel-h h2{color:var(--s-good-ink)}
-.free .note{padding:9px 16px;font-size:12.5px;color:var(--text-2);border-bottom:1px solid var(--line)}
+.free .note,.busy .note{padding:9px 16px;font-size:12.5px;color:var(--text-2);border-bottom:1px solid var(--line)}
 .fr{display:flex;align-items:center;gap:10px;padding:10px 16px;width:100%;text-align:left}
 .fr + .fr{border-top:1px solid var(--line)}
 .fr:hover{background:var(--card-2)}
@@ -314,7 +327,7 @@ table.xg{border-collapse:separate;border-spacing:0;table-layout:fixed;width:max-
       <input class="search" id="q" type="search" placeholder="Ism bo‘yicha qidirish" autocomplete="off" aria-label="Qidirish">
       <div id="list"><div class="empty-s">Yuklanmoqda…</div></div>
     </section>
-    <aside class="panel free" id="free"></aside>
+    <aside class="side"><section class="panel busy" id="busy"></section><section class="panel free" id="free"></section></aside>
   </div>
   <p class="foot">Instruktorni bosing — uning Excel bron jadvali ochiladi · ＋ Bron qilish — instruktor yoki vaqtni tanlab, telefon yozib bron · 🔍 — telefon oxiri bo‘yicha qidirish · havolani begonalarga bermang (u orqali bron ham qilsa bo‘ladi)</p>
 </main>
@@ -758,7 +771,7 @@ function paint(){
   $('dayIn').value = d.date;
   $('todayBtn').classList.toggle('hidden', d.date === d.today);
   $('upd').textContent = `Yangilandi ${fmtHms(new Date())}`;
-  paintList(); paintFree();
+  paintList(); paintBusy(); paintFree();
   if (S.pendingOv) { const id = S.pendingOv, rp = S.pendingReplace; S.pendingOv = null; S.pendingReplace = false; openOv(id, rp); }
   else if (S.ov) paintOv();
   if (BK.open && !BK.busy && BK.date === S.data.date) { BK.data = S.data; if (!BK.done) paintBk(); }
@@ -769,12 +782,33 @@ function paintList(){
   const list = all.filter(i => !q || i.name.toLowerCase().includes(q));
   $('listSub').textContent = `${all.length} ta · ${rel(d.date) ? rel(d.date).toLowerCase() : dd(d.date)} bronlari`;
   $('list').innerHTML = list.length ? list.map(i => {
-    const n = i.stats.bron, off = i.day.off && !n;
+    const n = i.stats.bron, off = i.day.off && !n, ls = lessonOf(i);
     return `<button class="ir" data-ins="${esc(i.id)}"><span class="ava">${esc(ini(i.name))}</span>
-      <span class="nm">${esc(i.name)}${i.active ? '' : '<small>faol emas</small>'}</span>
+      <span class="nm">${esc(i.name)}${ls ? `<small class="les ${ls.left < 0 ? 'over' : ''}">▶ Darsda · ${esc(fmtHm(ls.ends))} da tugaydi · ${esc(leftTxt(ls.left))}</small>` : i.active ? '' : '<small>faol emas</small>'}</span>
       <span class="cnt ${off ? 'off' : n ? '' : 'z'}" title="${off ? 'dam olish kuni' : n + ' ta bron'}">${off ? 'dam' : n}</span><span class="chev">›</span></button>`;
   }).join('') : `<div class="empty-s">${all.length ? 'Topilmadi' : 'Instruktorlar yo‘q'}</div>`;
 }
+/* HOZIR DARSDA — chek urilgan instruktorlar: dars qachon tugaydi (urilgan vaqt + chekdagi daqiqa) */
+function lessonOf(i){
+  const n = i.now;
+  if (!n || n.state !== 'lesson' || !n.ends) return null;
+  return { ends: n.ends, started: n.started, left: Math.round((Date.parse(n.ends) - Date.now()) / 60000), b: n.booking || {} };
+}
+const leftTxt = m => m >= 0 ? (m >= 60 ? `${Math.floor(m / 60)} soat ${m % 60} daq qoldi` : `${m} daq qoldi`) : `${-m} daq oshdi`;
+function paintBusy(){
+  const d = S.data, box = $('busy'); if (!box) return;
+  if (d.date !== d.today) { box.innerHTML = ''; box.classList.add('hidden'); return; }
+  box.classList.remove('hidden');
+  const list = ordered(d).map(i => ({ i, l: lessonOf(i) })).filter(x => x.l).sort((a, b) => Date.parse(a.l.ends) - Date.parse(b.l.ends));
+  box.innerHTML = `<div class="panel-h"><h2>▶ Hozir darsda</h2><small>${list.length} ta</small></div>
+    <div class="note">Chek urilgan — dars qachon tugashi (avval bo‘shaydiganlari tepada)</div>
+    ${list.length ? list.map(({ i, l }) => `<div class="lr" role="button" tabindex="0" data-ins="${esc(i.id)}"><i class="dot"></i>
+      <span class="nm">${esc(i.name)}<small>${esc(l.b.name || 'Mijoz')} · ${esc(fmtHm(l.started))}–${esc(fmtHm(l.ends))}</small></span>
+      <span class="end ${l.left < 0 ? 'over' : ''}">${esc(fmtHm(l.ends))}<small>${esc(leftTxt(l.left))}</small></span></div>`).join('')
+      : '<div class="empty-s">Hozir hech kim darsda emas.</div>'}`;
+}
+/* Qolgan daqiqalar har 30 soniyada yangilanadi (serverdan yuklamasdan) */
+setInterval(() => { if (S.data && !document.hidden) { paintBusy(); paintList(); } }, 30000);
 /** Hozir bo'sh: ish vaqtida, broni yo'q, chek urilmagan (darsda emas) */
 function paintFree(){
   const d = S.data, box = $('free');
