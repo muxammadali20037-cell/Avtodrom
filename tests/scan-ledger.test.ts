@@ -125,16 +125,29 @@ describe('Chekni istalgan instruktor uradi', () => {
     expect(h.db.admin_audit_logs.some((x: any) => x.action === 'BOOKING_TRANSFERRED_BY_SCAN')).toBe(true);
   });
 
-  it('toifa mos kelmasa yoki o‘sha vaqtda o‘z broni bo‘lsa — urolmaydi', async () => {
-    const { code } = paidBooking({ ins: 'ip-a' });
+  it('toifa mos kelmasa — urolmaydi; o‘sha vaqtda o‘z broni bo‘lsa HAM uradi (faqat eslatma)', async () => {
+    const { id, code } = paidBooking({ ins: 'ip-a' });
     const c = await C('POST', '/api/instructor/scan/start', { code });
     expect(c.status).toBe(409);
     expect(c.body.error).toMatch(/B toifa uchun/);
-    paidBooking({ ins: 'ip-b', startMin: 30 });               // B ning o'z broni 30 daqiqadan keyin
+    /* B ning shu vaqtga tushgan yozuvlari: to'lanmagan bron, to'langan chek, «kelmadi» */
+    const own = paidBooking({ ins: 'ip-b', startMin: 30 });                     // to'langan chek, 30 daqiqadan keyin
+    const s0 = new Date(Date.now() + 10 * 60000).toISOString(), e0 = new Date(Date.now() + 70 * 60000).toISOString();
+    h.db.bookings.push({ id: 'b-phone', customer_id: 'u-cust2', instructor_id: 'ip-b', status: 'confirmed', source: 'admin',
+      start_at: s0, end_at: e0, booking_date: s0, duration_minutes: 60, category: 'B' });                // telefon broni, to'lanmagan
+    const s1 = new Date(Date.now() - 5 * 60000).toISOString(), e1 = new Date(Date.now() + 55 * 60000).toISOString();
+    h.db.bookings.push({ id: 'b-ns', customer_id: 'u-cust2', instructor_id: 'ip-b', status: 'no_show', source: 'admin',
+      start_at: s1, end_at: e1, booking_date: s1, duration_minutes: 60, category: 'B' });
     const b = await B('POST', '/api/instructor/scan/start', { code });
-    expect(b.status).toBe(409);
-    expect(b.body.error).toMatch(/boshqa bron bor/);
-    expect(h.db.bookings.filter((x: any) => x.status === 'in_progress')).toHaveLength(0);
+    expect(b.status).toBe(200);
+    expect(b.body.warning).toMatch(/bo‘shatildi/);
+    expect(bk(id)).toMatchObject({ status: 'in_progress', instructor_id: 'ip-b' });
+    expect(bk('b-phone')).toMatchObject({ status: 'cancelled' });                // vaqt bo'shadi
+    expect(bk(own.id)).toMatchObject({ status: 'confirmed', instructor_id: null }); // chek yaroqli, instruktorsiz
+    expect(bk('b-ns').status).toBe('no_show');                                     // holati o'zgarmaydi
+    expect(Date.parse(bk('b-ns').end_at)).toBeLessThanOrEqual(Date.parse(bk(id).start_at)); // faqat vaqti qisqardi
+    expect(Date.parse(bk('b-ns').end_at)).toBeGreaterThan(Date.parse(s1));
+    expect(h.db.admin_audit_logs.filter((x: any) => x.action === 'BOOKING_FREED_BY_SCAN').length).toBe(3);
   });
 
   it('boshlangan darsning chekini boshqasi urolmaydi', async () => {
