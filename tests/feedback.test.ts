@@ -146,3 +146,47 @@ describe('Admin: sharh so‘rovini yuborish', () => {
     expect(v.text.startsWith('🙏 Assalomu alaykum!')).toBe(true);
   });
 });
+
+describe('Kim yozgani — faqat admin panel va rahbar ilovasida', () => {
+  async function seed() {
+    await C(ALI, 'POST', '/api/feedback', { place_rating: 5, instructor_id: 'ip-1', instructor_rating: 5, comment: 'Aziz aka zo‘r' });
+    await C(VALI, 'POST', '/api/feedback', { place_rating: 3, suggestion: 'Choy qo‘ying' });
+  }
+
+  it('Admin → Boshqaruv → Sharhlar: ism, telefon va kim haqida; operator — 403', async () => {
+    await seed();
+    expect((await h.call('GET', '/api/admin/feedback', { cookie: operator })).status).toBe(403);
+    expect((await h.call('GET', '/api/admin/feedback')).status).toBe(401);
+    const r = await h.call('GET', '/api/admin/feedback', { cookie: admin });
+    expect(r.status).toBe(200);
+    expect(r.body.total).toBe(2);
+    const [vali, ali] = r.body.items;                                               // eng yangisi tepada
+    expect(ali).toMatchObject({ customer: { name: 'Ali Valiyev', phone: `+99890${ALI}` }, instructor: 'Aziz Karimov', instructor_id: 'ip-1', instructor_rating: 5, comment: 'Aziz aka zo‘r' });
+    expect(vali).toMatchObject({ customer: { name: 'Vali Toshev' }, instructor: null, instructor_id: null, place_rating: 3, suggestion: 'Choy qo‘ying' });
+    // Nazorat panelida esa hamon ismsiz
+    const link = await h.call('GET', '/api/admin/control-link', { cookie: admin });
+    const k = new URL(link.body.url).searchParams.get('k');
+    const nz = await h.call('GET', `/api/control-feedback?k=${k}`);
+    expect(nz.body.items[0].customer).toBeUndefined();
+    expect(JSON.stringify(nz.body)).not.toContain('Vali Toshev');
+  });
+
+  it('Rahbar ilovasi (PIN bilan): boss-data ichida sharhlar — kim yozgani bilan', async () => {
+    await seed();
+    await h.call('GET', '/api/admin/boss-link', { cookie: admin });
+    const set = await h.call('POST', '/api/admin/boss-link', { cookie: admin, payload: { pin: '482915' } });
+    const k = new URL(set.body.url).searchParams.get('k');
+    const inj = (method: string, url: string, o: any = {}) => h.app.inject({ method, url, headers: { 'x-real-ip': '10.9.9.9', ...(o.token ? { authorization: `Bearer ${o.token}` } : {}) }, payload: o.payload })
+      .then((r: any) => ({ status: r.statusCode, body: JSON.parse(r.payload || '{}') }));
+    const login = await inj('POST', '/api/boss-login', { payload: { k, pin: '482915' } });
+    expect(login.status).toBe(200);
+    const D = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Tashkent' }).format(new Date());
+    expect((await inj('GET', `/api/boss-data?from=${D}&to=${D}`)).status).toBe(401);
+    const d = await inj('GET', `/api/boss-data?from=${D}&to=${D}`, { token: login.body.token });
+    expect(d.status).toBe(200);
+    expect(d.body.feedback.total).toBe(2);
+    expect(d.body.feedback.place).toMatchObject({ avg: 4, count: 2 });
+    expect(d.body.feedback.instructors).toEqual([{ id: 'ip-1', name: 'Aziz Karimov', avg: 5, count: 1 }]);
+    expect(d.body.feedback.items.map((x: any) => x.customer.name)).toEqual(['Vali Toshev', 'Ali Valiyev']);
+  });
+});
