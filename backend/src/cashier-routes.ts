@@ -14,7 +14,7 @@ import { recordScan } from './lesson-ledger.js';
 import { moveSheetBooking } from './booking-sheet.js';
 import {
   PACKAGE_MINUTES, MAX_SESSIONS, loadPackagePrices, priceWithPackage, packagePriceOf, parseSessions, sessionConflict, createPackage,
-  packagesFor, packageOf, savePackage, createOpenPackage, openSlots, isOpenBooking, OPEN_MINUTES,
+  packagesFor, packageOf, savePackage, createOpenPackage, openSlots, isOpenBooking, OPEN_MINUTES, packageNote,
   type Session, type PackageRecord,
 } from './packages.js';
 import { newShortCodes, shortCodeOf, findByShortCode } from './short-code.js';
@@ -1766,6 +1766,133 @@ export async function registerCashierRoutes(
     }
   });
 
+
+  /* =====================================================================
+     5 SOATLIK BITTA CHEKNI 5 TA 1 SOATLIK OCHIQ CHEKKA BO'LISH
+     Eski kassada paket bitta 5 soatlik chek bo'lib chiqqan. Maxsus parol
+     bilan (narxni o'zgartirish paroli) 5 ta alohida chekka bo'linadi:
+     summa o'zgarmaydi (1 100 000 → 5 × 220 000), to'lov kuni va kassasi
+     o'sha-o'sha — kassa hisoboti buzilmaydi. Eski chek kodi 1-chek bo'lib
+     qoladi, qolgan 4 tasiga yangi kod va 4 xonali raqam beriladi.
+     ===================================================================== */
+  app.post('/api/admin/cashier/split-package', async (req: any, reply: any) => {
+    try {
+      await requireAdmin(req);
+      const b = req.body || {};
+      const { verifyPriceToken } = await import('./shift-routes.js');
+      if (!(await verifyPriceToken(req, b.price_token))) {
+        return reply.code(403).send({ ok: false, needs_price_pin: true, error: 'Maxsus parol kerak — parolni kiriting.' });
+      }
+      const code = String(b.code || '').trim().toUpperCase();
+      const payment = (await supabaseRest<any[]>('payments', { query: `?receipt_code=eq.${q(code)}&status=eq.paid&select=*&limit=1` }))[0];
+      if (!payment) return reply.code(404).send({ ok: false, error: 'To‘langan chek topilmadi' });
+      const { peekStaff } = await import('./admin-password-routes.js');
+      const me = peekStaff(req);
+      if (me && me.role === 'cashier' && payment.register_id && String(payment.register_id) !== String(me.register_id || '')) {
+        return reply.code(403).send({ ok: false, error: 'Bu chek boshqa kassada chiqarilgan' });
+      }
+      const booking = (await supabaseRest<any[]>('bookings', { query: `?id=eq.${q(String(payment.booking_id))}&select=*&limit=1` }))[0];
+      if (!booking) return reply.code(404).send({ ok: false, error: 'Bron topilmadi' });
+      if (String(booking.status) !== 'confirmed') {
+        return reply.code(409).send({ ok: false, error: 'Faqat hali urilmagan (faol) chekni bo‘lish mumkin' });
+      }
+      if (Number(booking.duration_minutes) !== PACKAGE_MINUTES || isOpenBooking(booking)) {
+        return reply.code(409).send({ ok: false, error: 'Faqat 5 soatlik bitta chekni bo‘lish mumkin' });
+      }
+
+      const n = Math.round(PACKAGE_MINUTES / OPEN_MINUTES);
+      const total = Math.round(Number(payment.amount || 0));
+      const amounts = splitBy(total, Array.from({ length: n }, () => 1));
+      const cashTotal = payment.method === 'mixed' ? Number(payment.cash_amount || 0) : payment.method === 'card' ? 0 : total;
+      const cashParts = splitCapped(cashTotal, amounts);
+      const methodOf = (c: number, k: number) => (c > 0 && k > 0 ? 'mixed' : k > 0 ? 'card' : 'cash');
+
+      const [admin, slots, codeRes, shorts, tariffs] = await Promise.all([
+        adminUser(),
+        openSlots(String(booking.customer_id), n),
+        Promise.all(Array.from({ length: n - 1 }, () => supabaseRest<any>('rpc/generate_receipt_code', { method: 'POST', body: '{}' }))),
+        newShortCodes(n),
+        loadTariffs(),
+      ]);
+      const codes = codeRes.map((c: any) => typeof c === 'string' ? c : String(c ?? ''));
+      if (codes.some((c) => !c)) throw new Error('Chek kodi yaratilmadi');
+      const now = new Date().toISOString();
+      const note = (i: number) => `${packageNote(i + 1, n)} · ochiq chek`;
+      const slotOf = (i: number) => ({ booking_date: slots[i].start.toISOString(), start_at: slots[i].start.toISOString(), end_at: slots[i].end.toISOString() });
+
+      /* 1) Eski bron — 1-chek (ochiq, 1 soat) */
+      const first = (await supabaseRest<any[]>('bookings', {
+        method: 'PATCH', headers: { Prefer: 'return=representation' }, query: `?id=eq.${q(String(booking.id))}&status=eq.confirmed`,
+        body: JSON.stringify({ ...slotOf(0), duration_minutes: OPEN_MINUTES, hours: 1, price: amounts[0], instructor_id: null, instructor_name: null,
+          customer_note: note(0), updated_at: now }),
+      }))[0];
+      if (!first) return reply.code(409).send({ ok: false, error: 'Chek holati o‘zgardi — qayta urinib ko‘ring' });
+
+      /* 2) Qolgan 4 ta bron — bitta so'rov bilan */
+      let rest: any[] = [];
+      try {
+        rest = await supabaseRest<any[]>('bookings', {
+          method: 'POST', headers: { Prefer: 'return=representation' },
+          body: JSON.stringify(Array.from({ length: n - 1 }, (_, j) => ({
+            customer_id: booking.customer_id, instructor_id: null, course_id: booking.course_id || null, category: booking.category || 'B',
+            ...slotOf(j + 1), duration_minutes: OPEN_MINUTES, hours: 1, price: amounts[j + 1],
+            status: 'confirmed', source: 'walk_in', confirmed_at: booking.confirmed_at || now, confirmed_by: booking.confirmed_by || admin.id,
+            customer_note: note(j + 1),
+          }))),
+        });
+        if (!Array.isArray(rest) || rest.length !== n - 1) throw new Error('Cheklar yozilmadi');
+      } catch (e) {
+        /* Eski chekni joyiga qaytaramiz */
+        await supabaseRest('bookings', {
+          method: 'PATCH', query: `?id=eq.${q(String(booking.id))}`,
+          body: JSON.stringify({ booking_date: booking.booking_date, start_at: booking.start_at, end_at: booking.end_at, duration_minutes: booking.duration_minutes,
+            hours: booking.hours, price: booking.price, instructor_id: booking.instructor_id, instructor_name: booking.instructor_name ?? null,
+            customer_note: booking.customer_note ?? null, updated_at: new Date().toISOString() }),
+        }).catch(() => {});
+        throw e;
+      }
+      const all = [first, ...rest];
+
+      /* 3) To'lovlar: eski to'lov 1-chek summasiga, qolganlari — yangi (o'sha kun, o'sha kassa) */
+      const payPart = (i: number) => {
+        const c = cashParts[i], k = amounts[i] - c;
+        return { amount: amounts[i], cash_amount: c, card_amount: k, method: methodOf(c, k), short_code: shorts[i], note: `5 soatlik paket · ${i + 1}/${n}` };
+      };
+      const newIds = rest.map(() => crypto.randomUUID());
+      const [p0, pRest] = await Promise.all([
+        writePayments([{ ...payPart(0) }], [String(payment.id)], [true]).then((r) => r[0]),
+        writePayments(rest.map((bk, j) => ({
+          booking_id: bk.id, customer_id: bk.customer_id, currency: payment.currency || 'UZS', status: 'paid',
+          paid_at: payment.paid_at, receipt_code: codes[j], cashier_id: payment.cashier_id || admin.id,
+          register_id: payment.register_id || null, shift_id: payment.shift_id || null, ...payPart(j + 1),
+        })), newIds, rest.map(() => false)),
+      ]);
+      const payments = [{ ...payment, ...p0 }, ...pRest];
+
+      /* 4) Paket yozuvi va audit */
+      const record: PackageRecord = {
+        id: crypto.randomUUID(), customer_id: String(booking.customer_id), instructor_id: null, category: String(booking.category || 'B'),
+        minutes: PACKAGE_MINUTES, price: total, list_price: computePrice(String(booking.category || 'B'), PACKAGE_MINUTES, tariffs),
+        source: 'walk_in', created_at: now, open: true,
+        sessions: all.map((x, i) => ({ booking_id: String(x.id), start_at: String(x.start_at), minutes: OPEN_MINUTES, price: amounts[i], pickup_code: x.pickup_code || null })),
+      };
+      const m = await loadMaps(all, { pays: payments });
+      await Promise.all([
+        savePackage(record),
+        auditMany(admin.id, 'CHEQUE_SPLIT', 'payments', [{ id: String(payment.id), data: {
+          receipt_code: code, into: [code, ...codes], amounts, by: me?.login || null, package: record.id } }]),
+      ]);
+      const receipts = all.map((x, i) => {
+        const shaped: any = shape(x, m);
+        const r: any = buildReceipt(shaped, payments[i]);
+        r.package_text = `5 soatlik paket · ${i + 1}/${n}`;
+        return r;
+      });
+      return { ok: true, receipts, package: { id: record.id, price: total, of: n, open: true } };
+    } catch (e: any) {
+      return reply.code(e?.statusCode ?? 400).send({ ok: false, error: e?.message || 'Chek bo‘linmadi' });
+    }
+  });
 
   /**
    * QO'LDA BRON — telefon orqali murojaat qilganlar uchun

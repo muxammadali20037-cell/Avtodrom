@@ -177,7 +177,7 @@ function view(st: State, me: StaffIdentity) {
   }
   return {
     date: st.date, today, now: new Date().toISOString(), hours: SHEET_HOURS,
-    can_edit: (me.role === 'admin' || me.role === 'operator') && st.date >= today,
+    can_edit: SHEET_WRITERS.has(String(me.role)) && st.date >= today,
     instructors: shown.map(({ id, name, phone, categories, group, active }) => ({ id, name, phone, categories, group, active })),
     cells, updated_at: st.sheet.updated_at || null, updated_by: st.sheet.updated_by || null,
   };
@@ -758,6 +758,16 @@ async function afterChange(date: string, events: Map<string, SheetEvent>, by: st
   try { const { afterSheetSave } = await import('./sheet-share.js'); await afterSheetSave(date, events, by); } catch (e) { console.error('sheet group failed:', e); }
 }
 
+/** Excel bronga YOZISH: administrator, operator va KASSA (kassada ham bron qilinadi) */
+const SHEET_WRITERS = new Set(['admin', 'operator', 'cashier']);
+async function sheetWriter(deps: Deps, req: any) {
+  const me = await deps.currentStaff(req);
+  if (!SHEET_WRITERS.has(String(me.role))) {
+    const e: any = new Error('Excel bronga yozish administrator, operator va kassa uchun'); e.statusCode = 403; throw e;
+  }
+  return me;
+}
+
 export async function registerBookingSheetRoutes(app: FastifyInstance, deps: Deps) {
   app.get('/api/admin/booking-sheet', async (req: any, reply: any) => {
     try {
@@ -773,7 +783,7 @@ export async function registerBookingSheetRoutes(app: FastifyInstance, deps: Dep
   /* Katakdagi bronni bekor qilish (Kelmagan ham — mijoz boshqa kunga so'rasa) */
   app.post('/api/admin/booking-sheet-cancel', async (req: any, reply: any) => {
     try {
-      const me = await deps.guardDesk(req);
+      const me = await sheetWriter(deps, req);
       const b = req.body || {};
       const date = String(b.date || ''), key = String(b.key || '');
       if (!YMD.test(date) || !parseKey(key)) return reply.code(400).send({ ok: false, error: 'Katak noto‘g‘ri' });
@@ -792,7 +802,7 @@ export async function registerBookingSheetRoutes(app: FastifyInstance, deps: Dep
   /* Bronni boshqa kun / soat / instruktorga ko'chirish */
   app.post('/api/admin/booking-sheet-move', async (req: any, reply: any) => {
     try {
-      const me = await deps.guardDesk(req);
+      const me = await sheetWriter(deps, req);
       const b = req.body || {};
       const date = String(b.date || ''), key = String(b.key || ''), toDate = String(b.to_date || ''), toIns = String(b.to_ins || '');
       const toH = Number(b.to_h);
@@ -821,7 +831,7 @@ export async function registerBookingSheetRoutes(app: FastifyInstance, deps: Dep
 
   app.put('/api/admin/booking-sheet', async (req: any, reply: any) => {
     try {
-      const me = await deps.guardDesk(req);
+      const me = await sheetWriter(deps, req);
       const body = req.body || {};
       const date = String(body.date || '');
       const today = tashkentYmdOf(Date.now());

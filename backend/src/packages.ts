@@ -324,7 +324,11 @@ export async function savePackage(rec: PackageRecord): Promise<void> {
     })),
   ];
   try {
-    await supabaseRest('admin_settings', { method: 'POST', headers: { Prefer: 'return=minimal' }, body: JSON.stringify(rows) });
+    /* upsert: bron boshqa paketga o'tsa (chekni bo'lish) — eski bog'lanish almashadi */
+    await supabaseRest('admin_settings', {
+      method: 'POST', query: '?on_conflict=key',
+      headers: { Prefer: 'resolution=merge-duplicates,return=minimal' }, body: JSON.stringify(rows),
+    });
   } catch (e) {
     console.error('Paket yozuvi saqlanmadi:', e instanceof Error ? e.message : e);
   }

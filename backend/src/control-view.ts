@@ -276,7 +276,7 @@ export async function controlData(date: string, nowMs = Date.now()) {
       id: String(b.id), start: b.start_at, end: b.end_at, min: durMin(b), status: String(b.status),
       code: b.pickup_code || null, name: c.full_name || 'Mijoz', phone: c.phone || null,
       cat: String(b.category || '').toUpperCase() || null, paid: paid.has(String(b.id)), src: b.source || null, sheet: sheetOf.has(String(b.id)),
-      note: b.customer_note ? String(b.customer_note).slice(0, 140) : null, arrived: !!b.arrived_at,
+      note: b.customer_note ? String(b.customer_note).slice(0, 140) : null, arrived: !!b.arrived_at, arrived_at: b.arrived_at || null,
       created_at: b.created_at || null, t: sheetOf.get(String(b.id))?.t || null, who: whoOf(b),
       auto: autoIds.has(String(b.id)),
     };
@@ -309,7 +309,14 @@ export async function controlData(date: string, nowMs = Date.now()) {
         || held.find((b) => LIVE.has(String(b.status)) && Date.parse(b.start_at) <= at && Date.parse(b.end_at) > at);
       const next = held.filter((b) => LIVE.has(String(b.status)) && Date.parse(b.start_at) > at).sort((a, b) => Date.parse(a.start_at) - Date.parse(b.start_at))[0];
       const inR = (r: Range[]) => r.find(([a, b]) => nowMin >= a && nowMin < b);
-      if (cur) now = { state: cur.status === 'in_progress' ? 'lesson' : 'due', booking: bOut(cur), ...(Date.parse(cur.end_at) <= at ? { over: Math.round((at - Date.parse(cur.end_at)) / 60000) } : {}) };
+      if (cur) {
+        /* Dars chek URILGAN paytdan hisoblanadi: tugash = urilgan vaqt + chekdagi daqiqa */
+        const startedMs = cur.status === 'in_progress' && cur.arrived_at ? Date.parse(cur.arrived_at) : Date.parse(cur.start_at);
+        const endsMs = cur.status === 'in_progress' ? startedMs + durMin(cur) * 60000 : Date.parse(cur.end_at);
+        now = { state: cur.status === 'in_progress' ? 'lesson' : 'due', booking: bOut(cur),
+          started: new Date(startedMs).toISOString(), ends: new Date(endsMs).toISOString(),
+          ...(endsMs <= at ? { over: Math.round((at - endsMs) / 60000) } : {}) };
+      }
       else if (plan.off) now = { state: 'off' };
       else if (nowMin < (plan.open[0]?.[0] ?? 0)) now = { state: 'before', at: minToHm(plan.open[0][0]) };
       else if (nowMin >= (plan.open[plan.open.length - 1]?.[1] ?? 1440)) now = { state: 'done' };
@@ -481,7 +488,12 @@ export async function registerControlRoutes(app: FastifyInstance, deps: Deps) {
   /* Admin: havolani olish (yo'q bo'lsa yaratiladi) va yangilash */
   app.get('/api/admin/control-link', async (req: any, reply: any) => {
     try {
-      await deps.guardAdmin(req);
+      /* Ko'rish: administrator va KASSA (kassada «Instruktorlar nazorati» shu havola bilan ochiladi).
+         Yangilash (POST) — faqat administrator. */
+      const who = await deps.currentStaff(req);
+      if (who.role !== 'admin' && who.role !== 'cashier') {
+        return reply.code(403).send({ ok: false, error: 'Bu bo‘lim administrator va kassa uchun' });
+      }
       let t = await readToken();
       if (!t) {
         const me = await deps.currentStaff(req).catch(() => null);
