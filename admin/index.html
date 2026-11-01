@@ -3822,6 +3822,7 @@ ACT.rcopen = el => {
       <div class="sum-row"><span>To‘lov</span><b>${r.method === 'mixed' ? `Naqd ${nf(r.cash_amount)} + karta ${nf(r.card_amount)}` : r.method === 'card' ? 'Karta' : 'Naqd'}</b></div>
       <div class="sum-row"><span>Chiqarilgan</span><b>${esc(whenText(r.paid_at))}</b></div></div>
     <button class="btn btn-primary" style="margin-top:14px" data-act="rcprint" data-code="${esc(r.code)}">${I('print', 20)} Qayta chop etish</button>
+    ${(r.state === 'active' || r.state === 'no_show') && r.payment_id ? `<button class="btn btn-danger" style="margin-top:10px" data-act="rccancel" data-code="${esc(r.code)}">${I('x', 18, 2.4)} Chekni bekor qilish</button>` : ''}
     ${r.state === 'active' && Number(r.duration_minutes) === PKG_MIN && !isOpenIso(r.start_at) ? `<button class="btn btn-soft" style="margin-top:10px" data-act="rcsplit" data-code="${esc(r.code)}">${I('lock', 18, 2.2)} 5 ta 1 soatlik chekka bo‘lish</button>
       <div class="muted" style="font-size:12.5px;margin-top:6px">Maxsus parol bilan. Summa o‘zgarmaydi — 5 ta ochiq chek (istalgan kun, istalgan instruktor), har biri ${esc(money(Math.round(r.amount / 5)))}.</div>` : ''}`);
 };
@@ -3855,6 +3856,36 @@ ACT.rcsplit = el => {
   setTimeout(() => inp.focus(), 80);
 };
 ACT.rcprint = el => { closeSheet(); reprint(el.dataset.code); };
+/* CHEKNI BEKOR QILISH (pul qaytarish). To'lov yozuvi o'chmaydi — «Bekor»
+   bo'ladi, kassa hisobotidan chiqadi, chek urilmaydi. Kassir — faqat o'z
+   kassasining bugungi chekini va maxsus parol bilan; admin — istalganini. */
+const RC_REASONS = ['Xato chek chiqarildi', 'Mijoz voz kechdi, pul qaytarildi', 'Ikki marta chiqarildi'];
+ACT.rccancel = el => {
+  const r = (RC.d?.receipts || []).find(x => x.code === el.dataset.code); if (!r) return;
+  const pin = !isAdmin() && !priceTokOk();
+  openSheet(`<h3>Chekni bekor qilish</h3>
+    <p class="lead">${esc(r.code)} · ${esc(r.customer?.full_name || 'Mijoz')} · <b>${esc(money(r.amount))}</b><br>Chek urilmaydi, summa kassa hisobidan chiqadi (pul mijozga qaytariladi). Yozuv tarixda qoladi.</p>
+    <div class="chips" style="margin-bottom:10px;flex-wrap:wrap;overflow:visible">${RC_REASONS.map(t => `<button class="chip" data-act="rcreason" data-v="${esc(t)}">${esc(t)}</button>`).join('')}</div>
+    <label class="field"><span>Sabab</span><input class="input" id="rxWhy" maxlength="200" placeholder="Sababni yozing"></label>
+    ${pin ? `<label class="field" style="margin-top:8px"><span>Maxsus parol</span><input class="input" id="rxPin" type="password" inputmode="numeric" autocomplete="off" maxlength="8" placeholder="••••" style="text-align:center;font-size:22px;letter-spacing:8px"></label>` : ''}
+    <div id="rxErr" class="note err hidden" style="margin-top:10px;font-size:13.5px"></div>
+    <div class="btn-row" style="margin-top:14px"><button class="btn btn-soft" data-act="sheetx">Ortga</button><button class="btn btn-danger" id="rxOk">Bekor qilish</button></div>`);
+  const ok = $('rxOk'), err = $('rxErr');
+  ok.onclick = async () => {
+    const why = String($('rxWhy').value || '').trim(), p = String($('rxPin')?.value || '').trim();
+    const show = m => { err.textContent = m; err.classList.remove('hidden'); };
+    if (why.length < 3) return show('Sababni yozing yoki tanlang');
+    if (pin && !/^\d{4,8}$/.test(p)) return show('Maxsus parol 4–8 ta raqam');
+    busyBtn(ok, true, 'Bekor qilinmoqda');
+    try{
+      if (pin) { const t = await post('/api/admin/price-unlock', { pin: p }); S.priceTok = { t: t.token, exp: Date.parse(t.expires_at) || Date.now() + 14 * 60000 }; }
+      await post(`/api/admin/payments/${encodeURIComponent(r.payment_id)}/refund`, { reason: why, ...(priceTokOk() ? { price_token: S.priceTok.t } : {}) });
+      closeSheet(); toast('Chek bekor qilindi');
+      RC.d = null; loadReceipts(true); refreshCounts?.();
+    }catch(e){ busyBtn(ok, false); if (e.status === 403) S.priceTok = null; show(e.message); }
+  };
+};
+ACT.rcreason = el => { const i = $('rxWhy'); if (i) { i.value = el.dataset.v; i.focus(); } };
 
 /* =========================================================================
    JARAYONDA — hozir haydayotganlar
