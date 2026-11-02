@@ -608,9 +608,17 @@ export async function registerShiftRoutes(
         method: 'POST',
         body: JSON.stringify({ p_register: regId, p_from: f.toISOString(), p_to: t.toISOString() }),
       }).catch((e: any) => { console.error('register_dashboard', regId, e?.message || e); return null; });
+      /* TEST DRIVE — alohida: to'lov izohidagi «Test drive 50000» yig'iladi (faqat to'langan, qaytarilmagan) */
+      const tdRows = supabaseRest<any[]>('payments', {
+        query: `?status=eq.paid&register_id=in.(${scope.regs.map((r) => q(String(r.id))).join(',')})` +
+          `&paid_at=gte.${q(from.toISOString())}&paid_at=lt.${q(to.toISOString())}&note=ilike.*test*drive*&select=amount,note&limit=10000`,
+      }).catch((e: any) => { console.error('test drive totals', e?.message || e); return [] as any[]; });
       const per = await Promise.all(scope.regs.map(async (r) => ({
         reg: r, cur: await call(String(r.id), from, to), prev: await call(String(r.id), prevFrom, from),
       })));
+      const { testDriveOf } = await import('./pricing.js');
+      const tdList = (await tdRows).map((p: any) => testDriveOf(p.note)).filter((n: number) => n > 0);
+      const test_drive = { count: tdList.length, total: tdList.reduce((a: number, n: number) => a + n, 0) };
 
       /* Bir nechta kassa — jamlanadi: soatlar, toifalar, instruktorlar birlashtiriladi */
       const num = (v: any) => Number(v || 0);
@@ -649,7 +657,7 @@ export async function registerShiftRoutes(
         from: from.toISOString(), to: to.toISOString(),
         totals: t0,
         change: { total: delta(t0.total, p0.total), receipts: delta(t0.receipts, p0.receipts) },
-        hours, categories, instructors, recent,
+        hours, categories, instructors, recent, test_drive,
       };
     } catch (e: any) {
       return reply.code(e?.statusCode ?? 500).send({ ok: false, error: e?.message || 'Hisobot yuklanmadi' });

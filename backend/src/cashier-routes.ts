@@ -3,7 +3,7 @@ import type { FastifyInstance } from 'fastify';
 import { supabaseRest } from './supabase.js';
 import { testInstructorIds } from './test-instructors.js';
 import { selectIn } from './rest-chunks.js';
-import { loadTariffs, computePrice, loadKrug } from './pricing.js';
+import { loadTariffs, computePrice, loadKrug, loadTestDrive, testDriveOf, testDriveNote } from './pricing.js';
 import { q, findUserByTelegram, toProfile } from './identity.js';
 import { fmtWhen, fmtMoney } from './notify.js';
 import { readRegisterToken, ownRegisterFromToken, reportScope, openShiftId, priceGuard } from './shift-routes.js';
@@ -1316,6 +1316,7 @@ export async function registerCashierRoutes(
           card_amount: Number(p.card_amount || 0),
           payment_status: pst,
           krug: /krug/i.test(String(p.note || '')),
+          test_drive: testDriveOf(p.note) || null,
           state,
           used_at: scan?.created_at || b?.arrived_at || null,
           finished_at: b?.departed_at || null,
@@ -1497,6 +1498,9 @@ export async function registerCashierRoutes(
       const mode = b.booking_id ? 'booked' : 'walk_in';
       /* 1 KRUG — bronsiz, bitta aylana: narxi va vaqti sozlamadan */
       const krug = mode === 'walk_in' && (b.krug === true || b.krug === 'true');
+      /* TEST DRIVE — narxga qo'shimcha (standart 50 000): 1 krug … 3 soat va
+         5 soatlik paketga ham (paketda bir marta — 1-chekka). */
+      const td = b.test_drive === true || b.test_drive === 'true';
       const fullName = String(b.full_name || '').trim();
       const phone = String(b.phone || '').trim();
       const instructorId = String(b.instructor_id || '').trim();
@@ -1507,7 +1511,7 @@ export async function registerCashierRoutes(
       /* TEZLIK: kerakli hamma narsa BIR VAQTDA so'raladi (ilgari ketma-ket
          10–20 ta so'rov edi — chek 3–5 soniya kutilardi). 4 xonali
          raqamlar ham shu yerda oldindan tayyorlanadi (paketda 5 ta). */
-      const [admin, tariffs, pkgPrices, krugCfg, register, shiftId, booking0, bookedPays, customer0, course0, ins0, shortsAll] = await Promise.all([
+      const [admin, tariffs, pkgPrices, krugCfg, register, shiftId, booking0, bookedPays, customer0, course0, ins0, shortsAll, tdPrice] = await Promise.all([
         adminUser(),
         loadTariffs(),
         loadPackagePrices(),
@@ -1526,8 +1530,14 @@ export async function registerCashierRoutes(
           : Promise.resolve(null),
         mode === 'walk_in' && instructorId ? instructorWithUser(instructorId) : Promise.resolve(null),
         newShortCodes(MAX_SESSIONS),
+        td ? loadTestDrive() : Promise.resolve(0),
       ]);
 
+      if (td && !(tdPrice > 0)) return reply.code(400).send({ ok: false, error: 'Test drive o‘chirilgan (Narxlar bo‘limida narxini kiriting)' });
+      const TD_NO_PKG = 'Ilovadagi paket broniga test drive qo‘shilmaydi — kassada yangi chek chiqaring';
+      const tdAdd = td ? tdPrice : 0;
+      /* Narx qo'lda kamaytirilgan bo'lsa ham test drive qismi summadan oshmasin (har chekka kamida 1 so'm) */
+      const tdPartOf = (sum: number, n: number) => (td ? Math.max(0, Math.min(tdAdd, sum - n)) : 0);
       if (krug && !(krugCfg!.price > 0)) return reply.code(400).send({ ok: false, error: '«1 krug» o‘chirilgan (Narxlar bo‘limida narxini kiriting)' });
       if (krug && Array.isArray(b.sessions) && b.sessions.length) return reply.code(400).send({ ok: false, error: '1 krug paket bo‘la olmaydi' });
       const minutes = krug ? krugCfg!.minutes : Math.max(15, Math.min(600, Math.round(Number(b.duration_minutes || 60))));
@@ -1558,6 +1568,9 @@ export async function registerCashierRoutes(
         if (['cancelled', 'rejected'].includes(String(booking.status))) {
           return reply.code(409).send({ ok: false, error: 'Bekor qilingan bron uchun chek chiqarilmaydi' });
         }
+        if (td && (b.pay_package || isOpenBooking(booking) || (await packageOf(String(booking.id))))) {
+          return reply.code(400).send({ ok: false, error: TD_NO_PKG });
+        }
         if (b.pay_package) {
           /* Butun paketni bir marta to'lash — to'lanmagan hamma mashg'ulotlar */
           const pk = await packageOf(String(booking.id));
@@ -1580,7 +1593,7 @@ export async function registerCashierRoutes(
         } else {
           /* Kassada davomiylik o'zgartirilsa — yangi davomiylik tarifi; aks holda bron narxi */
           const sameLen = Number(booking.duration_minutes || 0) === minutes;
-          expected = sameLen ? bookingDue(booking, tariffs, pkgPrices) : priceWithPackage(String(b.category || booking.category || 'B').toUpperCase(), minutes, tariffs, pkgPrices);
+          expected = (sameLen ? bookingDue(booking, tariffs, pkgPrices) : priceWithPackage(String(b.category || booking.category || 'B').toUpperCase(), minutes, tariffs, pkgPrices)) + tdAdd;
           const g = await priceGuard(req, b.price_token, total, expected);
           if (g) return reply.code(g.code).send({ ok: false, error: g.error, needs_price_pin: true, expected });
           targets = [booking];
@@ -1617,6 +1630,7 @@ export async function registerCashierRoutes(
         const pkgOn = packagePriceOf(String(b.category || ''), pkgPrices) > 0;
         const isPackage = !krug && ((minutes === PACKAGE_MINUTES && pkgOn) || (Array.isArray(b.sessions) && b.sessions.length > 0));
         if (isPackage && !pkgOn) return reply.code(400).send({ ok: false, error: '5 soatlik paket faqat B toifa uchun' });
+        expected += tdAdd;
         const cat = String(b.category || '').toUpperCase();
         if (isPackage && !/^[ABC]$/.test(cat)) return reply.code(400).send({ ok: false, error: 'Paket uchun kategoriyani tanlang' });
         const sessions: Session[] = [{ start, end: new Date(start.getTime() + minutes * 60000), minutes }];
@@ -1648,7 +1662,7 @@ export async function registerCashierRoutes(
           const { bookings, record } = await createOpenPackage({
             customerId: String(customer.id), courseId, category: cat, slots,
             status: 'confirmed', source: 'walk_in', extra: { confirmed_at: now, confirmed_by: admin.id },
-            total, tariffs, prices: pkgPrices,
+            total: total - tdPartOf(total, 5), tariffs, prices: pkgPrices,
           });
           targets = bookings;
           pkgRecord = record;
@@ -1685,7 +1699,9 @@ export async function registerCashierRoutes(
          (paket → 5 × 220 000; ilovadagi 3+2 → 660 000 + 440 000).
          Naqd/terminal ham shu nisbatda. */
       const base = targets.map((t) => Number(t.price) > 0 ? Number(t.price) : 1);
-      const amounts = targets.length === 1 ? [total] : splitBy(total, base);
+      /* Test drive bir marta: bitta chekda — summa ichida; paketda — faqat 1-chekka */
+      const tdPart = tdPartOf(total, targets.length);
+      const amounts = targets.length === 1 ? [total] : splitBy(total - tdPart, base).map((a, i) => (i === 0 ? a + tdPart : a));
       const cashParts = splitCapped(cash, amounts);
       const pending = targets.filter((t) => String(t.status) === 'pending');
       const stamp = new Date().toISOString();
@@ -1716,7 +1732,8 @@ export async function registerCashierRoutes(
           status: 'paid', method, cash_amount: c, card_amount: k,
           paid_at: stamp, receipt_code: receiptCodes[i], short_code: shorts[i],
           cashier_id: admin.id, register_id: register.id, shift_id: shiftId,
-          note: krug ? '1 krug' : (String(b.note || '').trim() || (packageInfo ? `5 soatlik paket · ${i + 1}/${targets.length}` : null)),
+          note: [krug ? '1 krug' : (String(b.note || '').trim() || (packageInfo ? `5 soatlik paket · ${i + 1}/${targets.length}` : null)),
+            td && i === 0 && tdPart > 0 ? testDriveNote(tdPart) : null].filter(Boolean).join(' · ') || null,
         };
       });
       /* To'lov ID'si oldindan — audit yozuvi to'lov bilan PARALLEL ketadi */
@@ -1736,7 +1753,7 @@ export async function registerCashierRoutes(
           id: ids[i],
           data: { amount: p.amount, suggested: expected, price_override: total !== expected ? { expected, total } : undefined,
             method: p.method, cash: p.cash_amount, card: p.card_amount, receipt_code: p.receipt_code, short_code: p.short_code,
-            booking_id: p.booking_id, mode, krug, register: register.code, package: packageInfo?.id || null },
+            booking_id: p.booking_id, mode, krug, test_drive: testDriveOf(p.note) || undefined, register: register.code, package: packageInfo?.id || null },
         }))),
         /* Bronsiz kelgan mijoz — instruktorga darhol xabar (ochiq chekda instruktor yo'q) */
         mode === 'walk_in' && !packageInfo?.open
@@ -2258,6 +2275,8 @@ function buildReceipt(b: any, p: any) {
     method: p.method,
     method_text: p.method === 'mixed' ? 'Naqd + Terminal' : p.method === 'card' ? 'Terminal' : 'Naqd',
     krug_text: /krug/i.test(String(p.note || '')) ? '1 krug' : null,
+    /* Test drive — chekda alohida qator: «Dars … / Test drive 50 000» */
+    test_drive: testDriveOf(p.note) || null,
     cash_amount: Number(p.cash_amount || 0),
     card_amount: Number(p.card_amount || 0),
     paid_at: p.paid_at,

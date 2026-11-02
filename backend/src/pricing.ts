@@ -107,6 +107,31 @@ export async function loadKrug(): Promise<{ price: number; minutes: number }> {
   return out;
 }
 
+/**
+ * TEST DRIVE — kassada «Chek chiqarish» tepasidagi tugma. Tanlansa har qanday
+ * narxga (1 krug, 30 daq … 3 soat, 5 soatlik paket) shuncha qo'shiladi.
+ * Paketda bir marta — 1-chekka. Sozlama: test_drive_price (standart 50 000; 0 — o'chiq).
+ * Chekda va kassa hisobotida alohida ko'rinadi: to'lov izohiga
+ * «Test drive 50000» yoziladi (keyin narx o'zgarsa ham eski summa saqlanadi).
+ */
+export const TEST_DRIVE_DEFAULT = 50000;
+export async function loadTestDrive(): Promise<number> {
+  try {
+    const rows = await supabaseRest<any[]>('admin_settings', { query: '?key=eq.test_drive_price&select=value&limit=1' });
+    if (!rows.length) return TEST_DRIVE_DEFAULT;
+    const v = rows[0]?.value?.value ?? rows[0]?.value;
+    if (v === null || v === undefined || v === '') return TEST_DRIVE_DEFAULT;
+    const n = Number(v);
+    return Number.isFinite(n) && n > 0 ? Math.round(n) : 0;
+  } catch { return TEST_DRIVE_DEFAULT; }
+}
+/** To'lov izohidan test drive summasi: «… · Test drive 50000» → 50000 */
+export function testDriveOf(note: unknown): number {
+  const m = /Test drive\s+(\d+)/i.exec(String(note || ''));
+  return m ? Number(m[1]) : 0;
+}
+export const testDriveNote = (amount: number) => `Test drive ${Math.round(amount)}`;
+
 /** Qulaylik: tariflarni o'zi o'qib narx qaytaradi. */
 export async function priceFor(category: string, minutes: number): Promise<number> {
   return computePrice(category, minutes, await loadTariffs());
