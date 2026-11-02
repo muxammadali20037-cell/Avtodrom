@@ -1472,7 +1472,7 @@ function pkgPrice(cat){
 }
 /** 1 krug (avtodrom bo'ylab bir aylana): sozlamadan narx (standart 80 000; 0 — o'chiq) va vaqt (15 daq) */
 function krugPrice(){ const v = sv('krug_price'); if (v === null || v === undefined || v === '') return 80000; const n = Number(v); return n > 0 ? Math.round(n) : 0; }
-/** Test drive — kassada qo'shimcha narx (standart 50 000; 0 — o'chiq). Paketda bir marta (1-chekka). */
+/** Test drive — 1 krugga qo'shimcha narx (standart 50 000; 0 — o'chiq): jami 80 000 + 50 000 = 130 000 */
 function tdPrice(){ const v = sv('test_drive_price'); if (v === null || v === undefined || v === '') return 50000; const n = Number(v); return n > 0 ? Math.round(n) : 0; }
 function krugMin(){ const n = Number(sv('krug_min')); return n >= 15 && n <= 60 ? Math.round(n) : 15; }
 function listPrice(cat, min){ const t = tariffFor(cat), m = Math.max(1, Math.round(Number(min) || 0)); if (m === 180 && t.h3 > 0) return t.h3; return m === 30 ? Math.round(t.half) : Math.round(t.hour * m / 60); }
@@ -1600,7 +1600,7 @@ function receiptHtml(x){
     <div class="rrow"><span>Vaqt</span><b>${esc(x.starts_at_text || '—')}</b></div>
     ${x.instructor_name ? `<div class="rrow"><span>Instruktor</span><b>${esc(x.instructor_name)}</b></div>` : ''}
     <div class="hr"></div>
-    ${x.test_drive ? `<div class="rrow"><span>Dars</span><b>${esc(nf(x.amount - x.test_drive))}</b></div><div class="rrow"><span>Test drive</span><b>${esc(nf(x.test_drive))}</b></div>` : ''}
+    ${x.test_drive ? `<div class="rrow"><span>${esc(x.krug_text || 'Dars')}</span><b>${esc(nf(x.amount - x.test_drive))}</b></div><div class="rrow"><span>Test drive</span><b>${esc(nf(x.test_drive))}</b></div>` : ''}
     <div class="rsum"><span>${esc(x.amount_text || money(x.amount))}</span><small>${esc(x.method_text)}</small></div>
     ${x.method === 'mixed' ? `<div class="rrow"><span>Naqd ${esc(nf(x.cash_amount))}</span><span>Terminal ${esc(nf(x.card_amount))}</span></div>` : ''}
     <div class="rrow"><span>${esc(x.paid_at_text)}</span><span>${esc(x.register || '')}</span></div>
@@ -2728,9 +2728,7 @@ function payBind(W){
 }
 /** «5 ta chek × 220 000» yoki «2 ta chek: 660 000 + 440 000» */
 function sharesText(W, t){
-  const ms = coOpen(W) ? W.split.m : W.sess.map(x => x.m), td = W.manual == null ? tdAddOf(W) : 0;
-  const parts = shares(t - td, ms).map((x, i) => i === 0 ? x + td : x);
-  if (td && parts.length > 1 && parts.slice(1).every(x => x === parts[1])) return `${nf(parts[0])} (test drive bilan) + ${parts.length - 1} × ${nf(parts[1])} so‘m`;
+  const ms = coOpen(W) ? W.split.m : W.sess.map(x => x.m), parts = shares(t, ms);
   return parts.every(x => x === parts[0]) ? `${parts.length} ta chek × ${nf(parts[0])} so‘m` : `${parts.length} ta chek: ${parts.map(nf).join(' + ')}`;
 }
 function paintTotal(W){
@@ -2943,12 +2941,11 @@ function coTimesHtml(W){ return timesHtml(W, W.day).replace(/data-act="wztime"/g
 
 /* ---------- davomiylik variantlari ---------- */
 function coDurs(W){
-  /* Test drive yoqilgan bo'lsa — hamma narxga qo'shiladi (yozuv tepadagi tugmada) */
-  const c = W.cat || 'B', out = [], td = tdAddOf(W), tdS = s => s;
-  if (krugPrice() > 0) out.push({ k: 'krug', lt: I('refresh', 20, 2.2), t: '1 krug', s: tdS(`bir aylana · ${krugMin()} daq`), p: krugPrice() + td });
+  const c = W.cat || 'B', out = [];
+  if (krugPrice() > 0) out.push({ k: 'krug', lt: I('refresh', 20, 2.2), t: '1 krug', s: `bir aylana · ${krugMin()} daq`, p: krugPrice() });
   [[30, '½', '30 daqiqa'], [60, '1', '1 soat'], [90, '1½', '1,5 soat'], [120, '2', '2 soat'], [180, '3', '3 soat']].forEach(([m, lt, t]) =>
-    out.push({ k: String(m), lt, t, s: tdS(m === 180 && tariffFor(c).h3 > 0 ? '3 soatlik tarif' : ''), p: priceOf(c, m) + td }));
-  if (pkgPrice(c) > 0) out.push({ k: 'pkg', lt: '5', t: '5 soatlik paket', s: '5 ta 1 soatlik chek · istalgan kun', p: pkgPrice(c) + td, lp: listPrice(c, PKG_MIN) + td, pkg: true });
+    out.push({ k: String(m), lt, t, s: m === 180 && tariffFor(c).h3 > 0 ? '3 soatlik tarif' : '', p: priceOf(c, m) }));
+  if (pkgPrice(c) > 0) out.push({ k: 'pkg', lt: '5', t: '5 soatlik paket', s: '5 ta 1 soatlik chek · istalgan kun', p: pkgPrice(c), lp: listPrice(c, PKG_MIN), pkg: true });
   return out;
 }
 /* KASSADAGI PAKET — 5 ta OCHIQ 1 soatlik chek: kun ham, instruktor ham
@@ -2972,23 +2969,31 @@ const coOpt = ({ act, v, lt, t, s, rt, rs, on, dis, cls = '' }) => `<button clas
   <span class="lt">${lt}</span><span class="tx"><b>${t}</b>${s ? `<small>${s}</small>` : ''}</span>${rt ? `<span class="rt">${rt}${rs ? `<small>${rs}</small>` : ''}</span>` : ''}<span class="ok">${on ? I('check', 18, 2.8) : ''}</span></button>`;
 
 /* ---------- TEST DRIVE (tepada) ----------
-   Bosilsa — Davomiylikdagi hamma narxga (1 krug … 3 soat, 5 soatlik paket) +50 000.
-   Paketda bir marta — 1-chekka. Chekda va kassa hisobotida alohida ko'rinadi.
-   Ilovadagi paket broniga (allaqachon bo'lingan) qo'shilmaydi. */
-const tdPkgBooking = W => !!(W.booking && (W.booking.package || isOpenIso(W.booking.start_at)));
-const tdAddOf = W => W.td && tdPrice() > 0 && !(W.booking && tdPkgBooking(W)) ? tdPrice() : 0;
+   Bosilsa — chek faqat «1 krug» bo'ladi: soat ham, vaqt ham tanlanmaydi
+   (Davomiylik va Vaqt yo'qoladi), dars hozirdan, narxi 1 krug + test drive
+   (80 000 + 50 000 = 130 000). Instruktor hisobotiga 15 daqiqa yoziladi.
+   Faqat bronsiz chekda (bron to'lovida chiqmaydi). */
+const tdOn = W => !!(W.td && W.krug && !W.booking && tdPrice() > 0 && krugPrice() > 0);
+const tdAddOf = W => tdOn(W) ? tdPrice() : 0;
 function coTdSec(W){
-  const p = tdPrice();
-  if (!(p > 0) || tdPkgBooking(W)) return '';
-  return `<section class="co-sec co-td ${W.td ? 'on' : ''}" id="co-td"><button class="co-td-b" data-act="cotd" aria-pressed="${W.td ? 'true' : 'false'}">
+  const p = tdPrice(), k = krugPrice();
+  if (!(p > 0) || !(k > 0) || W.booking) return '';
+  const on = tdOn(W);
+  return `<section class="co-sec co-td ${on ? 'on' : ''}" id="co-td"><button class="co-td-b" data-act="cotd" aria-pressed="${on ? 'true' : 'false'}">
       <span class="ic">${I('steer', 22, 2.2)}</span>
-      <span class="tx"><b>Test drive</b><small>${W.td ? `Narxga +${nf(p)} so‘m qo‘shildi · chekda alohida qator` : `Bosing — hamma narxga +${nf(p)} so‘m qo‘shiladi`}</small></span>
-      <span class="rt">+${nf(p)}</span><span class="sw ${W.td ? 'on' : ''}"></span></button></section>`;
+      <span class="tx"><b>Test drive</b><small>${on ? `1 krug · ${krugMin()} daqiqa · hozirdan — soat va vaqt tanlanmaydi` : `Bosing — 1 krug (${krugMin()} daq) + test drive = ${nf(k + p)} so‘m`}</small></span>
+      <span class="rt">${nf(k + p)}</span><span class="sw ${on ? 'on' : ''}"></span></button></section>`;
 }
 ACT.cotd = () => {
   const W = CO;
-  if (!(tdPrice() > 0) || tdPkgBooking(W)) return;
-  W.td = !W.td;
+  if (!(tdPrice() > 0) || !(krugPrice() > 0) || W.booking) return;
+  W.td = !tdOn(W);
+  if (W.td) {
+    /* faqat 1 krug — hozirdan */
+    W.krug = true; W.min = krugMin(); W.split = null;
+    W.sess = [{ m: krugMin(), day: kToday(), t: nowHM(), now: true }]; W.si = 0; W.day = kToday();
+    coTouch(W);
+  }
   W.manual = null; W.priceEdit = false;
   coPatch('td', ['td', 'dur', 'now', 'time', 'ins', 'pay']);
 };
@@ -3021,8 +3026,9 @@ function coCatSec(W){
   }).join('')}</div>`);
 }
 function coDurSec(W){
+  if (tdOn(W)) return '';
   const key = coDurKey(W), c = W.cat || 'B';
-  const val = W.min ? `${coDurLabel(W)} · ${nf((W.krug ? krugPrice() : priceOf(c, W.min)) + tdAddOf(W))} so‘m` : '';
+  const val = W.min ? `${coDurLabel(W)} · ${nf(W.krug ? krugPrice() : priceOf(c, W.min))} so‘m` : '';
   const ds = coDurs(W);
   return coSel('dur', 3, 'Davomiylik', val, !!W.min, () => `<div class="co-opts one-row" style="--n:${ds.length}">${ds.map(d => coOpt({
       act: 'codur', v: d.k, lt: d.lt, t: d.t, s: esc(d.s), cls: d.pkg ? 'pkg' : d.k === 'krug' ? 'krug' : '',
@@ -3032,6 +3038,7 @@ function coDurSec(W){
 }
 /* VAQT — o'zgarmaydi: hozir. Tanlash yo'q. */
 function coNowSec(W){
+  if (tdOn(W)) return '';
   if (coOpen(W)) return `<section class="co-sec co-sel co-fixed" id="co-now"><div class="co-selh">
       <span class="lb">Vaqt</span><b class="vl">Istalgan kun</b></div>
     <div class="co-fixed-note">Har bir chek urilgan paytdan 1 soat. Instruktor ham chek urilganda biriktiriladi.</div></section>`;
@@ -3043,7 +3050,7 @@ function coNowSec(W){
 }
 /* 5 soatlik paket bo'linsa — KEYINGI mashg'ulotlar (2-, 3-…) uchun kun va soat */
 function coTimeSec(W){
-  if (W.sess.length < 2) return '';
+  if (tdOn(W) || W.sess.length < 2) return '';
   if (W.si < 1) W.si = 1;
   const rest = W.sess.slice(1), t0 = kToday();
   const val = rest.every(x => x.t) ? rest.map(sessText).join(' · ') : `${rest.filter(x => x.t).length}/${rest.length} tanlandi`;
@@ -3087,7 +3094,7 @@ function coInsSec(W){
 }
 function coPaySec(W){
   const b = W.booking, auto = autoPrice(W), total = totalOf(W), un = pkgUnpaid(W);
-  const pkOn = !b && isPkg(W), lp = listPrice(W.cat, PKG_MIN) + tdAddOf(W);
+  const pkOn = !b && isPkg(W), lp = listPrice(W.cat, PKG_MIN);
   const n = b ? (W.payPkg && un.length > 1 ? un.length : 1) : pkOn ? (coOpen(W) ? coChecks(W) : W.sess.length) : 1;
   return `<section class="co-sec" id="co-pay">${coHead(b ? 2 : 6, 'To‘lov', { cash: 'Naqd', card: 'Karta', mixed: 'Naqd + karta' }[W.pay], true)}
     ${b && b.package && un.length > 1 ? `<button class="co-booked" data-act="wzpaypkg" style="width:100%;align-items:center;margin-bottom:12px;text-align:left;background:var(--card-2)">
@@ -3102,7 +3109,7 @@ function coPaySec(W){
         ${pkOn && W.manual == null ? `<div style="margin-top:4px"><s class="muted">${nf(lp)}</s> <span style="display:inline-block;padding:2px 8px;border-radius:99px;background:#dcfce7;color:#15803d;font-weight:800;font-size:12.5px">${nf(lp - auto)} tejaldi</span></div>` : ''}
         ${W.manual != null ? `<div class="muted" style="font-size:12.5px">avtomatik: ${nf(auto)}</div>` : ''}
         ${pkOn && (coOpen(W) || W.sess.length > 1) ? `<div class="muted" style="font-size:12.5px;margin-top:2px" id="wzShares">${sharesText(W, total)}</div>` : ''}
-        ${tdAddOf(W) && W.manual == null ? `<div class="muted" style="font-size:12.5px;margin-top:3px">${pkOn ? 'paket' : 'dars'} ${nf(auto - tdAddOf(W))} + test drive ${nf(tdAddOf(W))}</div>` : ''}</div>
+        ${tdAddOf(W) && W.manual == null ? `<div class="muted" style="font-size:12.5px;margin-top:3px">1 krug ${nf(auto - tdAddOf(W))} + test drive ${nf(tdAddOf(W))}</div>` : ''}</div>
       <b class="big" id="wzTotal">${nf(total)} so‘m</b></div>
     <div id="wzPriceBox" class="${W.priceEdit ? '' : 'hidden'}" style="margin-top:10px"><input class="input" id="wzPrice" inputmode="numeric" value="${W.manual ?? ''}" placeholder="Yangi summa, so‘m"></div>
     <button class="link" data-act="wzprice" style="margin-top:8px;display:inline-flex;align-items:center;gap:6px">${W.manual != null ? 'Avtomatik narxga qaytarish' : W.priceEdit ? 'Yopish' : `${I('lock', 15, 2.2)}<span>Narxni o‘zgartirish (maxsus parol)</span>`}</button>
@@ -6709,7 +6716,7 @@ function vPrices(){
       <p class="muted" style="font-size:12.5px;margin:8px 2px 0">Kassada «Davomiylik» ro‘yxatida chiqadi. Instruktor shuncha daqiqa band hisoblanadi.</p></div>
     <div class="card" style="margin-top:12px;background:linear-gradient(135deg,#eff6ff,#fff)"><div class="sec-h"><h2>Test drive</h2></div>
       <label class="field" style="margin-top:0"><span>Qo‘shimcha narx, so‘m (0 — o‘chiq)</span><input class="input" inputmode="numeric" id="pr-td" value="${tdPrice()}"></label>
-      <p class="muted" style="font-size:12.5px;margin:8px 2px 0">Kassada «Chek chiqarish» tepasida «Test drive» tugmasi chiqadi. Bosilsa hamma narxga (1 krug … 3 soat, 5 soatlik paket) shu summa qo‘shiladi; paketda bir marta — 1-chekka. Chekda va kassa hisobotida alohida ko‘rinadi.</p></div>
+      <p class="muted" style="font-size:12.5px;margin:8px 2px 0">Kassada «Chek chiqarish» tepasida «Test drive» tugmasi chiqadi. Bosilsa chek faqat «1 krug» bo‘ladi (soat va vaqt tanlanmaydi): narxi 1 krug + shu summa. Instruktor hisobotiga krug daqiqasi yoziladi. Chekda va kassa hisobotida alohida ko‘rinadi.</p></div>
     <div class="card" style="margin-top:12px;background:linear-gradient(135deg,#eef2ff,#fff)"><div class="sec-h"><h2>Eslatmalar va kechikish</h2><button class="link" data-act="remcheck">Tekshirish</button></div>
       <div class="grid2"><label class="field" style="margin-top:0"><span>Eslatma — dars boshlanishiga necha daqiqa qolganda</span><input class="input" id="pr-rem" value="${esc(rem)}" placeholder="60, 30, 20" inputmode="numeric"></label>
       <label class="field" style="margin-top:0"><span>Kechikish, daqiqa (0 — o‘chiq)</span><input class="input" inputmode="numeric" id="pr-late" value="${esc(late)}"></label></div>
