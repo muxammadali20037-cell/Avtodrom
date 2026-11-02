@@ -498,8 +498,28 @@ function cdClock(sec){
 }
 const cdHtml = b => { const e = lessonEnd(b); return e ? `<div class="cd" data-end="${e}" data-id="${esc(b.id)}"><b>--:--</b><small>qoldi</small></div>` : ''; };
 const cdWarned = new Set();
+/* Vaqti tugagan dars «darsda» bo'lib qolib ketmasin: server tugash vaqtida o'zi
+   yopadi, lekin ilova yangilana olmasa (internet, eskirgan kirish) eski holat
+   ko'rinib «+42:45 vaqt tugadi» o'saverardi. Endi tugashdan 1 daqiqa o'tgach
+   ilovaning o'zida ham «tugadi» bo'ladi va ro'yxat qayta so'raladi. */
+let settleAt = 0;
+function settleOverdue(){
+  const now = Date.now();
+  let n = 0;
+  for (const b of S.bookings) {
+    if (b.status !== 'in_progress') continue;
+    const e = lessonEnd(b);
+    if (e && now > e + 60000) { b.status = 'completed'; b.departed_at = b.departed_at || new Date(e).toISOString(); n++; }
+  }
+  return n;
+}
 function tickCountdowns(){
   const now = Date.now();
+  if (S.profile && settleOverdue()) {
+    renderMenu(); renderScan(); renderBookings();
+    if (now - settleAt > 20000) { settleAt = now; loadBookings(); }
+    return;
+  }
   document.querySelectorAll('.cd[data-end]').forEach(el => {
     const left = (Number(el.dataset.end) - now) / 1000;
     const over = left < 0, soon = !over && left <= 300;
@@ -689,12 +709,17 @@ async function loadBookings(){
     const from = at(addDays(today(), -14), '00:00').toISOString();
     const d = await api(`/api/instructor/bookings?from=${encodeURIComponent(from)}`);
     S.bookings = (d.bookings || []).sort((a, b) => new Date(whenOf(a)) - new Date(whenOf(b)));
+    settleOverdue();
     renderMenu(); renderScan(); renderBookings();
     if (current === 'free') renderFree();
   } catch (e) {
-    const html = `<div class="alert a-err">${esc(e.message)}</div>`;
+    /* Kirish eskirgan bo'lsa — tushunarli yozuv (ilova ochiq turganda Telegram uni yangilamaydi) */
+    const stale = /initData|expired|Unauthorized/i.test(String(e.message || ''));
+    const msg = stale ? 'Ilova uzoq ochiq turdi — yopib, bot orqali qayta oching.' : e.message;
+    const html = `<div class="alert a-err">${esc(msg)}</div>`;
     $('bkList').innerHTML = html; $('homeList').innerHTML = html;
-    $('tBook').textContent = 'Yuklanmadi — qayta urinilmoqda';
+    if (settleOverdue()) { renderMenu(); renderScan(); }
+    $('tBook').textContent = stale ? 'Qayta oching — ilova eskirgan' : 'Yuklanmadi — qayta urinilmoqda';
   }
 }
 
