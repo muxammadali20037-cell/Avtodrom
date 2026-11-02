@@ -1496,11 +1496,13 @@ export async function registerCashierRoutes(
       }
 
       const mode = b.booking_id ? 'booked' : 'walk_in';
-      /* 1 KRUG — bronsiz, bitta aylana: narxi va vaqti sozlamadan */
-      const krug = mode === 'walk_in' && (b.krug === true || b.krug === 'true');
-      /* TEST DRIVE — narxga qo'shimcha (standart 50 000): 1 krug … 3 soat va
-         5 soatlik paketga ham (paketda bir marta — 1-chekka). */
+      /* TEST DRIVE — faqat bronsiz «1 krug» (15 daq): narxi 1 krug + test drive
+         (80 000 + 50 000 = 130 000). Soat/vaqt tanlanmaydi — dars hozirdan,
+         instruktor hisobotiga krug daqiqasi (15) yoziladi. */
       const td = b.test_drive === true || b.test_drive === 'true';
+      if (td && mode !== 'walk_in') return reply.code(400).send({ ok: false, error: 'Test drive faqat bronsiz chekda (1 krug) — bron uchun emas' });
+      /* 1 KRUG — bronsiz, bitta aylana: narxi va vaqti sozlamadan */
+      const krug = mode === 'walk_in' && (b.krug === true || b.krug === 'true' || td);
       const fullName = String(b.full_name || '').trim();
       const phone = String(b.phone || '').trim();
       const instructorId = String(b.instructor_id || '').trim();
@@ -1534,7 +1536,6 @@ export async function registerCashierRoutes(
       ]);
 
       if (td && !(tdPrice > 0)) return reply.code(400).send({ ok: false, error: 'Test drive o‘chirilgan (Narxlar bo‘limida narxini kiriting)' });
-      const TD_NO_PKG = 'Ilovadagi paket broniga test drive qo‘shilmaydi — kassada yangi chek chiqaring';
       const tdAdd = td ? tdPrice : 0;
       /* Narx qo'lda kamaytirilgan bo'lsa ham test drive qismi summadan oshmasin (har chekka kamida 1 so'm) */
       const tdPartOf = (sum: number, n: number) => (td ? Math.max(0, Math.min(tdAdd, sum - n)) : 0);
@@ -1567,9 +1568,6 @@ export async function registerCashierRoutes(
         if (!booking) return reply.code(404).send({ ok: false, error: 'Bron topilmadi' });
         if (['cancelled', 'rejected'].includes(String(booking.status))) {
           return reply.code(409).send({ ok: false, error: 'Bekor qilingan bron uchun chek chiqarilmaydi' });
-        }
-        if (td && (b.pay_package || isOpenBooking(booking) || (await packageOf(String(booking.id))))) {
-          return reply.code(400).send({ ok: false, error: TD_NO_PKG });
         }
         if (b.pay_package) {
           /* Butun paketni bir marta to'lash — to'lanmagan hamma mashg'ulotlar */
@@ -1662,7 +1660,7 @@ export async function registerCashierRoutes(
           const { bookings, record } = await createOpenPackage({
             customerId: String(customer.id), courseId, category: cat, slots,
             status: 'confirmed', source: 'walk_in', extra: { confirmed_at: now, confirmed_by: admin.id },
-            total: total - tdPartOf(total, 5), tariffs, prices: pkgPrices,
+            total, tariffs, prices: pkgPrices,
           });
           targets = bookings;
           pkgRecord = record;
@@ -1676,7 +1674,7 @@ export async function registerCashierRoutes(
               end_at: new Date(start.getTime() + minutes * 60000).toISOString(),
               duration_minutes: minutes, category: b.category || null,
               status: 'confirmed', source: 'walk_in', confirmed_at: now, confirmed_by: admin.id,
-              ...(krug ? { customer_note: '1 krug' } : {}),
+              ...(krug ? { customer_note: td ? 'Test drive · 1 krug' : '1 krug' } : {}),
             }),
           }))[0]];
         }
@@ -1699,7 +1697,7 @@ export async function registerCashierRoutes(
          (paket → 5 × 220 000; ilovadagi 3+2 → 660 000 + 440 000).
          Naqd/terminal ham shu nisbatda. */
       const base = targets.map((t) => Number(t.price) > 0 ? Number(t.price) : 1);
-      /* Test drive bir marta: bitta chekda — summa ichida; paketda — faqat 1-chekka */
+      /* Test drive (faqat 1 krug — bitta chek) summa ichida; izohga alohida yoziladi */
       const tdPart = tdPartOf(total, targets.length);
       const amounts = targets.length === 1 ? [total] : splitBy(total - tdPart, base).map((a, i) => (i === 0 ? a + tdPart : a));
       const cashParts = splitCapped(cash, amounts);

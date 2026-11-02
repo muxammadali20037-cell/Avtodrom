@@ -108,9 +108,9 @@ export async function loadKrug(): Promise<{ price: number; minutes: number }> {
 }
 
 /**
- * TEST DRIVE — kassada «Chek chiqarish» tepasidagi tugma. Tanlansa har qanday
- * narxga (1 krug, 30 daq … 3 soat, 5 soatlik paket) shuncha qo'shiladi.
- * Paketda bir marta — 1-chekka. Sozlama: test_drive_price (standart 50 000; 0 — o'chiq).
+ * TEST DRIVE — kassada «Chek chiqarish» tepasidagi tugma. Tanlansa chek faqat
+ * «1 krug» bo'ladi (15 daq, soat/vaqt tanlanmaydi), narxi 1 krug + shu summa
+ * (80 000 + 50 000 = 130 000). Sozlama: test_drive_price (standart 50 000; 0 — o'chiq).
  * Chekda va kassa hisobotida alohida ko'rinadi: to'lov izohiga
  * «Test drive 50000» yoziladi (keyin narx o'zgarsa ham eski summa saqlanadi).
  */
