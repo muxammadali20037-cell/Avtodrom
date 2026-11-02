@@ -1222,11 +1222,7 @@ export async function registerCashierRoutes(
       const code = String(req.params.code || '').trim().toUpperCase();
       const payment = (await supabaseRest<any[]>('payments', { query: `?receipt_code=eq.${q(code)}&select=*&limit=1` }))[0];
       if (!payment) return reply.code(404).send({ ok: false, error: 'Chek topilmadi' });
-      const { peekStaff } = await import('./admin-password-routes.js');
-      const me = peekStaff(req);
-      if (me && me.role === 'cashier' && payment.register_id && String(payment.register_id) !== String(me.register_id || '')) {
-        return reply.code(403).send({ ok: false, error: 'Bu chek boshqa kassada chiqarilgan' });
-      }
+      /* Qayta chop etish — istalgan kassa cheki (P1 ↔ P2 bir-birinikini ham chiqara oladi) */
       const booking = (await supabaseRest<any[]>('bookings', { query: `?id=eq.${q(String(payment.booking_id))}&select=*&limit=1` }))[0];
       if (!booking) return reply.code(404).send({ ok: false, error: 'Bron topilmadi' });
       const m = await loadMaps([booking]);
@@ -1249,8 +1245,16 @@ export async function registerCashierRoutes(
   app.get('/api/admin/cashier/receipts', async (req: any, reply: any) => {
     try {
       await requireAdmin(req);
-      const scope = await reportScope(req, req.query);
+      let scope = await reportScope(req, req.query);
       if (!scope) return reply.code(401).send({ ok: false, error: 'Kassa ochilmagan — qayta kiring' });
+      /* CHEKLAR — P1 va P2 bir-birining cheklarini KO'RADI va qayta chop etadi
+         (?register=all). Faqat ro'yxat: kassa hisoboti va pul qaytarish —
+         o'z kassasida. ownId — kassirning o'z kassasi (boshqasini bekor qila olmaydi). */
+      const ownId = scope.all ? null : scope.ids[0];
+      if (!scope.all && String(req.query?.register || '').trim().toLowerCase() === 'all') {
+        const regs = await supabaseRest<any[]>('cash_registers', { query: '?is_active=eq.true&select=id,code,name&order=code.asc' });
+        if (regs.length) scope = { all: true, ids: regs.map((r) => String(r.id)), regs, label: 'Hamma kassa' };
+      }
       const registerId = scope.ids[0];
       const regCode = new Map(scope.regs.map((r) => [String(r.id), String(r.code)]));
       /* Hamma kassa: kassaga bog'lanmagan eski to'lovlar ham kiradi (hech qayerda yo'qolmasin) */
@@ -1308,6 +1312,8 @@ export async function registerCashierRoutes(
           payment_id: p.id,
           short_code: p.short_code || null,
           register: regCode.get(String(p.register_id)) || (p.register_id ? '?' : '—'),
+          register_id: p.register_id || null,
+          own: ownId ? String(p.register_id || '') === ownId : true,
           booking_cancelled: ['cancelled', 'rejected'].includes(bst),
           paid_at: p.paid_at,
           amount: Number(p.amount || 0),
@@ -1359,7 +1365,7 @@ export async function registerCashierRoutes(
          qaytadi, jami raqamlar esa BUTUN davr bo'yicha hisoblanadi. */
       const LIMIT = 1500;
       return {
-        ok: true, date: day, register_id: scope.all ? 'all' : registerId, scope: scope.all ? 'all' : 'one', registers: scope.regs,
+        ok: true, date: day, register_id: scope.all ? 'all' : registerId, scope: scope.all ? 'all' : 'one', registers: scope.regs, own_register_id: ownId,
         from: rg.fromYmd || rg.anchor, to: rg.toYmd || tkYmd(new Date(rg.to.getTime() - 1).toISOString()),
         summary: {
           total: rows.length, active: count('active'), used: count('used'),

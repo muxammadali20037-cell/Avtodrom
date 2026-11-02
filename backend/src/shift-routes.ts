@@ -459,16 +459,19 @@ export async function registerShiftRoutes(
       await requireAdmin(req);
       const now = Date.now();
 
-      /* Jarayondagilar + BUGUN yakunlanganlar.
-         Admin "kim nechada boshladi, nechada yopdi" ni ko'rishi kerak,
-         shuning uchun tugaganlar ham kunning oxirigacha ro'yxatda qoladi. */
-      const dayStart = new Date(new Date(now).getTime() - 18 * 3600e3).toISOString();
+      /* Jarayondagilar + tanlangan KUNDA (Toshkent vaqti, 00:00–24:00) yakunlanganlar.
+         ?date=YYYY-MM-DD — standart bugun. Admin «kim nechada boshladi, nechada
+         yopdi» ni kun bo'yicha ko'radi (ilgari oxirgi 18 soat aralash chiqardi). */
+      const todayYmd = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Tashkent' }).format(new Date(now));
+      const day = /^\d{4}-\d{2}-\d{2}$/.test(String(req.query?.date || '')) ? String(req.query.date) : todayYmd;
+      const dayStart = new Date(`${day}T00:00:00+05:00`);
+      const dayEnd = new Date(dayStart.getTime() + 864e5);
       const [active, doneToday] = await Promise.all([
         supabaseRest<any[]>('bookings', {
           query: '?status=eq.in_progress&select=*&order=arrived_at.asc&limit=200',
         }),
         supabaseRest<any[]>('bookings', {
-          query: `?status=eq.completed&departed_at=gte.${q(dayStart)}&select=*&order=departed_at.desc&limit=100`,
+          query: `?status=eq.completed&departed_at=gte.${q(dayStart.toISOString())}&departed_at=lt.${q(dayEnd.toISOString())}&select=*&order=departed_at.desc&limit=500`,
         }).catch(() => []),
       ]);
       let bookings = [...active, ...doneToday];
@@ -484,7 +487,7 @@ export async function registerShiftRoutes(
         bookings = bookings.filter((b) => mine.has(String(b.id)));
       }
       if (!bookings.length) {
-        return { ok: true, now: new Date(now).toISOString(), counts: { total: 0, red: 0, yellow: 0, stale: 0, done: 0 }, rows: [] };
+        return { ok: true, now: new Date(now).toISOString(), day, counts: { total: 0, red: 0, yellow: 0, stale: 0, done: 0, active: 0 }, rows: [] };
       }
 
       const ids  = bookings.map((b) => String(b.id));
@@ -566,6 +569,7 @@ export async function registerShiftRoutes(
       return {
         ok: true,
         now: new Date(now).toISOString(),
+        day,
         counts: {
           total: rows.length,
           red: rows.filter((r) => r.level === 'red').length,

@@ -15,7 +15,15 @@ export type TelegramWebAppUser = {
   photo_url?: string;
 };
 
-export function validateTelegramInitData(initData: string, botToken: string, maxAgeSeconds = 3600): TelegramWebAppUser {
+/**
+ * Telegram Mini App kirish ma'lumoti (initData) — imzosi tekshiriladi.
+ * Muddat 24 soat: ilova ochiq turganda initData yangilanmaydi. Avval 1 soat edi —
+ * instruktor ilovani ertalab ochib qo'ysa, bir soatdan keyin hamma so'rov
+ * «initData expired» bo'lib qolardi (bronlar yuklanmas, tugagan dars «darsda» turardi,
+ * chek ham urilmasdi). Imzo (HMAC) har doim tekshiriladi.
+ */
+export const INIT_DATA_MAX_AGE = 24 * 3600;
+export function validateTelegramInitData(initData: string, botToken: string, maxAgeSeconds = INIT_DATA_MAX_AGE): TelegramWebAppUser {
   if (!initData || !botToken) throw new Error('Telegram authentication data is missing');
   const params = new URLSearchParams(initData);
   const receivedHash = params.get('hash');

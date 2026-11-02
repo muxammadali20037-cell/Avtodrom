@@ -132,7 +132,18 @@ export async function registerInstructorRoutes(
       if (query.status) parts.push(`status=eq.${q(query.status)}`);
       if (query.from) parts.push(`booking_date=gte.${q(query.from)}`);
       if (query.to) parts.push(`booking_date=lt.${q(query.to)}`);
-      return { ok: true, bookings: await supabaseRest<any[]>('bookings', { query: `?${parts.join('&')}` }) };
+      let rows = await supabaseRest<any[]>('bookings', { query: `?${parts.join('&')}` });
+      /* Vaqti tugagan «darsda» — shu yerning o'zida yopiladi (avval faqat admin
+         paneli yoki cron yopardi: instruktor ilovasida «+42:45 vaqt tugadi» qolib ketardi) */
+      const nowMs = Date.now();
+      const due = rows.some((b) => b.status === 'in_progress' && b.arrived_at
+        && Date.parse(b.arrived_at) + (lessonMinutes(b, b.course) || 60) * 60000 <= nowMs);
+      if (due) {
+        const { finishDueLessons } = await import('./lesson-ledger.js');
+        await finishDueLessons(nowMs).catch(() => null);
+        rows = await supabaseRest<any[]>('bookings', { query: `?${parts.join('&')}` });
+      }
+      return { ok: true, bookings: rows };
     } catch (e) {
       return reply.code(400).send({ ok: false, error: e instanceof Error ? e.message : 'Failed to load instructor bookings' });
     }

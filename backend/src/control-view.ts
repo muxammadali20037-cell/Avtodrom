@@ -486,6 +486,58 @@ export async function registerControlRoutes(app: FastifyInstance, deps: Deps) {
   });
 
   /* Admin: havolani olish (yo'q bo'lsa yaratiladi) va yangilash */
+  /* KASSA → «Instruktorlar nazorati»: faqat instruktorlar va QACHON BO'SHASHI.
+     Eng tez bo'shaydigan tepada: hozir bo'shlar → darsdagilar (tugash vaqti
+     bo'yicha) → tanaffusdagilar → ishni boshlamaganlar; bugun ishlamaydiganlar oxirida. */
+  app.get('/api/admin/instructors-free', async (req: any, reply: any) => {
+    reply.header('Cache-Control', 'no-store');
+    try {
+      const who = await deps.currentStaff(req);
+      if (!['admin', 'cashier', 'operator'].includes(String(who?.role))) {
+        return reply.code(403).send({ ok: false, error: 'Bu bo‘lim xodimlar uchun' });
+      }
+      const nowMs = Date.now();
+      /* vaqti tugagan darslar avval yopiladi — «darsda» bo'lib qolib ketmasin */
+      const { finishDueLessons } = await import('./lesson-ledger.js');
+      await finishDueLessons(nowMs).catch(() => null);
+      const today = tashkentYmdOf(nowMs);
+      const d: any = await controlData(today, nowMs);
+      const atToday = (hm: string | null | undefined) => (hm ? new Date(`${today}T${hm}:00+05:00`).toISOString() : null);
+      const nowIso = new Date(nowMs).toISOString();
+      const rows = (d.instructors || []).filter((i: any) => i.active).map((i: any) => {
+        const n = i.now || {};
+        let free_at: string | null = null;
+        if (n.state === 'free') free_at = nowIso;
+        else if (n.state === 'lesson' || n.state === 'due') free_at = n.over != null ? nowIso : n.ends;
+        else if (n.state === 'break' || n.state === 'own') free_at = atToday(n.until);
+        else if (n.state === 'before') free_at = atToday(n.at);
+        const b = n.booking;
+        return {
+          id: i.id, name: i.name, phone: i.phone || null, categories: i.categories, car: i.car || null,
+          state: n.state || 'off', free_at,
+          lesson: b ? { name: b.name, started: n.started, ends: n.ends, min: b.min, over: n.over ?? null, note: b.note || null } : null,
+          next: n.next ? { start: n.next.start, name: n.next.name, min: n.next.min } : null,
+          until: n.until || null,
+        };
+      });
+      const rank = (r: any) => (r.free_at ? 0 : 1);
+      rows.sort((a: any, b: any) => rank(a) - rank(b)
+        || (a.free_at && b.free_at ? Date.parse(a.free_at) - Date.parse(b.free_at) : 0)
+        || String(a.name).localeCompare(String(b.name), 'uz'));
+      const cnt = (f: (r: any) => boolean) => rows.filter(f).length;
+      return {
+        ok: true, now: nowIso, date: today, rows,
+        counts: {
+          free: cnt((r: any) => r.state === 'free'),
+          lesson: cnt((r: any) => r.state === 'lesson' || r.state === 'due'),
+          off: cnt((r: any) => !r.free_at),
+        },
+      };
+    } catch (e: any) {
+      return reply.code(e?.statusCode ?? 500).send({ ok: false, error: e?.message || 'Yuklanmadi' });
+    }
+  });
+
   app.get('/api/admin/control-link', async (req: any, reply: any) => {
     try {
       /* Ko'rish: administrator va KASSA (kassada «Instruktorlar nazorati» shu havola bilan ochiladi).
