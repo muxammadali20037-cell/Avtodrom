@@ -192,13 +192,18 @@ describe('Chiqarilgan cheklar (faqat kassa oynasida)', () => {
     expect(r.body.receipts[0].instructor_name).toBe('Aziz Karimov');
   });
 
-  it('P2 kassiri P1 cheklarini ko‘rmaydi va qayta chiqara olmaydi', async () => {
+  it('P2 kassiri: o‘z tokeni bilan «Hammasi» — P1 cheklarini ham ko‘radi va qayta chop etadi (begona token — 403)', async () => {
     const r = await h.call('GET', `/api/admin/cashier/receipts?token=${makeRegisterToken('reg-p1')}`, { cookie: kassa2 });
     expect(r.status).toBe(403);
     const own = await h.call('GET', `/api/admin/cashier/receipts?token=${makeRegisterToken('reg-p2')}`, { cookie: kassa2 });
     expect(own.body.receipts.map((x: any) => x.code)).toEqual(['AVD-260925-FFFFF']);
+    const all = await h.call('GET', `/api/admin/cashier/receipts?register=all&token=${makeRegisterToken('reg-p2')}`, { cookie: kassa2 });
+    expect(all.status).toBe(200);
+    const byCode = Object.fromEntries(all.body.receipts.map((x: any) => [x.code, x]));
+    expect(byCode['AVD-260925-FFFFF'].own).toBe(true);
+    expect(byCode['AVD-260925-AAAAA'].own).toBe(false);
     const re = await h.call('GET', '/api/admin/cashier/receipt/AVD-260925-AAAAA', { cookie: kassa2 });
-    expect(re.status).toBe(403);
+    expect(re.status).toBe(200);
     const mine = await h.call('GET', '/api/admin/cashier/receipt/AVD-260925-AAAAA', { cookie: kassa1 });
     expect(mine.status).toBe(200);
     expect(mine.body.receipt.code).toBe('AVD-260925-AAAAA');

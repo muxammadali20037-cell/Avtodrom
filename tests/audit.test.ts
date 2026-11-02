@@ -102,15 +102,26 @@ describe('Administrator: ikkala kassa, istalgan davr', () => {
     expect(byCode['AVD-P6'].booking_cancelled).toBe(true);
   });
 
-  it('Cheklar — bitta kassa (register_id) tokensiz; kassir «all» so‘rasa ham faqat o‘ziniki', async () => {
+  it('Cheklar — bitta kassa (register_id) tokensiz; kassir «all» — P1 va P2 bir-birinikini ko‘radi (o‘zinikiga belgi)', async () => {
     seedOctober();
     const p2 = await h.call('GET', '/api/admin/cashier/receipts?register_id=reg-p2&from=2026-10-01&to=2026-10-31', { cookie: admin });
     expect(p2.body.receipts.map((x: any) => x.code)).toEqual(['AVD-P3']);
     expect(p2.body.summary.amount).toBe(250000);
+    const own = await h.call('GET', `/api/admin/cashier/receipts?token=${makeRegisterToken('reg-p1')}&from=2026-10-01&to=2026-10-31`, { cookie: kassa1 });
+    expect(own.body.scope).toBe('one');
+    expect(own.body.receipts.map((x: any) => x.code).sort()).toEqual(['AVD-P1', 'AVD-P2', 'AVD-P6']);
     const k = await h.call('GET', `/api/admin/cashier/receipts?register=all&token=${makeRegisterToken('reg-p1')}&from=2026-10-01&to=2026-10-31`, { cookie: kassa1 });
     expect(k.status).toBe(200);
-    expect(k.body.scope).toBe('one');
-    expect(k.body.receipts.map((x: any) => x.code).sort()).toEqual(['AVD-P1', 'AVD-P2', 'AVD-P6']);
+    expect(k.body.scope).toBe('all');
+    expect(k.body.own_register_id).toBe('reg-p1');
+    const kc = Object.fromEntries(k.body.receipts.map((x: any) => [x.code, x]));
+    expect(Object.keys(kc).sort()).toEqual(['AVD-P1', 'AVD-P2', 'AVD-P3', 'AVD-P4', 'AVD-P6']);
+    expect(kc['AVD-P1'].own).toBe(true);
+    expect(kc['AVD-P3'].own).toBe(false);                                                  // P2 cheki — faqat ko'rish va chop etish
+    expect(kc['AVD-P3'].register).toBe('P2');
+    // Qayta chop etish — boshqa kassa cheki ham ochiladi
+    const rp = await h.call('GET', '/api/admin/cashier/receipt/AVD-P3', { cookie: kassa1 });
+    expect(rp.status).toBe(200);
     const k2 = await h.call('GET', '/api/admin/cashier/receipts?register=all&from=2026-10-01&to=2026-10-31', { cookie: kassa1 });
     expect(k2.status).toBe(401);
     const op = await h.call('GET', '/api/admin/cashier/receipts?register=all&from=2026-10-01&to=2026-10-31', { cookie: operator });
