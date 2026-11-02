@@ -69,6 +69,58 @@ svg{display:block;flex:none}
 .live.off{background:#d14343}
 .wrap{max-width:760px;margin:0 auto;padding:6px 16px calc(var(--nav-h) + var(--sb) + 28px)}
 .wrap.wide{max-width:1500px}
+/* Instruktorlar nazorati — kim qachon bo'shaydi */
+.nz-sum{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center;font-size:14px}
+.nz-sum span{display:inline-flex;align-items:center;gap:6px}
+.nz-sum .g{color:var(--ok)}.nz-sum .r{color:var(--accent)}
+.nz-sum .muted{margin-left:auto;font-size:12.5px}
+.nz-list{background:var(--card);border-radius:18px;box-shadow:var(--shadow);overflow:hidden}
+.nz-row{display:flex;align-items:center;gap:12px;padding:12px 14px;border-left:4px solid transparent}
+.nz-row + .nz-row{border-top:1px solid var(--line)}
+.nz-row.free{border-left-color:var(--ok);background:linear-gradient(90deg,var(--ok-soft),transparent 60%)}
+.nz-row.soon{border-left-color:#e0a100}
+.nz-row.busy{border-left-color:var(--accent)}
+.nz-row.brk{border-left-color:var(--line)}
+.nz-row.off{opacity:.6}
+.nz-i{width:26px;height:26px;border-radius:8px;background:var(--card-2);display:grid;place-items:center;font-weight:800;font-size:12.5px;flex:none;color:var(--hint)}
+.nz-who{flex:1;min-width:0}
+.nz-who b{display:block;font-size:15.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.nz-who small{display:block;font-size:12.5px;color:var(--hint);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.nz-cat{font-style:normal;font-weight:800;font-size:11px;background:var(--card-2);color:var(--text);border-radius:6px;padding:1px 6px;margin-right:4px}
+.nz-when{flex:none;text-align:right}
+.nz-when b{display:block;font-size:20px;font-weight:850;letter-spacing:-.3px;font-variant-numeric:tabular-nums}
+.nz-when small{display:block;font-size:12px;color:var(--hint);font-weight:650}
+.nz-row.free .nz-when b{color:var(--ok)}
+.nz-row.soon .nz-when b{color:#b07d00}
+/* Jarayonda → Tugagan: sodda jadval */
+.lv-sum{font-size:14px;color:var(--hint);margin:0 2px 10px}
+.lv-sum b{color:var(--text)}
+.lv-tbl{background:var(--card);border-radius:18px;box-shadow:var(--shadow);overflow:hidden}
+.lv-tr{display:grid;grid-template-columns:1fr auto auto;grid-template-areas:"who t end" "ins d m";gap:2px 12px;align-items:center;padding:11px 14px;font-size:14px}
+.lv-tr + .lv-tr{border-top:1px solid var(--line)}
+.lv-tr.th{display:none}
+.lv-tr .n,.lv-tr .k{display:none}
+.lv-tr .who{grid-area:who;min-width:0}
+.lv-tr .who b{display:block;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lv-tr .who small{display:none}
+.lv-tr .ins{grid-area:ins;color:var(--hint);font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lv-tr .t{grid-area:t;font-weight:800;font-variant-numeric:tabular-nums;text-align:right}
+.lv-tr .t.end{grid-area:end;color:var(--ok)}
+.lv-tr .t::before{content:attr(data-l);display:block;font-size:10px;font-weight:800;color:var(--hint);text-transform:uppercase;letter-spacing:.3px}
+.lv-tr .d{grid-area:d;color:var(--hint);font-size:12.5px;text-align:right}
+.lv-tr .m{grid-area:m;color:var(--hint);font-size:12.5px;text-align:right;font-variant-numeric:tabular-nums}
+@media (min-width:760px){
+  .lv-tr,.lv-tr.th{display:grid;grid-template-columns:44px minmax(150px,1.4fr) minmax(130px,1fr) 70px 70px 70px 96px 56px;grid-template-areas:none;gap:10px;padding:10px 16px}
+  .lv-tr.th{font-size:11px;font-weight:800;color:var(--hint);text-transform:uppercase;letter-spacing:.3px;background:var(--card-2)}
+  .lv-tr > span{grid-area:auto!important}
+  .lv-tr .n,.lv-tr .k{display:block;color:var(--hint);font-weight:700}
+  .lv-tr .who small{display:block;color:var(--hint);font-size:12px}
+  .lv-tr .ins{color:var(--text);font-size:14px}
+  .lv-tr .t,.lv-tr .d,.lv-tr .m{text-align:left;font-size:14px}
+  .lv-tr .d,.lv-tr .m{color:var(--text)}
+  .lv-tr .t::before{display:none}
+  .lv-tr.th > span{text-align:left!important;color:var(--hint)!important;font-weight:800!important}
+}
 /* Sharhlar (admin) */
 .fb-it{background:var(--card);border-radius:18px;box-shadow:var(--shadow);padding:13px 15px;margin-bottom:10px}
 .fb-who{display:flex;align-items:center;gap:10px}
@@ -1649,7 +1701,7 @@ const ROUTES = {
   insrep:      { t: 'Instruktorlar hisoboti', roles: ['cashier', 'admin'], render: a => vInsRep(a), live: a => { if (perLive(IR)) { if (a) loadIrDetail(true); else loadInsRep(true); } }, parent: a => a ? 'insrep' : 'home' },
   schedule:    { t: 'Instruktorlar jadvali', roles: ALL, wide: true, render: () => vSchedule(), live: () => loadSchedule(true) },
   xbron:       { t: 'Excel bron', roles: ALL, wide: true, render: () => vXbron(), live: () => xbLoad(true) },
-  nazorat:     { t: 'Instruktorlar nazorati', roles: ['cashier', 'admin'], wide: true, render: () => vNazorat() },
+  nazorat:     { t: 'Instruktorlar nazorati', roles: ['cashier', 'admin'], render: () => vNazorat(), live: () => nzLoad(true) },
   bookings:    { t: 'Bronlar', roles: ['operator', 'admin'], render: a => vBookings(a), live: () => loadBookings(true) },
   manual:      { t: 'Qo‘lda bron', roles: ['operator', 'admin'], focus: true, render: () => vManual(), live: () => wzLive(MB) },
   chat:        { t: 'Mijozlar chati', roles: ['operator', 'admin'], render: a => vChat(a), live: a => chatLive(a), parent: a => a ? 'chat' : 'home' },
@@ -3818,13 +3870,24 @@ perReg('rc', RC, () => { RC.d = null; RC.limit = 200; RC.big = false; if ($('rcT
 async function vReceipts(){
   if (isAdmin()) await ensureRegisters();
   $('view').innerHTML = `<div class="view">${perHtml('rc')}
-    ${scopeChips('rcscope')}
+    ${scopeChips('rcscope')}${rcCashChips()}
     <div class="search" style="margin-top:12px">${I('search', 20)}<input class="input" id="rcQ" placeholder="Kod, ism, telefon yoki instruktor" value="${esc(RC.q)}" autocomplete="off"></div>
     <div id="rcTop" style="margin-top:12px"></div>
     <div class="sec" id="rcList" style="margin-top:12px">${skel()}</div></div>`;
   $('rcQ').addEventListener('input', e => { RC.q = e.target.value; RC.limit = 200; if (RC.big) rcSrvSearch(); else paintReceipts(); });
   loadReceipts();
 }
+/* KASSIR: Cheklar — P1 va P2 bir-birinikini ko'radi va qayta chop etadi.
+   «Hammasi» (standart) yoki faqat o'z kassasi. Bekor qilish / bo'lish — faqat o'ziniki. */
+const RC_CS_KEY = 'avtodrom_rc_cashier_scope';
+const rcAllC = () => isCashier() && lsGet(RC_CS_KEY) !== 'own';
+function rcCashChips(){
+  if (!isCashier()) return '';
+  const own = S.reg?.r?.code || 'Mening kassam', all = rcAllC();
+  return `<div class="chips" style="margin-top:10px"><button class="chip ${all ? 'on' : ''}" data-act="rccs" data-v="all">${I('cash', 15)} Hammasi (P1 + P2)</button>
+    <button class="chip ${all ? '' : 'on'}" data-act="rccs" data-v="own">${I('cash', 15)} Faqat ${esc(own)}</button></div>`;
+}
+ACT.rccs = el => { lsSet(RC_CS_KEY, el.dataset.v === 'own' ? 'own' : null); RC.d = null; RC.limit = 200; RC.big = false; vReceipts(); };
 /* Uzun davrda ro'yxat qisqartiriladi — qidiruv va filtr serverda, butun davr bo'yicha */
 const rcSrvSearch = debounce(() => loadReceipts(), 450);
 ACT.rcscope = el => { setRscope(el.dataset.v); RC.d = null; RC.limit = 200; RC.big = false; vReceipts(); };
@@ -3833,7 +3896,7 @@ async function loadReceipts(quiet, retried){
   const seq = ++RC.seq;
   const extra = RC.big ? `${RC.q.trim() ? '&q=' + encodeURIComponent(RC.q.trim()) : ''}${RC.filter ? '&state=' + RC.filter : ''}` : '';
   try{
-    const d = await api(`/api/admin/cashier/receipts?${scopeQS()}&${perQS(RC)}${extra}`);
+    const d = await api(`/api/admin/cashier/receipts?${scopeQS()}${rcAllC() ? '&register=all' : ''}&${perQS(RC)}${extra}`);
     if (seq !== RC.seq) return;
     if (!extra) RC.big = !!d.truncated;
     d.srv = !!extra;
@@ -3849,7 +3912,7 @@ function paintReceipts(){
   const segs = [['', 'Hammasi', s.total], ['active', 'Faol', s.active], ['used', 'Ishlatilgan', s.used], ['no_show', 'Kelmadi', s.no_show], ['cancelled', 'Bekor', s.cancelled]];
   const cnt = (s.total || 0) - (s.cancelled || 0);
   const all = d.scope === 'all';
-  $('rcTop').innerHTML = `<div class="kpis"><div class="kpi main"><span>${esc(perTitle(RC))} · ${esc(all ? 'hamma kassa' : (scopeLabel() || '') + ' kassa')}</span><b>${nf(s.amount)} so‘m</b><small>${nf(cnt)} ta chek${s.cash != null ? ` · naqd ${nf(s.cash)} · karta ${nf(s.card)}` : ''} · pul qaytarilganlar hisobga olinmagan</small></div></div>
+  $('rcTop').innerHTML = `<div class="kpis"><div class="kpi main"><span>${esc(perTitle(RC))} · ${esc(all ? (isCashier() ? 'P1 + P2 cheklari' : 'hamma kassa') : (scopeLabel() || '') + ' kassa')}</span><b>${nf(s.amount)} so‘m</b><small>${nf(cnt)} ta chek${s.cash != null ? ` · naqd ${nf(s.cash)} · karta ${nf(s.card)}` : ''} · pul qaytarilganlar hisobga olinmagan</small></div></div>
     ${multi && days.length ? `<div class="card" style="margin-top:12px"><div class="sec-h"><h2>${perDays(RC) > 62 ? 'Oylar' : 'Kunlar'} bo‘yicha tushum</h2><span class="muted" style="font-size:13px">${nf(days.length)} kun chek bor</span></div>${dayBars(days.map(x => ({ day: x.day, v: x.amount })), 'v', RC)}</div>` : ''}
     <div class="chips" style="margin-top:12px">${segs.map(([k, l, n]) => `<button class="chip ${RC.filter === k ? 'on' : ''}" data-act="rcf" data-v="${k}">${l} <span class="n">${n || 0}</span></button>`).join('')}</div>
     ${RC.big ? `<div class="note" style="margin-top:10px">Davr uzun — ro‘yxatda eng yangi ${nf((d.receipts || []).length)} ta chek. Qidiruv va filtr butun davr bo‘yicha ishlaydi.</div>` : ''}`;
@@ -3898,8 +3961,9 @@ ACT.rcopen = el => {
       <div class="sum-row"><span>To‘lov</span><b>${r.method === 'mixed' ? `Naqd ${nf(r.cash_amount)} + karta ${nf(r.card_amount)}` : r.method === 'card' ? 'Karta' : 'Naqd'}</b></div>
       <div class="sum-row"><span>Chiqarilgan</span><b>${esc(whenText(r.paid_at))}</b></div></div>
     <button class="btn btn-primary" style="margin-top:14px" data-act="rcprint" data-code="${esc(r.code)}">${I('print', 20)} Qayta chop etish</button>
-    ${(r.state === 'active' || r.state === 'no_show') && r.payment_id ? `<button class="btn btn-danger" style="margin-top:10px" data-act="rccancel" data-code="${esc(r.code)}">${I('x', 18, 2.4)} Chekni bekor qilish</button>` : ''}
-    ${r.state === 'active' && Number(r.duration_minutes) === PKG_MIN && !isOpenIso(r.start_at) ? `<button class="btn btn-soft" style="margin-top:10px" data-act="rcsplit" data-code="${esc(r.code)}">${I('lock', 18, 2.2)} 5 ta 1 soatlik chekka bo‘lish</button>
+    ${r.own === false ? `<div class="note" style="margin-top:10px">${esc(r.register || 'Boshqa')} kassa cheki — ko‘rish va qayta chop etish mumkin. Bekor qilish yoki bo‘lish — o‘sha kassada.</div>` : ''}
+    ${r.own !== false && (r.state === 'active' || r.state === 'no_show') && r.payment_id ? `<button class="btn btn-danger" style="margin-top:10px" data-act="rccancel" data-code="${esc(r.code)}">${I('x', 18, 2.4)} Chekni bekor qilish</button>` : ''}
+    ${r.own !== false && r.state === 'active' && Number(r.duration_minutes) === PKG_MIN && !isOpenIso(r.start_at) ? `<button class="btn btn-soft" style="margin-top:10px" data-act="rcsplit" data-code="${esc(r.code)}">${I('lock', 18, 2.2)} 5 ta 1 soatlik chekka bo‘lish</button>
       <div class="muted" style="font-size:12.5px;margin-top:6px">Maxsus parol bilan. Summa o‘zgarmaydi — 5 ta ochiq chek (istalgan kun, istalgan instruktor), har biri ${esc(money(Math.round(r.amount / 5)))}.</div>` : ''}`);
 };
 /* 5 SOATLIK BITTA CHEK → 5 TA 1 SOATLIK OCHIQ CHEK (maxsus parol bilan) */
@@ -3966,24 +4030,31 @@ ACT.rcreason = el => { const i = $('rxWhy'); if (i) { i.value = el.dataset.v; i.
 /* =========================================================================
    JARAYONDA — hozir haydayotganlar
    ========================================================================= */
-const LV = { tab: 'active', d: null, seq: 0 };
+const LV = { tab: 'active', d: null, seq: 0, day: '' };
 function vLive(){
-  $('view').innerHTML = `<div class="view"><div class="seg" id="lvSeg"></div><div class="sec" id="lvList">${skel()}</div></div>`;
+  if (!LV.day) LV.day = kToday();
+  $('view').innerHTML = `<div class="view"><div class="seg" id="lvSeg"></div><div class="chips hidden" id="lvDays" style="margin-top:12px"></div><div class="sec" id="lvList">${skel()}</div></div>`;
   paintLive(); loadLive();
 }
 async function loadLive(quiet){
   if (!$('lvList')) return;
   const seq = ++LV.seq;
-  try { const d = await api('/api/admin/in-progress'); if (seq !== LV.seq) return; LV.d = d; paintLive(); }
+  try { const d = await api(`/api/admin/in-progress?date=${encodeURIComponent(LV.day || kToday())}`); if (seq !== LV.seq) return; LV.d = d; paintLive(); }
   catch (e) { if (!quiet && $('lvList')) $('lvList').innerHTML = `<div class="note err">${esc(e.message)}</div>`; }
 }
 function paintLive(){
   const c = LV.d?.counts || {};
   if ($('lvSeg')) $('lvSeg').innerHTML = [['active', 'Jarayonda', c.active], ['done', 'Tugagan', c.done], ['stale', 'Yopilmagan', c.stale]]
     .map(([k, l, n]) => `<button class="${LV.tab === k ? 'on' : ''}" data-act="lvtab" data-v="${k}">${l}${n ? `<span class="n" style="${k === 'active' || k === 'done' ? 'background:var(--accent)' : ''}">${n}</span>` : ''}</button>`).join('');
+  const dd = $('lvDays');
+  if (dd) {
+    dd.classList.toggle('hidden', LV.tab !== 'done');
+    if (LV.tab === 'done') { dd.innerHTML = dayChips(LV.day, 'lvday', [[kToday(), 'Bugun'], [dayAdd(kToday(), -1), 'Kecha']]); bindDatePick(); }
+  }
   if (!LV.d || !$('lvList')) return;
   const rows = (LV.d.rows || []).filter(r => LV.tab === 'done' ? r.level === 'done' : LV.tab === 'stale' ? r.level === 'stale' : (r.level !== 'done' && r.level !== 'stale'));
-  if (!rows.length) { $('lvList').innerHTML = emptyHtml('play', { active: 'Hozir hech kim darsda emas', done: 'Bugun hali dars tugamagan', stale: 'Hammasi joyida' }[LV.tab], { active: 'Instruktor chekni skanerlashi bilan shu yerda paydo bo‘ladi.', done: 'Tugagan darslar shu yerda ko‘rinadi.', stale: 'Yopilmay qolgan dars yo‘q.' }[LV.tab]); return; }
+  if (LV.tab === 'done' && rows.length) return paintLiveDone(rows);
+  if (!rows.length) { $('lvList').innerHTML = emptyHtml('play', { active: 'Hozir hech kim darsda emas', done: LV.day === kToday() ? 'Bugun hali dars tugamagan' : `${dayLabel(LV.day)} tugagan dars yo‘q`, stale: 'Hammasi joyida' }[LV.tab], { active: 'Instruktor chekni skanerlashi bilan shu yerda paydo bo‘ladi.', done: 'Tugagan darslar shu yerda ko‘rinadi.', stale: 'Yopilmay qolgan dars yo‘q.' }[LV.tab]); return; }
   const now = Date.now();
   $('lvList').innerHTML = '<div class="cards2">' + rows.map(r => {
     const s = Date.parse(r.started_at), e = Date.parse(r.ends_at), left = Math.round((e - now) / 60000);
@@ -3998,7 +4069,24 @@ function paintLive(){
       ${r.finished ? '' : `<div class="bk-acts"><button class="btn btn-danger" data-act="lvfin" data-id="${esc(r.id)}">${I('check', 18, 2.4)} Darsni tugatish</button></div>`}</div>`;
   }).join('') + '</div>';
 }
-ACT.lvtab = el => { LV.tab = el.dataset.v; paintLive(); };
+ACT.lvtab = el => { LV.tab = el.dataset.v; if (LV.tab !== 'done' && LV.day !== kToday()) { LV.day = kToday(); loadLive(); } paintLive(); };
+ACT.lvday = el => { LV.day = el.dataset.v; LV.d = null; if ($('lvList')) $('lvList').innerHTML = skel(); paintLive(); loadLive(); };
+/* TUGAGAN — sodda jadval: kim, qaysi instruktor, chek urilgan vaqt → tugagan vaqt.
+   Faqat tanlangan kun (standart — bugun), eng oxirgi tugagan tepada. */
+function paintLiveDone(rows){
+  const mins = rows.reduce((a, r) => a + (Number(r.duration_minutes) || 0), 0);
+  const sum = rows.reduce((a, r) => a + (Number(r.amount) || 0), 0);
+  $('lvList').innerHTML = `<div class="lv-sum"><b>${esc(dayLabel(LV.day))}</b> · ${nf(rows.length)} ta dars tugadi · ${esc(hrsTxt(mins))} soat${sum ? ` · ${nf(sum)} so‘m` : ''}</div>
+    <div class="lv-tbl"><div class="lv-tr th"><span>№</span><span>Mijoz</span><span>Instruktor</span><span>Urildi</span><span>Tugadi</span><span>Vaqt</span><span>Summa</span><span>Kassa</span></div>
+    ${rows.map((r, i) => `<div class="lv-tr"><span class="n">${rows.length - i}</span>
+      <span class="who"><b>${esc(r.customer?.full_name || 'Mijoz')}</b>${r.customer?.phone ? `<small>${esc(r.customer.phone)}</small>` : ''}</span>
+      <span class="ins">${esc(r.instructor?.full_name || '—')}</span>
+      <span class="t" data-l="Urildi">${esc(hm(r.scanned_at || r.started_at))}</span>
+      <span class="t end" data-l="Tugadi">${esc(hm(r.departed_at || r.ends_at))}</span>
+      <span class="d">${esc(fmtDur(r.duration_minutes))}</span>
+      <span class="m">${r.amount ? nf(r.amount) : '—'}</span>
+      <span class="k">${esc(r.register || '—')}</span></div>`).join('')}</div>`;
+}
 ACT.lvfin = async el => {
   const r = (LV.d?.rows || []).find(x => String(x.id) === el.dataset.id); if (!r) return;
   const ok = await ask({ title: 'Darsni tugatamizmi?', text: `<b>${esc(r.customer?.full_name || 'Mijoz')}</b> · ${esc(r.instructor?.full_name || '')}<br>Tugash vaqti — hozir (${esc(nowHM())}). Amal tarixga yoziladi.`, ok: 'Tugatish', danger: true });
@@ -6943,19 +7031,51 @@ ACT.sfactive = async el => {
    NAZORAT PANELI — hamma instruktor bitta maxfiy havolada (/nazorat?k=…)
    ========================================================================= */
 const CTL = { url: '', at: null, by: null };
-/* INSTRUKTORLAR NAZORATI (kassa va admin) — hamma instruktor: kim darsda va
-   qachon tugaydi, kim bo'sh, Excel bron, bron qilish. Nazorat sahifasi panel
-   ichida ochiladi (havolani alohida bilish shart emas). */
-async function vNazorat(){
-  $('view').innerHTML = `<div class="view">${skel(4)}</div>`;
-  try{
-    if (!CTL.url) Object.assign(CTL, await api('/api/admin/control-link'));
-    if (S.routeName !== 'nazorat') return;
-    /* Shu domendagi manzil (havola boshqa domen bilan yozilgan bo'lsa ham) */
-    let src = CTL.url;
-    try { const u = new URL(CTL.url, location.origin); src = u.pathname + u.search; } catch {}
-    $('view').innerHTML = `<div class="nz-wrap"><iframe class="nz-frame" src="${esc(src)}" title="Instruktorlar nazorati"></iframe></div>`;
-  }catch(e){ if (S.routeName === 'nazorat') $('view').innerHTML = `<div class="view"><div class="note err">${esc(e.message)}</div></div>`; }
+/* INSTRUKTORLAR NAZORATI (kassa va admin) — FAQAT instruktorlar va qachon
+   bo'shashi. Eng tez bo'shaydigan tepada: hozir bo'sh → darsda (tugash vaqti
+   bo'yicha) → tanaffusda → hali boshlamagan; bugun ishlamaydiganlar pastda.
+   To'liq nazorat paneli (Excel, bron) — Boshqaruv → Nazorat paneli. */
+const NZ = { d: null, seq: 0 };
+function vNazorat(){
+  $('view').innerHTML = `<div class="view"><div id="nzTop"></div><div id="nzList" class="sec" style="margin-top:12px">${skel(5)}</div></div>`;
+  nzLoad();
+}
+async function nzLoad(quiet){
+  if (!$('nzList')) return;
+  const seq = ++NZ.seq;
+  try { const d = await api('/api/admin/instructors-free'); if (seq !== NZ.seq) return; NZ.d = d; nzPaint(); }
+  catch (e) { if (!quiet && $('nzList')) $('nzList').innerHTML = `<div class="note err">${esc(e.message)}</div>`; }
+}
+function nzPaint(){
+  const d = NZ.d; if (!d || !$('nzList')) return;
+  const now = Date.now(), c = d.counts || {};
+  const minsTo = iso => Math.max(0, Math.round((Date.parse(iso) - now) / 60000));
+  const left = m => m >= 60 ? `${Math.floor(m / 60)} soat ${m % 60 ? (m % 60) + ' daq' : ''}`.trim() : `${m} daq`;
+  $('nzTop').innerHTML = `<div class="nz-sum"><span class="g">${I('check', 15, 2.6)} Bo‘sh: <b>${nf(c.free || 0)}</b></span><span class="r">${I('steer', 15, 2.2)} Darsda: <b>${nf(c.lesson || 0)}</b></span>${c.off ? `<span>Ishlamaydi: <b>${nf(c.off)}</b></span>` : ''}<span class="muted">${esc(nowHM())} holatiga</span></div>`;
+  const rows = d.rows || [];
+  if (!rows.length) { $('nzList').innerHTML = emptyHtml('users', 'Instruktor yo‘q', 'Faol instruktorlar shu yerda ko‘rinadi.'); return; }
+  const on = rows.filter(r => r.free_at), off = rows.filter(r => !r.free_at);
+  const row = (r, i) => {
+    const st = r.state, l = r.lesson;
+    let big = '', sub = '', cls = '';
+    if (st === 'free') { cls = 'free'; big = 'Bo‘sh'; sub = 'hozir'; }
+    else if (st === 'lesson' || st === 'due') {
+      const m = minsTo(r.free_at); cls = m <= 10 ? 'soon' : 'busy';
+      big = hm(r.free_at); sub = l?.over ? 'vaqti tugadi' : `${left(m)} qoldi`;
+    } else if (st === 'break' || st === 'own') { cls = 'brk'; big = hm(r.free_at); sub = st === 'own' ? 'shaxsiy vaqt' : 'tanaffus'; }
+    else if (st === 'before') { cls = 'brk'; big = hm(r.free_at); sub = 'ishni boshlaydi'; }
+    else { cls = 'off'; big = st === 'done' ? 'Tugatdi' : 'Dam'; sub = st === 'done' ? 'ish kuni tugadi' : 'bugun ishlamaydi'; }
+    const what = (st === 'lesson' || st === 'due') && l
+      ? `${st === 'due' ? 'Bron vaqti' : 'Darsda'}: ${esc(l.name)} · ${esc(hm(l.started))}–${esc(hm(l.ends))}`
+      : r.next ? `Keyingi bron: ${esc(hm(r.next.start))} · ${esc(r.next.name)}` : st === 'free' ? 'Hozircha bron yo‘q' : '';
+    return `<div class="nz-row ${cls}"><span class="nz-i">${i + 1}</span>
+      <span class="nz-who"><b>${esc(r.name)}</b><small>${(r.categories || []).map(x => `<i class="nz-cat">${esc(x)}</i>`).join('')}${what ? ` ${what}` : ''}</small></span>
+      <span class="nz-when"><b>${esc(big)}</b><small>${esc(sub)}</small></span></div>`;
+  };
+  $('nzList').innerHTML = `<div class="nz-list">${on.map(row).join('')}</div>
+    ${off.length ? `<div class="sec-h" style="margin-top:18px"><h2 style="font-size:15px">Bugun ishlamaydi</h2><span class="muted" style="font-size:13px">${nf(off.length)} ta</span></div>
+      <div class="nz-list">${off.map((r, i) => row(r, on.length + i)).join('')}</div>` : ''}
+    ${isAdmin() ? `<button class="link" data-act="ctllink" style="margin-top:14px">To‘liq nazorat paneli (Excel, bron) →</button>` : ''}`;
 }
 function ctlPaint(){
   const share = typeof navigator.share === 'function';
