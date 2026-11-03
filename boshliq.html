@@ -1129,13 +1129,28 @@ function paidScreen(x, p){
     return { title: 'Soatlar', parent: 'paid', html: h };
   }
   if (p[0] === 'operators') {
-    const ops = (P.operators || []).map(z => ({ name: z.name, v: z.revenue, val: money(z.revenue), val2: `${nf(z.paid)} kirish` }));
-    return { title: 'Kassirlar', parent: 'paid', html: title('paid', 'Kassirlar', 'avtodrom12 da kim qancha kirish ochgan va pul olgan.') + blk('Tushum bo‘yicha', rank('ops', ops, 'var(--paid)', 20)) };
+    /* POSTLAR: har qator — kassa (1-POST, 2-POST). Asosiy hisobga qo'shilgan
+       login o'z postiga biriktirilgan va ismi bilan chiqadi («2-POST · Ramziddin»):
+       u ochgan vaqt va olgan pul shu yerda. */
+    const ops = P.operators || [];
+    let h = title('paid', 'Postlar', 'Har post — shu kassada vaqt ochilgan mashinalar va olingan pul (kassa hisoboti bilan bir xil). Qo‘shilgan login o‘z postida ismi bilan ko‘rinadi.');
+    h += blk('Tushum bo‘yicha', rank('ops', ops.map(z => ({ name: z.name, v: z.revenue, val: money(z.revenue), val2: `${nf(z.paid)} kirish` })), 'var(--paid)', 20));
+    for (const z of ops.filter(z => z.post)) {
+      const parts = [{ n: 'Naqd', v: Number(z.cash) || 0, c: 'var(--paid)', o: 1 }, { n: 'Terminal', v: Number(z.terminal) || 0, c: 'var(--paid)', o: .62 }, { n: 'Klik', v: Number(z.click) || 0, c: 'var(--paid)', o: .34 }];
+      const sum = parts.reduce((a, x) => a + x.v, 0);
+      h += blk(esc(z.name), tiles([tile('Vaqt ochilgan', nf(z.paid), z.minutes ? dur(z.minutes) : 'kirish'), tile('Olingan pul', compact(z.revenue), money(z.revenue))])
+        + (sum > 0 ? splitBar(parts, sum) + legendRows(parts, sum) : ''));
+    }
+    return { title: 'Postlar', parent: 'paid', html: h };
   }
   let h = title('paid', 'Platniy', 'Oddiy mijoz — vaqt ochib kiradigan mashinalar.');
   h += hero('Tushum', nf(t.revenue), 'so‘m', pct(t.revenue, P.previous?.revenue), `${nf(t.sessions)} kirish, ${dur(t.minutes)}`, { cmp });
   h += trend('paid', d, 'Tushum dinamikasi', ks => [{ name: 'Tushum', color: 'var(--paid)', values: align(ks, a12.series, r => r.paid_revenue) }]);
   h += tiles([tile('Mashinalar', nf(t.vehicles), `${nf(P.plates.new)} yangi`), tile('O‘rtacha chek', compact(t.avg_check), `o‘rtacha ${durShort(t.avg_minutes)}`)]);
+  /* 1-POST / 2-POST — har kassa: kim, nechta vaqt ochgan, qancha pul olgan */
+  const posts = (P.operators || []).filter(z => z.post);
+  if (posts.length) h += tiles(posts.slice(0, 4).map(z => tile(`${nf(z.post)}-POST`, compact(z.revenue),
+    `${esc(String(z.name || '').replace(/^\d+-POST · /, ''))}, ${nf(z.paid)} kirish`)));
   const topHour = (a12.hours || []).reduce((b, z) => (z.paid > (b?.paid || 0) ? z : b), null);
   const topM = methods.slice().sort((a, b) => b.v - a.v)[0];
   h += navs('Batafsil', [
@@ -1145,7 +1160,7 @@ function paidScreen(x, p){
     nav('paid/debts', P.debts.total ? 'bad' : 'paid', 'debt', 'Qarzlar', P.debts.total ? `${nf(P.debts.sessions)} ta yozuv to‘lanmagan` : 'qarz yo‘q', compact(P.debts.total)),
     nav('paid/durations', 'paid', 'clock', 'Qancha vaqt qolishadi', `o‘rtacha ${durShort(t.avg_minutes)}`, ''),
     nav('paid/hours', 'paid', 'bars', 'Soatlar bo‘yicha', topHour ? `eng ko‘p: ${String(topHour.hour).padStart(2, '0')}:00` : '', ''),
-    (P.operators || []).length ? nav('paid/operators', 'paid', 'person', 'Kassirlar', esc(P.operators[0].name), nf(P.operators.length)) : '',
+    (P.operators || []).length ? nav('paid/operators', 'paid', 'person', posts.length ? 'Postlar (kassalar)' : 'Kassirlar', esc(P.operators.map(z => z.name).join(', ')), nf(P.operators.length)) : '',
   ]);
   return { title: 'Platniy', parent: '', html: h };
 }

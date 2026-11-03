@@ -343,6 +343,21 @@ describe('Boshliq ilovasi — raqamlar', () => {
     expect(r.body.combined.net_change).toBeGreaterThan(0);
   });
 
+  it('Platniy: kassirlar postlar bo‘yicha — qo‘shilgan login (Ramziddin) 2-POST bo‘lib keladi', async () => {
+    const o = owner();
+    o.paid.operators = [
+      { name: '1-POST · Platniylar', post: 1, account: 'Platniylar', people: [], paid: 2, school: 0, minutes: 120, revenue: 300000, cash: 300000, terminal: 0, click: 0 },
+      { name: '2-POST · Ramziddin', post: 2, account: 'Platniylar', people: ['Ramziddin'], paid: 2, school: 0, minutes: 90, revenue: 150000, cash: 50000, terminal: 100000, click: 0 },
+    ] as any;
+    bridgeReply = { status: 200, body: o };
+    const { token } = await setup();
+    const r = await boss('GET', `/api/boss-data?from=${D}&to=${D}`, { token });
+    expect(r.status).toBe(200);
+    const ops = r.body.avtodrom12.paid.operators;
+    expect(ops.map((x: any) => x.name)).toEqual(['1-POST · Platniylar', '2-POST · Ramziddin']);
+    expect(ops[1]).toMatchObject({ post: 2, people: ['Ramziddin'], paid: 2, revenue: 150000, terminal: 100000 });
+  });
+
   it('noto‘g‘ri sana — 400', async () => {
     const { token } = await setup();
     expect((await boss('GET', '/api/boss-data?from=2026-13-40&to=2026-10-10', { token })).status).toBe(400);
