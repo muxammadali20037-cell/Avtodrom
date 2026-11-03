@@ -467,6 +467,8 @@ function durShort(min){
   return `${h >= 10 ? nf(Math.round(h)) : String(Math.round(h * 10) / 10).replace('.', ',')} soat`;
 }
 const pctOf = (a, b) => (b ? Math.round((a / b) * 100) : 0);
+/* 0.7 → «0,7», 3 → «3» */
+const fmt1 = v => { const x = Math.round((Number(v) || 0) * 10) / 10; return Number.isInteger(x) ? String(x) : String(x).replace('.', ','); };
 const pct = (a, b) => (!b ? (a ? 100 : 0) : Math.round(((a - b) / Math.abs(b)) * 100));
 function delta(v, opt = {}){
   const n = Number(v) || 0;
@@ -1247,6 +1249,22 @@ function avdScreen(x, p){
     h += blk('Ochiq smenalar', (lv.open_shifts || []).map(z => `<div class="row"><div class="nm">${esc(z.register || 'Kassa')}<small>${esc(z.cashier || '')}</small></div><div class="am num">${hm(z.opened_at)} dan</div></div>`).join('') || '<div class="empty">Ochiq smena yo‘q.</div>');
     return { title: 'Hozir', parent: 'avd', html: h };
   }
+  if (p[0] === 'td') {
+    /* TEST DRIVE — kassada «Test drive» tugmasi: kuniga nechta sotilgan */
+    const T = k.test_drive || {};
+    const many = days(r) > 1;
+    let h = title('avd', 'Test drive', 'Kassada «Test drive» tugmasi bilan sotilgan cheklar (1 krug + test drive). Summa — chekdagi test drive qismi; qaytarilgan cheklar sanalmaydi.');
+    h += hero('Sotildi', nf(T.count), 'ta', T.change, `${many ? `kuniga o‘rtacha ${fmt1(T.avg_per_day)} ta, ` : ''}test drive tushumi ${money(T.total)}`, { cmp });
+    h += trend('td', d, d.bucket === 'hour' ? 'Soatlar bo‘yicha' : d.bucket === 'month' ? 'Oylar bo‘yicha' : 'Kunlar bo‘yicha',
+      ks => [{ name: 'Test drive', color: 'var(--avd)', values: align(ks, T.series, z => z.count) }], { unit: 'n', unitName: 'ta' });
+    h += tiles([tile('Test drive tushumi', compact(T.total), money(T.total)), tile('Cheklar jami', compact(T.receipts_total), '1 krug bilan birga')]);
+    if (many) h += tiles([tile('Eng ko‘p sotilgan kun', T.best_day ? esc(dayName(T.best_day.day)) : '—', T.best_day ? `${nf(T.best_day.count)} ta` : ''), tile('Oldingi davr', nf(T.previous_count), `ta, ${compact(T.previous_total)}`)]);
+    h += blk('Har kuni nechta', list('tdd', T.days || [], z => `<div class="row"><div class="nm">${esc(dayName(z.day))}<small>${esc(wdName(z.day))}</small></div><div class="am num">${nf(z.count)} ta<small>${money(z.total)}</small></div></div>`, 31),
+      `${nf((T.days || []).length)} kun`, many ? 'Faqat test drive sotilgan kunlar. Har kun — nechta sotilgan va test drive tushumi.' : '');
+    h += blk('Kassalar', rank('tdr', (T.registers || []).map(z => ({ name: `Kassa ${z.code}`, v: z.count, val: `${nf(z.count)} ta`, val2: money(z.total) })), 'var(--avd)'));
+    h += blk('Oxirgi sotuvlar', receiptRows('tdrec', T.recent || [], r, true), `${nf((T.recent || []).length)} ta`);
+    return { title: 'Test drive', parent: 'avd', html: h };
+  }
   if (p[0] === 'receipts') {
     let h = title('avd', 'Oxirgi cheklar', 'Kassada chiqarilgan oxirgi cheklar (ikkala kassa).');
     h += blk('Cheklar', receiptRows('rec', k.recent || [], r, true));
@@ -1266,7 +1284,9 @@ function avdScreen(x, p){
   const ins = (avd.instructors || []).filter(z => z.lessons);
   const topSrc = (b.by_source || [])[0];
   const lv = avd.live || {};
+  const TD = k.test_drive;
   h += navs('Batafsil', [
+    TD ? nav('avd/td', 'avd', 'star', 'Test drive', TD.count ? `${days(r) > 1 ? `kuniga o‘rtacha ${fmt1(TD.avg_per_day)} ta, ` : ''}${compact(TD.total)} so‘m` : 'bu davrda sotilmagan', nf(TD.count), TD.count || TD.previous_count ? delta(TD.change) : '') : '',
     nav('avd/bookings', 'avd', 'cal', 'Bronlar', `${nf(b.by_status.completed)} bajarildi, ${nf(b.by_status.no_show)} kelmadi`, nf(b.total), `${delta(b.change)}`),
     nav('avd/sources', 'avd', 'share', 'Bron qayerdan keldi', topSrc ? `${esc(topSrc.name)} ${pctOf(topSrc.n, b.total)}%` : '', ''),
     nav('avd/lessons', L.unscanned?.receipts ? 'warn' : 'avd', 'receipt', 'Darslar', L.unscanned?.receipts ? `${nf(L.unscanned.receipts)} ta chek hali urilmagan` : 'urilgan chek bo‘yicha', nf(L.paid), durShort(L.minutes)),

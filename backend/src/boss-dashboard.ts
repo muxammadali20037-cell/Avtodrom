@@ -7,6 +7,7 @@ import { rangeFromQuery } from './analytics-routes.js';
 import { loadLedger, unscannedReceipts, pageAll } from './lesson-ledger.js';
 import { allKeys, seriesKey } from './unified-analytics.js';
 import { feedbackSummary } from './feedback.js';
+import { testDriveOf } from './pricing.js';
 
 /**
  * AVTODROM BOSHQARUV — rahbar telefoniga (iPhone) o'rnatiladigan ilova.
@@ -187,9 +188,9 @@ export async function buildAvtodrom(from: Date, to: Date, prevFrom: Date, bucket
   const [regs, pays, prevPays, bookings, prevBookings, newCustomers, ledger, unscanned, inProgress, pending, upcoming, shifts] = await Promise.all([
     safe('registers', () => supabaseRest<any[]>('cash_registers', { query: '?select=id,code,name,is_active&order=code.asc' }), [] as any[]),
     safe('payments', () => pageAll<any>('payments',
-      `?status=eq.paid&paid_at=gte.${F}&paid_at=lt.${T}&select=id,booking_id,customer_id,amount,method,cash_amount,card_amount,register_id,receipt_code,paid_at&order=paid_at.asc,id.asc`), [] as any[]),
+      `?status=eq.paid&paid_at=gte.${F}&paid_at=lt.${T}&select=id,booking_id,customer_id,amount,method,cash_amount,card_amount,register_id,receipt_code,paid_at,note&order=paid_at.asc,id.asc`), [] as any[]),
     safe('payments_prev', () => pageAll<any>('payments',
-      `?status=eq.paid&paid_at=gte.${PF}&paid_at=lt.${PT}&select=id,amount,register_id&order=paid_at.asc,id.asc`), [] as any[]),
+      `?status=eq.paid&paid_at=gte.${PF}&paid_at=lt.${PT}&select=id,amount,register_id,note&order=paid_at.asc,id.asc`), [] as any[]),
     safe('bookings', () => pageAll<any>('bookings',
       `?start_at=gte.${F}&start_at=lt.${T}&select=id,status,source,category,customer_id,instructor_id,duration_minutes,school_receipt_code,customer_note,start_at&order=start_at.asc,id.asc`), [] as any[]),
     safe('bookings_prev', async () => (await supabaseRestPaged<any>('bookings', `?start_at=gte.${PF}&start_at=lt.${F}&select=id`, 1, 1)).total, 0),
@@ -220,7 +221,9 @@ export async function buildAvtodrom(from: Date, to: Date, prevFrom: Date, bucket
     if (arr.length < 20) { arr.push(pays[i]); regRecent.set(rk, arr); }
   }
   const userIds = [...ips.map((i: any) => i.user_id), ...inProgress.map((b: any) => b.customer_id), ...recentPays.map((p: any) => p.customer_id),
-    ...[...regRecent.values()].flat().map((p: any) => p.customer_id)];
+    ...[...regRecent.values()].flat().map((p: any) => p.customer_id),
+    /* oxirgi test drive sotuvlari (ular umumiy «oxirgi cheklar»dan eskiroq bo'lishi mumkin) */
+    ...pays.filter((p: any) => testDriveOf(p.note) > 0).slice(-20).map((p: any) => p.customer_id)];
   const users = await safe('users', () => selectIn<any>('users', 'id', userIds, 'id,full_name'), [] as any[]);
   const um = new Map(users.map((u: any) => [String(u.id), String(u.full_name || '')]));
   const insName = (id: unknown) => {
@@ -300,6 +303,40 @@ export async function buildAvtodrom(from: Date, to: Date, prevFrom: Date, bucket
         ...regDetail(String(r.id)) };
     });
   const unassigned = byReg.get('-') || blank();
+
+  /* --- TEST DRIVE — kassada «Test drive» tugmasi (1 krug + test drive).
+         Har sotuv — to'lov izohida «Test drive 50000» (pricing.ts, kassa
+         hisoboti bilan bir xil qoida: faqat to'langan, qaytarilmagan). --- */
+  const tdPays = pays.filter((p: any) => testDriveOf(p.note) > 0);
+  const tdDays = new Map<string, { day: string; count: number; total: number; receipts_total: number }>();
+  const tdSer = new Map<string, { key: string; count: number; total: number }>();
+  const tdReg = new Map<string, { code: string; count: number; total: number }>();
+  let tdTotal = 0, tdReceipts = 0;
+  for (const p of tdPays) {
+    const td = testDriveOf(p.note);
+    tdTotal += td; tdReceipts += n(p.amount);
+    const day = keyOf(p.paid_at, 'day');
+    const dd = tdDays.get(day) || { day, count: 0, total: 0, receipts_total: 0 };
+    dd.count++; dd.total += td; dd.receipts_total += n(p.amount); tdDays.set(day, dd);
+    const k = keyOf(p.paid_at, bucket);
+    const ss = tdSer.get(k) || { key: k, count: 0, total: 0 }; ss.count++; ss.total += td; tdSer.set(k, ss);
+    const code = (regm.get(String(p.register_id)) as any)?.code || '—';
+    const rr = tdReg.get(code) || { code, count: 0, total: 0 }; rr.count++; rr.total += td; tdReg.set(code, rr);
+  }
+  const tdPrev = prevPays.filter((p: any) => testDriveOf(p.note) > 0);
+  /* «kuniga o'rtacha»: davrdagi kunlar (bugun tugamagan bo'lsa — bugungacha) */
+  const tdDayCount = Math.max(1, Math.ceil((Math.min(to.getTime(), Math.max(from.getTime() + 1, Date.now())) - from.getTime()) / 864e5));
+  const testDrive = {
+    count: tdPays.length, total: tdTotal, receipts_total: tdReceipts,
+    previous_count: tdPrev.length, previous_total: tdPrev.reduce((a: number, p: any) => a + testDriveOf(p.note), 0),
+    change: pct(tdPays.length, tdPrev.length),
+    day_count: tdDayCount, avg_per_day: Math.round((tdPays.length / tdDayCount) * 10) / 10,
+    best_day: [...tdDays.values()].sort((a, b) => b.count - a.count || b.day.localeCompare(a.day))[0] || null,
+    days: [...tdDays.values()].sort((a, b) => b.day.localeCompare(a.day)),
+    series: [...tdSer.values()],
+    registers: [...tdReg.values()].sort((a, b) => b.count - a.count || a.code.localeCompare(b.code)),
+    recent: tdPays.slice(-20).reverse().map((p: any) => ({ ...recentRow(p), test_drive: testDriveOf(p.note) })),
+  };
 
   /* --- BRONLAR (dars kuni shu davrda) --- */
   const by_status: Record<string, number> = Object.fromEntries(STATUS_KEYS.map((k) => [k, 0]));
@@ -385,6 +422,7 @@ export async function buildAvtodrom(from: Date, to: Date, prevFrom: Date, bucket
       durations: [...durs.values()].sort((a, b) => a.min - b.min).map(({ min: _m, ...x }) => x),
       avg_check: tot.receipts ? Math.round(tot.total / tot.receipts) : 0,
       recent,
+      test_drive: testDrive,
     },
     bookings: bookingsOut,
     lessons,

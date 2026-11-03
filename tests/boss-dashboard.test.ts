@@ -358,6 +358,34 @@ describe('Boshliq ilovasi — raqamlar', () => {
     expect(ops[1]).toMatchObject({ post: 2, people: ['Ramziddin'], paid: 2, revenue: 150000, terminal: 100000 });
   });
 
+  it('Test drive: kuniga nechta sotilgani, kassalar, oldingi davr; qaytarilgani sanalmaydi', async () => {
+    const td = (id: string, paid_at: string, reg: string, note = '1 krug · Test drive 50000', amount = 130000, status = 'paid') =>
+      h.db.payments.push({ id, booking_id: null, customer_id: 'u-ali', amount, method: 'cash', status, paid_at, receipt_code: `AVD-TD-${id}`, register_id: reg, note });
+    td('td1', at('09:10'), 'reg-p1');
+    td('td2', at('12:40'), 'reg-p1');
+    td('td3', at('16:05'), 'reg-p2', '1 krug · Test drive 60000', 140000);
+    td('td-ref', at('17:00'), 'reg-p1', '1 krug · Test drive 50000', 130000, 'refunded');
+    td('td0', '2026-10-09T06:00:00.000Z', 'reg-p1');                          // oldingi kun
+    td('td4', new Date('2026-10-12T10:00:00+05:00').toISOString(), 'reg-p2');
+    const { token } = await setup();
+
+    const r = await boss('GET', `/api/boss-data?from=${D}&to=${D}`, { token });
+    expect(r.status).toBe(200);
+    const T = r.body.avtodrom.kassa.test_drive;
+    expect(T).toMatchObject({ count: 3, total: 160000, receipts_total: 400000, previous_count: 1, change: 200, day_count: 1, avg_per_day: 3 });
+    expect(T.days).toEqual([{ day: D, count: 3, total: 160000, receipts_total: 400000 }]);
+    expect(T.registers).toEqual([{ code: 'P1', count: 2, total: 100000 }, { code: 'P2', count: 1, total: 60000 }]);
+    expect(T.series.map((x: any) => [x.key, x.count])).toEqual([['09:00', 1], ['12:00', 1], ['16:00', 1]]);
+    expect(T.recent[0]).toMatchObject({ code: 'AVD-TD-td3', register: 'P2', customer: 'Ali Valiyev', test_drive: 60000, amount: 140000 });
+
+    const w = await boss('GET', '/api/boss-data?from=2026-10-08&to=2026-10-14', { token });
+    const W = w.body.avtodrom.kassa.test_drive;
+    expect(W).toMatchObject({ count: 5, day_count: 7, avg_per_day: 0.7 });
+    expect(W.days.map((x: any) => [x.day, x.count])).toEqual([['2026-10-12', 1], [D, 3], ['2026-10-09', 1]]);
+    expect(W.best_day).toMatchObject({ day: D, count: 3 });
+    expect(W.series.find((x: any) => x.key === D)).toMatchObject({ count: 3, total: 160000 });
+  });
+
   it('noto‘g‘ri sana — 400', async () => {
     const { token } = await setup();
     expect((await boss('GET', '/api/boss-data?from=2026-13-40&to=2026-10-10', { token })).status).toBe(400);
