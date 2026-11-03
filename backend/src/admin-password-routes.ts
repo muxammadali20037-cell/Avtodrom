@@ -203,15 +203,35 @@ async function safePaged<T = any>(table: string, query: string, page: number, pe
   }
 }
 
+/* Sahifalab o'qish uchun barqaror tartib: har qatorda yagona ustun oxirida
+   (aks holda bir xil vaqtli qatorlar sahifalar orasida takrorlanadi/yo'qoladi). */
+const UNIQUE_COL: Record<string, string> = { admin_settings: 'key' };
+function stableOrder(table: string, query: string): string {
+  const col = UNIQUE_COL[table] || 'id';
+  const m = /([?&])order=([^&]*)/.exec(query);
+  if (!m) return `${query}${query.includes('?') ? '&' : '?'}order=${col}.asc`;
+  if (new RegExp(`(^|,)${col}\\.`).test(m[2])) return query;
+  return query.replace(m[0], `${m[1]}order=${m[2]},${col}.asc`);
+}
+const READ_ALL_MAX = 50000;
+
 async function safeR<T = any>(table: string, query: string): Promise<{ rows: T[]; warning: string | null }> {
   try {
-    const rows = await supabaseRest<T[]>(table, { query });
-    const truncated = Array.isArray(rows) && rows.length >= PGRST_MAX_ROWS && !/limit=/.test(query);
+    /* limit yozilgan so'rov — bitta so'rov. Yozilmagan — HAMMASI, 1000 tadan
+       sahifalab (Supabase bir so'rovda 1000 dan ko'p bermaydi: mijozlar 1000
+       dan oshganda Instruktorlar ro'yxatida ism «—» bo'lib qolardi). */
+    if (/(^|[?&])limit=/.test(query)) return { rows: await supabaseRest<T[]>(table, { query }), warning: null };
+    const q0 = stableOrder(table, query);
+    const rows: T[] = [];
+    for (let offset = 0; offset < READ_ALL_MAX; offset += PGRST_MAX_ROWS) {
+      const chunk = await supabaseRest<T[]>(table, { query: `${q0}&limit=${PGRST_MAX_ROWS}&offset=${offset}` });
+      rows.push(...(chunk || []));
+      if (!chunk || chunk.length < PGRST_MAX_ROWS) break;
+    }
     return {
       rows,
-      warning: truncated
-        ? `"${table}": ${rows.length} qator keldi — ro‘yxat KESILGAN bo‘lishi mumkin. ` +
-          'Hisobotlar to‘liq emas. Sahifalash qo‘shilishi kerak.'
+      warning: rows.length >= READ_ALL_MAX
+        ? `"${table}": ${rows.length} qatordan ko‘p — ro‘yxat to‘liq emas.`
         : null,
     };
   } catch (e) {
