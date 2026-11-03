@@ -120,3 +120,22 @@ describe('Instruktorlar nazorati: kim qachon bo‘shaydi', () => {
     expect(r.body.rows.find((x: any) => x.id === 'ip-a').state).toBe('free');
   });
 });
+
+describe('Kengaytirilgan panel: 1000 dan ortiq foydalanuvchi', () => {
+  it('Instruktorlar — ro‘yxat kesilmaydi: 1000-qatordan keyingi instruktor ham ismi bilan, «faol», ogohlantirishsiz', async () => {
+    for (let i = 0; i < 1100; i++) {
+      h.db.users.push({ id: `u-c${String(i).padStart(4, '0')}`, full_name: `Mijoz ${i}`, role: 'customer', is_active: true, is_blocked: false, created_at: iso(i * 1000) });
+    }
+    h.db.users.push({ id: 'u-zz', full_name: 'Kech Qo‘shilgan Instruktor', phone: '+998900000099', role: 'instructor', is_active: true, is_blocked: false });
+    h.db.instructor_profiles.push({ id: 'ip-zz', user_id: 'u-zz', is_verified: true, is_available: true, categories: ['B'] });
+    const r = await h.call('GET', '/api/admin/instructors', { cookie: admin });
+    expect(r.status).toBe(200);
+    expect(r.body.warnings).toEqual([]);
+    const z = r.body.instructors.find((x: any) => x.id === 'ip-zz');
+    expect(z.profile?.full_name).toBe('Kech Qo‘shilgan Instruktor');
+    expect(z.active).toBe(true);
+    const c = await h.call('GET', '/api/admin/customers', { cookie: admin });
+    expect(c.body.customers.length).toBe(1101);                              // 1100 + Hayotxon
+    expect(new Set(c.body.customers.map((x: any) => x.id)).size).toBe(1101); // takror yo'q
+  });
+});

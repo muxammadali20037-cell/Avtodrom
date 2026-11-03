@@ -23,6 +23,9 @@ process.env.LOGIN_RATE_MAX = '10000';
 process.env.CUSTOMER_BOT_TOKEN = '1:customer';
 process.env.INSTRUCTOR_BOT_TOKEN = '1:instructor';
 
+/** Supabase (PostgREST) bir so'rovda 1000 qatordan ko'p qaytarmaydi */
+const PGRST_MAX = 1000;
+
 export interface FakeDb {
   [table: string]: any[];
 }
@@ -136,8 +139,12 @@ function applyFilters(rows: any[], query: string): any[] {
       return 0;
     });
   }
+  /* PostgREST kabi: offset, limit va SERVERNING 1000 qatorlik chegarasi
+     (limit yozilmasa ham 1000 dan ortig'i kelmaydi — production'dagi kabi) */
+  const offset = Math.max(0, Number(qs.get('offset') || 0));
   const limit = Number(qs.get('limit') || 0);
-  return limit > 0 ? out.slice(0, limit) : out;
+  const cap = Math.min(limit > 0 ? limit : PGRST_MAX, PGRST_MAX);
+  return out.slice(offset, offset + cap);
 }
 
 export async function makeHarness(): Promise<Harness> {
