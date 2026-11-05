@@ -85,7 +85,7 @@ async function loadCampaign(): Promise<any | null> {
  */
 export async function feedbackSummary(limit = 500, opt: { withCustomer?: boolean } = {}) {
   const rows = await supabaseRest<any[]>('feedback', {
-    query: `?select=id,customer_id,instructor_id,place_rating,instructor_rating,comment,suggestion,created_at&order=created_at.desc&limit=${Math.min(1000, limit)}`,
+    query: `?select=id,customer_id,instructor_id,place_rating,instructor_rating,comment,suggestion,created_at&order=created_at.desc,id.desc&limit=${Math.min(1000, limit)}`,
   });
   const ips = await selectIn<any>('instructor_profiles', 'id', rows.map((r) => r.instructor_id).filter(Boolean), 'id,user_id');
   const us = await selectIn<any>('users', 'id', ips.map((i) => i.user_id).filter(Boolean), 'id,full_name');
