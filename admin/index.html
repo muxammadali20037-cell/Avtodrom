@@ -69,6 +69,34 @@ svg{display:block;flex:none}
 .live.off{background:#d14343}
 .wrap{max-width:760px;margin:0 auto;padding:6px 16px calc(var(--nav-h) + var(--sb) + 28px)}
 .wrap.wide{max-width:1500px}
+/* AI yordamchi */
+.yd{max-width:860px;margin:0 auto;display:flex;flex-direction:column;gap:12px}
+.yd-hero{background:var(--hero);color:#fff;border-radius:20px;padding:16px 18px;display:flex;gap:14px;align-items:center}
+.yd-hero .ic{width:46px;height:46px;border-radius:14px;background:rgba(255,255,255,.16);display:grid;place-items:center;flex:none}
+.yd-hero b{display:block;font-size:17px}
+.yd-hero small{display:block;font-size:13px;color:rgba(255,255,255,.82);margin-top:2px;line-height:1.35}
+.yd-log{display:flex;flex-direction:column;gap:10px}
+.yd-me{align-self:flex-end;max-width:82%;background:var(--accent);color:#fff;border-radius:16px 16px 4px 16px;padding:9px 13px;font-size:15px;line-height:1.4;white-space:pre-wrap;word-break:break-word}
+.yd-bot{align-self:flex-start;max-width:94%;background:var(--card);border-radius:16px 16px 16px 4px;box-shadow:var(--shadow);padding:13px 15px;font-size:14.5px;line-height:1.5}
+.yd-bot h4{margin:0 0 6px;font-size:16px}
+.yd-bot p{margin:4px 0}
+.yd-step{display:flex;gap:9px;margin:5px 0}
+.yd-step i{font-style:normal;flex:none;width:22px;height:22px;border-radius:7px;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;font-weight:800;font-size:12.5px;margin-top:1px}
+.yd-dot{display:flex;gap:8px;margin:3px 0}
+.yd-dot::before{content:'•';color:var(--accent);font-weight:900}
+.yd-where{margin-top:9px;font-size:13px;color:var(--hint)}
+.yd-acts{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.yd-note{background:var(--warn-soft);color:var(--warn);border-radius:10px;padding:7px 10px;font-size:13px;margin-bottom:8px;font-weight:650}
+.yd-admin{border-left:4px solid var(--danger)}
+.yd-admin h4{color:var(--danger)}
+.yd-rel{margin-top:10px;font-size:12.5px;color:var(--hint);font-weight:700}
+.yd-chips{display:flex;flex-wrap:wrap;gap:7px;margin-top:6px}
+.yd-chips button{background:var(--card-2);border-radius:999px;padding:7px 12px;font-size:13.5px;font-weight:650;color:var(--text)}
+.yd-chips button:active{background:var(--accent-soft)}
+.yd-in{position:sticky;bottom:calc(var(--sb) + 8px);display:flex;gap:8px;background:var(--card);border-radius:16px;box-shadow:var(--shadow),0 0 0 1px var(--line);padding:6px}
+.yd-in input{flex:1;min-width:0;border:0;background:transparent;font-size:16px;padding:8px 10px;outline:0;color:var(--text)}
+.yd-in button{flex:none;width:44px;height:44px;border-radius:12px;background:var(--accent);color:#fff;display:grid;place-items:center}
+@media (max-width:959px){.yd-in{bottom:calc(var(--nav-h) + var(--sb) + 8px)}}
 /* Instruktorlar nazorati — kim qachon bo'shaydi */
 .nz-sum{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center;font-size:14px}
 .nz-sum span{display:inline-flex;align-items:center;gap:6px}
@@ -1275,6 +1303,7 @@ const IC = {
   eye: '<path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',
   refresh: '<path d="M20 11a8 8 0 10-2.3 5.7M20 4v7h-7"/>',
   star: '<path d="M12 3l2.8 5.7 6.2.9-4.5 4.4 1 6.2L12 17.3 6.5 20.2l1-6.2L3 9.6l6.2-.9z"/>',
+  spark: '<path d="M10 3l1.9 5.1L17 10l-5.1 1.9L10 17l-1.9-5.1L3 10l5.1-1.9z"/><path d="M18 14l.9 2.1L21 17l-2.1.9L18 20l-.9-2.1L15 17l2.1-.9z"/>',
   key: '<circle cx="8" cy="15" r="4"/><path d="M11 12l9-9M17 6l3 3"/>',
   edit: '<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/>',
   wait: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5h4"/>',
@@ -1712,6 +1741,7 @@ const ROUTES = {
   prices:      { t: 'Narxlar va ish vaqti', roles: ['admin'], render: () => vPrices() },
   staff:       { t: 'Xodimlar', roles: ['admin'], render: () => vStaff(), live: () => loadStaff(true) },
   feedback:    { t: 'Sharhlar', roles: ['admin'], render: () => vFeedback(), live: () => fbLoad(true) },
+  yordamchi:   { t: 'AI yordamchi', roles: ALL, render: () => vYordam() },
 };
 function go(r){ const h = '#/' + r; if (location.hash === h) render(); else location.hash = h; }
 function parseHash(){
@@ -1805,6 +1835,8 @@ function sideDef(){
   if (isAdmin()) G.push({ title: 'Boshqaruv', items: [
     ['analytics', 'Hisobot va tahlil', 'chart'], ['!/analytics', 'Analitika · 2 loyiha', 'chart'], ['insrep', 'Instruktorlar hisoboti', 'steer'], ['retention', 'O‘quvchini qaytarish', 'refresh'], ['instructors', 'Instruktorlar', 'users', 'apps'], ['grafik', 'Ish grafigi', 'clock'], ['@ctllink', 'Nazorat paneli', 'eye'], ['feedback', 'Sharhlar', 'star'], ['@fbinvite', 'Sharh so‘rovi', 'chat'], ['@bosslink', 'Boshqaruv ilovasi', 'mobile'], ['@loginbg', 'Kirish sahifasi foni', 'img'], ['prices', 'Narxlar va ish vaqti', 'tag'],
     ['staff', 'Xodimlar', 'key'], ['!/admin/full', 'Kengaytirilgan panel', 'ext']] });
+  /* Hamma xodimga — dastur bo'yicha savol-javob (eng pastda) */
+  G.push({ title: 'Yordam', items: [['yordamchi', 'AI yordamchi', 'spark']] });
   return G;
 }
 function sideKey(){
@@ -7169,6 +7201,73 @@ ACT.bossreset = async () => {
   catch (e) { fail(e); }
 };
 
+
+/* =========================================================================
+   AI YORDAMCHI — dastur bo'yicha savol-javob (hamma xodimga).
+   Qo'llanma va qidiruv: /admin/yordamchi.js (bo'lim ochilganda yuklanadi).
+   Bazaga ulanmaydi: summa, telefon, parol so'ralsa — «Adminga qo'ng'iroq qiling».
+   ========================================================================= */
+const YD = { mod: null, msgs: [] };
+const ydMod = async () => YD.mod || (YD.mod = await import('/admin/yordamchi.js'));
+const ROLE_UZ_YD = { cashier: 'kassir', operator: 'operator', admin: 'administrator' };
+async function vYordam(){
+  $('view').innerHTML = `<div class="view"><div class="yd">
+    <div class="yd-hero"><span class="ic">${I('spark', 26, 2)}</span><div><b>AI yordamchi</b>
+      <small>Dastur bo‘yicha istalgan savol: qayerda, nima, qanday qilinadi — qadam-baqadam tushuntiraman. Summa, telefon, parol kabi ma’lumot kerak bo‘lsa — adminga qo‘ng‘iroq qiling.</small></div></div>
+    <div class="yd-log" id="ydLog">${skel(2)}</div>
+    <form class="yd-in" id="ydForm" autocomplete="off"><input id="ydQ" placeholder="Savolingizni yozing… masalan: chekni qanday bekor qilaman?" enterkeyhint="send" maxlength="300">
+      <button type="submit" aria-label="Yuborish">${I('chev', 22, 2.6)}</button></form></div></div>`;
+  $('ydForm').onsubmit = e => { e.preventDefault(); const q = $('ydQ').value.trim(); if (q) { $('ydQ').value = ''; ydAsk(q); } };
+  try {
+    const m = await ydMod();
+    if (!YD.msgs.length) YD.msgs.push({ from: 'bot', res: { kind: 'hello' } });
+    ydPaint(m);
+  } catch (e) { $('ydLog').innerHTML = `<div class="note err">Yordamchi yuklanmadi: ${esc(e.message)}. Sahifani yangilang.</div>`; }
+}
+function ydText(a){
+  return String(a || '').split('\n').map(l => {
+    const st = /^(\d+)\.\s+(.*)$/.exec(l), dt = /^•\s*(.*)$/.exec(l);
+    if (st) return `<div class="yd-step"><i>${esc(st[1])}</i><span>${esc(st[2])}</span></div>`;
+    if (dt) return `<div class="yd-dot"><span>${esc(dt[1])}</span></div>`;
+    return l.trim() ? `<p>${esc(l)}</p>` : '';
+  }).join('');
+}
+const ydChips = list => `<div class="yd-chips">${list.map(t => `<button type="button" data-act="ydask" data-v="${esc(t)}">${esc(t)}</button>`).join('')}</div>`;
+function ydCanGo(go){ const R = ROUTES[String(go || '').split('/')[0]]; return !!(R && R.roles.includes(role())); }
+function ydBot(m, res){
+  const r = role(), qs = m.QUESTIONS[r] || m.QUESTIONS.cashier;
+  if (res.kind === 'hello') return `<div class="yd-bot"><h4>Assalomu alaykum! 👋</h4>
+    <p>Men dasturni yaxshi bilaman: kim nima qiladi, qaysi tugma qayerda, qanday ish qilinadi. Savolni o‘zingizcha yozing — lotin, kirill yoki ruscha.</p>
+    <div class="yd-rel">Masalan:</div>${ydChips(qs)}</div>`;
+  if (res.kind === 'greet') return `<div class="yd-bot"><p>Va alaykum assalom! Qanday yordam kerak? Savolingizni yozing.</p>${ydChips(qs.slice(0, 4))}</div>`;
+  if (res.kind === 'thanks') return `<div class="yd-bot"><p>Arzimaydi! Yana savol bo‘lsa — yozing 🙂</p></div>`;
+  if (res.kind === 'admin') return `<div class="yd-bot yd-admin"><h4>📞 Adminga qo‘ng‘iroq qiling</h4>
+    <p>Bu ma’lumotni men bera olmayman. Men faqat dasturdan qanday foydalanishni tushuntiraman — summa, mijoz telefoni, parol va hisobot raqamlarini administrator aytadi.</p></div>`;
+  if (res.kind === 'unknown') return `<div class="yd-bot"><p>Bu savolga aniq javob topa olmadim 🤔 Boshqacha yozib ko‘ring (masalan: «chekni qanday qayta chop etaman»)${res.items.length ? ' yoki mavzuni tanlang:' : '.'}</p>
+    ${res.items.length ? ydChips(res.items.map(e => e.t)) : ''}
+    <p class="muted" style="font-size:13px;margin-top:8px">Shoshilinch bo‘lsa — adminga qo‘ng‘iroq qiling.</p></div>`;
+  const [e, ...rel] = res.items;
+  const who = e.r.includes(r) ? '' : `<div class="yd-note">ℹ️ Bu — ${esc(e.r.map(x => ROLE_UZ_YD[x]).join(' yoki '))} ishi. Sizga kerak bo‘lsa, adminga ayting.</div>`;
+  return `<div class="yd-bot">${who}<h4>${esc(e.t)}</h4>${ydText(e.a)}
+    ${e.w ? `<div class="yd-where">📍 Qayerda: ${esc(e.w)}</div>` : ''}
+    ${e.go && ydCanGo(e.go) ? `<div class="yd-acts"><button class="btn btn-soft" style="width:auto;min-height:40px;padding:0 14px" data-act="ydgo" data-v="${esc(e.go)}">Ochish →</button></div>` : ''}
+    ${rel.length ? `<div class="yd-rel">O‘xshash mavzular:</div>${ydChips(rel.map(x => x.t))}` : ''}</div>`;
+}
+function ydPaint(m){
+  const log = $('ydLog'); if (!log) return;
+  log.innerHTML = YD.msgs.map(x => x.from === 'me' ? `<div class="yd-me">${esc(x.text)}</div>` : ydBot(m, x.res)).join('');
+  const last = log.lastElementChild;
+  if (last && YD.msgs.length > 1) last.scrollIntoView({ block: 'start', behavior: 'smooth' });
+}
+async function ydAsk(q){
+  const m = await ydMod();
+  YD.msgs.push({ from: 'me', text: q }, { from: 'bot', res: m.answer(q, role()) });
+  if (YD.msgs.length > 60) YD.msgs.splice(1, YD.msgs.length - 60);
+  ydPaint(m);
+  if (window.matchMedia('(min-width: 960px)').matches) $('ydQ')?.focus();
+}
+ACT.ydask = el => ydAsk(el.dataset.v);
+ACT.ydgo = el => go(el.dataset.v);
 
 /* =========================================================================
    SHARHLAR — Boshqaruv → Sharhlar: kim yozdi (ism, telefon), kim haqida

@@ -1680,7 +1680,7 @@ pre.json{background:#F7FAFF;border:1px solid var(--line);border-radius:8px;paddi
     </div>
     <div class="muted" style="font-size:13px;line-height:1.5">
       Bron qilgan <b>har bir mijozga</b> (tasdiqlangan va kutilayotgan) dars boshlanishiga
-      <b>60, 30 va 10 daqiqa</b> qolganda botdan xabar ketadi: «✅ Kelaman» / «🚫 Bekor qilmoqchiman».
+      <b id="remWhen">60, 30 va 20 daqiqa</b> qolganda botdan xabar ketadi: «✅ Kelaman» / «🚫 Bekor qilmoqchiman».
       Instruktor ham bron kartasidagi «🔔 Eslatish» tugmasi bilan qo‘lda yubora oladi.
     </div>
     <div id="remBody" style="margin-top:10px"></div>
@@ -1746,6 +1746,30 @@ pre.json{background:#F7FAFF;border:1px solid var(--line);border-radius:8px;paddi
       </div>
       <div class="muted" style="font-size:12px;margin-top:6px">30 daqiqa — alohida narx. 1 va 2 soat — soatlik tarif bo‘yicha. <b style="color:#0d7a4a">5 soatlik paket — faqat B toifa</b>: chegirmali narx, mijoz uni bir kunda yoki bir necha kunga bo‘lib oladi (5 × 1 soat, 3 + 2, 2 + 2 + 1). 0 yozilsa — paket o‘chiriladi. A va C da 5 soat oddiy soatlik tarif bilan.</div></div>
 
+    <div class="field"><label>3 SOATLIK TARIF <span class="muted">(0 — tarif yo‘q, 3 soat = soatlik narx × 3)</span></label>
+      <div style="display:grid;grid-template-columns:80px repeat(3,1fr);gap:10px;align-items:center">
+        <div class="muted" style="font-size:11px;font-weight:700">3 soat</div>
+        <input id="h3A" class="input" type="number" min="0" step="1000" placeholder="0" aria-label="A toifa 3 soat">
+        <input id="h3B" class="input" type="number" min="0" step="1000" placeholder="700000" aria-label="B toifa 3 soat">
+        <input id="h3C" class="input" type="number" min="0" step="1000" placeholder="0" aria-label="C toifa 3 soat">
+      </div></div>
+
+    <div class="field" style="background:linear-gradient(135deg,#eff6ff,#fff);border:1px solid #cfe0ff;border-radius:14px;padding:12px">
+      <label>1 KRUG VA TEST DRIVE <span class="muted">(kassadagi «Chek chiqarish»)</span></label>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">
+        <div><div class="muted" style="font-size:11px;margin-bottom:4px">1 krug narxi, so‘m (0 — o‘chiq)</div><input id="krugPrice" class="input" type="number" min="0" step="1000" placeholder="80000"></div>
+        <div><div class="muted" style="font-size:11px;margin-bottom:4px">1 krug daqiqasi (15–60)</div><input id="krugMin" class="input" type="number" min="15" max="60" step="5" placeholder="15"></div>
+        <div><div class="muted" style="font-size:11px;margin-bottom:4px">Test drive qo‘shimchasi, so‘m (0 — o‘chiq)</div><input id="tdPrice" class="input" type="number" min="0" step="1000" placeholder="50000"></div>
+      </div>
+      <div class="muted" id="tdHint" style="font-size:12px;margin-top:8px"></div></div>
+
+    <div class="field"><label>ILOVADAGI BRONLAR</label><select id="autoConfirm" class="select"><option value="true">Avtomatik tasdiqlanadi (mijoz kutmaydi)</option><option value="false">Operator tasdiqlaydi</option></select></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div class="field"><label>ESLATMA VAQTLARI, DAQIQA <span class="muted">(1–5 ta, 5–720)</span></label><input id="remMinutes" class="input" autocomplete="off" placeholder="60, 30, 20"></div>
+      <div class="field"><label>KECHIKISH, DAQIQA <span class="muted">(0 — o‘chiq)</span></label><input id="lateMin" class="input" type="number" min="0" max="180" step="1" placeholder="15"></div>
+    </div>
+    <p class="muted" style="font-size:12px;margin:0 0 10px">Kechikish — to‘lanmagan bron necha daqiqadan keyin o‘zi yopiladi. To‘langan chek hech qachon o‘zi yopilmaydi.</p>
+
     <div class="field"><label>AVTODROM HAQIDA <span class="muted">(mijoz panelidagi «INDEX AVTODROM» bo‘limi)</span></label>
       <textarea id="aboutText" class="input" rows="3" placeholder="Maydoncha haqida qisqacha…"></textarea></div>
     <div class="field"><label>SHAROITLAR <span class="muted">(har qatorda bittadan)</span></label>
@@ -1781,6 +1805,16 @@ pre.json{background:#F7FAFF;border:1px solid var(--line);border-radius:8px;paddi
       <button class="btn" id="prevYandex">Yandex</button>
       <button class="btn" id="prev2gis">2GIS</button>
     </div>
+  </div>
+
+  <div class="card">
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+      <h3 style="margin:0;flex:1">🛠 Barcha sozlamalar (texnik)</h3>
+      <input id="rawQ" class="input" style="max-width:240px" placeholder="Kalit bo‘yicha qidirish…" autocomplete="off">
+      <button class="btn" id="rawNew">+ Yangi sozlama</button>
+    </div>
+    <p class="muted" style="font-size:12.5px;margin:8px 0 10px">Bazadagi hamma sozlama — istalganini o‘zgartirish mumkin. Qiymat JSON ko‘rinishida (masalan <code>{"value": 50000}</code>). <b>Ehtiyot bo‘ling:</b> noto‘g‘ri qiymat kassa yoki ilovani buzishi mumkin — oddiy narx va vaqtlarni yuqoridagi maydonlarda o‘zgartiring. Har o‘zgarish «Amallar tarixi»ga yoziladi.</p>
+    <div id="rawList"></div>
   </div>
 </section>
 </main>
@@ -2931,6 +2965,7 @@ function renderAudit(){
    Saqlangandan yoki bekor qilingandan keyingina qulf ochiladi. */
 let editing = false;
 const SETTING_FIELDS = ['systemName','bookingEnabled','contactPhone','contactPhone2','workingHours','halfA','halfB','halfC','rateA','rateB','rateC','pakB','aboutText','facilities','workStart','workEnd','slotStep',
+                        'h3A','h3B','h3C','krugPrice','krugMin','tdPrice','autoConfirm','remMinutes','lateMin',
                         'locName','locAddress','locLat','locLng','locGoogle','locYandex','loc2gis'];
 function markEditing(){ if(!editing){ editing=true; $('locDirty').classList.remove('hidden'); } }
 function clearEditing(){ editing=false; $('locDirty').classList.add('hidden'); }
@@ -2963,6 +2998,17 @@ function loadSettings(){
   $('workStart').value=val('work_start')||'07:00';
   $('workEnd').value=val('work_end')||'19:00';
   $('slotStep').value=Number(val('slot_step_min'))||60;
+  /* Kassa bilan bir xil standartlar: yozuv bo'lmasa — standart, 0 — o'chiq */
+  const numOr=(k,d)=>{ const v=val(k); if(v===''||v===null||v===undefined) return d; const n=Number(v); return Number.isFinite(n)?n:d; };
+  $('h3A').value=numOr('tarif3_a',0); $('h3B').value=numOr('tarif3_b',700000); $('h3C').value=numOr('tarif3_c',0);
+  $('krugPrice').value=numOr('krug_price',80000);
+  { const km=numOr('krug_min',15); $('krugMin').value=km>=15&&km<=60?km:15; }
+  $('tdPrice').value=numOr('test_drive_price',50000);
+  { const a=val('booking_auto_confirm'); $('autoConfirm').value=String(!(a===false||['false','0','off','no'].includes(String(a))||a===0)); }
+  { const r=val('reminder_minutes'); const list=Array.isArray(r)?r:String(r||'').split(/[^\d]+/).filter(Boolean); $('remMinutes').value=(list.length?list:[60,30,20]).join(', '); $('remWhen').textContent=(list.length?list:[60,30,20]).join(', ')+' daqiqa'; }
+  $('lateMin').value=numOr('late_cancel_min',15);
+  tdHintPaint();
+  paintRaw();
 
   const loc=val('location')||{};
   $('locName').value=loc.name||'';
@@ -3016,9 +3062,27 @@ $('saveSettingsBtn').onclick=async()=>{
   if(priceIds.some(id=>!$(id).value||!Number.isFinite(Number($(id).value))||Number($(id).value)<=0))return notice('Tariflar musbat son bo‘lishi kerak.');
   if($('pakB').value===''||!Number.isFinite(Number($('pakB').value))||Number($('pakB').value)<0)return notice('Paket narxi 0 yoki musbat son bo‘lishi kerak (0 — paket o‘chiq).');
   if($('workStart').value >= $('workEnd').value)return notice('Ish boshlanishi tugashidan oldin bo‘lsin.');
+  const nn=id=>{ const v=String($(id).value).trim(); return v===''?NaN:Number(v); };
+  for(const id of ['h3A','h3B','h3C','krugPrice','tdPrice']) if(!(nn(id)>=0)) return notice('3 soatlik tarif, 1 krug va test drive narxi 0 yoki musbat son bo‘lsin (0 — o‘chiq).');
+  if(!(nn('krugMin')>=15&&nn('krugMin')<=60)) return notice('1 krug davomiyligi 15 dan 60 daqiqagacha bo‘lsin.');
+  const remList=[...new Set(String($('remMinutes').value).split(/[^\d]+/).filter(Boolean).map(Number))].sort((a,b)=>b-a);
+  if(!remList.length||remList.length>5||remList.some(n=>n<5||n>720)) return notice('Eslatma vaqtlari: 1–5 ta son, har biri 5 dan 720 daqiqagacha (masalan: 60, 30, 20).');
+  if(!(nn('lateMin')>=0&&nn('lateMin')<=180)) return notice('Kechikish 0 dan 180 daqiqagacha bo‘lsin (0 — o‘chiq).');
   button.disabled=true;button.textContent='Saqlanmoqda…';let saved=0;
   try{
-    const put=async(k,v)=>{await api('/api/admin/settings/'+k,{method:'PUT',body:JSON.stringify({value:{value:v}})});saved++;};
+    /* Faqat o'zgarganini yozamiz — saqlash tez, tarixda ortiqcha yozuv yo'q */
+    const cur={};S.settings.forEach(x=>cur[x.key]=x.value);
+    const same=(k,v)=>{ if(!(k in cur)) return false; const c=AvtodromCore.settingValue(cur[k]); return JSON.stringify(c)===JSON.stringify(v) || (typeof v==='number'&&Number(c)===v&&String(c)!=='') || (typeof v==='boolean'&&String(c)===String(v)); };
+    const put=async(k,v)=>{ if(same(k,v)) return; await api('/api/admin/settings/'+k,{method:'PUT',body:JSON.stringify({value:{value:v}})});saved++;};
+    await put('tarif3_a',Math.round(nn('h3A')));
+    await put('tarif3_b',Math.round(nn('h3B')));
+    await put('tarif3_c',Math.round(nn('h3C')));
+    await put('krug_price',Math.round(nn('krugPrice')));
+    await put('krug_min',Math.round(nn('krugMin')));
+    await put('test_drive_price',Math.round(nn('tdPrice')));
+    await put('booking_auto_confirm',$('autoConfirm').value==='true');
+    await put('reminder_minutes',remList);
+    await put('late_cancel_min',Math.round(nn('lateMin')));
     await put('system_name',$('systemName').value.trim()||'AVTODROM INDEX');
     await put('booking_enabled',$('bookingEnabled').value==='true');
     await put('contact_phone',[$('contactPhone').value.trim(),$('contactPhone2').value.trim()].filter(Boolean).join(', '));
@@ -3036,11 +3100,65 @@ $('saveSettingsBtn').onclick=async()=>{
     await put('work_end',$('workEnd').value||'19:00');
     await put('slot_step_min',Math.max(15,Number($('slotStep').value)||60));
     clearEditing();
-    toast('Sozlamalar saqlandi');await loadAll();
+    toast(saved?`Saqlandi (${saved} ta) — kassa va ilovada darhol ishlaydi`:'O‘zgarish yo‘q');await loadAll();
   }catch(e){notice(`${saved} ta sozlama saqlandi, qolganlari tasdiqlanmadi. Kiritgan qiymatlaringiz shu oynada saqlandi. ${e.message}`)}
   finally{button.disabled=false;button.textContent='Saqlash';}
 };
 window.addEventListener('beforeunload',e=>{if(editing){e.preventDefault();e.returnValue='';}});
+
+/* Test drive cheki narxi — yozilayotganda darhol ko'rinadi */
+function tdHintPaint(){
+  const k=Number($('krugPrice').value)||0, t=Number($('tdPrice').value)||0, m=Number($('krugMin').value)||15;
+  $('tdHint').innerHTML = !(k>0) ? '1 krug o‘chiq — test drive ham chiqmaydi.'
+    : !(t>0) ? `Test drive o‘chiq. 1 krug cheki: <b>${esc(money(k))}</b> · ${esc(m)} daqiqa.`
+    : `Test drive cheki = 1 krug ${esc(money(k))} + test drive ${esc(money(t))} = <b>${esc(money(k+t))}</b> · instruktorga ${esc(m)} daqiqa yoziladi.`;
+}
+['krugPrice','tdPrice','krugMin'].forEach(id=>$(id).addEventListener('input',tdHintPaint));
+
+/* ---------- Barcha sozlamalar (texnik) ----------
+   Bazadagi istalgan sozlama (tizim yozuvlari va PIN'lar server tomonida
+   yashirilgan). Qiymat — JSON. Har o'zgarish audit jurnaliga yoziladi. */
+const RAW_HELP={system_name:'Tizim nomi',contact_phone:'Aloqa telefonlari',address:'Manzil',location:'Xarita joyi',working_hours:'Ish vaqti (matn)',
+  booking_enabled:'Bron yoqilgan',booking_auto_confirm:'Ilova bronlari avtomatik tasdiq',work_start:'Ish boshlanishi',work_end:'Ish tugashi',slot_step_min:'Slot qadami',
+  half_a:'A · 30 daq',half_b:'B · 30 daq',half_c:'C · 30 daq',rate_a:'A · 1 soat',rate_b:'B · 1 soat',rate_c:'C · 1 soat',tarif3_a:'A · 3 soat',tarif3_b:'B · 3 soat',tarif3_c:'C · 3 soat',
+  paket5_b:'B · 5 soatlik paket',krug_price:'1 krug narxi',krug_min:'1 krug daqiqasi',test_drive_price:'Test drive qo‘shimchasi',reminder_minutes:'Eslatma vaqtlari',late_cancel_min:'Kechikish (daqiqa)',
+  about_text:'Avtodrom haqida',facilities:'Sharoitlar',support_bot:'Avto-javob yoqilgan',test_instructors:'Sinov instruktorlari',feedback_campaign:'Sharh so‘rovi holati'};
+function paintRaw(){
+  const box=$('rawList'); if(!box) return;
+  const q=String($('rawQ').value||'').trim().toLowerCase();
+  const rows=[...S.settings].filter(x=>!q||String(x.key).toLowerCase().includes(q)||String(RAW_HELP[x.key]||'').toLowerCase().includes(q))
+    .sort((a,b)=>String(a.key).localeCompare(String(b.key)));
+  if(!rows.length){ box.innerHTML='<div class="muted" style="font-size:13px">Topilmadi.</div>'; return; }
+  box.innerHTML=`<div style="border:1px solid var(--line,#e5e7eb);border-radius:12px;overflow:hidden">${rows.map(x=>{
+    const v=JSON.stringify(x.value); const short=v.length>90?v.slice(0,90)+'…':v;
+    return `<div style="display:flex;gap:10px;align-items:center;padding:8px 12px;border-top:1px solid var(--line,#eef0f4)">
+      <div style="flex:1;min-width:0"><b style="font-family:ui-monospace,Menlo,monospace;font-size:13px">${esc(x.key)}</b>${RAW_HELP[x.key]?` <span class="muted" style="font-size:12px">· ${esc(RAW_HELP[x.key])}</span>`:''}
+        <div class="muted" style="font-family:ui-monospace,Menlo,monospace;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(short)}</div></div>
+      <button class="btn small" data-raw="${esc(x.key)}">Tahrirlash</button></div>`;}).join('')}</div>`;
+  box.querySelectorAll('[data-raw]').forEach(b=>b.onclick=()=>rawEdit(b.dataset.raw));
+}
+function rawEdit(key){
+  const cur=key?S.settings.find(x=>x.key===key):null;
+  openModal(key?`Sozlama: ${key}`:'Yangi sozlama',`
+    ${key?'':'<div class="field"><label>KALIT</label><input id="rawKey" class="input" autocomplete="off" placeholder="masalan: test_drive_price"></div>'}
+    ${key&&RAW_HELP[key]?`<p class="muted" style="margin-top:0">${esc(RAW_HELP[key])}</p>`:''}
+    <div class="field"><label>QIYMAT (JSON)</label><textarea id="rawVal" class="input" rows="8" style="font-family:ui-monospace,Menlo,monospace;font-size:13px">${esc(cur?JSON.stringify(cur.value,null,2):'{"value": ""}')}</textarea></div>
+    <div id="rawErr"></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn" id="rawCancel">Bekor</button><button class="btn primary" id="rawSave">Saqlash</button></div>`);
+  $('rawCancel').onclick=closeModal;
+  $('rawSave').onclick=async()=>{
+    const k=key||String($('rawKey').value||'').trim();
+    if(!/^[a-z0-9_:\-.]{2,80}$/i.test(k)) { $('rawErr').innerHTML='<div class="error">Kalit: lotin harflari, raqam va _ (2–80 belgi).</div>'; return; }
+    let v; try{ v=JSON.parse($('rawVal').value); }catch(e){ $('rawErr').innerHTML=`<div class="error">JSON xato: ${esc(e.message)}</div>`; return; }
+    if(!key&&S.settings.some(x=>x.key===k)) { $('rawErr').innerHTML='<div class="error">Bu kalit bor — ro‘yxatdan «Tahrirlash» ni bosing.</div>'; return; }
+    if(!confirm(`«${k}» sozlamasi saqlansinmi? Noto‘g‘ri qiymat tizimni buzishi mumkin.`)) return;
+    const b=$('rawSave'); b.disabled=true; b.textContent='Saqlanmoqda…';
+    try{ await api('/api/admin/settings/'+encodeURIComponent(k),{method:'PUT',body:JSON.stringify({value:v})}); closeModal(); toast('Saqlandi'); clearEditing(); await loadAll(); }
+    catch(e){ $('rawErr').innerHTML=`<div class="error">${esc(e.message)}</div>`; b.disabled=false; b.textContent='Saqlash'; }
+  };
+}
+$('rawQ').addEventListener('input',paintRaw);
+$('rawNew').onclick=()=>rawEdit(null);
 
 /* ---------- Yuklash ---------- */
 /* To'qqizta so'rov birga yuboriladi. Ilgari Promise.all ishlatilardi —
