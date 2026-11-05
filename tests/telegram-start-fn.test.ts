@@ -213,12 +213,15 @@ describe('Xabarlar va tugmalar', () => {
     expect(e.body.text).toContain('3 часа — <b>700 000</b> <s>750 000</s>');   // 3 soatlik tarif (standart)
   });
 
-  it('Manzil — xaritadagi joy va Google/Yandex tugmalari', async () => {
+  it('Manzil — xarita rasmi yuborilmaydi, faqat manzil matni va Google/Yandex havolalari', async () => {
     await post(cb('loc:uz'));
-    const v = calls.find((c) => c.method === 'sendVenue')!;
-    expect(v.body.latitude).toBe(41.2995);
-    const s = sent().pop()!.body;
+    expect(calls.some((c) => c.method === 'sendVenue' || c.method === 'sendLocation')).toBe(false);
+    const s = calls.filter((c) => c.method === 'sendMessage' || c.method === 'editMessageText').pop()!.body;
+    expect(s.text).toContain('Manzil');
     expect(JSON.stringify(s.reply_markup)).toContain('Google Maps');
+    expect(JSON.stringify(s.reply_markup)).toContain('Yandex');
+    await post(msg('/manzil'));
+    expect(calls.some((c) => c.method === 'sendVenue' || c.method === 'sendLocation')).toBe(false);
   });
 
   it('Aloqa — telefonlar chiroyli, ish vaqti', async () => {
