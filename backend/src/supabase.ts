@@ -1,4 +1,5 @@
 import 'dotenv/config';
+import { actorTag } from './actor-context.js';
 
 const SUPABASE_URL = process.env.SUPABASE_URL || '';
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
@@ -46,6 +47,12 @@ export async function supabaseRest<T>(
   headers.set('apikey', SUPABASE_SERVICE_ROLE_KEY);
   headers.set('Authorization', `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`);
   headers.set('Content-Type', 'application/json');
+  /* Kim qildi — bazadagi tahrir jurnali (db_changes) uchun */
+  const method = String(options.method || 'GET').toUpperCase();
+  if (method === 'PATCH' || method === 'DELETE' || method === 'POST') {
+    const tag = actorTag();
+    if (tag && !headers.has('x-avt-actor')) headers.set('x-avt-actor', tag);
+  }
 
   const MAX = 3;
   let lastStatus = 0;

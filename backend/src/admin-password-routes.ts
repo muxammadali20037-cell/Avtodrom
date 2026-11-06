@@ -1,3 +1,4 @@
+import { currentActor } from './actor-context.js';
 import type { FastifyInstance } from 'fastify';
 import { createHmac, timingSafeEqual } from 'node:crypto';
 import { supabaseRest, supabaseRestPaged } from './supabase.js';
@@ -259,12 +260,16 @@ export async function audit(adminId: string | null, action: string, entityType: 
        bunday ID new_data ichida saqlanadi, yozuv baribir yoziladi. */
     const uuid = entityId && UUID_RE.test(String(entityId)) ? String(entityId) : null;
     const extra = entityId && !uuid ? { entity_key: String(entityId) } : null;
+    const who = currentActor();
     const nd = newData && typeof newData === 'object' && !Array.isArray(newData) ? { ...(newData as any), ...(extra || {}) } : (extra ? { value: newData ?? null, ...extra } : newData ?? null);
     await supabaseRest('admin_audit_logs', {
       method: 'POST',
       body: JSON.stringify({
         admin_id: adminId && UUID_RE.test(String(adminId)) ? adminId : null, action, entity_type: entityType, entity_id: uuid,
         old_data: oldData ?? null, new_data: nd,
+        /* Kim qildi — so'rovdagi xodim (umumiy admin hisobi emas) */
+        ...(who?.staff_id && UUID_RE.test(who.staff_id) ? { staff_id: who.staff_id } : {}),
+        ...(who?.login ? { staff_login: String(who.login).slice(0, 80) } : {}),
       }),
     });
   } catch (e) { console.error('Audit log yozilmadi:', action, e); }

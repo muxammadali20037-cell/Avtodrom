@@ -101,7 +101,7 @@ export function verifyBossToken(link: BossLink | null, token: string, now = Date
   if (!Number.isFinite(exp) || exp < now) return false;
   return safeEq(parts[2], hmac(`boss:${link.key}:${link.pin_hash}:${parts[1]}`));
 }
-const bearer = (req: any) => {
+export const bearer = (req: any) => {
   const h = String(req.headers?.authorization || '').trim();
   return h.toLowerCase().startsWith('bearer ') ? h.slice(7).trim() : '';
 };

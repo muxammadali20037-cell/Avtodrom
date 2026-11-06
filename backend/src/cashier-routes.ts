@@ -1,3 +1,4 @@
+import { currentActor } from './actor-context.js';
 import crypto from 'node:crypto';
 import type { FastifyInstance } from 'fastify';
 import { supabaseRest } from './supabase.js';
@@ -139,12 +140,15 @@ async function instructorWithUser(profileId: string): Promise<{ ip: any; user: a
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 async function auditMany(adminId: string | null, action: string, entity: string, items: { id: string | null; data: any }[]) {
   if (!items.length) return;
+  const who = currentActor();
   try {
     await supabaseRest('admin_audit_logs', {
       method: 'POST', headers: { Prefer: 'return=minimal' },
       body: JSON.stringify(items.map((x) => ({
         admin_id: adminId && UUID_RE.test(String(adminId)) ? adminId : null, action, entity_type: entity,
         entity_id: x.id && UUID_RE.test(String(x.id)) ? x.id : null, old_data: null, new_data: x.data ?? null,
+        ...(who?.staff_id && UUID_RE.test(who.staff_id) ? { staff_id: who.staff_id } : {}),
+        ...(who?.login ? { staff_login: String(who.login).slice(0, 80) } : {}),
       }))),
     });
   } catch (e) {

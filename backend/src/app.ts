@@ -27,6 +27,8 @@ import { registerSheetShareRoutes, handleGroupMessage } from './sheet-share.js';
 import { registerControlRoutes } from './control-view.js';
 import { registerFeedbackRoutes } from './feedback.js';
 import { registerBossRoutes } from './boss-dashboard.js';
+import { registerBossEditsRoutes } from './boss-edits.js';
+import { actorStore, setTelegramActor } from './actor-context.js';
 
 const app = Fastify({ logger: true });
 
@@ -61,6 +63,15 @@ app.addHook('onRequest', async (req, reply) => {
   if (!operatorMayCall(req.method, url)) {
     return reply.code(403).send({ ok: false, error: 'Operator uchun bu bo‘lim yopiq' });
   }
+});
+
+/* KIM QILDI: so'rov davomida xodim kimligi (audit va bazadagi tahrir
+   jurnali uchun). preHandler — tana o'qilgandan keyin, marshrutdan oldin:
+   done() shu kontekst ichida chaqiriladi, marshrut ham shu ichida ishlaydi. */
+app.addHook('preHandler', (req, _reply, done) => {
+  let who: any = null;
+  try { who = peekStaff(req); } catch { who = null; }
+  actorStore.run({ staff_id: who?.id || null, login: who?.login || null, role: who?.role || null, tg: null }, done);
 });
 
 const CUSTOMER_BOT_TOKEN = process.env.CUSTOMER_BOT_TOKEN || process.env.TELEGRAM_CUSTOMER_BOT_TOKEN || '';
@@ -99,7 +110,9 @@ function authenticateWithToken(botToken: string) {
     if (!initData) { const auth = String(request.headers.authorization || '').trim(); if (auth.toLowerCase().startsWith('tma ')) initData = auth.slice(4).trim(); }
     if (!initData && request.query?.initData) initData = String(request.query.initData).trim();
     if (!initData) throw new Error('Telegram initData missing');
-    return validateTelegramInitData(initData, botToken);
+    const user = validateTelegramInitData(initData, botToken);
+    setTelegramActor((user as any)?.id);
+    return user;
   };
 }
 
@@ -150,6 +163,7 @@ await registerControlRoutes(app, { guardAdmin, currentStaff, adminUser, audit })
 await registerFeedbackRoutes(app, { authenticateCustomer, guardAdmin, currentStaff });
 /* Boshliq ilovasi (iPhone) — maxfiy havola + PIN; admin havolani boshqaradi */
 await registerBossRoutes(app, { guardAdmin, currentStaff, adminUser, audit });
+await registerBossEditsRoutes(app);
 await registerAdminBotRoutes(app);
 
 // IMPORTANT: admin-password-routes.ts is the single owner of the canonical
