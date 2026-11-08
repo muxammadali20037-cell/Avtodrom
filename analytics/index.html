@@ -400,6 +400,45 @@ td.n,th.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
 <script>
 (() => {
 'use strict';
+/* ---------- MAXSUS PAROL («Hisobot») — admin panel bilan bitta token ----------
+   Tushum va hisobotlar faqat maxsus parol bilan ochiladi (kassir ham, administrator ham).
+   Token admin paneldagi bilan bir xil (shu oynada saqlanadi), 15 daqiqa amal qiladi. */
+const REP_TOK_KEY = 'avd_rep_tok';
+function repTok(){ try { const x = JSON.parse(sessionStorage.getItem(REP_TOK_KEY) || 'null'); return x && x.t && x.exp > Date.now() + 5000 ? x.t : ''; } catch { return ''; } }
+function repHdr(){ const t = repTok(); return t ? { 'X-Report-Token': t } : {}; }
+let repAsking = null;
+function repAsk(){
+  if (repAsking) return repAsking;
+  repAsking = new Promise(resolve => {
+    const bg = document.createElement('div');
+    bg.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(15,19,64,.55);display:grid;place-items:center;padding:16px';
+    bg.innerHTML = '<form style="background:#fff;color:#141833;border-radius:18px;padding:22px 20px;width:100%;max-width:360px;box-shadow:0 10px 40px rgba(0,0,0,.25);font-family:inherit;text-align:center">'
+      + '<div style="font-size:30px;margin-bottom:6px">🔒</div><b style="font-size:18px">Hisobot — maxsus parol bilan</b>'
+      + '<p style="margin:8px 0 14px;font-size:14px;color:#6b7188">Tushum va hisobotlar faqat maxsus parol bilan ochiladi (15 daqiqa).</p>'
+      + '<input type="password" inputmode="numeric" maxlength="8" autocomplete="off" placeholder="••••" aria-label="Maxsus parol" style="width:100%;box-sizing:border-box;padding:12px;border:1px solid #d6d9e6;border-radius:12px;text-align:center;font-size:22px;letter-spacing:8px">'
+      + '<div data-err style="display:none;margin-top:10px;color:#d14343;font-size:13.5px"></div>'
+      + '<div style="display:flex;gap:8px;margin-top:14px"><button type="button" data-x style="flex:1;padding:11px;border-radius:12px;border:0;background:#f1f3f8;font-weight:700;cursor:pointer">Bekor</button>'
+      + '<button type="submit" style="flex:1;padding:11px;border-radius:12px;border:0;background:#2b2f8f;color:#fff;font-weight:800;cursor:pointer">Ochish</button></div></form>';
+    document.body.appendChild(bg);
+    const f = bg.querySelector('form'), inp = f.querySelector('input'), er = f.querySelector('[data-err]');
+    const done = ok => { bg.remove(); repAsking = null; resolve(ok); };
+    f.querySelector('[data-x]').onclick = () => done(false);
+    f.onsubmit = async e => {
+      e.preventDefault();
+      const pin = String(inp.value || '').trim();
+      if (!/^\d{4,8}$/.test(pin)) { er.textContent = 'Parol 4–8 ta raqam'; er.style.display = 'block'; return; }
+      try {
+        const r = await fetch('/api/admin/price-unlock', { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify({ pin, purpose: 'report' }) });
+        const d = await r.json().catch(() => ({}));
+        if (!r.ok || !d.ok) throw new Error(d.error || 'Parol noto‘g‘ri');
+        try { sessionStorage.setItem(REP_TOK_KEY, JSON.stringify({ t: d.token, exp: Date.parse(d.expires_at) || Date.now() + 14 * 60000 })); } catch {}
+        done(true);
+      } catch (x) { er.textContent = x.message; er.style.display = 'block'; inp.value = ''; inp.focus(); }
+    };
+    setTimeout(() => inp.focus(), 50);
+  });
+  return repAsking;
+}
 
 /* ------------------------------------------------------------------ */
 /* Yordamchilar                                                        */
@@ -439,8 +478,10 @@ const tkTime = (iso) => {
 const cssVar = (n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
 
 async function api(path, opts = {}) {
-  const r = await fetch(path, { credentials: 'same-origin', ...opts, headers: { 'Content-Type': 'application/json', ...(opts.headers || {}) } });
+  const r = await fetch(path, { credentials: 'same-origin', ...opts, headers: { 'Content-Type': 'application/json', ...repHdr(), ...(opts.headers || {}) } });
   let d = null; try { d = await r.json(); } catch { /* bo'sh */ }
+  /* Hisobot — maxsus parol so'raladi, keyin so'rov qayta yuboriladi */
+  if (r.status === 403 && d && d.needs_report_pin && !opts._rep) { if (await repAsk()) return api(path, { ...opts, _rep: true }); }
   if (!r.ok || (d && d.ok === false)) { const e = new Error((d && d.error) || `Xato: ${r.status}`); e.status = r.status; throw e; }
   return d || {};
 }
