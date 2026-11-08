@@ -1151,6 +1151,9 @@ button.row,a.row,button.tr,.side-item,.icon-btn{transition:background .15s var(-
 .reg-sw{background:rgba(255,255,255,.08)}
 .reg-sw button{color:rgba(255,255,255,.62);transition:background-color .2s var(--ease),color .2s var(--ease)}
 .reg-sw button.on{background:#fff;color:var(--accent)}
+.rep-lk{display:inline-flex;align-items:center;gap:4px;font-size:10.5px;font-weight:800;letter-spacing:.2px;text-transform:none;padding:3px 8px;border-radius:8px;background:rgba(255,255,255,.08);color:rgba(255,255,255,.62)}
+.rep-lk.on{background:rgba(34,197,94,.18);color:#86efac}
+.rep-lk button{color:inherit;font:inherit;text-decoration:underline;padding:0;margin-left:2px}
 .side-user{border-top-color:rgba(255,255,255,.1)}
 .side-user .ava{background:rgba(255,255,255,.12);color:#fff}
 .side-user .live{box-shadow:0 0 0 2.5px #0f1340}
@@ -1329,6 +1332,27 @@ const canDesk = () => isOp() || isAdmin();
 const canKassa = () => isCashier() || isAdmin();
 const ROLE_UZ = { admin: 'Administrator', operator: 'Operator', cashier: 'Kassir' };
 
+/* ---------- MAXSUS PAROL: «Hisobot» va narxni o'zgartirish ----------
+   Parol to'g'ri bo'lsa server 15 daqiqalik token beradi (faqat shu xodim
+   uchun). Token har so'rovga `X-Report-Token` bo'lib qo'shiladi — tushum,
+   kassa/instruktorlar hisoboti, platniy va umumiy hisobot faqat shu bilan
+   ochiladi (kassir ham, administrator ham). Sahifa yangilansa ham (shu
+   oynada) saqlanadi; Kengaytirilgan panel va Analitika ham shuni ishlatadi. */
+const REP_TOK_KEY = 'avd_rep_tok';
+function setPriceTok(d){
+  S.priceTok = d ? { t: d.token || d.t, exp: Date.parse(d.expires_at || '') || Number(d.exp) || Date.now() + 14 * 60000 } : null;
+  try { if (S.priceTok) sessionStorage.setItem(REP_TOK_KEY, JSON.stringify(S.priceTok)); else sessionStorage.removeItem(REP_TOK_KEY); } catch {}
+}
+try { const x = JSON.parse(sessionStorage.getItem(REP_TOK_KEY) || 'null'); if (x && x.t && x.exp > Date.now()) S.priceTok = x; } catch {}
+function repTokHeader(){ const t = S.priceTok; return t && t.exp > Date.now() + 5000 ? { 'X-Report-Token': t.t } : {}; }
+/** Server «parol kerak» dedi — token eskirgan yoki boshqa xodimniki: qulflaymiz */
+function repLocked(){
+  if (S.priceTok) setPriceTok(null);
+  acClear();
+  if (typeof ROUTES !== 'undefined' && ROUTES[S.routeName]?.lock) setTimeout(render, 0);
+  if (S.me) setTimeout(paintSide, 0);
+}
+
 /* ---------- server bilan aloqa ---------- */
 /** Xato matni: satr yoki { message } obyekt — hech qachon «[object Object]» emas. */
 const errMsg = v => !v ? '' : typeof v === 'string' ? v : String(v.message || v.error || v.code || '');
@@ -1337,7 +1361,7 @@ async function apiNet(path, opt = {}){
   const writing = !['GET', 'HEAD'].includes(String(opt.method || 'GET').toUpperCase());
   try{
     const r = await fetch(path, { ...opt, signal: ctl.signal, credentials: 'include', cache: 'no-store',
-      headers: { Accept: 'application/json', ...(opt.body ? { 'Content-Type': 'application/json' } : {}), ...(opt.headers || {}) } });
+      headers: { Accept: 'application/json', ...(opt.body ? { 'Content-Type': 'application/json' } : {}), ...repTokHeader(), ...(opt.headers || {}) } });
     const raw = await r.text();
     let d = {};
     try { d = raw ? JSON.parse(raw) : {}; }
@@ -1352,11 +1376,12 @@ async function apiNet(path, opt = {}){
       showLogin(); const e = Error('Sessiya tugagan. Qayta kiring.'); e.silent = true; throw e;
     }
     if (!r.ok || d.ok === false) {
+      if (d.needs_report_pin) repLocked();
       /* Vercel o'zi qaytargan 404 ({ error: { code: 'NOT_FOUND' } }) — server bu manzilni bilmaydi */
       const noRoute = r.status === 404 && d.error && typeof d.error === 'object';
       const e = Error(noRoute ? `Server bu bo‘limni topmadi (404): ${String(path).split('?')[0]}. Yangilanish to‘liq yuklanmagan bo‘lishi mumkin.`
         : errMsg(d.error) || errMsg(d.message) || `Xato (${r.status})`);
-      e.status = r.status; throw e;
+      e.status = r.status; e.needsPin = !!d.needs_report_pin; throw e;
     }
     return d;
   }catch(e){
@@ -1428,6 +1453,7 @@ function acRevalidate(key, hit){
 }
 function softRefresh(){
   const R = ROUTES[S.routeName];
+  if (R?.lock && !priceTokOk()) return;
   if (R?.live && !sheetOpen() && !typing()) { try { R.live(S.routeArg); } catch (e) { console.warn(e); } }
 }
 
@@ -1648,6 +1674,18 @@ function scopeLabel(){
   const v = rscope(); if (v === 'all') return 'Hamma kassa';
   return S.registers.find(r => String(r.id) === v)?.code || 'Kassa';
 }
+/* HISOBOT KO'LAMI (parol bilan ochilgan «Hisobot»): Jami · P1 · P2 — kassir ham, administrator ham */
+function repScopeV(){
+  const v = rscope();
+  return v !== 'all' && S.registers.length && !S.registers.some(r => String(r.id) === v) ? 'all' : v;
+}
+function repScopeQS(){ const v = repScopeV(); return v === 'all' ? 'register=all' : 'register_id=' + encodeURIComponent(v); }
+function repScopeLabel(){ const v = repScopeV(); return v === 'all' ? 'Jami (P1 + P2)' : S.registers.find(r => String(r.id) === v)?.code || 'Kassa'; }
+function repScopeChips(act){
+  const v = repScopeV();
+  return `<div class="chips" style="margin-top:10px">${[['all', 'Jami (P1 + P2)'], ...S.registers.map(r => [String(r.id), r.code])]
+    .map(([k, l]) => `<button class="chip ${v === k ? 'on' : ''}" data-act="${act}" data-v="${esc(k)}">${I('cash', 15)} ${esc(l)}</button>`).join('')}</div>`;
+}
 function scopeChips(act){
   if (!isAdmin()) return '';
   const v = rscope();
@@ -1726,16 +1764,19 @@ const ROUTES = {
   issue:       { t: 'Chek chiqarish', roles: ['cashier', 'admin'], focus: true, wide: true, render: () => vIssue(), live: () => wzLive(CO) },
   receipts:    { t: 'Cheklar', roles: ['cashier', 'admin'], render: () => vReceipts(), live: () => { if (perLive(RC)) loadReceipts(true); } },
   live:        { t: 'Jarayonda', roles: ['cashier', 'admin'], render: () => vLive(), live: () => loadLive(true) },
-  report:      { t: 'Kassa hisoboti', roles: ['cashier', 'admin'], render: () => vReport(), live: () => { if (perLive(RP, 400)) loadReport(true); } },
-  insrep:      { t: 'Instruktorlar hisoboti', roles: ['cashier', 'admin'], render: a => vInsRep(a), live: a => { if (perLive(IR)) { if (a) loadIrDetail(true); else loadInsRep(true); } }, parent: a => a ? 'insrep' : 'home' },
+  /* HISOBOT — hammasi maxsus parol bilan (lock: true): kassir ham, administrator ham */
+  hisobot:     { t: 'Umumiy hisobot', roles: ['cashier', 'admin'], lock: true, render: () => vSummary(), live: () => { if (perLive(UM, 400)) loadSummary(true); } },
+  report:      { t: 'Kassa hisoboti', roles: ['cashier', 'admin'], lock: true, render: () => vReport(), live: () => { if (perLive(RP, 400)) loadReport(true); } },
+  insrep:      { t: 'Instruktorlar hisoboti', roles: ['cashier', 'admin'], lock: true, render: a => vInsRep(a), live: a => { if (perLive(IR)) { if (a) loadIrDetail(true); else loadInsRep(true); } }, parent: a => a ? 'insrep' : 'home' },
+  platniy:     { t: 'Platniy hisoboti', roles: ['cashier', 'admin'], lock: true, render: () => vPlatniy(), live: () => { if (perLive(PL, 31)) loadPlatniy(true); } },
   schedule:    { t: 'Instruktorlar jadvali', roles: ALL, wide: true, render: () => vSchedule(), live: () => loadSchedule(true) },
   xbron:       { t: 'Excel bron', roles: ALL, wide: true, render: () => vXbron(), live: () => xbLoad(true) },
   nazorat:     { t: 'Instruktorlar nazorati', roles: ['cashier', 'admin'], render: () => vNazorat(), live: () => nzLoad(true) },
   bookings:    { t: 'Bronlar', roles: ['operator', 'admin'], render: a => vBookings(a), live: () => loadBookings(true) },
   manual:      { t: 'Qo‘lda bron', roles: ['operator', 'admin'], focus: true, render: () => vManual(), live: () => wzLive(MB) },
   chat:        { t: 'Mijozlar chati', roles: ['operator', 'admin'], render: a => vChat(a), live: a => chatLive(a), parent: a => a ? 'chat' : 'home' },
-  retention:   { t: 'O‘quvchini qaytarish', roles: ['admin'], render: a => vRetention(a), live: () => { if (perLive(RT)) loadRetention(true); }, parent: a => a ? 'retention' : 'home' },
-  analytics:   { t: 'Hisobot', roles: ['admin'], render: () => vAnalytics(), live: () => { if (perLive(AN, 400)) loadAnalytics(true); } },
+  retention:   { t: 'O‘quvchini qaytarish', roles: ['admin'], lock: true, render: a => vRetention(a), live: () => { if (perLive(RT)) loadRetention(true); }, parent: a => a ? 'retention' : 'home' },
+  analytics:   { t: 'Hisobot va tahlil', roles: ['admin'], lock: true, render: () => vAnalytics(), live: () => { if (perLive(AN, 400)) loadAnalytics(true); } },
   instructors: { t: 'Instruktorlar', roles: ['admin'], render: a => vInstructors(a), live: () => loadInstructors(true) },
   grafik:      { t: 'Ish grafigi', roles: ['admin'], render: a => vGrafik(a), live: a => { if (a) wpLoad(a, true); else wpLoadList(true); }, parent: a => a ? 'grafik' : 'home' },
   prices:      { t: 'Narxlar va ish vaqti', roles: ['admin'], render: () => vPrices() },
@@ -1772,7 +1813,8 @@ function render(){
   paintNav();
   if (changed) { window.scrollTo(0, 0); routeStart(name, arg); }
   closeSide();
-  R.render(arg);
+  /* «Hisobot» bo'limlari — maxsus parolsiz faqat qulf oynasi */
+  if (R.lock && !priceTokOk()) vRepLock(); else R.render(arg);
   /* Avtodrom12 kabi yumshoq kirish: faqat boshqa bo'limga o'tganda
      (bo'lim ichidagi yangilanishlar silkinmaydi) */
   if (changed) requestAnimationFrame(() => { const el = v.firstElementChild; if (el && el.classList.contains('view')) el.classList.add('pg-in'); });
@@ -1827,13 +1869,17 @@ function paintNav(){
 function sideDef(){
   const G = [{ items: [['home', 'Bosh sahifa', 'home']] }];
   if (canKassa()) G.push({ title: isCashier() ? `Kassa ${S.reg?.r?.code || ''}` : 'Kassa', reg: isAdmin(), items: [
-    ['issue', 'Chek chiqarish', 'receipt'], ['receipts', 'Cheklar', 'list', 'receipts'], ['live', 'Jarayonda', 'play', 'live'], ['report', 'Kassa hisoboti', 'chart'],
-    ...(isCashier() ? [['nazorat', 'Instruktorlar nazorati', 'eye'], ['insrep', 'Instruktorlar hisoboti', 'steer'], ['schedule', 'Instruktorlar jadvali', 'cal'], ['xbron', 'Excel bron', 'sheet']] : [])] });
+    ['issue', 'Chek chiqarish', 'receipt'], ['receipts', 'Cheklar', 'list', 'receipts'], ['live', 'Jarayonda', 'play', 'live'],
+    ...(isCashier() ? [['nazorat', 'Instruktorlar nazorati', 'eye'], ['schedule', 'Instruktorlar jadvali', 'cal'], ['xbron', 'Excel bron', 'sheet']] : [])] });
+  /* HISOBOT — tushum va hamma hisobotlar shu yerda, faqat maxsus parol bilan */
+  if (canKassa()) G.push({ title: 'Hisobot', lock: true, items: [
+    ['hisobot', 'Umumiy hisobot', 'chart'], ['report', 'Kassa hisoboti', 'cash'], ['insrep', 'Instruktorlar hisoboti', 'steer'], ['platniy', 'Platniy hisoboti', 'car'],
+    ...(isAdmin() ? [['analytics', 'Hisobot va tahlil', 'chart'], ['!/analytics', 'Analitika · 2 loyiha', 'chart'], ['retention', 'O‘quvchini qaytarish', 'refresh']] : [])] });
   if (canDesk()) G.push({ title: 'Bronlar', items: [
     ['bookings/new', 'Yangi bronlar', 'bell', 'pending'], ['bookings/cancels', 'Bekor so‘rovlari', 'ban', 'cancels'], ['bookings/all', 'Barcha bronlar', 'list'],
     ['xbron', 'Excel bron', 'sheet'], ['manual', 'Qo‘lda bron', 'phone'], ['schedule', 'Instruktorlar jadvali', 'cal'], ['chat', 'Mijozlar chati', 'chat', 'chat']] });
   if (isAdmin()) G.push({ title: 'Boshqaruv', items: [
-    ['analytics', 'Hisobot va tahlil', 'chart'], ['!/analytics', 'Analitika · 2 loyiha', 'chart'], ['insrep', 'Instruktorlar hisoboti', 'steer'], ['retention', 'O‘quvchini qaytarish', 'refresh'], ['instructors', 'Instruktorlar', 'users', 'apps'], ['grafik', 'Ish grafigi', 'clock'], ['@ctllink', 'Nazorat paneli', 'eye'], ['feedback', 'Sharhlar', 'star'], ['@fbinvite', 'Sharh so‘rovi', 'chat'], ['@bosslink', 'Boshqaruv ilovasi', 'mobile'], ['@loginbg', 'Kirish sahifasi foni', 'img'], ['prices', 'Narxlar va ish vaqti', 'tag'],
+    ['instructors', 'Instruktorlar', 'users', 'apps'], ['grafik', 'Ish grafigi', 'clock'], ['@ctllink', 'Nazorat paneli', 'eye'], ['feedback', 'Sharhlar', 'star'], ['@fbinvite', 'Sharh so‘rovi', 'chat'], ['@bosslink', 'Boshqaruv ilovasi', 'mobile'], ['@loginbg', 'Kirish sahifasi foni', 'img'], ['prices', 'Narxlar va ish vaqti', 'tag'],
     ['staff', 'Xodimlar', 'key'], ['!/admin/full', 'Kengaytirilgan panel', 'ext']] });
   /* Hamma xodimga — dastur bo'yicha savol-javob (eng pastda) */
   G.push({ title: 'Yordam', items: [['yordamchi', 'AI yordamchi', 'spark']] });
@@ -1860,7 +1906,7 @@ function paintSide(){
     const list = S.registers.length ? S.registers : [{ code: 'P1' }, { code: 'P2' }];
     return `<span class="reg-sw" title="Qaysi kassa nomidan ishlaysiz">${list.map(r => `<button class="${S.reg?.r?.code === r.code ? 'on' : ''}" data-act="setreg" data-code="${esc(r.code)}">${esc(r.code)}</button>`).join('')}</span>`;
   };
-  const groups = sideDef().map(g => `${g.title ? `<div class="side-grp"><span>${esc(g.title)}</span>${g.reg ? regSw() : ''}</div>` : ''}
+  const groups = sideDef().map(g => `${g.title ? `<div class="side-grp"><span>${esc(g.title)}</span>${g.reg ? regSw() : ''}${g.lock ? repBadge() : ''}</div>` : ''}
     ${g.items.map(([r, label, ic, cnt]) => r.startsWith('!')
       ? `<a class="side-item" href="${esc(r.slice(1))}">${I(ic, 20)}<span>${esc(label)}</span></a>`
       : r.startsWith('@') ? `<button class="side-item" data-act="${esc(r.slice(1))}">${I(ic, 20)}<span>${esc(label)}</span></button>`
@@ -1980,6 +2026,7 @@ ACT.logout = async () => {
   closeSheet(); closeSide();
   try { await post('/api/admin/logout'); } catch {}
   lsSet(REG_PICK, null);
+  setPriceTok(null);
   showLogin();
 };
 
@@ -2076,6 +2123,7 @@ function onDataChange(){
   acDropCurrent();
   refreshCounts();
   const R = ROUTES[S.routeName];
+  if (R?.lock && !priceTokOk()) return;
   if (R?.live && !sheetOpen() && !typing()) { try { R.live(S.routeArg); } catch (e) { console.warn(e); } }
 }
 setInterval(() => { if (!document.hidden) pulse(); }, 5000);
@@ -2115,15 +2163,16 @@ async function doRefreshCounts(){
   if (canKassa()) jobs.push(api('/api/admin/in-progress', { fresh: true }).then(d => { c.live = Number(d.counts?.active) || 0; c.liveRed = Number(d.counts?.red) || 0; }).catch(() => {}));
   /* Administrator bosh sahifada HAMMA kassaning bugungi cheklarini ko'radi; kassir — o'zinikini */
   if (isAdmin() || (canKassa() && regOk())) jobs.push(api(`/api/admin/cashier/receipts?${isAdmin() ? 'register=all' : 'token=' + encodeURIComponent(S.reg.t)}&date=${kToday()}`, { fresh: true })
-    .then(d => { const s = d.summary || {}; c.receipts = (Number(s.total) || 0) - (Number(s.cancelled) || 0); c.amount = Number(s.amount) || 0; S.rcRows = d.receipts || []; }).catch(() => {}));
+    .then(d => { const s = d.summary || {}; c.receipts = (Number(s.total) || 0) - (Number(s.cancelled) || 0); c.active = Number(s.active) || 0;
+      /* Jami tushum faqat «Hisobot» paroli bilan keladi (aks holda null) */
+      c.amount = s.amount == null ? null : Number(s.amount) || 0; S.rcRows = d.receipts || []; }).catch(() => {}));
   if (isAdmin() && (!S.appsAt || Date.now() - S.appsAt > 5 * 60000 || ['home', 'instructors'].includes(S.routeName))) {
     S.appsAt = Date.now();
     jobs.push(api('/api/admin/applications', { fresh: true }).then(d => { c.apps = (d.applications || []).filter(a => String(a.status || '').toUpperCase() === 'PENDING').length; }).catch(() => {}));
   }
   if (isAdmin() && S.routeName === 'home') {
-    jobs.push(api(`/api/admin/analytics?period=day&date=${kToday()}`, { fresh: true }).then(d => { S.today = d.totals || {}; }).catch(() => {}));
-    /* Ikkala kassaning bugungi hisobi — faqat administrator ko'radi */
-    jobs.push(api('/api/admin/register-report?period=day', { fresh: true }).then(d => { S.regRep = d; }).catch(() => {}));
+    /* Bugungi bronlar soni — pulsiz, parol shart emas */
+    jobs.push(api(`/api/admin/bookings?from=${kToday()}&to=${kToday()}&per_page=1`, { fresh: true }).then(d => { S.today = { ...(S.today || {}), bookings: Number(d.total) || 0 }; }).catch(() => {}));
   }
   await Promise.all(jobs);
   paintNav();
@@ -2145,15 +2194,16 @@ function vHome(){
   let who = ROLE_UZ[me.role] || '', stats = '', acts = '', tiles = '';
   if (isCashier()) {
     who = `Kassa ${S.reg?.r?.code || ''}`;
-    stats = `<div><b id="h-rc">—</b><span>Bugungi cheklar</span></div><div><b id="h-sum">—</b><span>Tushum</span></div><div><b id="h-live">—</b><span>Jarayonda</span></div>`;
+    /* Tushum bu yerda ko'rinmaydi — u «Hisobot»da, maxsus parol bilan */
+    stats = `<div><b id="h-rc">—</b><span>Bugungi cheklar</span></div><div><b id="h-act">—</b><span>Faol cheklar</span></div><div><b id="h-live">—</b><span>Jarayonda</span></div>`;
     acts = `<button class="btn-light" data-act="fab" data-r="issue">${I('plus', 22, 2.3)} Chek chiqarish</button>`;
     tiles = `<div class="tiles">
       ${tile('receipts', 'receipt', 'Bugungi cheklar', 'qayta chop etish', { id: 'receipts', act: 'rctoday' })}
       ${tile('live', 'play', 'Jarayonda', 'hozir haydayotganlar', { id: 'live', cls: 'b' })}
       ${tile('schedule', 'cal', 'Jadval', 'kim bo‘sh, kim band', { cls: 'g' })}
       ${tile('xbron', 'sheet', 'Excel bron', 'adminlar yozgan bronlar', { cls: 'b' })}
-      ${tile('report', 'chart', 'Hisobot', 'naqd, karta, jami', { cls: 'o' })}
-      ${tile('insrep', 'steer', 'Instruktorlar hisoboti', 'kim nechta o‘quvchi haydadi')}
+      ${tile('nazorat', 'eye', 'Instruktorlar nazorati', 'kim bo‘sh, kim qachon bo‘shaydi')}
+      ${tile('hisobot', 'lock', 'Hisobot', 'tushum, kassa, instruktorlar · parol bilan', { cls: 'o' })}
     </div>`;
   } else if (isOp()) {
     stats = `<div><b id="h-pend">—</b><span>Yangi bronlar</span></div><div><b id="h-cx">—</b><span>Bekor so‘rov</span></div><div><b id="h-chat">—</b><span>Xabarlar</span></div>`;
@@ -2167,9 +2217,10 @@ function vHome(){
       ${tile('bookings/all', 'list', 'Barcha bronlar', 'qidirish, holatini o‘zgartirish')}
     </div>`;
   } else {
-    stats = `<div><b id="h-rev">—</b><span>Bugungi tushum</span></div><div><b id="h-bk">—</b><span>Bugungi bronlar</span></div><div><b id="h-live">—</b><span>Jarayonda</span></div>`;
+    /* Tushum bosh sahifada ko'rinmaydi — «Hisobot»da, maxsus parol bilan (administrator ham) */
+    stats = `<div><b id="h-rc">—</b><span>Bugungi cheklar</span></div><div><b id="h-bk">—</b><span>Bugungi bronlar</span></div><div><b id="h-live">—</b><span>Jarayonda</span></div>`;
     acts = `<button class="btn-light" data-act="fab" data-r="issue">${I('receipt', 21)} Chek chiqarish</button><button class="btn-light ghost" data-act="fab" data-r="manual">${I('phone', 20)} Qo‘lda bron</button>`;
-    tiles = `<div class="sec-h" style="margin-top:20px"><h2>Kassalar · bugun</h2><button class="link" data-go="analytics">Hisobot</button></div><div id="h-regs" class="grid2">${regCards()}</div>
+    tiles = `<div class="sec-h" style="margin-top:20px"><h2>Kassalar · bugun</h2><button class="link" data-go="hisobot">Hisobot</button></div><div id="h-regs" class="grid2">${regCards()}</div>
     <div class="sec-h" style="margin-top:20px"><h2>Bugungi ishlar</h2></div><div class="tiles">
       ${tile('bookings/new', 'bell', 'Yangi bronlar', 'tasdiqlash yoki rad etish', { id: 'pending' })}
       ${tile('bookings/cancels', 'ban', 'Bekor so‘rovlari', 'mijoz bekor qilmoqchi', { id: 'cancels', cls: 'o' })}
@@ -2179,11 +2230,16 @@ function vHome(){
       ${tile('schedule', 'cal', 'Jadval', 'instruktorlar bandligi', { cls: 'g' })}
       ${tile('receipts', 'receipt', 'Cheklar', 'kassa cheklari', { id: 'receipts' })}
     </div>
-    <div class="sec-h" style="margin-top:22px"><h2>Boshqaruv</h2></div><div class="tiles">
-      ${tile('analytics', 'chart', 'Hisobot', 'tushum, bronlar, istalgan davr', { cls: 'o' })}
-      ${tile('', 'chart', 'Analitika', 'Avtodrom + Avtodrom12, jonli', { cls: 'b', href: '/analytics' })}
+    <div class="sec-h" style="margin-top:22px"><h2>Hisobot</h2><span class="muted" style="font-size:13px;display:inline-flex;align-items:center;gap:4px">${I('lock', 14, 2.2)} maxsus parol bilan</span></div><div class="tiles">
+      ${tile('hisobot', 'chart', 'Umumiy hisobot', 'P1 + P2 + platniy — jami va alohida', { cls: 'o' })}
+      ${tile('report', 'cash', 'Kassa hisoboti', 'naqd, karta, cheklar · P1, P2')}
       ${tile('insrep', 'steer', 'Instruktorlar hisoboti', 'o‘quvchilar, avtoshkola, pullik')}
+      ${tile('platniy', 'car', 'Platniy hisoboti', 'avtodrom12 — vaqt ochib kirganlar', { cls: 'b' })}
+      ${tile('analytics', 'chart', 'Hisobot va tahlil', 'tushum, bronlar, istalgan davr', { cls: 'o' })}
+      ${tile('', 'chart', 'Analitika', 'Avtodrom + Avtodrom12, jonli', { cls: 'b', href: '/analytics' })}
       ${tile('retention', 'refresh', 'O‘quvchini qaytarish', 'kim jalb qildi, kim qaytardi', { cls: 'g' })}
+    </div>
+    <div class="sec-h" style="margin-top:22px"><h2>Boshqaruv</h2></div><div class="tiles">
       ${tile('instructors', 'users', 'Instruktorlar', 'faol / o‘chirilgan, arizalar', { id: 'apps' })}
       ${tile('grafik', 'clock', 'Ish grafigi', 'kim qachon ishlaydi, tanaffus', { cls: 'b' })}
       ${tile('', 'eye', 'Nazorat paneli', 'hamma instruktor — bitta havola', { cls: 'o', act: 'ctllink' })}
@@ -2213,11 +2269,10 @@ function paintHomeCounts(){
   const c = S.counts, t = S.today || {};
   const set = (id, v) => { const e = $(id); if (e) e.textContent = v; };
   set('h-clock', clockLine());
-  set('h-rc', nf(c.receipts)); set('h-sum', c.amount >= 1e6 ? (c.amount / 1e6).toFixed(c.amount >= 1e7 ? 0 : 1).replace('.', ',') + ' mln' : nf(c.amount));
+  set('h-rc', nf(c.receipts)); set('h-act', nf(c.active || 0));
   set('h-live', nf(c.live)); set('h-pend', nf(c.pending)); set('h-cx', nf(c.cancels)); set('h-chat', nf(c.chat));
   /* Bugungi tushum — ikkala kassaning haqiqiy cheklari yig'indisi (bo'lmasa umumiy hisobotdan) */
-  const rev = S.regRep?.totals ? Number(S.regRep.totals.total) || 0 : Number(t.revenue) || 0;
-  set('h-rev', rev >= 1e6 ? (rev / 1e6).toFixed(rev >= 1e7 ? 0 : 1).replace('.', ',') + ' mln' : nf(rev)); set('h-bk', nf(t.bookings));
+  set('h-bk', t.bookings == null ? '—' : nf(t.bookings));
   setTile('pending', c.pending, 'tasdiq kutmoqda — bosing', 'hammasi ko‘rib chiqilgan');
   setTile('cancels', c.cancels, 'javob kutmoqda', 'so‘rov yo‘q');
   setTile('chat', c.chat, 'o‘qilmagan xabar', 'yangi xabar yo‘q');
@@ -2229,11 +2284,13 @@ function paintHomeCounts(){
 }
 /** Administrator uchun: P1 va P2 ning bugungi tushumi — alohida-alohida */
 function regCards(){
-  const list = S.regRep?.registers || [];
-  const codes = list.length ? list : [{ code: 'P1' }, { code: 'P2' }];
-  return codes.map(r => `<button class="kpi" style="text-align:left" data-act="setreg" data-code="${esc(r.code)}" data-then="receipts">
-    <span>Kassa ${esc(r.code)}${S.reg?.r?.code === r.code ? ' · tanlangan' : ''}</span><b>${r.total != null ? nf(r.total) : '—'}</b>
-    <small>${r.total != null ? `${nf(r.receipts)} chek · naqd ${nf(r.cash)} · karta ${nf(r.card)}` : 'yuklanmoqda…'}</small></button>`).join('');
+  /* P1 va P2 — bugungi cheklar soni (tushum — «Hisobot»da, maxsus parol bilan) */
+  const codes = S.registers.length ? S.registers : [{ code: 'P1' }, { code: 'P2' }];
+  const rows = (S.rcRows || []).filter(r => r.state !== 'cancelled');
+  return codes.map(r => { const n = rows.filter(x => x.register === r.code).length, act = rows.filter(x => x.register === r.code && x.state === 'active').length;
+    return `<button class="kpi" style="text-align:left" data-act="setreg" data-code="${esc(r.code)}" data-then="receipts">
+    <span>Kassa ${esc(r.code)}${S.reg?.r?.code === r.code ? ' · tanlangan' : ''}</span><b>${nf(n)} chek</b>
+    <small>${nf(act)} tasi hali urilmagan · tushum — «Hisobot»da</small></button>`; }).join('');
 }
 /** Kompyuterda bosh sahifaning o'ng ustuni: kutayotgan bronlar va bugungi cheklar */
 function paintHomeSide(){
@@ -2254,7 +2311,7 @@ function paintHomeSide(){
       ${rows.length ? `<div class="mini-list">${rows.slice(0, 7).map(r => `<button class="mini-row" style="width:100%;text-align:left" data-act="homerc" data-code="${esc(r.code)}"><span class="tm">${esc(hm(r.paid_at))}</span>
         <span class="tx"><b>${esc(r.customer?.full_name || 'Mijoz')}</b><small>${esc(r.code)}${r.instructor_name ? ' · ' + esc(r.instructor_name) : ''}</small></span>
         <span class="rt">${nf(r.amount)}</span></button>`).join('')}</div>
-        <div class="side-total" style="margin-bottom:0"><span>Jami</span><b>${nf(S.counts.amount)} so‘m</b></div>`
+        <p class="muted" style="margin:10px 0 0;font-size:12.5px;display:flex;align-items:center;gap:6px">${I('lock', 13, 2.2)} Jami tushum — «Hisobot» bo‘limida</p>`
         : '<p class="muted" style="margin:6px 0 2px;font-size:13.5px">Bugun hali chek chiqarilmagan.</p>'}</div>`;
   }
   el.innerHTML = h;
@@ -2831,7 +2888,7 @@ function paintMix(W){
 /* NARXNI O'ZGARTIRISH — faqat maxsus parol bilan. Parol to'g'ri bo'lsa
    server 15 daqiqalik token beradi (shu xodim uchun); chek chiqarishda
    token yuboriladi, server narx farqini faqat token bilan qabul qiladi. */
-const priceTokOk = () => !!(S.priceTok && S.priceTok.exp > Date.now() + 30000);
+function priceTokOk(){ return !!(S.priceTok && S.priceTok.exp > Date.now() + 30000); }
 function priceEditOpen(W){
   W.priceEdit = true;
   if (ONE(W)) coPatch('pay', ['pay']); else wzRender(W);
@@ -2860,7 +2917,7 @@ ACT.ppok = async el => {
   busyBtn(el, true, 'Tekshirilmoqda');
   try{
     const d = await post('/api/admin/price-unlock', { pin });
-    S.priceTok = { t: d.token, exp: Date.parse(d.expires_at) || Date.now() + 14 * 60000 };
+    setPriceTok(d);
     closeSheet(); toast('Narxni o‘zgartirish ochildi (15 daqiqa)');
     priceEditOpen(W);
   }catch(e){
@@ -2916,7 +2973,7 @@ ACT.wzissue = async el => {
     showReceipts(list, { autoPrint: true, onNew: () => { if (S.routeName === 'issue') render(); } });
     SCHC.clear(); refreshCounts();
   }catch(e){
-    if (e.status === 403 && /maxsus parol/.test(e.message)) { S.priceTok = null; W.priceEdit = false; W.manual = null; coPatch('pay', ['pay']); }
+    if (e.status === 403 && /maxsus parol/.test(e.message)) { setPriceTok(null); W.priceEdit = false; W.manual = null; coPatch('pay', ['pay']); }
     fail(e); busyBtn(el, false);
   }
 };
@@ -3944,8 +4001,10 @@ function paintReceipts(){
   const segs = [['', 'Hammasi', s.total], ['active', 'Faol', s.active], ['used', 'Ishlatilgan', s.used], ['no_show', 'Kelmadi', s.no_show], ['cancelled', 'Bekor', s.cancelled]];
   const cnt = (s.total || 0) - (s.cancelled || 0);
   const all = d.scope === 'all';
-  $('rcTop').innerHTML = `<div class="kpis"><div class="kpi main"><span>${esc(perTitle(RC))} · ${esc(all ? (isCashier() ? 'P1 + P2 cheklari' : 'hamma kassa') : (scopeLabel() || '') + ' kassa')}</span><b>${nf(s.amount)} so‘m</b><small>${nf(cnt)} ta chek${s.cash != null ? ` · naqd ${nf(s.cash)} · karta ${nf(s.card)}` : ''} · pul qaytarilganlar hisobga olinmagan</small></div></div>
-    ${multi && days.length ? `<div class="card" style="margin-top:12px"><div class="sec-h"><h2>${perDays(RC) > 62 ? 'Oylar' : 'Kunlar'} bo‘yicha tushum</h2><span class="muted" style="font-size:13px">${nf(days.length)} kun chek bor</span></div>${dayBars(days.map(x => ({ day: x.day, v: x.amount })), 'v', RC)}</div>` : ''}
+  /* Tushum (jami summa, naqd, karta) bu yerda ko'rinmaydi — faqat «Hisobot» bo'limida, maxsus parol bilan */
+  const where = esc(all ? (isCashier() ? 'P1 + P2 cheklari' : 'hamma kassa') : (scopeLabel() || '') + ' kassa');
+  $('rcTop').innerHTML = `<div class="kpis"><div class="kpi main"><span>${esc(perTitle(RC))} · ${where}</span><b>${nf(cnt)} ta chek</b><small>faol ${nf(s.active || 0)} · ishlatilgan ${nf(s.used || 0)}${s.no_show ? ` · kelmadi ${nf(s.no_show)}` : ''} · tushum — «Hisobot»da, maxsus parol bilan</small></div></div>
+    ${multi && days.length ? `<div class="card" style="margin-top:12px"><div class="sec-h"><h2>${perDays(RC) > 62 ? 'Oylar' : 'Kunlar'} bo‘yicha cheklar</h2><span class="muted" style="font-size:13px">${nf(days.length)} kun chek bor</span></div>${dayBars(days.map(x => ({ day: x.day, v: x.count })), 'v', RC)}</div>` : ''}
     <div class="chips" style="margin-top:12px">${segs.map(([k, l, n]) => `<button class="chip ${RC.filter === k ? 'on' : ''}" data-act="rcf" data-v="${k}">${l} <span class="n">${n || 0}</span></button>`).join('')}</div>
     ${RC.big ? `<div class="note" style="margin-top:10px">Davr uzun — ro‘yxatda eng yangi ${nf((d.receipts || []).length)} ta chek. Qidiruv va filtr butun davr bo‘yicha ishlaydi.</div>` : ''}`;
   const q = RC.q.trim().toLowerCase();
@@ -3963,7 +4022,7 @@ function paintReceipts(){
       const k = ymdOf(new Date(r.paid_at));
       if (k !== last) {
         last = k; const x = dm.get(k);
-        html += `<div class="grp"><b>${esc(dayText(k, true))}</b>${x ? `<span>${nf(x.count)} chek · ${nf(x.amount)} so‘m</span>` : ''}</div>`;
+        html += `<div class="grp"><b>${esc(dayText(k, true))}</b>${x ? `<span>${nf(x.count)} chek</span>` : ''}</div>`;
       }
     }
     const st = RC_ST[r.state] || [r.state, ''];
@@ -4012,14 +4071,14 @@ ACT.rcsplit = el => {
     if (!priceTokOk() && !/^\d{4,8}$/.test(pin)) { err.textContent = 'Parol 4–8 ta raqam'; err.classList.remove('hidden'); return; }
     busyBtn(ok, true, 'Bo‘linmoqda');
     try{
-      if (!priceTokOk()) { const t = await post('/api/admin/price-unlock', { pin }); S.priceTok = { t: t.token, exp: Date.parse(t.expires_at) || Date.now() + 14 * 60000 }; }
+      if (!priceTokOk()) { const t = await post('/api/admin/price-unlock', { pin }); setPriceTok(t); }
       const d = await post('/api/admin/cashier/split-package', { code, price_token: S.priceTok.t });
       closeSheet(); toast('5 ta chek tayyor');
       showReceipts(d.receipts, { autoPrint: true, title: '5 ta chek' });
       RC.d = null; if (S.routeName === 'receipts') loadReceipts(true);
     }catch(e){
       busyBtn(ok, false);
-      if (e.status === 403) S.priceTok = null;
+      if (e.status === 403 && /parol/i.test(e.message)) setPriceTok(null);
       err.textContent = e.message; err.classList.remove('hidden'); inp.value = ''; inp.focus();
     }
   };
@@ -4050,11 +4109,11 @@ ACT.rccancel = el => {
     if (pin && !/^\d{4,8}$/.test(p)) return show('Maxsus parol 4–8 ta raqam');
     busyBtn(ok, true, 'Bekor qilinmoqda');
     try{
-      if (pin) { const t = await post('/api/admin/price-unlock', { pin: p }); S.priceTok = { t: t.token, exp: Date.parse(t.expires_at) || Date.now() + 14 * 60000 }; }
+      if (pin) { const t = await post('/api/admin/price-unlock', { pin: p }); setPriceTok(t); }
       await post(`/api/admin/payments/${encodeURIComponent(r.payment_id)}/refund`, { reason: why, ...(priceTokOk() ? { price_token: S.priceTok.t } : {}) });
       closeSheet(); toast('Chek bekor qilindi');
       RC.d = null; loadReceipts(true); refreshCounts?.();
-    }catch(e){ busyBtn(ok, false); if (e.status === 403) S.priceTok = null; show(e.message); }
+    }catch(e){ busyBtn(ok, false); if (e.status === 403 && /parol/i.test(e.message)) setPriceTok(null); show(e.message); }
   };
 };
 ACT.rcreason = el => { const i = $('rxWhy'); if (i) { i.value = el.dataset.v; i.focus(); } };
@@ -4108,7 +4167,8 @@ ACT.lvday = el => { LV.day = el.dataset.v; LV.d = null; if ($('lvList')) $('lvLi
 function paintLiveDone(rows){
   const mins = rows.reduce((a, r) => a + (Number(r.duration_minutes) || 0), 0);
   const sum = rows.reduce((a, r) => a + (Number(r.amount) || 0), 0);
-  $('lvList').innerHTML = `<div class="lv-sum"><b>${esc(dayLabel(LV.day))}</b> · ${nf(rows.length)} ta dars tugadi · ${esc(hrsTxt(mins))} soat${sum ? ` · ${nf(sum)} so‘m` : ''}</div>
+  /* Kunlik jami summa ko'rsatilmaydi — u «Hisobot»da (har darsning summasi qoladi) */
+  $('lvList').innerHTML = `<div class="lv-sum"><b>${esc(dayLabel(LV.day))}</b> · ${nf(rows.length)} ta dars tugadi · ${esc(hrsTxt(mins))} soat</div>
     <div class="lv-tbl"><div class="lv-tr th"><span>№</span><span>Mijoz</span><span>Instruktor</span><span>Urildi</span><span>Tugadi</span><span>Vaqt</span><span>Summa</span><span>Kassa</span></div>
     ${rows.map((r, i) => `<div class="lv-tr"><span class="n">${rows.length - i}</span>
       <span class="who"><b>${esc(r.customer?.full_name || 'Mijoz')}</b>${r.customer?.phone ? `<small>${esc(r.customer.phone)}</small>` : ''}</span>
@@ -4134,17 +4194,17 @@ setInterval(() => { if (S.routeName === 'live' && !document.hidden) paintLive();
 const RP = { per: 'day', date: kToday(), from: '', to: '', d: null, seq: 0 };
 perReg('rp', RP, () => { RP.d = null; if ($('rpBody')) $('rpBody').innerHTML = skel(4); loadReport(); });
 async function vReport(){
-  if (isAdmin()) await ensureRegisters();
-  $('view').innerHTML = `<div class="view">${perHtml('rp')}
-    ${scopeChips('rpscope')}<div id="rpBody" class="sec" style="margin-top:14px">${skel(4)}</div></div>`;
+  await ensureRegisters();
+  $('view').innerHTML = `<div class="view">${repBar()}${perHtml('rp')}
+    ${repScopeChips('rpscope')}<div id="rpBody" class="sec" style="margin-top:14px">${skel(4)}</div></div>`;
   loadReport();
 }
 ACT.rpscope = el => { setRscope(el.dataset.v); RP.d = null; vReport(); };
 async function loadReport(_q, retried){
-  if (!$('rpBody') || !scopeOk()) return;
+  if (!$('rpBody')) return;
   const seq = ++RP.seq;
   try{
-    const d = await api(`/api/admin/my-dashboard?${scopeQS()}&${perQS(RP)}`);
+    const d = await api(`/api/admin/my-dashboard?${repScopeQS()}&${perQS(RP)}`);
     if (seq !== RP.seq) return;
     RP.d = d; paintReport();
   }catch(e){
@@ -4187,6 +4247,173 @@ function rankHtml(items){
 }
 
 /* =========================================================================
+   HISOBOT — MAXSUS PAROL BILAN
+   Tushum, kassa hisoboti, instruktorlar hisoboti, platniy va umumiy hisobot
+   faqat maxsus parol (narx paroli) kiritilgandan keyin ochiladi — kassir
+   ham, administrator ham. Parol 15 daqiqa amal qiladi, keyin bo'lim o'zi
+   qulflanadi. Server ham tekshiradi (X-Report-Token) — brauzerda yashirish
+   bilan cheklanmaydi.
+   ========================================================================= */
+const repLeft = () => S.priceTok ? Math.max(0, Math.ceil((S.priceTok.exp - Date.now()) / 60000)) : 0;
+/** Yon menyudagi «Hisobot» sarlavhasi yonida: qulf yoki «ochiq · 12 daq» */
+function repBadge(){
+  return priceTokOk()
+    ? `<span class="rep-lk on" title="Maxsus parol bilan ochilgan">${I('check', 11, 2.6)} ${repLeft()} daq <button data-act="replock" title="Hozir qulflash">qulflash</button></span>`
+    : `<span class="rep-lk" title="Maxsus parol bilan ochiladi">${I('lock', 11, 2.4)} parol</span>`;
+}
+/** Hisobot sahifasi tepasida: necha daqiqa ochiq va «Qulflash» */
+function repBar(){
+  return `<div class="note info" style="display:flex;align-items:center;gap:8px;margin-bottom:12px;padding:9px 12px;font-size:13.5px">${I('lock', 16, 2.2)}
+    <span style="flex:1">Maxsus parol bilan ochilgan · <b id="repLeft">${repLeft()}</b> daqiqadan keyin o‘zi qulflanadi</span>
+    <button class="link" data-act="replock" style="font-weight:800">Qulflash</button></div>`;
+}
+function vRepLock(){
+  const R = ROUTES[S.routeName] || {};
+  $('view').innerHTML = `<div class="view"><div class="card" style="max-width:440px;margin:22px auto;text-align:center;padding:26px 20px">
+    <div style="width:64px;height:64px;border-radius:20px;margin:0 auto 12px;display:grid;place-items:center;background:var(--accent-soft);color:var(--accent)">${I('lock', 30, 2)}</div>
+    <h2 style="margin:0 0 6px;font-size:20px">${esc(R.t || 'Hisobot')}</h2>
+    <p class="muted" style="margin:0 0 16px;font-size:14px;line-height:1.45">Tushum va hisobotlar faqat <b>maxsus parol</b> bilan ochiladi. Parol 15 daqiqa amal qiladi, keyin bo‘lim o‘zi qulflanadi.</p>
+    <form id="rlForm" autocomplete="off"><input class="input" id="rlPin" type="password" inputmode="numeric" autocomplete="off" maxlength="8" placeholder="••••" aria-label="Maxsus parol" style="text-align:center;font-size:24px;letter-spacing:8px">
+      <div id="rlErr" class="note err hidden" style="margin-top:10px;font-size:13.5px;text-align:left"></div>
+      <button class="btn btn-primary" id="rlOk" type="submit" style="margin-top:14px;width:100%">${I('lock', 18, 2.2)} Ochish</button></form>
+    <p class="muted" style="margin:14px 0 0;font-size:12.5px">Parolni bilmasangiz — administratorga murojaat qiling.</p></div></div>`;
+  const inp = $('rlPin'), err = $('rlErr'), btn = $('rlOk');
+  $('rlForm').onsubmit = async e => {
+    e.preventDefault();
+    const pin = String(inp.value || '').trim();
+    if (!/^\d{4,8}$/.test(pin)) { err.textContent = 'Parol 4–8 ta raqam'; err.classList.remove('hidden'); return; }
+    busyBtn(btn, true, 'Tekshirilmoqda');
+    try{
+      const d = await post('/api/admin/price-unlock', { pin, purpose: 'report' });
+      setPriceTok(d); acClear();
+      toast('Hisobot ochildi · 15 daqiqa');
+      paintSide(); render();
+      if (S.routeName === 'home' || isAdmin()) refreshCounts();
+    }catch(x){
+      busyBtn(btn, false);
+      err.textContent = x.message; err.classList.remove('hidden');
+      inp.value = ''; inp.focus();
+    }
+  };
+  setTimeout(() => inp.focus(), 60);
+}
+ACT.replock = () => {
+  setPriceTok(null); acClear(); S.regRep = null;
+  toast('Hisobot qulflandi');
+  paintSide();
+  if (ROUTES[S.routeName]?.lock || S.routeName === 'home' || S.routeName === 'receipts') render();
+};
+/* Muddat tugadi — ochiq hisobot sahifasi o'zi qulflanadi; daqiqa hisoblagichi yangilanadi */
+let repWas = false;
+setInterval(() => {
+  if (!S.me) return;
+  const on = priceTokOk();
+  const el = $('repLeft'); if (el) el.textContent = repLeft();
+  if (repWas !== on) {
+    repWas = on;
+    paintSide();
+    if (!on) { acClear(); S.regRep = null; if (ROUTES[S.routeName]?.lock || S.routeName === 'home') render(); }
+  }
+}, 15000);
+
+/* ---------- UMUMIY HISOBOT: P1 + P2 + Platniy — jami va alohida-alohida ---------- */
+const UM = { per: 'day', date: kToday(), from: '', to: '', d: null, seq: 0 };
+perReg('um', UM, () => { UM.d = null; if ($('umBody')) $('umBody').innerHTML = skel(4); loadSummary(); });
+function vSummary(){
+  $('view').innerHTML = `<div class="view">${repBar()}${perHtml('um')}<div id="umBody" class="sec" style="margin-top:14px">${UM.d ? '' : skel(4)}</div></div>`;
+  if (UM.d) paintSummary();
+  loadSummary();
+}
+async function loadSummary(quiet){
+  if (!$('umBody')) return;
+  const seq = ++UM.seq;
+  try{
+    const d = await api(`/api/admin/report/summary?${perQS(UM)}`);
+    if (seq !== UM.seq) return;
+    UM.d = d; paintSummary();
+  }catch(e){ if (seq === UM.seq && !quiet && $('umBody') && !e.needsPin) $('umBody').innerHTML = `<div class="note err">${esc(e.message)}</div>`; }
+}
+const chg = v => arrow(v) || '<span class="muted">o‘zgarishsiz</span>';
+function paintSummary(){
+  const d = UM.d; if (!d || !$('umBody')) return;
+  const A = d.avtodrom || {}, P = d.platniy || {}, M = d.by_method || {};
+  const regs = A.registers || [];
+  const un = A.unassigned || {};
+  const regRow = r => `<div class="sum-row"><span style="flex:1"><b>Kassa ${esc(r.code)}</b> <small class="muted">${r.name && !String(r.name).includes(r.code) ? esc(r.name) : ''}</small><br>
+      <small class="muted">${nf(r.receipts)} chek · naqd ${nf(r.cash)} · karta ${nf(r.card)}${r.test_drive ? ` · test drive ${nf(r.test_drive)} ta` : ''}</small></span>
+      <b style="text-align:right">${nf(r.total)} so‘m<br><small style="font-weight:600">${chg(r.change)}</small></b></div>`;
+  const plRow = P.ok
+    ? `<div class="sum-row"><span style="flex:1"><b>Platniy</b> <small class="muted">avtodrom12</small><br>
+        <small class="muted">${nf(P.sessions)} kirish · naqd ${nf(P.cash)} · terminal ${nf(P.terminal)}${P.click ? ` · Click ${nf(P.click)}` : ''}${P.debt ? ` · qarz ${nf(P.debt)}` : ''}</small></span>
+        <b style="text-align:right">${nf(P.total)} so‘m<br><small style="font-weight:600">${chg(P.change)}</small></b></div>`
+    : `<div class="sum-row"><span style="flex:1"><b>Platniy</b> <small class="muted">avtodrom12</small><br><small class="bad-t">${esc(P.error || 'ma’lumot kelmadi')}${P.hint ? ' — ' + esc(P.hint) : ''}</small></span><b>—</b></div>`;
+  const parts = [...regs.map(r => ({ name: `Kassa ${r.code}`, v: Number(r.total) || 0, sub: `${nf(r.receipts)} chek` })),
+    ...(un.receipts ? [{ name: 'Kassaga bog‘lanmagan', v: Number(un.total) || 0, sub: `${nf(un.receipts)} chek` }] : []),
+    ...(P.ok ? [{ name: 'Platniy', v: Number(P.total) || 0, sub: `${nf(P.sessions)} kirish` }] : [])];
+  $('umBody').innerHTML = `<div class="kpis">
+      <div class="kpi main"><span>${esc(perTitle(UM))} · jami tushum · P1 + P2${P.ok ? ' + platniy' : ''}</span><b>${nf(d.total)} so‘m</b><small>${arrow(d.change) || 'oldingi davr bilan bir xil'}</small></div>
+      <div class="kpi"><span>Naqd</span><b>${nf(M.cash)}</b></div><div class="kpi"><span>Karta / terminal</span><b>${nf(M.card)}</b></div>
+      ${M.click ? `<div class="kpi"><span>Click</span><b>${nf(M.click)}</b></div>` : ''}
+      <div class="kpi"><span>Avtodrom (P1 + P2)</span><b>${nf(A.total)}</b><small>${nf(A.receipts)} chek</small></div></div>
+    <div class="card" style="margin-top:12px"><div class="sec-h"><h2>Alohida-alohida</h2><span class="muted" style="font-size:13px">${esc(perTitle(UM))}</span></div>
+      ${regs.map(regRow).join('')}
+      ${un.receipts ? `<div class="sum-row"><span style="flex:1"><b>Kassaga bog‘lanmagan</b><br><small class="muted">${nf(un.receipts)} chek (eski to‘lovlar)</small></span><b>${nf(un.total)} so‘m</b></div>` : ''}
+      <div class="sum-row"><span style="flex:1"><b style="color:var(--accent)">Avtodrom jami (P1 + P2)</b><br><small class="muted">naqd ${nf(A.cash)} · karta ${nf(A.card)}</small></span><b style="text-align:right">${nf(A.total)} so‘m<br><small style="font-weight:600">${chg(A.change)}</small></b></div>
+      ${plRow}
+      <div class="sum-row" style="font-size:16px"><span style="flex:1"><b>JAMI</b></span><b>${nf(d.total)} so‘m</b></div></div>
+    ${parts.length > 1 ? `<div class="card" style="margin-top:12px"><div class="sec-h"><h2>Ulushlar</h2></div>${rankHtml(parts.sort((a, b) => b.v - a.v))}</div>` : ''}
+    <div class="list" style="margin-top:12px">
+      <button class="row link-row" data-go="report"><span class="ic">${I('cash')}</span><span class="tx"><b>Kassa hisoboti</b><small>Soatlar, toifalar, oxirgi cheklar · Jami, P1, P2</small></span>${I('chev')}</button>
+      <button class="row link-row" data-go="insrep"><span class="ic">${I('steer')}</span><span class="tx"><b>Instruktorlar hisoboti</b><small>Kim nechta o‘quvchi haydadi, avtoshkola va pullik</small></span>${I('chev')}</button>
+      <button class="row link-row" data-go="platniy"><span class="ic">${I('car')}</span><span class="tx"><b>Platniy hisoboti</b><small>Kirishlar, postlar, qarzlar, soatlar</small></span>${I('chev')}</button></div>
+    ${d.compare?.partial ? `<p class="muted" style="font-size:12.5px;margin-top:10px">Davr hali tugamagan — oldingi davr ham aynan shu vaqtgacha solishtiriladi.</p>` : ''}`;
+}
+
+/* ---------- PLATNIY HISOBOTI (avtodrom12 — vaqt ochib kiradigan mashinalar) ---------- */
+const PL = { per: 'day', date: kToday(), from: '', to: '', d: null, seq: 0 };
+perReg('pl', PL, () => { PL.d = null; if ($('plBody')) $('plBody').innerHTML = skel(4); loadPlatniy(); });
+function vPlatniy(){
+  $('view').innerHTML = `<div class="view">${repBar()}${perHtml('pl')}<div id="plBody" class="sec" style="margin-top:14px">${PL.d ? '' : skel(4)}</div></div>`;
+  if (PL.d) paintPlatniy();
+  loadPlatniy();
+}
+async function loadPlatniy(quiet){
+  if (!$('plBody')) return;
+  const seq = ++PL.seq;
+  try{
+    const d = await api(`/api/admin/report/platniy?${perQS(PL)}`);
+    if (seq !== PL.seq) return;
+    PL.d = d; paintPlatniy();
+  }catch(e){ if (seq === PL.seq && !quiet && $('plBody') && !e.needsPin) $('plBody').innerHTML = `<div class="note err">${esc(e.message)}</div>`; }
+}
+const minTxt = m => { m = Math.round(Number(m) || 0); return m >= 60 ? `${Math.floor(m / 60)} soat${m % 60 ? ' ' + (m % 60) + ' daq' : ''}` : `${m} daq`; };
+function paintPlatniy(){
+  const d = PL.d; if (!d || !$('plBody')) return;
+  const P = d.platniy || {};
+  if (!P.ok) { $('plBody').innerHTML = `<div class="note err"><b>Platniy ma’lumoti kelmadi:</b> ${esc(P.error || 'avtodrom12 javob bermadi')}${P.hint ? `<br><small>${esc(P.hint)}</small>` : ''}</div>`; return; }
+  const methods = [['Naqd', P.cash], ['Terminal', P.terminal], ['Click', P.click]].filter(x => Number(x[1]) > 0);
+  const posts = P.posts || [];
+  const days = (P.series || []).map(x => ({ day: x.key, v: x.revenue }));
+  $('plBody').innerHTML = `<div class="kpis">
+      <div class="kpi main"><span>Platniy · ${esc(perTitle(PL))} · tushum</span><b>${nf(P.total)} so‘m</b><small>${nf(P.sessions)} kirish · ${esc(minTxt(P.minutes))} ${arrow(P.change) || '· oldingi davr bilan bir xil'}</small></div>
+      <div class="kpi"><span>Naqd</span><b>${nf(P.cash)}</b></div><div class="kpi"><span>Terminal</span><b>${nf(P.terminal)}</b></div>
+      ${P.click ? `<div class="kpi"><span>Click</span><b>${nf(P.click)}</b></div>` : ''}
+      <div class="kpi"><span>Mashinalar</span><b>${nf(P.vehicles)}</b><small>${nf(P.plates?.new || 0)} yangi · ${nf(P.plates?.returning || 0)} qaytgan</small></div>
+      <div class="kpi"><span>O‘rtacha chek</span><b>${nf(P.avg_check)}</b><small>o‘rtacha ${esc(minTxt(P.avg_minutes))}</small></div>
+      ${P.debt || P.debts?.total ? `<div class="kpi"><span>Qarz</span><b class="bad-t">${nf(P.debts?.total || P.debt)}</b><small>${nf(P.debts?.sessions || P.debt_sessions)} ta yozuv</small></div>` : ''}</div>
+    ${methods.length ? `<div class="card" style="margin-top:12px"><div class="sec-h"><h2>To‘lov usullari</h2></div>${rankHtml(methods.map(([n, v]) => ({ name: n, v: Number(v) || 0, sub: P.total ? Math.round((Number(v) || 0) / P.total * 100) + '%' : '' })))}</div>` : ''}
+    ${posts.length ? `<div class="card" style="margin-top:12px"><div class="sec-h"><h2>Postlar (kassalar)</h2></div>
+      ${posts.map(z => `<div class="sum-row"><span style="flex:1"><b>${esc(z.name || (z.post ? z.post + '-POST' : 'Post'))}</b><br><small class="muted">${nf(z.sessions)} kirish${z.minutes ? ' · ' + esc(minTxt(z.minutes)) : ''} · naqd ${nf(z.cash)} · terminal ${nf(z.terminal)}${z.click ? ` · Click ${nf(z.click)}` : ''}</small></span><b>${nf(z.total)} so‘m</b></div>`).join('')}</div>` : ''}
+    ${perDays(PL) > 1 && days.length ? `<div class="card" style="margin-top:12px"><div class="sec-h"><h2>${perDays(PL) > 62 ? 'Oylar' : 'Kunlar'} bo‘yicha tushum</h2></div>${dayBars(days, 'v', PL)}</div>` : ''}
+    <div class="card" style="margin-top:12px"><div class="sec-h"><h2>Soatlar bo‘yicha tushum</h2></div>${(P.hours || []).length ? hourBars(P.hours) : '<div class="muted">Bu davrda kirish yo‘q.</div>'}</div>
+    ${(P.debts?.top || []).length ? `<div class="card" style="margin-top:12px"><div class="sec-h"><h2>Qarzlar</h2><span class="muted" style="font-size:13px">hozir to‘lanmagan</span></div>
+      ${P.debts.top.slice(0, 15).map(z => `<div class="sum-row"><span style="flex:1"><b>${esc(z.plate || '—')}</b><br><small class="muted">${nf(z.n)} marta</small></span><b class="bad-t">${nf(z.total)} so‘m</b></div>`).join('')}</div>` : ''}
+    ${(P.plates?.top || []).length ? `<div class="card" style="margin-top:12px"><div class="sec-h"><h2>Eng ko‘p to‘lagan mashinalar</h2></div>
+      ${rankHtml(P.plates.top.slice(0, 10).map(z => ({ name: z.plate, v: Number(z.revenue) || 0, sub: `${nf(z.visits)} marta` })))}</div>` : ''}
+    ${P.live ? `<p class="muted" style="font-size:13px;margin-top:12px">Hozir maydonda: <b>${nf(P.live.active)}</b> faol${P.live.frozen ? ` · ${nf(P.live.frozen)} to‘xtatilgan` : ''}${P.live.waiting ? ` · ${nf(P.live.waiting)} navbatda` : ''}</p>` : ''}`;
+}
+
+/* =========================================================================
    INSTRUKTORLAR HISOBOTI — istalgan davr: kun, hafta, oy, yil yoki
    «12 dan 28 gacha» oraliq.
    Har instruktor: nechta O'QUVCHI haydadi, nechta AVTOSHKOLA va nechta
@@ -4205,12 +4432,14 @@ perReg('ir', IR, () => {
   if (S.routeArg) loadIrDetail(); else loadInsRep();
 });
 const IR_SORT = [['students', 'O‘quvchi'], ['school', 'Avtoshkola'], ['paid', 'Pullik'], ['minutes', 'Soat'], ['revenue', 'Tushum'], ['name', 'Ism']];
-const irScopeNote = () => isCashier()
-  ? `<div class="note info" style="margin-top:10px;display:flex;gap:8px;align-items:flex-start">${I('cash', 18)}<span>Kassa ${esc(S.reg?.r?.code || '')}: faqat shu kassada sotilgan darslar va avtoshkola darslari. Boshqa kassa ko‘rinmaydi.</span></div>` : '';
+const irScopeNote = () => repScopeV() !== 'all'
+  ? `<div class="note info" style="margin-top:10px;display:flex;gap:8px;align-items:flex-start">${I('cash', 18)}<span>${esc(repScopeLabel())}: faqat shu kassada sotilgan darslar va avtoshkola darslari.</span></div>` : '';
+ACT.irscope = el => { setRscope(el.dataset.v); IR.d = null; IR.det = null; render(); };
 
-function vInsRep(arg){
+async function vInsRep(arg){
+  await ensureRegisters();
   if (arg) return vIrDetail(arg);
-  $('view').innerHTML = `<div class="view">${perHtml('ir')}${irScopeNote()}<div id="irBody" class="sec" style="margin-top:14px">${skel(4)}</div></div>`;
+  $('view').innerHTML = `<div class="view">${repBar()}${perHtml('ir')}${repScopeChips('irscope')}${irScopeNote()}<div id="irBody" class="sec" style="margin-top:14px">${skel(4)}</div></div>`;
   if (IR.d) paintInsRep();
   loadInsRep();
 }
@@ -4218,7 +4447,7 @@ async function loadInsRep(quiet){
   if (!$('irBody')) return;
   const seq = ++IR.seq;
   try{
-    const d = await api(`/api/admin/instructor-report?${perQS(IR)}`);
+    const d = await api(`/api/admin/instructor-report?${perQS(IR)}&${repScopeQS()}`);
     if (seq !== IR.seq) return;
     IR.d = d;
     for (const i of d.instructors || []) IR.names.set(String(i.id), { name: i.name, phone: i.phone, plate: i.vehicle_plate });
@@ -4303,7 +4532,7 @@ ACT.irsort = el => { IR.sort = el.dataset.v; document.querySelectorAll('[data-ac
 function vIrDetail(id){
   if (IR.did !== id) { IR.det = null; IR.dlimit = 150; }
   IR.did = id;
-  $('view').innerHTML = `<div class="view">${perHtml('ir')}${irScopeNote()}<div id="irBody" class="sec" style="margin-top:14px">${skel(4)}</div></div>`;
+  $('view').innerHTML = `<div class="view">${repBar()}${perHtml('ir')}${repScopeChips('irscope')}${irScopeNote()}<div id="irBody" class="sec" style="margin-top:14px">${skel(4)}</div></div>`;
   const nm = IR.names.get(id); if (nm) $('tbTitle').textContent = nm.name;
   if (IR.det && IR.det._id === id) paintIrDetail();
   loadIrDetail();
@@ -4313,7 +4542,7 @@ async function loadIrDetail(quiet){
   const seq = ++IR.dseq;
   try{
     const [d] = await Promise.all([
-      api(`/api/admin/instructor-control/${encodeURIComponent(id)}?${perQS(IR)}${isCashier() ? '&own=1' : ''}`),
+      api(`/api/admin/instructor-control/${encodeURIComponent(id)}?${perQS(IR)}&${repScopeQS()}`),
       IR.names.has(id) ? null : api('/api/admin/cashier/instructors').then(r => {
         for (const i of r.instructors || []) IR.names.set(String(i.id), { name: i.full_name, phone: i.profile?.phone || null, plate: i.vehicle_plate });
       }).catch(() => {}),
@@ -4530,7 +4759,7 @@ ACT.irxl = async el => {
   if (!IR.d) return toast('Hisobot hali yuklanmadi', true);
   busyBtn(el, true, 'Tayyorlanmoqda');
   try{
-    const d = await api(`/api/admin/instructor-report?${perQS(IR)}&rows=1`);
+    const d = await api(`/api/admin/instructor-report?${perQS(IR)}&rows=1&${repScopeQS()}`);
     const used = new Set(), [a, b] = perBounds(IR);
     const saveQ = IR.q; IR.q = ''; const prevD = IR.d; IR.d = d; const list = irSorted(); IR.d = prevD; IR.q = saveQ;
     const nameOf = new Map(list.map(i => [String(i.id), i.name]));
@@ -6871,7 +7100,7 @@ ACT.ppset = async el => {
   const ok = await ask({ title: 'Narx paroli o‘zgartirilsinmi?', text: 'Eski parol ishlamay qoladi. Yangi parolni kerakli xodimlarga ayting.', ok: 'Saqlash' });
   if (!ok) return;
   busyBtn(el, true, 'Saqlanmoqda');
-  try { await api('/api/admin/price-pin', { method: 'PUT', body: JSON.stringify({ pin: v }) }); $('pp-new').value = ''; S.priceTok = null; toast('Narx paroli saqlandi'); loadPp(); }
+  try { await api('/api/admin/price-pin', { method: 'PUT', body: JSON.stringify({ pin: v }) }); $('pp-new').value = ''; setPriceTok(null); toast('Narx paroli saqlandi'); loadPp(); }
   catch (e) { fail(e); }
   finally { busyBtn(el, false); }
 };

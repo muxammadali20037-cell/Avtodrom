@@ -1828,6 +1828,46 @@ pre.json{background:#F7FAFF;border:1px solid var(--line);border-radius:8px;paddi
 <script>
 'use strict';
 const $=id=>document.getElementById(id);
+/* ---------- MAXSUS PAROL («Hisobot») — admin panel bilan bitta token ----------
+   Tushum va hisobotlar faqat maxsus parol bilan ochiladi (kassir ham, administrator ham).
+   Token admin paneldagi bilan bir xil (shu oynada saqlanadi), 15 daqiqa amal qiladi. */
+const REP_TOK_KEY = 'avd_rep_tok';
+function repTok(){ try { const x = JSON.parse(sessionStorage.getItem(REP_TOK_KEY) || 'null'); return x && x.t && x.exp > Date.now() + 5000 ? x.t : ''; } catch { return ''; } }
+function repHdr(){ const t = repTok(); return t ? { 'X-Report-Token': t } : {}; }
+let repAsking = null;
+function repAsk(){
+  if (repAsking) return repAsking;
+  repAsking = new Promise(resolve => {
+    const bg = document.createElement('div');
+    bg.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(15,19,64,.55);display:grid;place-items:center;padding:16px';
+    bg.innerHTML = '<form style="background:#fff;color:#141833;border-radius:18px;padding:22px 20px;width:100%;max-width:360px;box-shadow:0 10px 40px rgba(0,0,0,.25);font-family:inherit;text-align:center">'
+      + '<div style="font-size:30px;margin-bottom:6px">🔒</div><b style="font-size:18px">Hisobot — maxsus parol bilan</b>'
+      + '<p style="margin:8px 0 14px;font-size:14px;color:#6b7188">Tushum va hisobotlar faqat maxsus parol bilan ochiladi (15 daqiqa).</p>'
+      + '<input type="password" inputmode="numeric" maxlength="8" autocomplete="off" placeholder="••••" aria-label="Maxsus parol" style="width:100%;box-sizing:border-box;padding:12px;border:1px solid #d6d9e6;border-radius:12px;text-align:center;font-size:22px;letter-spacing:8px">'
+      + '<div data-err style="display:none;margin-top:10px;color:#d14343;font-size:13.5px"></div>'
+      + '<div style="display:flex;gap:8px;margin-top:14px"><button type="button" data-x style="flex:1;padding:11px;border-radius:12px;border:0;background:#f1f3f8;font-weight:700;cursor:pointer">Bekor</button>'
+      + '<button type="submit" style="flex:1;padding:11px;border-radius:12px;border:0;background:#2b2f8f;color:#fff;font-weight:800;cursor:pointer">Ochish</button></div></form>';
+    document.body.appendChild(bg);
+    const f = bg.querySelector('form'), inp = f.querySelector('input'), er = f.querySelector('[data-err]');
+    const done = ok => { bg.remove(); repAsking = null; resolve(ok); };
+    f.querySelector('[data-x]').onclick = () => done(false);
+    f.onsubmit = async e => {
+      e.preventDefault();
+      const pin = String(inp.value || '').trim();
+      if (!/^\d{4,8}$/.test(pin)) { er.textContent = 'Parol 4–8 ta raqam'; er.style.display = 'block'; return; }
+      try {
+        const r = await fetch('/api/admin/price-unlock', { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify({ pin, purpose: 'report' }) });
+        const d = await r.json().catch(() => ({}));
+        if (!r.ok || !d.ok) throw new Error(d.error || 'Parol noto‘g‘ri');
+        try { sessionStorage.setItem(REP_TOK_KEY, JSON.stringify({ t: d.token, exp: Date.parse(d.expires_at) || Date.now() + 14 * 60000 })); } catch {}
+        done(true);
+      } catch (x) { er.textContent = x.message; er.style.display = 'block'; inp.value = ''; inp.focus(); }
+    };
+    setTimeout(() => inp.focus(), 50);
+  });
+  return repAsking;
+}
+
 const S={stats:{},bookings:[],applications:[],instructors:[],users:[],reviews:[],media:[],settings:[],courses:[],payments:[],audit:[]};
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const fmtDur=m=>{const n=Number(m)||0,h=Math.floor(n/60),r=n%60;return h?(r?`${h} soat ${r} daq`:`${h} soat`):`${r} daq`};
@@ -1914,10 +1954,12 @@ async function api(path,opt={}){
   const writing=!['GET','HEAD'].includes(String(opt.method||'GET').toUpperCase());
   let r;
   try{
-    r=await fetch(path,{...opt,signal:controller.signal,credentials:'include',cache:'no-store',headers:{Accept:'application/json',...(opt.body?{'Content-Type':'application/json'}:{}),...(opt.headers||{})}});
+    r=await fetch(path,{...opt,signal:controller.signal,credentials:'include',cache:'no-store',headers:{Accept:'application/json',...(opt.body?{'Content-Type':'application/json'}:{}),...repHdr(),...(opt.headers||{})}});
     const raw=await r.text();
     let d={}; try{ d=raw?JSON.parse(raw):{} }catch{ throw Error('Serverdan noto‘g‘ri javob keldi. '+(writing?'Amal bajarilgan bo‘lishi mumkin; qayta yuborishdan oldin ro‘yxatni tekshiring.':'Yangilash tugmasi bilan qayta tekshiring.')); }
     setOffline(false);
+    /* Hisobot — maxsus parol so'raladi, keyin so'rov qayta yuboriladi */
+    if(r.status===403 && d && d.needs_report_pin && !opt._rep){ clearTimeout(timer); if(await repAsk()) return api(path,{...opt,_rep:true}); }
     if(r.status===401 && !PIN_PATHS.test(String(path)) && !String(path).endsWith('/login')){
       showLogin(); const e=Error('Sessiya tugagan. Qayta kiring.'); e.silent=true; throw e;
     }

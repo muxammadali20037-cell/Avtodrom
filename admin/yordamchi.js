@@ -113,7 +113,7 @@ P1 va P2 bir-birining chekini ham chop eta oladi — «Hammasi (P1 + P2)» tanla
     a: `Eski 5 soatlik BITTA chek bo‘lsa: Cheklar → chekni bosing → «5 ta 1 soatlik chekka bo‘lish» → maxsus parol.
 Natija: 5 ta ochiq chek (istalgan kun, istalgan instruktor). Summa va to‘lov kuni o‘zgarmaydi.` },
 
-  { id: 'cheklar', r: KASSA, go: 'receipts', w: 'Kassa → Cheklar',
+  { id: 'cheklar', r: KASSA, go: 'receipts', w: 'Kassa → Cheklar · jami tushum — Hisobot’da',
     t: 'Cheklar bo‘limi',
     k: ['cheklar', 'chek qidir', 'chekni top', 'faol', 'ishlatilgan', 'kecha cheklari', 'chek ro‘yxat', 'qaysi chek', 'chek holati', 'p2 cheklari', 'p1 cheklari'],
     a: `Kassa → Cheklar:
@@ -121,7 +121,8 @@ Natija: 5 ta ochiq chek (istalgan kun, istalgan instruktor). Summa va to‘lov k
 • «Hammasi (P1 + P2)» yoki «Faqat P1».
 • Qidiruv: kod, ism, telefon, instruktor.
 • Holatlar: Faol — hali urilmagan; Ishlatilgan — dars bo‘lgan; Kelmadi; Bekor — pul qaytarilgan.
-• Chekni bosing — tafsilot, qayta chop etish, bekor qilish.` },
+• Chekni bosing — tafsilot, qayta chop etish, bekor qilish.
+• Har chekning summasi ko‘rinadi, JAMI tushum esa — faqat «Hisobot» bo‘limida (maxsus parol bilan).` },
 
   { id: 'p1-p2', r: ALL, go: 'receipts', w: 'Yon menyu → Kassa',
     t: 'P1 va P2 kassalar',
@@ -129,7 +130,7 @@ Natija: 5 ta ochiq chek (istalgan kun, istalgan instruktor). Summa va to‘lov k
     a: `Kassir login bilan kirganda o‘z kassasiga (P1 yoki P2) ulanadi.
 • Cheklar: ikkala kassaning cheklari ko‘rinadi va qayta chop etiladi.
 • Bekor qilish va bo‘lish — faqat o‘z kassasida.
-• Kassa hisoboti — o‘z kassasi.
+• Tushum va hisobotlar — «Hisobot» bo‘limida, maxsus parol bilan: Jami (P1 + P2), P1 va P2 alohida-alohida.
 Administrator yon menyudagi «P1 / P2» tugmasi bilan kassani tanlaydi.` },
 
   { id: 'jarayonda', r: KASSA, go: 'live', w: 'Kassa → Jarayonda',
@@ -149,14 +150,36 @@ Oldinroq tugatish:
 • Instruktor o‘z ilovasida «Yakunlash» tugmasi.
 Instruktor ilovasida «vaqt tugadi» qolib ketsa — ilovani yopib, bot orqali qayta ochsin.` },
 
-  { id: 'kassa-hisoboti', r: KASSA, go: 'report', w: 'Kassa → Kassa hisoboti',
+  { id: 'kassa-hisoboti', r: KASSA, go: 'report', w: 'Hisobot → Kassa hisoboti (maxsus parol bilan)',
     t: 'Kassa hisoboti',
-    k: ['kassa hisobot', 'hisobotni qayerda', 'tushum qayerda', 'kunlik hisobot', 'smena hisobot', 'naqd va karta qayerda', 'hisobot qanday', 'oylik hisobot qayerda'],
-    a: `Kassa → Kassa hisoboti:
+    k: ['kassa hisobot', 'hisobotni qayerda', 'kunlik hisobot', 'smena hisobot', 'naqd va karta qayerda', 'hisobot qanday', 'oylik hisobot qayerda'],
+    a: `Yon menyu → «Hisobot» → Kassa hisoboti. Avval maxsus parol so‘raladi (15 daqiqa amal qiladi, keyin o‘zi qulflanadi).
+• Tepada: «Jami (P1 + P2)», «P1», «P2» — alohida-alohida.
 • Davr: Kun, Hafta, Oy, Yil yoki Oraliq.
 • Tushum, naqd, karta, cheklar soni, soatlar, mijozlar; oldingi davr bilan solishtirish.
 • Soatlar bo‘yicha grafik, toifalar, instruktorlar; test drive alohida.
-• Pul qaytarilgan cheklar hisobga olinmaydi. Kassir faqat o‘z kassasini ko‘radi.` },
+• Pul qaytarilgan cheklar hisobga olinmaydi.` },
+
+  { id: 'hisobot', r: KASSA, go: 'hisobot', w: 'Yon menyu → Hisobot (maxsus parol bilan)',
+    t: 'Hisobot bo‘limi: tushum qayerda',
+    k: ['tushum qayerda', 'umumiy hisobot', 'jami tushum', 'hisobot bo‘lim', 'tushum ko‘rinmayapti', 'tushum yo‘q', 'summa ko‘rinmayapti', 'jami summa', 'hisobot qulf', 'hisobot parol', 'qulflash'],
+    a: `Tushum (pul) endi Bosh sahifa va Cheklar’da ko‘rinmaydi — hammasi yon menyudagi «Hisobot» bo‘limida:
+• Umumiy hisobot — P1 + P2 + platniy: jami va har biri alohida.
+• Kassa hisoboti — Jami, P1, P2.
+• Instruktorlar hisoboti — kim nechta o‘quvchi haydadi.
+• Platniy hisoboti — avtodrom12 (vaqt ochib kiradigan mashinalar).
+Kirishda maxsus parol so‘raladi (kassir ham, administrator ham). 15 daqiqadan keyin o‘zi qulflanadi; «Qulflash» bilan darhol yopiladi.
+Parolni bilmasangiz — adminga qo‘ng‘iroq qiling.` },
+
+  { id: 'platniy', r: KASSA, go: 'platniy', w: 'Hisobot → Platniy hisoboti (maxsus parol bilan)',
+    t: 'Platniy hisoboti (avtodrom12)',
+    k: ['platniy', 'platni', 'platnoy', 'платный', 'avtodrom12', 'avtodrom 12', 'vaqt ochib', 'post', '1-post', '2-post'],
+    a: `Hisobot → Platniy hisoboti (maxsus parol bilan): avtodrom12 dagi oddiy mijozlar — vaqt ochib kiradigan mashinalar.
+• Tushum, kirishlar soni, mashinalar, o‘rtacha chek va vaqt.
+• To‘lov usullari: naqd, terminal, Click.
+• Postlar (1-POST, 2-POST): kim qancha olgan.
+• Soatlar va kunlar bo‘yicha tushum, qarzlar, eng ko‘p to‘lagan mashinalar.
+Umumiy hisobotda platniy P1 va P2 bilan birga — jami va alohida ko‘rinadi.` },
 
   { id: 'instruktorlar-nazorati', r: KASSA, go: 'nazorat', w: 'Kassa → Instruktorlar nazorati',
     t: 'Kim bo‘sh, kim qachon bo‘shaydi',
@@ -167,10 +190,10 @@ Instruktor ilovasida «vaqt tugadi» qolib ketsa — ilovani yopib, bot orqali q
 • Tanaffusdagilar, ishni boshlamaganlar; bugun ishlamaydiganlar pastda.
 Ro‘yxat o‘zi yangilanib turadi.` },
 
-  { id: 'instruktorlar-hisoboti', r: ALL, go: 'insrep', w: 'Instruktorlar hisoboti',
+  { id: 'instruktorlar-hisoboti', r: ALL, go: 'insrep', w: 'Hisobot → Instruktorlar hisoboti (maxsus parol bilan)',
     t: 'Instruktorlar hisoboti va Excel',
     k: ['instruktor hisobot', 'instruktorlar hisobot', 'kim nechta dars', 'excel yuklab', 'excel fayl', 'shkola', 'avtoshkola dars', 'pullik dars', 'instruktor soat'],
-    a: `Instruktorlar hisoboti: davr tanlanadi, har instruktor — darslar soni, avtoshkola va pullik, soatlar, summa.
+    a: `Hisobot → Instruktorlar hisoboti (maxsus parol bilan). Tepada «Jami (P1 + P2)», «P1», «P2». Davr tanlanadi, har instruktor — darslar soni, avtoshkola va pullik, soatlar, summa.
 Instruktorni bosing — uning darslari, kunlari, o‘quvchilari.
 «Excel · hammasi» yoki «Excel · shu instruktor» — faylga yuklab olish.` },
 
@@ -264,7 +287,7 @@ Xuddi shu narxlarni Kengaytirilgan panel → Sozlamalar’da ham o‘zgartirish 
   { id: 'maxsus-parol', r: ALL, go: 'prices', w: 'Boshqaruv → Narxlar va ish vaqti → Narx paroli',
     t: 'Maxsus parol nima',
     k: ['maxsus parol', 'narx paroli', 'parol qayerda', 'parolni o‘zgartir', 'parol qo‘y'],
-    a: `Maxsus parol (narx paroli) kassada uchta ishga kerak: narxni o‘zgartirish, chekni bekor qilish va 5 soatlik chekni bo‘lish. Bir marta kiritilsa 15 daqiqa amal qiladi.
+    a: `Maxsus parol (narx paroli) kassada to‘rtta ishga kerak: «Hisobot» bo‘limini ochish (tushum, kassa va instruktorlar hisoboti, platniy), narxni o‘zgartirish, chekni bekor qilish va 5 soatlik chekni bo‘lish. Bir marta kiritilsa 15 daqiqa amal qiladi.
 Uni faqat administrator «Narxlar va ish vaqti» bo‘limida qo‘yadi va almashtiradi. Parolning o‘zini bilmasangiz — adminga qo‘ng‘iroq qiling.` },
 
   { id: 'xodimlar', r: ADMIN, go: 'staff', w: 'Boshqaruv → Xodimlar',
@@ -306,10 +329,10 @@ Kassada esa «Instruktorlar nazorati» — faqat kim qachon bo‘shashi.` },
 «Sharh so‘rovi» — Mini App mijozlariga Telegram orqali sharh so‘rovi yuborish (har biriga bir marta).
 Nazorat panelida sharhlar ismsiz ko‘rinadi.` },
 
-  { id: 'hisobot-tahlil', r: ADMIN, go: 'analytics', w: 'Boshqaruv → Hisobot va tahlil',
+  { id: 'hisobot-tahlil', r: ADMIN, go: 'analytics', w: 'Hisobot → Hisobot va tahlil (maxsus parol bilan)',
     t: 'Hisobot va tahlil, analitika',
     k: ['hisobot va tahlil', 'analitika', 'statistika', 'umumiy hisobot', 'grafik tushum', 'tahlil'],
-    a: `Boshqaruv → «Hisobot va tahlil»: istalgan davr uchun tushum, bronlar, darslar.
+    a: `Hisobot → «Hisobot va tahlil» (maxsus parol bilan): istalgan davr uchun tushum, bronlar, darslar.
 «Analitika · 2 loyiha» — Avtodrom va Avtodrom12 birga, jonli.
 «O‘quvchini qaytarish» — qaysi instruktor yangi o‘quvchini jalb qildi va 7 kun ichida qaytardi.` },
 
@@ -391,7 +414,7 @@ Bron instruktorning Excel bron ustuniga tushadi.` },
   { id: 'rollar', r: ALL, w: 'Dastur haqida',
     t: 'Kim nima qiladi (rollar)',
     k: ['kim nima qiladi', 'rollar', 'vazifa', 'kassir nima', 'operator nima', 'admin nima', 'kimning ishi', 'dastur haqida', 'qanday ishlaydi dastur', 'nimalar bor'],
-    a: `• Kassir (P1, P2): chek chiqarish, test drive, cheklar (qayta chop etish, bekor qilish), Jarayonda, Kassa hisoboti, Instruktorlar nazorati, jadval, Excel bron.
+    a: `• Kassir (P1, P2): chek chiqarish, test drive, cheklar (qayta chop etish, bekor qilish), Jarayonda, Instruktorlar nazorati, jadval, Excel bron; «Hisobot» — maxsus parol bilan.
 • Operator: yangi bronlarni tasdiqlash, bekor so‘rovlari, qo‘lda bron, Excel bron, mijozlar chati.
 • Administrator: hammasi + narxlar, xodimlar, instruktorlar, ish grafigi, hisobotlar, sharhlar, nazorat paneli, rahbar ilovasi.
 • Instruktor: ilovada chek uradi, bronlarini ko‘radi, botga bron yozadi.
