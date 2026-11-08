@@ -19,6 +19,7 @@ import { registerCashierRoutes } from './cashier-routes.js';
 import { registerAnalyticsRoutes } from './analytics-routes.js';
 import { registerUnifiedAnalyticsRoutes } from './unified-analytics.js';
 import { registerShiftRoutes } from './shift-routes.js';
+import { registerReportRoutes } from './report-routes.js';
 import { registerMediaRoutes } from './media-routes.js';
 import { registerAdminBotRoutes, sendAdminChatInfo } from './admin-bot-routes.js';
 import { registerScheduleRoutes } from './schedule-routes.js';
@@ -155,6 +156,8 @@ await registerAnalyticsRoutes(app, guardAdmin, requireAdmin);
 /* Birlashgan analitika (Avtodrom + avtodrom12) — /analytics sahifasi, faqat administrator */
 await registerUnifiedAnalyticsRoutes(app, guardAdmin);
 await registerShiftRoutes(app, requireAdmin, adminUser, audit);
+/* «Hisobot» bo'limi: umumiy (P1 + P2 + platniy) va platniy — maxsus parol bilan */
+await registerReportRoutes(app);
 /* Instruktorlar ish grafigi — faqat administrator */
 await registerScheduleRoutes(app, guardAdmin, adminUser, audit);
 await registerBookingSheetRoutes(app, { currentStaff, guardDesk, adminUser, audit });

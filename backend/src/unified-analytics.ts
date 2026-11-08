@@ -317,10 +317,12 @@ export async function registerUnifiedAnalyticsRoutes(app: FastifyInstance, guard
   app.get('/api/admin/unified-analytics', async (req: any, reply: any) => {
     try {
       await guardAdmin(req);
+      /* Hisobot — maxsus parol bilan (administrator ham) */
+      await (await import('./shift-routes.js')).requireReport(req);
       reply.header('Cache-Control', 'no-store');
       return await buildUnifiedAnalytics(req.query || {});
     } catch (e: any) {
-      return reply.code(e?.statusCode ?? 500).send({ ok: false, error: e?.message || 'Analitika yuklanmadi' });
+      return reply.code(e?.statusCode ?? 500).send({ ok: false, error: e?.message || 'Analitika yuklanmadi', ...(e?.needsReportPin ? { needs_report_pin: true } : {}) });
     }
   });
 }

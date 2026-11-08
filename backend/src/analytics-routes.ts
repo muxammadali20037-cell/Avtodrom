@@ -114,6 +114,19 @@ export async function registerAnalyticsRoutes(
      Berilmasa — eski xatti-harakat: hammasi faqat administrator. */
   requireStaff: (request: any) => Promise<void> = requireAdmin,
 ) {
+  /* «HISOBOT» — maxsus parol bilan (shift-routes.ts → requireReport). Kassir ham,
+     administrator ham parolni kiritadi; operator umuman kira olmaydi. */
+  const rep = async (req: any) => (await import('./shift-routes.js')).requireReport(req);
+  const repErr = (reply: any, e: any, fallback: string) =>
+    reply.code(e?.statusCode ?? 500).send({ ok: false, error: e?.message || fallback, ...(e?.needsReportPin ? { needs_report_pin: true } : {}) });
+  /* Ko'lam: ?register=all — hamma kassa, ?register_id=<id> — bitta kassa.
+     Kassir parametrsiz so'rasa — avvalgidek faqat o'z kassasi. */
+  const regParam = (req: any) => {
+    const id = String(req.query?.register_id || '').trim();
+    if (id && /^[A-Za-z0-9-]{2,64}$/.test(id)) return { kind: 'one' as const, id };
+    if (String(req.query?.register || '').trim().toLowerCase() === 'all') return { kind: 'all' as const, id: null };
+    return { kind: 'default' as const, id: null };
+  };
   /**
    * Umumiy hisobot.
    * ?period=day|week|month|year  &date=YYYY-MM-DD
@@ -122,6 +135,7 @@ export async function registerAnalyticsRoutes(
   app.get('/api/admin/analytics', async (req: any, reply: any) => {
     try {
       await requireAdmin(req);
+      await rep(req);
       const { from, to, bucket, label, anchor, period } = rangeFromQuery(req.query);
 
       // Oldingi davr — bir xil uzunlikda
@@ -161,7 +175,7 @@ export async function registerAnalyticsRoutes(
         heatmap: current.heatmap || [],
       };
     } catch (e: any) {
-      return reply.code(e?.statusCode ?? 500).send({ ok: false, error: e?.message || 'Hisobot yuklanmadi' });
+      return repErr(reply, e, 'Hisobot yuklanmadi');
     }
   });
 
@@ -180,14 +194,16 @@ export async function registerAnalyticsRoutes(
    */
   app.get('/api/admin/instructor-report', async (req: any, reply: any) => {
     try {
-      await requireStaff(req);
+      await rep(req);
       const { from, to, label, anchor, period, fromYmd, toYmd } = rangeFromQuery(req.query);
 
       const { peekStaff } = await import('./admin-password-routes.js');
       const me: any = peekStaff(req);
       if (me && me.role === 'operator') return reply.code(403).send({ ok: false, error: 'Bu hisobot kassa va administrator uchun' });
       let regId: string | null = null;
-      if (me && me.role === 'cashier') regId = String(me.register_id || '00000000-0000-0000-0000-000000000000');
+      const rp = regParam(req);
+      if (rp.kind === 'one') regId = rp.id;
+      else if (rp.kind === 'default' && me && me.role === 'cashier') regId = String(me.register_id || '00000000-0000-0000-0000-000000000000');
 
       /* HISOB URILGAN CHEK BO'YICHA (lesson-ledger.ts): dars — chekni
          URGAN instruktorniki, kuni — chek urilgan kun, pul — o'sha chek. */
@@ -307,7 +323,7 @@ export async function registerAnalyticsRoutes(
         from: from.toISOString(), to: to.toISOString(),
         from_day: fromYmd || tashkentYmd(from.toISOString()),
         to_day: toYmd || tashkentYmd(new Date(to.getTime() - 1).toISOString()),
-        scoped_to_register: !!regId,
+        scoped_to_register: !!regId, register_id: regId,
         totals: { ...trest, students: tst.size, school: fin(ts), paid: fin(tp),
           working: instructors.filter((i) => i.lessons > 0).length,
           /* To'langan, lekin hali hech kim urmagan cheklar — hech bir instruktorga yozilmagan */
@@ -319,7 +335,7 @@ export async function registerAnalyticsRoutes(
         ...(lessons ? { lessons } : {}),
       };
     } catch (e: any) {
-      return reply.code(e?.statusCode ?? 500).send({ ok: false, error: e?.message || 'Instruktorlar hisoboti yuklanmadi' });
+      return repErr(reply, e, 'Instruktorlar hisoboti yuklanmadi');
     }
   });
 
@@ -332,6 +348,7 @@ export async function registerAnalyticsRoutes(
   app.get('/api/admin/retention', async (req: any, reply: any) => {
     try {
       await requireAdmin(req);
+      await rep(req);
       const { from, to, fromYmd, toYmd } = rangeFromQuery(req.query, 'week');
       const fromDay = fromYmd || tashkentYmd(from.toISOString());
       const toDay = toYmd || tashkentYmd(new Date(to.getTime() - 1).toISOString());
@@ -422,7 +439,7 @@ export async function registerAnalyticsRoutes(
         instructors,
       };
     } catch (e: any) {
-      return reply.code(e?.statusCode ?? 500).send({ ok: false, error: e?.message || 'Qaytish hisoboti yuklanmadi' });
+      return repErr(reply, e, 'Qaytish hisoboti yuklanmadi');
     }
   });
 
@@ -433,7 +450,7 @@ export async function registerAnalyticsRoutes(
    */
   app.get('/api/admin/instructor-control/:id', async (req: any, reply: any) => {
     try {
-      await requireStaff(req);          // kassir ham ko'radi (o'z ishi)
+      await rep(req);                  // kassir ham ko'radi — maxsus parol bilan
       const instructorId = String(req.params.id);
       const period = String(req.query?.period || 'day');
 
@@ -466,7 +483,11 @@ export async function registerAnalyticsRoutes(
         const me = peekStaff(req);
         if (me && me.role === 'cashier') regId = me.register_id || '00000000-0000-0000-0000-000000000000';
       }
-      const ownOnly = !!regId && String(req.query?.own || '') === '1';
+      let ownOnly = !!regId && String(req.query?.own || '') === '1';
+      /* Hisobot ko'lami (Jami / P1 / P2) — parol bilan ochilgan hisobotda */
+      const rp = regParam(req);
+      if (rp.kind === 'all') { regId = null; ownOnly = false; }
+      else if (rp.kind === 'one') { regId = rp.id; ownOnly = true; }
 
       /* HISOB URILGAN CHEK BO'YICHA: shu instruktor URGAN cheklar,
          kuni — chek urilgan kun (lesson-ledger.ts). */
@@ -593,7 +614,7 @@ export async function registerAnalyticsRoutes(
         rows: [...rows, ...extra].sort((a, b) => String(a.start_at).localeCompare(String(b.start_at))),
       };
     } catch (e: any) {
-      return reply.code(e?.statusCode ?? 500).send({ ok: false, error: e?.message || 'Instruktor hisoboti yuklanmadi' });
+      return repErr(reply, e, 'Instruktor hisoboti yuklanmadi');
     }
   });
 }

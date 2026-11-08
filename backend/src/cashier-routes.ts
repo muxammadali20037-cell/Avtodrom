@@ -7,7 +7,7 @@ import { selectIn } from './rest-chunks.js';
 import { loadTariffs, computePrice, loadKrug, loadTestDrive, testDriveOf, testDriveNote } from './pricing.js';
 import { q, findUserByTelegram, toProfile } from './identity.js';
 import { fmtWhen, fmtMoney } from './notify.js';
-import { readRegisterToken, ownRegisterFromToken, reportScope, openShiftId, priceGuard } from './shift-routes.js';
+import { readRegisterToken, ownRegisterFromToken, reportScope, openShiftId, priceGuard, reportUnlocked } from './shift-routes.js';
 import { bookingSearchFilter } from './booking-search.js';
 import { loadBlocks, overlapping, instructorBlockedAt, blockedMessage } from './instructor-blocks.js';
 import { tashkentYmdOf } from './instructor-schedule.js';
@@ -1368,17 +1368,22 @@ export async function registerCashierRoutes(
       /* Javob hajmi chegarasi (Vercel ~4.5 MB): eng yangi 1500 ta chek
          qaytadi, jami raqamlar esa BUTUN davr bo'yicha hisoblanadi. */
       const LIMIT = 1500;
+      /* JAMI TUSHUM (summa, naqd, karta) — faqat «Hisobot» maxsus paroli bilan.
+         Ro'yxatdagi har chekning summasi qoladi (qayta chop etish, savol uchun). */
+      const money = await reportUnlocked(req);
       return {
         ok: true, date: day, register_id: scope.all ? 'all' : registerId, scope: scope.all ? 'all' : 'one', registers: scope.regs, own_register_id: ownId,
         from: rg.fromYmd || rg.anchor, to: rg.toYmd || tkYmd(new Date(rg.to.getTime() - 1).toISOString()),
+        money_unlocked: money,
         summary: {
           total: rows.length, active: count('active'), used: count('used'),
           no_show: count('no_show'), cancelled: count('cancelled'),
-          amount: paidRows.reduce((a, r) => a + r.amount, 0),
-          cash: [...dm.values()].reduce((a, x) => a + x.cash, 0),
-          card: [...dm.values()].reduce((a, x) => a + x.card, 0),
+          amount: money ? paidRows.reduce((a, r) => a + r.amount, 0) : null,
+          cash: money ? [...dm.values()].reduce((a, x) => a + x.cash, 0) : null,
+          card: money ? [...dm.values()].reduce((a, x) => a + x.card, 0) : null,
         },
-        days: [...dm.values()].sort((a, b) => b.day.localeCompare(a.day)),
+        days: [...dm.values()].sort((a, b) => b.day.localeCompare(a.day))
+          .map((x) => (money ? x : { day: x.day, count: x.count, cancelled: x.cancelled, amount: null, cash: null, card: null })),
         matched: list.length,
         truncated: list.length > LIMIT,
         receipts: list.slice(0, LIMIT),

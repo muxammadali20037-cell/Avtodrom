@@ -94,7 +94,9 @@ export async function reportScope(req: any, query: any): Promise<ReportScope | n
   const me: any = await currentStaffSafe(req);
   const want = String(query?.register || '').trim().toLowerCase();
   const wantId = String(query?.register_id || '').trim();
-  if (me && me.role === 'admin' && (want === 'all' || wantId)) {
+  /* «Hisobot» bo'limi: maxsus parol bilan ochilgan kassir ham Jami / P1 / P2 ni ko'radi */
+  const wide = !!me && (me.role === 'admin' || (me.role === 'cashier' && (want === 'all' || wantId) && await reportUnlocked(req)));
+  if (wide && (want === 'all' || wantId)) {
     const regs = await supabaseRest<any[]>('cash_registers', { query: '?is_active=eq.true&select=id,code,name&order=code.asc' });
     const pick = want === 'all' ? regs : regs.filter((r) => String(r.id) === wantId);
     if (!pick.length) return null;
@@ -167,6 +169,35 @@ export async function priceGuard(req: any, token: unknown, total: number, expect
   const nf = (v: number) => String(Math.round(Number(v) || 0)).replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
   return { code: 403, error: `Narx o‘zgartirilgan (${nf(expected)} → ${nf(total)} so‘m). Narxni o‘zgartirish uchun maxsus parol kerak — «Narxni o‘zgartirish»ni bosib, parolni kiriting.` };
 }
+
+/* =======================================================================
+   «HISOBOT» BO'LIMI — MAXSUS PAROL BILAN
+   Tushum, kassa hisoboti, instruktorlar hisoboti, platniy, umumiy hisobot —
+   hammasi faqat maxsus parol (narx paroli) kiritilgandan keyin ochiladi:
+   kassir HAM, administrator HAM. Parol 15 daqiqalik token beradi
+   (POST /api/admin/price-unlock), brauzer uni `X-Report-Token` sarlavhasida
+   yuboradi. Token shu xodimga bog'langan — boshqa xodim ishlata olmaydi.
+   Operator hisobotga umuman kira olmaydi.
+   ======================================================================= */
+export const REPORT_PIN_MSG = 'Hisobot maxsus parol bilan ochiladi — parolni kiriting.';
+const reportTokenOf = (req: any) => String(req?.headers?.['x-report-token'] || req?.query?.rt || '');
+/** Maxsus parol bilan ochilganmi (token to'g'ri, muddati o'tmagan, shu xodimniki) */
+export async function reportUnlocked(req: any): Promise<boolean> {
+  const t = reportTokenOf(req);
+  return t ? verifyPriceToken(req, t) : false;
+}
+/** Hisobot endpointlari uchun: kirgan, operator emas, maxsus parol bilan ochilgan. */
+export async function requireReport(req: any) {
+  const me: any = await currentStaffSafe(req);
+  if (!me) throw Object.assign(new Error('Kirish talab qilinadi'), { statusCode: 401 });
+  if (me.role !== 'admin' && me.role !== 'cashier') throw Object.assign(new Error('Hisobot kassa va administrator uchun'), { statusCode: 403 });
+  if (!(await reportUnlocked(req))) throw Object.assign(new Error(REPORT_PIN_MSG), { statusCode: 403, needsReportPin: true });
+  return me;
+}
+/** Xato javobi: parol kerak bo'lsa — brauzer parol oynasini ochishi uchun belgi */
+export const reportErr = (e: any, fallback: string) => ({
+  ok: false, error: e?.message || fallback, ...(e?.needsReportPin ? { needs_report_pin: true } : {}),
+});
 
 /** Faqat administrator. Kassir 403 oladi. */
 async function requireStaffAdmin(req: any) {
@@ -252,14 +283,14 @@ export async function registerShiftRoutes(
   /** Joriy holat: smena hisoboti (yopishdan oldin ko'rish uchun ham). */
   app.get('/api/admin/shifts/:id/summary', async (req: any, reply: any) => {
     try {
-      await requireAdmin(req);
+      await requireReport(req);
       const res = await supabaseRest<any>('rpc/shift_summary', {
         method: 'POST', body: JSON.stringify({ p_shift: String(req.params.id) }),
       });
       if (!res) return reply.code(404).send({ ok: false, error: 'Smena topilmadi' });
       return { ok: true, summary: res };
     } catch (e: any) {
-      return reply.code(e?.statusCode ?? 500).send({ ok: false, error: e?.message || 'Hisobot yuklanmadi' });
+      return reply.code(e?.statusCode ?? 500).send(reportErr(e, 'Hisobot yuklanmadi'));
     }
   });
 
@@ -308,7 +339,7 @@ export async function registerShiftRoutes(
   /** Smenalar tarixi — kassa bo'yicha filtrlash mumkin. */
   app.get('/api/admin/shifts', async (req: any, reply: any) => {
     try {
-      await requireAdmin(req);
+      await requireReport(req);
       const reg = String(req.query?.register_id || '').trim();
       const limit = Math.min(100, Math.max(1, Number(req.query?.limit || 30)));
       const filter = reg ? `&register_id=eq.${q(reg)}` : '';
@@ -344,7 +375,7 @@ export async function registerShiftRoutes(
         })),
       };
     } catch (e: any) {
-      return reply.code(e?.statusCode ?? 500).send({ ok: false, error: e?.message || 'Smenalar yuklanmadi' });
+      return reply.code(e?.statusCode ?? 500).send(reportErr(e, 'Smenalar yuklanmadi'));
     }
   });
 
@@ -354,22 +385,15 @@ export async function registerShiftRoutes(
    */
   app.get('/api/admin/register-report', async (req: any, reply: any) => {
     try {
-      await requireAdmin(req);
+      await requireReport(req);
       const { rangeFromQuery } = await import('./analytics-routes.js');
       const { from, to, label, anchor } = rangeFromQuery(req.query);
       const rows = await supabaseRest<any>('rpc/register_report', {
         method: 'POST',
         body: JSON.stringify({ p_from: from.toISOString(), p_to: to.toISOString() }),
       });
-      let list = Array.isArray(rows) ? rows : [];
-      /* Kassir faqat o'z kassasining hisobini ko'radi */
-      const me: any = await currentStaffSafe(req);
-      if (me && me.role === 'cashier') {
-        const own = (await supabaseRest<any[]>('cash_registers', {
-          query: `?id=eq.${q(String(me.register_id || ''))}&select=id,code&limit=1`,
-        }).catch(() => []))[0];
-        list = list.filter((r: any) => own && (String(r.register_id || r.id || '') === String(own.id) || String(r.code || '') === String(own.code)));
-      }
+      /* Maxsus parol bilan ochilgan hisobot — Jami, P1, P2 alohida (kassir ham) */
+      const list = Array.isArray(rows) ? rows : [];
       return {
         ok: true, label, anchor,
         from: from.toISOString(), to: to.toISOString(),
@@ -382,7 +406,7 @@ export async function registerShiftRoutes(
         }), { receipts: 0, cash: 0, card: 0, total: 0 }),
       };
     } catch (e: any) {
-      return reply.code(e?.statusCode ?? 500).send({ ok: false, error: e?.message || 'Kassa hisoboti yuklanmadi' });
+      return reply.code(e?.statusCode ?? 500).send(reportErr(e, 'Kassa hisoboti yuklanmadi'));
     }
   });
 
@@ -598,7 +622,7 @@ export async function registerShiftRoutes(
    */
   app.get('/api/admin/my-dashboard', async (req: any, reply: any) => {
     try {
-      await requireAdmin(req);
+      await requireReport(req);
       const scope = await reportScope(req, req.query);
       if (!scope) {
         return reply.code(401).send({ ok: false, error: 'Kassa ochilmagan yoki muddati tugagan. PIN bilan qayta oching.' });
@@ -655,7 +679,7 @@ export async function registerShiftRoutes(
 
       return {
         ok: true,
-        register: scope.all ? { id: 'all', code: 'Hammasi', name: 'Barcha kassalar' } : scope.regs[0],
+        register: scope.all ? { id: 'all', code: 'Jami', name: 'Barcha kassalar (P1 + P2)' } : scope.regs[0],
         scope: scope.all ? 'all' : 'one', registers,
         period, label, anchor, bucket,
         from: from.toISOString(), to: to.toISOString(),
@@ -664,7 +688,7 @@ export async function registerShiftRoutes(
         hours, categories, instructors, recent, test_drive,
       };
     } catch (e: any) {
-      return reply.code(e?.statusCode ?? 500).send({ ok: false, error: e?.message || 'Hisobot yuklanmadi' });
+      return reply.code(e?.statusCode ?? 500).send(reportErr(e, 'Hisobot yuklanmadi'));
     }
   });
 
@@ -1082,7 +1106,8 @@ export async function registerShiftRoutes(
         return reply.code(400).send({ ok: false, error: `Parol noto‘g‘ri${cur.n >= 3 ? ` (${5 - cur.n > 0 ? 5 - cur.n : 0} ta urinish qoldi)` : ''}`, wrong_pin: true });
       }
       priceFails.delete(who);
-      await audit(admin?.id ?? null, 'PRICE_UNLOCK', 'admin_settings', PRICE_KEY, null, { staff: me.login || me.id || null, role: me.role });
+      const purpose = String(req.body?.purpose || '') === 'report' ? 'report' : 'price';
+      await audit(admin?.id ?? null, 'PRICE_UNLOCK', 'admin_settings', PRICE_KEY, null, { staff: me.login || me.id || null, role: me.role, purpose });
       return { ok: true, ...makePriceToken(me) };
     } catch (e: any) {
       return reply.code(e?.statusCode ?? 400).send({ ok: false, error: e?.message || 'Tekshirib bo‘lmadi' });
