@@ -119,7 +119,7 @@ describe('Test drive — faqat 1 krug, 130 000', () => {
   it('instruktor chekni ursa — hisobotiga 15 daqiqa, 130 000', async () => {
     const r = await issue({ test_drive: true, amount: 130000 });
     expect((await A('POST', '/api/instructor/scan/start', { code: r.body.receipt.short_code })).status).toBe(200);
-    const rep = await h.call('GET', `/api/admin/instructor-report?from=${today()}&to=${today()}&rows=1`, { cookie: kassa1 });
+    const rep = await h.call('GET', `/api/admin/instructor-report?from=${today()}&to=${today()}&rows=1`, { cookie: kassa1, report: true });
     expect(rep.status).toBe(200);
     expect(rep.body.lessons).toHaveLength(1);
     expect(rep.body.lessons[0]).toMatchObject({ instructor_id: 'ip-a', minutes: 15, amount: 130000 });
@@ -130,7 +130,7 @@ describe('Test drive — faqat 1 krug, 130 000', () => {
     expect((await issue({ test_drive: true, amount: 130000, full_name: 'Ikkinchi Mijoz', phone: '+998901239911' })).status).toBe(201);
     expect((await issue({ duration_minutes: 60, amount: 250000, full_name: 'Uchinchi Mijoz', phone: '+998901239922' })).status).toBe(201);
     const tok = makeRegisterToken('reg-p1');
-    const d = await h.call('GET', `/api/admin/my-dashboard?token=${tok}&period=day`, { cookie: kassa1 });
+    const d = await h.call('GET', `/api/admin/my-dashboard?token=${tok}&period=day`, { cookie: kassa1, report: true });
     expect(d.status).toBe(200);
     expect(d.body.test_drive).toEqual({ count: 2, total: 100000 });
     const rc = await h.call('GET', `/api/admin/cashier/receipts?token=${tok}&from=${today()}&to=${today()}`, { cookie: kassa1 });

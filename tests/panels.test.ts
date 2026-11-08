@@ -127,7 +127,7 @@ describe('Kassalar bir-biriga aralashmaydi', () => {
     expect(r.status).toBe(403);
   });
 
-  it('kassa hisobotida kassir faqat o‘z kassasini ko‘radi', async () => {
+  it('kassa hisoboti (P1, P2) — faqat «Hisobot» paroli bilan; parol bilan kassir P1 va P2 ni alohida ko‘radi', async () => {
     const orig = globalThis.fetch;
     globalThis.fetch = (async (u: any, o: any) => {
       if (String(u).includes('/rest/v1/rpc/register_report')) {
@@ -140,9 +140,12 @@ describe('Kassalar bir-biriga aralashmaydi', () => {
       return orig(u, o);
     }) as any;
     try {
-      const k = await h.call('GET', '/api/admin/register-report?period=day', { cookie: kassa1 });
-      expect(k.body.registers.map((r: any) => r.code)).toEqual(['P1']);
-      const a = await h.call('GET', '/api/admin/register-report?period=day', { cookie: admin });
+      const locked = await h.call('GET', '/api/admin/register-report?period=day', { cookie: kassa1 });
+      expect(locked.status).toBe(403);
+      expect(locked.body.needs_report_pin).toBe(true);
+      const k = await h.call('GET', '/api/admin/register-report?period=day', { cookie: kassa1, report: true });
+      expect(k.body.registers.map((r: any) => r.code)).toEqual(['P1', 'P2']);
+      const a = await h.call('GET', '/api/admin/register-report?period=day', { cookie: admin, report: true });
       expect(a.body.registers.map((r: any) => r.code)).toEqual(['P1', 'P2']);
     } finally { globalThis.fetch = orig; }
   });
@@ -174,7 +177,7 @@ describe('Chiqarilgan cheklar (faqat kassa oynasida)', () => {
   });
 
   it('bugungi cheklar holati bilan: faol, ishlatilgan, kelmadi, bekor', async () => {
-    const r = await h.call('GET', `/api/admin/cashier/receipts?token=${makeRegisterToken('reg-p1')}`, { cookie: kassa1 });
+    const r = await h.call('GET', `/api/admin/cashier/receipts?token=${makeRegisterToken('reg-p1')}`, { cookie: kassa1, report: true });
     expect(r.status).toBe(200);
     const by = Object.fromEntries(r.body.receipts.map((x: any) => [x.code, x.state]));
     expect(by).toEqual({
@@ -255,7 +258,7 @@ describe('Hisobot davri: dan — gacha (yil almashsa ham)', () => {
   };
 
   it('1-oktabr → 3-yanvar: ikkala kun ham kiradi, Toshkent vaqti bilan', async () => {
-    const { res, calls } = await captureRpc(() => h.call('GET', '/api/admin/analytics?from=2026-10-01&to=2027-01-03', { cookie: admin }), 'analytics_report');
+    const { res, calls } = await captureRpc(() => h.call('GET', '/api/admin/analytics?from=2026-10-01&to=2027-01-03', { cookie: admin, report: true }), 'analytics_report');
     expect(res.status).toBe(200);
     expect(res.body.period).toBe('range');
     expect(res.body.from).toBe('2026-09-30T19:00:00.000Z');   // 1-oktabr 00:00 (UTC+5)
@@ -268,15 +271,15 @@ describe('Hisobot davri: dan — gacha (yil almashsa ham)', () => {
   });
 
   it('sanalar teskari berilsa almashtiriladi; 3 yildan uzun rad etiladi', async () => {
-    const { res } = await captureRpc(() => h.call('GET', '/api/admin/analytics?from=2027-01-03&to=2026-10-01', { cookie: admin }), 'analytics_report');
+    const { res } = await captureRpc(() => h.call('GET', '/api/admin/analytics?from=2027-01-03&to=2026-10-01', { cookie: admin, report: true }), 'analytics_report');
     expect(res.body.from).toBe('2026-09-30T19:00:00.000Z');
-    const long = await h.call('GET', '/api/admin/analytics?from=2020-01-01&to=2026-10-01', { cookie: admin });
+    const long = await h.call('GET', '/api/admin/analytics?from=2020-01-01&to=2026-10-01', { cookie: admin, report: true });
     expect(long.status).toBe(400);
   });
 
   it('kassa hisobotida ham oraliq ishlaydi (faqat o‘z kassasi)', async () => {
     const tok = makeRegisterToken('reg-p1');
-    const { res, calls } = await captureRpc(() => h.call('GET', `/api/admin/my-dashboard?token=${tok}&from=2026-10-01&to=2027-01-03`, { cookie: kassa1 }), 'register_dashboard');
+    const { res, calls } = await captureRpc(() => h.call('GET', `/api/admin/my-dashboard?token=${tok}&from=2026-10-01&to=2027-01-03`, { cookie: kassa1, report: true }), 'register_dashboard');
     expect(res.status).toBe(200);
     expect(res.body.period).toBe('range');
     expect(calls[0]).toMatchObject({ p_register: 'reg-p1', p_from: '2026-09-30T19:00:00.000Z', p_to: '2027-01-03T19:00:00.000Z' });
@@ -290,7 +293,7 @@ describe('Hisobot davri: dan — gacha (yil almashsa ham)', () => {
         end_at: new Date(d.getTime() + 3600e3).toISOString(), booking_date: d.toISOString(), status: 'completed', duration_minutes: 60 });
       h.db.payments.push({ id: `py-${i}`, booking_id: `bk-${i}`, amount: 1000, method: 'cash', status: 'paid', paid_at: d.toISOString() });
     }
-    const r = await h.call('GET', '/api/admin/instructor-control/ip-1?from=2026-10-01&to=2027-01-03', { cookie: admin });
+    const r = await h.call('GET', '/api/admin/instructor-control/ip-1?from=2026-10-01&to=2027-01-03', { cookie: admin, report: true });
     expect(r.status).toBe(200);
     expect(r.body.summary.completed).toBe(N);
     expect(r.body.summary.revenue).toBe(N * 1000);

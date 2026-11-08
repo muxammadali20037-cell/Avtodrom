@@ -41,7 +41,10 @@ export interface Harness {
   /** Shu Telegram metodlari uchun javob (result) — masalan getWebhookInfo */
   tgResults: Map<string, any>;
   login(login: string, password: string): Promise<{ status: number; body: any; cookie: string }>;
-  call(method: string, url: string, opts?: { cookie?: string; payload?: any }): Promise<{ status: number; body: any }>;
+  /** report: true — «Hisobot» maxsus paroli bilan ochilgan (X-Report-Token shu xodimniki) */
+  call(method: string, url: string, opts?: { cookie?: string; payload?: any; report?: boolean; headers?: Record<string, string> }): Promise<{ status: number; body: any }>;
+  /** Shu xodimning (cookie) maxsus parol tokeni — X-Report-Token uchun */
+  reportToken(cookie: string): string;
   reset(): void;
 }
 
@@ -299,10 +302,22 @@ export async function makeHarness(): Promise<Harness> {
     return { status: r.statusCode, body, cookie: arr.map((c: any) => String(c).split(';')[0]).join('; ') };
   };
 
+  /* Maxsus parol tokeni — xuddi /api/admin/price-unlock bergandek (bazaga yozmaydi) */
+  const { peekStaff } = await import('../backend/src/admin-password-routes.js');
+  const { makePriceToken } = await import('../backend/src/shift-routes.js');
+  const reportToken = (cookie: string) => {
+    const me: any = peekStaff({ headers: { cookie } });
+    return me ? makePriceToken(me).token : '';
+  };
+
   const call = async (method: string, url: string, opts: any = {}) => {
     const r = await app.inject({
       method, url,
-      headers: opts.cookie ? { cookie: opts.cookie } : {},
+      headers: {
+        ...(opts.cookie ? { cookie: opts.cookie } : {}),
+        ...(opts.report && opts.cookie ? { 'x-report-token': reportToken(opts.cookie) } : {}),
+        ...(opts.headers || {}),
+      },
       payload: opts.payload,
     });
     let body: any = {};
@@ -311,7 +326,7 @@ export async function makeHarness(): Promise<Harness> {
   };
 
   return {
-    app, db, telegram, telegramFail, tgCalls, tgResults, login, call,
+    app, db, telegram, telegramFail, tgCalls, tgResults, login, call, reportToken,
     reset() {
       for (const k of Object.keys(db)) db[k] = [];
       telegram.length = 0;

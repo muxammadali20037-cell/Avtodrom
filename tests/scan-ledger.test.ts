@@ -272,7 +272,7 @@ describe('Hisobot — urilgan chek bo‘yicha', () => {
 
   it('admin: dars va pul chekni urganga, urilmagan chek alohida', async () => {
     await scenario();
-    const r = await h.call('GET', `/api/admin/instructor-report?period=day&date=${ymd(0)}`, { cookie: admin });
+    const r = await h.call('GET', `/api/admin/instructor-report?period=day&date=${ymd(0)}`, { cookie: admin, report: true });
     expect(r.status).toBe(200);
     expect(r.body.basis).toBe('scanned_receipts');
     const by = (id: string) => r.body.instructors.find((i: any) => i.id === id);
@@ -286,7 +286,7 @@ describe('Hisobot — urilgan chek bo‘yicha', () => {
     await scenario();                                                            // birinchi chek urildi
     const y = paidBooking({ ins: 'ip-b', startMin: 30, amount: 111000 });
     Object.assign(bk(y.id), { status: 'in_progress', arrived_at: new Date(Date.now() + 60000).toISOString() });   // admin qo'lda
-    const r = await h.call('GET', `/api/admin/instructor-report?period=day&date=${ymd(0)}`, { cookie: admin });
+    const r = await h.call('GET', `/api/admin/instructor-report?period=day&date=${ymd(0)}`, { cookie: admin, report: true });
     expect(r.body.instructors.find((i: any) => i.id === 'ip-b').revenue).toBe(300000);
     expect(r.body.totals.unscanned).toEqual({ receipts: 2, amount: 400000 + 111000 });
   });
@@ -294,7 +294,7 @@ describe('Hisobot — urilgan chek bo‘yicha', () => {
   it('kassir batafsil hisobotda boshqa kassaning chekini va pulini ko‘rmaydi', async () => {
     const x = paidBooking({ ins: 'ip-a', reg: 'reg-p2', amount: 333000 });
     await A('POST', '/api/instructor/scan/start', { code: x.code });
-    const r = await h.call('GET', `/api/admin/instructor-control/ip-a?period=day&date=${ymd(0)}`, { cookie: kassa1 });
+    const r = await h.call('GET', `/api/admin/instructor-control/ip-a?period=day&date=${ymd(0)}`, { cookie: kassa1, report: true });
     const row = r.body.rows.find((z: any) => z.id === x.id);
     expect(row).toMatchObject({ amount: 0, receipt_code: null });
     expect(r.body.summary.revenue).toBe(0);
@@ -302,7 +302,7 @@ describe('Hisobot — urilgan chek bo‘yicha', () => {
 
   it('kassa (P1) faqat o‘z kassasi cheklarini ko‘radi', async () => {
     await scenario();
-    const r = await h.call('GET', `/api/admin/instructor-report?period=day&date=${ymd(0)}`, { cookie: kassa1 });
+    const r = await h.call('GET', `/api/admin/instructor-report?period=day&date=${ymd(0)}`, { cookie: kassa1, report: true });
     expect(r.status).toBe(200);
     expect(r.body.totals.unscanned).toEqual({ receipts: 0, amount: 0 });       // P2 cheki P1 ga ko'rinmaydi
     expect(r.body.totals.revenue).toBe(550000);
@@ -310,12 +310,12 @@ describe('Hisobot — urilgan chek bo‘yicha', () => {
 
   it('admin batafsil: B ning darslari, qaysi bron o‘tgani', async () => {
     const { x2 } = await scenario();
-    const r = await h.call('GET', `/api/admin/instructor-control/ip-b?period=day&date=${ymd(0)}`, { cookie: admin });
+    const r = await h.call('GET', `/api/admin/instructor-control/ip-b?period=day&date=${ymd(0)}`, { cookie: admin, report: true });
     expect(r.status).toBe(200);
     expect(r.body.summary).toMatchObject({ scanned: 1, revenue: 300000, transferred_in: 1, minutes: 60 });
     const row = r.body.rows.find((x: any) => x.id === x2.id);
     expect(row).toMatchObject({ transferred_from: 'Aziz Karimov', amount: 300000, scanned: true });
-    const ra = await h.call('GET', `/api/admin/instructor-control/ip-a?period=day&date=${ymd(0)}`, { cookie: admin });
+    const ra = await h.call('GET', `/api/admin/instructor-control/ip-a?period=day&date=${ymd(0)}`, { cookie: admin, report: true });
     expect(ra.body.summary).toMatchObject({ scanned: 1, revenue: 250000 });
   });
 

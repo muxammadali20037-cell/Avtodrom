@@ -70,7 +70,7 @@ beforeEach(async () => {
   kassa = (await h.login('kassa1', 'parol1234')).cookie;
 });
 
-const get = (cookie = admin, from = D(-21), to = D(0)) => h.call('GET', `/api/admin/retention?from=${from}&to=${to}`, { cookie });
+const get = (cookie = admin, from = D(-21), to = D(0)) => h.call('GET', `/api/admin/retention?from=${from}&to=${to}`, { cookie, report: true });
 
 describe('O‘quvchini qaytarish hisoboti', () => {
   it('faqat administrator ko‘radi', async () => {

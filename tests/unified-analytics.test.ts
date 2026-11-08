@@ -104,13 +104,13 @@ afterEach(() => { globalThis.fetch = baseFetch; delete process.env.AVTODROM12_UR
 describe('Birlashgan analitika', () => {
   it('faqat administrator: kirmagan 401, operator va kassir 403', async () => {
     expect((await h.call('GET', '/api/admin/unified-analytics?from=2026-10-10&to=2026-10-10')).status).toBe(401);
-    expect((await h.call('GET', '/api/admin/unified-analytics?from=2026-10-10&to=2026-10-10', { cookie: operator })).status).toBe(403);
-    expect((await h.call('GET', '/api/admin/unified-analytics?from=2026-10-10&to=2026-10-10', { cookie: kassa })).status).toBe(403);
+    expect((await h.call('GET', '/api/admin/unified-analytics?from=2026-10-10&to=2026-10-10', { cookie: operator, report: true })).status).toBe(403);
+    expect((await h.call('GET', '/api/admin/unified-analytics?from=2026-10-10&to=2026-10-10', { cookie: kassa, report: true })).status).toBe(403);
     expect(bridgeCalls.length).toBe(0);
   });
 
   it('ikkala loyiha qo‘shiladi: tushum, darslar, avtoshkola, daqiqa', async () => {
-    const r = await h.call('GET', '/api/admin/unified-analytics?from=2026-10-10&to=2026-10-10', { cookie: admin });
+    const r = await h.call('GET', '/api/admin/unified-analytics?from=2026-10-10&to=2026-10-10', { cookie: admin, report: true });
     expect(r.status).toBe(200);
     const d = r.body;
     // Ko'prik so'rovi: to'g'ri kalit, davr va bo'lak
@@ -149,7 +149,7 @@ describe('Birlashgan analitika', () => {
 
   it('avtodrom12 kaliti mos kelmasa — Avtodrom qismi baribir chiqadi, sababi aytiladi', async () => {
     bridgeReply = { status: 401, body: { ok: false, error: 'Kalit noto‘g‘ri' } };
-    const r = await h.call('GET', '/api/admin/unified-analytics?from=2026-10-10&to=2026-10-10', { cookie: admin });
+    const r = await h.call('GET', '/api/admin/unified-analytics?from=2026-10-10&to=2026-10-10', { cookie: admin, report: true });
     expect(r.status).toBe(200);
     expect(r.body.avtodrom12).toMatchObject({ ok: false, status: 401 });
     expect(r.body.avtodrom12.hint).toMatch(/RECEIPT_SHARED_KEY/);
@@ -159,14 +159,14 @@ describe('Birlashgan analitika', () => {
 
   it('avtodrom12 da ko‘prik hali yo‘q (404) — deploy qilish kerakligi aytiladi', async () => {
     bridgeReply = { status: 404, body: { error: 'Route topilmadi' } };
-    const r = await h.call('GET', '/api/admin/unified-analytics?from=2026-10-10&to=2026-10-10', { cookie: admin });
+    const r = await h.call('GET', '/api/admin/unified-analytics?from=2026-10-10&to=2026-10-10', { cookie: admin, report: true });
     expect(r.body.avtodrom12.ok).toBe(false);
     expect(r.body.avtodrom12.hint).toMatch(/deploy/);
   });
 
   it('sozlanmagan bo‘lsa — avtodrom12 ga murojaat qilinmaydi, qaysi sozlama yo‘qligi aytiladi', async () => {
     delete process.env.AVTODROM12_URL;
-    const r = await h.call('GET', '/api/admin/unified-analytics?from=2026-10-10&to=2026-10-10', { cookie: admin });
+    const r = await h.call('GET', '/api/admin/unified-analytics?from=2026-10-10&to=2026-10-10', { cookie: admin, report: true });
     expect(r.status).toBe(200);
     expect(bridgeCalls).toHaveLength(0);
     expect(r.body.avtodrom12.ok).toBe(false);
@@ -174,7 +174,7 @@ describe('Birlashgan analitika', () => {
   });
 
   it('noto‘g‘ri sana — 400', async () => {
-    const r = await h.call('GET', '/api/admin/unified-analytics?from=2026-13-40&to=2026-10-10', { cookie: admin });
+    const r = await h.call('GET', '/api/admin/unified-analytics?from=2026-13-40&to=2026-10-10', { cookie: admin, report: true });
     expect(r.status).toBe(400);
   });
 });

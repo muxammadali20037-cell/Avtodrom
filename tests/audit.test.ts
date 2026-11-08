@@ -84,7 +84,13 @@ function seedOctober() {
 describe('Administrator: ikkala kassa, istalgan davr', () => {
   it('Cheklar — «Hammasi»: P1 + P2 + kassasiz eski to‘lovlar, oy oxirigacha (31-oktabr kiradi)', async () => {
     seedOctober();
-    const r = await h.call('GET', '/api/admin/cashier/receipts?register=all&from=2026-10-01&to=2026-10-31', { cookie: admin });
+    /* Jami tushum — faqat «Hisobot» paroli bilan; parolsiz ro'yxat bor, jami summa yo'q */
+    const locked = await h.call('GET', '/api/admin/cashier/receipts?register=all&from=2026-10-01&to=2026-10-31', { cookie: admin });
+    expect(locked.status).toBe(200);
+    expect(locked.body.summary).toMatchObject({ total: 5, amount: null, cash: null, card: null });
+    expect(locked.body.receipts.find((x: any) => x.code === 'AVD-P2').amount).toBe(500000);   // har chek summasi qoladi
+    expect(locked.body.days.every((x: any) => x.amount === null)).toBe(true);
+    const r = await h.call('GET', '/api/admin/cashier/receipts?register=all&from=2026-10-01&to=2026-10-31', { cookie: admin, report: true });
     expect(r.status).toBe(200);
     expect(r.body.scope).toBe('all');
     expect(r.body.registers.map((x: any) => x.code)).toEqual(['P1', 'P2']);
@@ -104,7 +110,7 @@ describe('Administrator: ikkala kassa, istalgan davr', () => {
 
   it('Cheklar — bitta kassa (register_id) tokensiz; kassir «all» — P1 va P2 bir-birinikini ko‘radi (o‘zinikiga belgi)', async () => {
     seedOctober();
-    const p2 = await h.call('GET', '/api/admin/cashier/receipts?register_id=reg-p2&from=2026-10-01&to=2026-10-31', { cookie: admin });
+    const p2 = await h.call('GET', '/api/admin/cashier/receipts?register_id=reg-p2&from=2026-10-01&to=2026-10-31', { cookie: admin, report: true });
     expect(p2.body.receipts.map((x: any) => x.code)).toEqual(['AVD-P3']);
     expect(p2.body.summary.amount).toBe(250000);
     const own = await h.call('GET', `/api/admin/cashier/receipts?token=${makeRegisterToken('reg-p1')}&from=2026-10-01&to=2026-10-31`, { cookie: kassa1 });
@@ -130,10 +136,10 @@ describe('Administrator: ikkala kassa, istalgan davr', () => {
 
   it('Kassa hisoboti — «Hammasi»: jami + har kassa alohida, oldingi davr bilan solishtirish', async () => {
     seedOctober();
-    const r = await h.call('GET', '/api/admin/my-dashboard?register=all&period=month&date=2026-10-15', { cookie: admin });
+    const r = await h.call('GET', '/api/admin/my-dashboard?register=all&period=month&date=2026-10-15', { cookie: admin, report: true });
     expect(r.status).toBe(200);
     expect(r.body.scope).toBe('all');
-    expect(r.body.register.code).toBe('Hammasi');
+    expect(r.body.register.code).toBe('Jami');
     expect(r.body.totals.total).toBe(250000 + 500000 + 250000 + 250000);      // kassaga bog'langanlar
     expect(r.body.totals.cash).toBe(250000 + 300000 + 250000);
     expect(r.body.totals.card).toBe(200000 + 250000);
@@ -142,7 +148,7 @@ describe('Administrator: ikkala kassa, istalgan davr', () => {
     expect(r.body.recent.map((x: any) => x.register)).toEqual(['P2', 'P1', 'P1', 'P1']);   // vaqt bo'yicha
     expect(r.body.hours).toEqual([{ hour: 10, receipts: 4, total: 1250000 }]);
     expect(r.body.instructors).toEqual([{ name: 'Aziz', receipts: 4, total: 1250000 }]);
-    const one = await h.call('GET', '/api/admin/my-dashboard?register_id=reg-p2&period=month&date=2026-10-15', { cookie: admin });
+    const one = await h.call('GET', '/api/admin/my-dashboard?register_id=reg-p2&period=month&date=2026-10-15', { cookie: admin, report: true });
     expect(one.body.scope).toBe('one');
     expect(one.body.register.code).toBe('P2');
     expect(one.body.totals.total).toBe(250000);
@@ -197,7 +203,7 @@ describe('To‘lov faqat kassa orqali', () => {
       category: 'B', duration_minutes: 60, amount: 250000, cash_amount: 150000, card_amount: 100000, start_at: new Date().toISOString() } });
     expect(r.status).toBe(201);
     expect(h.db.payments[0]).toMatchObject({ shift_id: 'sh-1', register_id: 'reg-p1', method: 'mixed', cash_amount: 150000, card_amount: 100000 });
-    const sh = await h.call('GET', '/api/admin/shifts', { cookie: admin });
+    const sh = await h.call('GET', '/api/admin/shifts', { cookie: admin, report: true });
     expect(sh.status).toBe(200);
     const row = (sh.body.shifts || []).find((x: any) => x.id === 'sh-1');
     expect(row?.total ?? row?.totals?.total ?? row?.sum?.total).toBe(250000);
@@ -233,7 +239,7 @@ describe('Bronni qayta ochish va hisobot tafsilotlari', () => {
 
   it('instruktor nazorati: aralash to‘lov naqd va kartaga bo‘linadi', async () => {
     seedOctober();
-    const r = await h.call('GET', '/api/admin/instructor-control/ip-1?from=2026-10-01&to=2026-10-31', { cookie: admin });
+    const r = await h.call('GET', '/api/admin/instructor-control/ip-1?from=2026-10-01&to=2026-10-31', { cookie: admin, report: true });
     expect(r.status).toBe(200);
     /* Instruktor hisobi URILGAN CHEK bo'yicha: p6 (bron bekor, pul qaytarilmagan)
        instruktorniki emas — u kassa «Cheklar»ida va «urilmagan cheklar»da. */

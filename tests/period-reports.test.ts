@@ -79,7 +79,7 @@ beforeEach(async () => {
   kassa2 = (await h.login('kassa2', 'parol1234')).cookie;
 });
 
-const rep = (cookie: string, qs: string) => h.call('GET', `/api/admin/instructor-report?${qs}`, { cookie });
+const rep = (cookie: string, qs: string) => h.call('GET', `/api/admin/instructor-report?${qs}`, { cookie, report: true });
 const range = `from=${YR}-09-12&to=${YR}-09-28`;
 
 describe('Instruktorlar hisoboti — oraliq (12 dan 28 gacha)', () => {
@@ -165,16 +165,16 @@ describe('Instruktorlar hisoboti — oraliq (12 dan 28 gacha)', () => {
 
 describe('Instruktor tafsiloti (own=1) — kassa ajratilgan', () => {
   it('P1 kassiri P2 sotgan darsni tafsilotda ham ko‘rmaydi', async () => {
-    const all = await h.call('GET', `/api/admin/instructor-control/ip-1?${range}`, { cookie: admin });
+    const all = await h.call('GET', `/api/admin/instructor-control/ip-1?${range}`, { cookie: admin, report: true });
     expect(all.body.rows.length).toBe(5);
-    const own = await h.call('GET', `/api/admin/instructor-control/ip-1?${range}&own=1`, { cookie: kassa1 });
+    const own = await h.call('GET', `/api/admin/instructor-control/ip-1?${range}&own=1`, { cookie: kassa1, report: true });
     expect(own.status).toBe(200);
     const ids = own.body.rows.map((r: any) => r.customer_id);
     expect(own.body.rows.length).toBe(4);             // P2 darsi (Bek, 20-sentabr) yo'q
     expect(own.body.rows.some((r: any) => r.amount === 300000)).toBe(false);
     expect(ids).toContain('u-c');
     // Administrator own=1 bersa ham hammasini ko'radi
-    const adm = await h.call('GET', `/api/admin/instructor-control/ip-1?${range}&own=1`, { cookie: admin });
+    const adm = await h.call('GET', `/api/admin/instructor-control/ip-1?${range}&own=1`, { cookie: admin, report: true });
     expect(adm.body.rows.length).toBe(5);
   });
 });
@@ -182,7 +182,7 @@ describe('Instruktor tafsiloti (own=1) — kassa ajratilgan', () => {
 describe('Cheklar — oraliq', () => {
   it('12–28 oraliqdagi P1 cheklari, kunlar bo‘yicha jami', async () => {
     const t = makeRegisterToken('reg-p1');
-    const r = await h.call('GET', `/api/admin/cashier/receipts?token=${t}&${range}`, { cookie: kassa1 });
+    const r = await h.call('GET', `/api/admin/cashier/receipts?token=${t}&${range}`, { cookie: kassa1, report: true });
     expect(r.status).toBe(200);
     const codes = r.body.receipts.map((x: any) => x.code).sort();
     expect(codes).toEqual(['AVD-2', 'AVD-6', 'AVD-7']);    // 29-sentabr va P2 kirmaydi

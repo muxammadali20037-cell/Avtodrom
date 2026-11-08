@@ -160,11 +160,11 @@ describe('Ochiq chek — istalgan kuni, istalgan instruktor', () => {
     const receipts = await sellPackage('Excel Mijoz', '+998901230044');
     expect((await A('POST', '/api/instructor/scan/start', { code: receipts[0].short_code })).status).toBe(200);
     const day = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Tashkent' }).format(new Date());
-    const r = await h.call('GET', `/api/admin/instructor-report?from=${day}&to=${day}&rows=1`, { cookie: kassa1 });
+    const r = await h.call('GET', `/api/admin/instructor-report?from=${day}&to=${day}&rows=1`, { cookie: kassa1, report: true });
     expect(r.status).toBe(200);
     expect(r.body.lessons).toHaveLength(1);
     expect(r.body.lessons[0]).toMatchObject({ instructor_id: 'ip-a', customer: 'Excel Mijoz', phone: '+998901230044', school: false, amount: 220000, minutes: 60, receipt_code: receipts[0].code });
-    const plain = await h.call('GET', `/api/admin/instructor-report?from=${day}&to=${day}`, { cookie: kassa1 });
+    const plain = await h.call('GET', `/api/admin/instructor-report?from=${day}&to=${day}`, { cookie: kassa1, report: true });
     expect(plain.body.lessons).toBeUndefined();
     expect(plain.body.instructors.find((i: any) => i.id === 'ip-a')).toMatchObject({ lessons: 1, revenue: 220000 });
   });
