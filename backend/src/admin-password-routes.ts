@@ -1210,7 +1210,7 @@ export async function registerAdminPasswordRoutes(app: FastifyInstance) {
             // Yuborilган eslatmalar (60/30/10) — admin ko'radi
             reminders: rem.get(String(b.id)) || [],
             // 5 soatlik paketning nechanchi mashg'uloti
-            package: (() => { const pk = packs.get(String(b.id)); return pk ? { id: pk.id, n: pk.n, of: pk.of, price: pk.price } : null; })(),
+            package: (() => { const pk = packs.get(String(b.id)); return pk ? { id: pk.id, n: pk.n, of: pk.of, price: pk.price, minutes: pk.minutes } : null; })(),
           };
         }),
       };

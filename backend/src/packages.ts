@@ -21,6 +21,8 @@ import { instructorBlockedAt, blockedMessage } from './instructor-blocks.js';
  */
 
 export const PACKAGE_MINUTES = 300;
+/** 3 SOAT (bronsiz, kassada) — paketdek 3 ta OCHIQ 1 soatlik chek bo'lib chiqadi */
+export const TRIPLE_MINUTES = 180;
 export const DEFAULT_PACKAGE_PRICE = 1_100_000;
 export const MAX_SESSIONS = 5;
 const PKG = 'pack:';
@@ -246,16 +248,20 @@ export async function createOpenPackage(o: {
   prices: PackagePrices;
   /** Oldindan topilgan joylar (openSlots) — bo'lmasa shu yerda topiladi */
   slots?: Session[];
+  /** Jami daqiqa: 300 — 5 soatlik paket (standart), 180 — 3 soat (3 ta chek) */
+  minutes?: number;
 }): Promise<{ bookings: any[]; record: PackageRecord }> {
   const cat = String(o.category || '').toUpperCase();
-  const total = Math.round(Number(o.total ?? packagePriceOf(cat, o.prices)));
+  const bundle = Number(o.minutes) > 0 ? Math.round(Number(o.minutes)) : PACKAGE_MINUTES;
+  const total = Math.round(Number(o.total ?? (bundle === PACKAGE_MINUTES ? packagePriceOf(cat, o.prices) : computePrice(cat, bundle, o.tariffs))));
   if (!(total > 0)) {
-    const e: any = new Error(PACKAGE_CATEGORIES.includes(cat as Cat)
+    const e: any = new Error(bundle !== PACKAGE_MINUTES ? 'Summani kiriting'
+      : PACKAGE_CATEGORIES.includes(cat as Cat)
       ? `${cat} toifada 5 soatlik paket hozir o‘chirilgan`
       : '5 soatlik paket faqat B toifa uchun');
     e.statusCode = 400; throw e;
   }
-  const n = Math.round(PACKAGE_MINUTES / OPEN_MINUTES);
+  const n = Math.round(bundle / OPEN_MINUTES);
   const slots = o.slots && o.slots.length >= n ? o.slots.slice(0, n) : await openSlots(o.customerId, n);
   const parts = shares(total, slots.map((s) => s.minutes));
   const payloads = slots.map((s, i) => ({
@@ -271,7 +277,7 @@ export async function createOpenPackage(o: {
     price: parts[i],
     status: o.status,
     source: o.source,
-    customer_note: `${packageNote(i + 1, n)} · ochiq chek`,
+    customer_note: `${bundleNote(i + 1, n, bundle)} · ochiq chek`,
     ...(o.extra || {}),
   }));
   const bookings = await supabaseRest<any[]>('bookings', {
@@ -283,9 +289,9 @@ export async function createOpenPackage(o: {
     customer_id: o.customerId,
     instructor_id: null,
     category: cat,
-    minutes: PACKAGE_MINUTES,
+    minutes: bundle,
     price: total,
-    list_price: computePrice(cat, PACKAGE_MINUTES, o.tariffs),
+    list_price: computePrice(cat, bundle, o.tariffs),
     source: o.source,
     created_at: new Date().toISOString(),
     open: true,
@@ -376,6 +382,12 @@ export async function packageOf(bookingId: string): Promise<PackageInfo | null> 
 /** Bronga qisqa izoh: «5 soatlik paket · 2/3». */
 export const packageNote = (n: number, of: number) =>
   of > 1 ? `5 soatlik paket · ${n}/${of}-mashg‘ulot` : '5 soatlik paket · bir kunda';
+/** Chekdagi nom: 5 soat — «5 soatlik paket», 3 soat — «3 soat» */
+export const bundleText = (minutes: number) =>
+  Number(minutes) === PACKAGE_MINUTES ? '5 soatlik paket' : `${Math.round(Number(minutes) / 60)} soat`;
+/** Ochiq chekdagi bron izohi: «5 soatlik paket · 2/5-mashg‘ulot», «3 soat · 2/3-mashg‘ulot» */
+export const bundleNote = (n: number, of: number, minutes = PACKAGE_MINUTES) =>
+  Number(minutes) === PACKAGE_MINUTES ? packageNote(n, of) : `${bundleText(minutes)} · ${n}/${of}-mashg‘ulot`;
 
 /** «3 soat», «30 daqiqa», «1 soat 30 daqiqa» */
 export function durText(minutes: number): string {

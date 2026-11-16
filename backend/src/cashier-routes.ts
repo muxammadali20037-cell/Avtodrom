@@ -15,7 +15,8 @@ import { recordScan } from './lesson-ledger.js';
 import { moveSheetBooking } from './booking-sheet.js';
 import {
   PACKAGE_MINUTES, MAX_SESSIONS, loadPackagePrices, priceWithPackage, packagePriceOf, parseSessions, sessionConflict, createPackage,
-  packagesFor, packageOf, savePackage, createOpenPackage, openSlots, isOpenBooking, OPEN_MINUTES, packageNote,
+  packagesFor, packageOf, savePackage, createOpenPackage, openSlots, isOpenBooking, OPEN_MINUTES,
+  TRIPLE_MINUTES, bundleText, bundleNote,
   type Session, type PackageRecord,
 } from './packages.js';
 import { newShortCodes, shortCodeOf, findByShortCode } from './short-code.js';
@@ -1573,7 +1574,7 @@ export async function registerCashierRoutes(
       /* Chek chiqadigan bronlar. Odatda bitta; paketda — har mashg'ulotga
          alohida chek (instruktor har darsda o'z chekini skanerlaydi). */
       let targets: any[] = [];
-      let packageInfo: { id: string; price: number; list_price: number; of: number; open?: boolean } | null = null;
+      let packageInfo: { id: string; price: number; list_price: number; of: number; open?: boolean; minutes?: number } | null = null;
       let pkgRecord: PackageRecord | null = null;
       let existingPays: any[] = [];
       let customer: any = null;
@@ -1599,7 +1600,7 @@ export async function registerCashierRoutes(
             .sort((x, y) => String(x.start_at).localeCompare(String(y.start_at)));
           if (!targets.length) return reply.code(409).send({ ok: false, error: 'Paketning hamma mashg‘ulotlari allaqachon to‘langan' });
           existingPays = pays;
-          packageInfo = { id: pk.id, price: pk.price, list_price: pk.list_price, of: pk.of };
+          packageInfo = { id: pk.id, price: pk.price, list_price: pk.list_price, of: pk.of, minutes: pk.minutes };
           expected = targets.reduce((a, t) => a + bookingDue(t, tariffs, pkgPrices), 0);
           const g = await priceGuard(req, b.price_token, total, expected);
           if (g) return reply.code(g.code).send({ ok: false, error: g.error, needs_price_pin: true, expected });
@@ -1641,8 +1642,14 @@ export async function registerCashierRoutes(
            kun tanlanmaydi, instruktor biriktirilmaydi. Mijoz istalgan kuni
            keladi, istalgan instruktor uradi. A va C da 5 soat — oddiy bron. */
         const pkgOn = packagePriceOf(String(b.category || ''), pkgPrices) > 0;
-        const isPackage = !krug && ((minutes === PACKAGE_MINUTES && pkgOn) || (Array.isArray(b.sessions) && b.sessions.length > 0));
-        if (isPackage && !pkgOn) return reply.code(400).send({ ok: false, error: '5 soatlik paket faqat B toifa uchun' });
+        const multi = Array.isArray(b.sessions) && b.sessions.length > 0;
+        /* 3 SOAT — paketdek 3 ta OCHIQ 1 soatlik chek (har biri o'z raqami bilan):
+           mijoz bugun ketma-ket yoki boshqa kunlari keladi, istalgan instruktor uradi */
+        const isTriple = !krug && !multi && minutes === TRIPLE_MINUTES;
+        const isPackage = isTriple || (!krug && ((minutes === PACKAGE_MINUTES && pkgOn) || multi));
+        if (isPackage && !isTriple && !pkgOn) return reply.code(400).send({ ok: false, error: '5 soatlik paket faqat B toifa uchun' });
+        /* Ochiq cheklar jami daqiqasi: 3 soat — 3 ta, 5 soatlik paket — 5 ta */
+        const bundleMin = isTriple ? TRIPLE_MINUTES : PACKAGE_MINUTES;
         expected += tdAdd;
         const cat = String(b.category || '').toUpperCase();
         if (isPackage && !/^[ABC]$/.test(cat)) return reply.code(400).send({ ok: false, error: 'Paket uchun kategoriyani tanlang' });
@@ -1664,7 +1671,7 @@ export async function registerCashierRoutes(
             method: 'POST', headers: { Prefer: 'return=representation' },
             body: JSON.stringify({ full_name: fullName, phone: phone || null, role: 'customer', is_active: true, is_blocked: false }),
           }).then((r) => r?.[0] || null),
-          isPackage && customer?.id ? openSlots(String(customer.id), Math.round(PACKAGE_MINUTES / OPEN_MINUTES)) : Promise.resolve(undefined),
+          isPackage && customer?.id ? openSlots(String(customer.id), Math.round(bundleMin / OPEN_MINUTES)) : Promise.resolve(undefined),
         ]);
         if (clash) return reply.code(409).send({ ok: false, error: clash });
         if (!customer) customer = created;
@@ -1675,11 +1682,11 @@ export async function registerCashierRoutes(
           const { bookings, record } = await createOpenPackage({
             customerId: String(customer.id), courseId, category: cat, slots,
             status: 'confirmed', source: 'walk_in', extra: { confirmed_at: now, confirmed_by: admin.id },
-            total, tariffs, prices: pkgPrices,
+            total, tariffs, prices: pkgPrices, minutes: bundleMin,
           });
           targets = bookings;
           pkgRecord = record;
-          packageInfo = { id: record.id, price: record.price, list_price: record.list_price, of: bookings.length, open: true };
+          packageInfo = { id: record.id, price: record.price, list_price: record.list_price, of: bookings.length, open: true, minutes: bundleMin };
         } else {
           targets = [(await supabaseRest<any[]>('bookings', {
             method: 'POST', headers: { Prefer: 'return=representation' },
@@ -1745,7 +1752,7 @@ export async function registerCashierRoutes(
           status: 'paid', method, cash_amount: c, card_amount: k,
           paid_at: stamp, receipt_code: receiptCodes[i], short_code: shorts[i],
           cashier_id: admin.id, register_id: register.id, shift_id: shiftId,
-          note: [krug ? '1 krug' : (String(b.note || '').trim() || (packageInfo ? `5 soatlik paket · ${i + 1}/${targets.length}` : null)),
+          note: [krug ? '1 krug' : (String(b.note || '').trim() || (packageInfo ? `${bundleText(packageInfo.minutes ?? PACKAGE_MINUTES)} · ${i + 1}/${targets.length}` : null)),
             td && i === 0 && tdPart > 0 ? testDriveNote(tdPart) : null].filter(Boolean).join(' · ') || null,
         };
       });
@@ -1782,7 +1789,7 @@ export async function registerCashierRoutes(
         if (packageInfo) shaped.package = { ...packageInfo, n: i + 1 };
         shapedAll.push(shaped);
         const r: any = buildReceipt(shaped, payments[i]);
-        if (packageInfo) r.package_text = `5 soatlik paket · ${i + 1}/${targets.length}`;
+        if (packageInfo) r.package_text = `${bundleText(packageInfo.minutes ?? PACKAGE_MINUTES)} · ${i + 1}/${targets.length}`;
         receipts.push(r);
       });
       return reply.code(201).send({
@@ -1800,7 +1807,8 @@ export async function registerCashierRoutes(
 
 
   /* =====================================================================
-     5 SOATLIK BITTA CHEKNI 5 TA 1 SOATLIK OCHIQ CHEKKA BO'LISH
+     3 / 5 SOATLIK BITTA CHEKNI 3 / 5 TA 1 SOATLIK OCHIQ CHEKKA BO'LISH
+     (3 soat — 3 ta, 5 soat — 5 ta; 1-chek eski 4 xonali raqamini saqlaydi)
      Eski kassada paket bitta 5 soatlik chek bo'lib chiqqan. Maxsus parol
      bilan (narxni o'zgartirish paroli) 5 ta alohida chekka bo'linadi:
      summa o'zgarmaydi (1 100 000 → 5 × 220 000), to'lov kuni va kassasi
@@ -1828,11 +1836,13 @@ export async function registerCashierRoutes(
       if (String(booking.status) !== 'confirmed') {
         return reply.code(409).send({ ok: false, error: 'Faqat hali urilmagan (faol) chekni bo‘lish mumkin' });
       }
-      if (Number(booking.duration_minutes) !== PACKAGE_MINUTES || isOpenBooking(booking)) {
-        return reply.code(409).send({ ok: false, error: 'Faqat 5 soatlik bitta chekni bo‘lish mumkin' });
+      /* 5 soatlik paket → 5 ta, 3 soat → 3 ta 1 soatlik ochiq chek */
+      const bundleMin = Number(booking.duration_minutes);
+      if (![PACKAGE_MINUTES, TRIPLE_MINUTES].includes(bundleMin) || isOpenBooking(booking)) {
+        return reply.code(409).send({ ok: false, error: 'Faqat 3 yoki 5 soatlik bitta chekni bo‘lish mumkin' });
       }
 
-      const n = Math.round(PACKAGE_MINUTES / OPEN_MINUTES);
+      const n = Math.round(bundleMin / OPEN_MINUTES);
       const total = Math.round(Number(payment.amount || 0));
       const amounts = splitBy(total, Array.from({ length: n }, () => 1));
       const cashTotal = payment.method === 'mixed' ? Number(payment.cash_amount || 0) : payment.method === 'card' ? 0 : total;
@@ -1849,7 +1859,7 @@ export async function registerCashierRoutes(
       const codes = codeRes.map((c: any) => typeof c === 'string' ? c : String(c ?? ''));
       if (codes.some((c) => !c)) throw new Error('Chek kodi yaratilmadi');
       const now = new Date().toISOString();
-      const note = (i: number) => `${packageNote(i + 1, n)} · ochiq chek`;
+      const note = (i: number) => `${bundleNote(i + 1, n, bundleMin)} · ochiq chek`;
       const slotOf = (i: number) => ({ booking_date: slots[i].start.toISOString(), start_at: slots[i].start.toISOString(), end_at: slots[i].end.toISOString() });
 
       /* 1) Eski bron — 1-chek (ochiq, 1 soat) */
@@ -1888,7 +1898,9 @@ export async function registerCashierRoutes(
       /* 3) To'lovlar: eski to'lov 1-chek summasiga, qolganlari — yangi (o'sha kun, o'sha kassa) */
       const payPart = (i: number) => {
         const c = cashParts[i], k = amounts[i] - c;
-        return { amount: amounts[i], cash_amount: c, card_amount: k, method: methodOf(c, k), short_code: shorts[i], note: `5 soatlik paket · ${i + 1}/${n}` };
+        /* 1-chek eski raqamini saqlaydi — mijoz qo'lidagi chek ham ishlayveradi */
+        return { amount: amounts[i], cash_amount: c, card_amount: k, method: methodOf(c, k), short_code: i === 0 && payment.short_code ? payment.short_code : shorts[i],
+          note: `${bundleText(bundleMin)} · ${i + 1}/${n}` };
       };
       const newIds = rest.map(() => crypto.randomUUID());
       const [p0, pRest] = await Promise.all([
@@ -1904,7 +1916,7 @@ export async function registerCashierRoutes(
       /* 4) Paket yozuvi va audit */
       const record: PackageRecord = {
         id: crypto.randomUUID(), customer_id: String(booking.customer_id), instructor_id: null, category: String(booking.category || 'B'),
-        minutes: PACKAGE_MINUTES, price: total, list_price: computePrice(String(booking.category || 'B'), PACKAGE_MINUTES, tariffs),
+        minutes: bundleMin, price: total, list_price: computePrice(String(booking.category || 'B'), bundleMin, tariffs),
         source: 'walk_in', created_at: now, open: true,
         sessions: all.map((x, i) => ({ booking_id: String(x.id), start_at: String(x.start_at), minutes: OPEN_MINUTES, price: amounts[i], pickup_code: x.pickup_code || null })),
       };
@@ -1917,7 +1929,7 @@ export async function registerCashierRoutes(
       const receipts = all.map((x, i) => {
         const shaped: any = shape(x, m);
         const r: any = buildReceipt(shaped, payments[i]);
-        r.package_text = `5 soatlik paket · ${i + 1}/${n}`;
+        r.package_text = `${bundleText(bundleMin)} · ${i + 1}/${n}`;
         return r;
       });
       return { ok: true, receipts, package: { id: record.id, price: total, of: n, open: true } };
