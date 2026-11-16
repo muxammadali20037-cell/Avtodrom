@@ -24,7 +24,7 @@ export const KB = [
     k: ['chek chiqar', 'chek ber', 'chek yoz', 'yangi chek', 'kvitansiya', 'kvitok', 'chek sot', 'pul ol', 'to‘lov ol', 'sotish', 'chek chop'],
     a: `1. Yon menyuda «Chek chiqarish» (yoki tepadagi yashil «+ Chek chiqarish») ni bosing.
 2. Mijoz: ism familiyasini yozing, telefon ixtiyoriy. Bron bilan kelgan bo‘lsa — qidiruvga bron kodi (AVD-1234), ism yoki telefonni yozing.
-3. Toifa (A, B, C) va Davomiylikni tanlang: 1 krug, 30 daqiqa, 1 soat, 1,5 soat, 2 soat, 3 soat yoki 5 soatlik paket.
+3. Toifa (A, B, C) va Davomiylikni tanlang: 1 krug, 30 daqiqa, 1 soat, 1,5 soat, 2 soat, 3 soat yoki 5 soatlik paket. «3 soat» — 3 ta alohida 1 soatlik chek chiqadi (har biri o‘z raqami bilan).
 4. Vaqt tanlanmaydi — bronsiz chek hozirgi vaqt bilan chiqadi.
 5. Instruktor ixtiyoriy: tanlamasangiz «Instruktorsiz — kim ursa» bo‘ladi.
 6. To‘lov: Naqd, Karta yoki Aralash.
@@ -53,7 +53,7 @@ Mijoz bronini aytmasa ham oddiy (bronsiz) chek chiqarsangiz bo‘ladi — chek u
     t: 'Chek muddati va «Ochiq chek»',
     k: ['ochiq chek', 'istalgan kun', 'muddat', 'yaroqli', 'eskir', 'qachongacha', 'kuyib ket', 'yonib ket', 'amal qil', 'kelmadi bo‘lib qol', 'ertaga kelsa', 'boshqa kuni kel'],
     a: `To‘langan chek URILGUNCHA yaroqli — muddati yo‘q, o‘zi «Kelmadi» bo‘lib yopilmaydi.
-«Ochiq chek · istalgan kun» — kuni yo‘q chek (5 soatlik paketdan yoki bo‘lingan chekdan). Istalgan instruktor istalgan kuni uradi, dars o‘sha paytdan boshlanadi.
+«Ochiq chek · istalgan kun» — kuni yo‘q chek (5 soatlik paketdan, 3 soatdan yoki bo‘lingan chekdan). Istalgan instruktor istalgan kuni uradi, dars o‘sha paytdan boshlanadi.
 Mijoz bugun kelmasa — chek ertaga ham, keyin ham ishlaydi.` },
 
   { id: 'test-drive', r: KASSA, go: 'issue', w: 'Kassa → Chek chiqarish → tepada «Test drive»',
@@ -107,11 +107,12 @@ P1 va P2 bir-birining chekini ham chop eta oladi — «Hammasi (P1 + P2)» tanla
 • Kassir — faqat o‘z kassasidagi va oxirgi 12 soatdagi chekni. Eskisini — administrator.
 • Bekor qilingan chek summasi kassa hisobotidan chiqadi.` },
 
-  { id: 'chek-bolish', r: KASSA, go: 'receipts', w: 'Kassa → Cheklar → chek → «5 ta 1 soatlik chekka bo‘lish»',
-    t: '5 soatlik bitta chekni 5 taga bo‘lish',
-    k: ['bo‘lish', '5 ga bo‘l', '5 taga', 'bitta chek 5 soat', 'chekni bo‘l', 'ajrat', 'eski paket'],
-    a: `Eski 5 soatlik BITTA chek bo‘lsa: Cheklar → chekni bosing → «5 ta 1 soatlik chekka bo‘lish» → maxsus parol.
-Natija: 5 ta ochiq chek (istalgan kun, istalgan instruktor). Summa va to‘lov kuni o‘zgarmaydi.` },
+  { id: 'chek-bolish', r: KASSA, go: 'receipts', w: 'Kassa → Cheklar → chek → «3 / 5 ta 1 soatlik chekka bo‘lish»',
+    t: '3 yoki 5 soatlik bitta chekni 1 soatlik cheklarga bo‘lish',
+    k: ['bo‘lish', '5 ga bo‘l', '5 taga', '3 ga bo‘l', '3 taga', '3 ta chek', 'bitta chek 5 soat', 'bitta chek 3 soat', '3 soatlik chek', 'uch soat', 'chekni bo‘l', 'ajrat', 'eski paket', 'alohida chek'],
+    a: `Kassada «3 soat» tanlansa — o‘zi 3 ta alohida 1 soatlik chek chiqadi; «5 soatlik paket» — 5 ta.
+Eski BITTA 3 yoki 5 soatlik chek bo‘lsa: Cheklar → chekni bosing → «3 ta (5 ta) 1 soatlik chekka bo‘lish» → maxsus parol.
+Natija: ochiq cheklar (istalgan kun, istalgan instruktor), har birining o‘z 4 xonali raqami; 1-chek eski raqamini saqlaydi. Summa va to‘lov kuni o‘zgarmaydi.` },
 
   { id: 'cheklar', r: KASSA, go: 'receipts', w: 'Kassa → Cheklar · jami tushum — Hisobot’da',
     t: 'Cheklar bo‘limi',

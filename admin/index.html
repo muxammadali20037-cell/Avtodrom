@@ -1736,7 +1736,7 @@ function showReceipts(r, { autoPrint = false, onNew = null, title = '' } = {}){
   const total = list.reduce((a, x) => a + (Number(x.amount) || 0), 0);
   const nums = list.map(x => x.short_code).filter(Boolean);
   openSheet(`<h3>${title || (list.length > 1 ? `${list.length} ta chek` : 'Chek tayyor')}</h3>
-    <p class="lead">${list.length > 1 ? `${list[0].open ? '5 soatlik paket: 5 ta ochiq chek (istalgan kun)' : 'Paket: har mashg‘ulotga alohida chek'} · jami <b>${esc(money(total))}</b>${nums.length ? `<br>Raqamlar: <b>${nums.map(esc).join(' · ')}</b>` : ''}`
+    <p class="lead">${list.length > 1 ? `${list[0].open ? `${list.length} ta ochiq chek (istalgan kun)` : 'Paket: har mashg‘ulotga alohida chek'} · jami <b>${esc(money(total))}</b>${nums.length ? `<br>Raqamlar: <b>${nums.map(esc).join(' · ')}</b>` : ''}`
       : `${nums.length ? `Raqam: <b style="font-size:1.25em;letter-spacing:.08em">${esc(nums[0])}</b> · ` : ''}${esc(list[0].code)} · ${esc(money(total))}`}</p>
     <div id="receiptPaper">${list.map(receiptHtml).join('<div class="rcbreak"></div>')}</div>
     <div class="btn-row"><button class="btn btn-soft" id="rcClose">${onNew ? 'Yangi chek' : 'Yopish'}</button>
@@ -2831,7 +2831,7 @@ function stepPay(W){
       ${pk && un.length > 1 ? `<button class="card" data-act="wzpaypkg" style="display:flex;align-items:center;gap:12px;width:100%;margin-top:10px;text-align:left">
         <span style="flex:1;min-width:0"><b style="display:block;font-size:15.5px">Butun paketni to‘lash</b>
         <small class="muted">${un.length} ta to‘lanmagan mashg‘ulot · har biriga alohida chek</small></span><span class="sw ${W.payPkg ? 'on' : ''}"></span></button>` : ''}
-      ${pk ? `<div class="note ok" style="margin-top:10px">5 soatlik paket · ${esc(pk.n)}/${esc(pk.of)}-mashg‘ulot</div>` : ''}`;
+      ${pk ? `<div class="note ok" style="margin-top:10px">${Number(pk.minutes) === TRI_MIN ? '3 soat' : '5 soatlik paket'} · ${esc(pk.n)}/${esc(pk.of)}-mashg‘ulot</div>` : ''}`;
   } else sum = sumRows(W);
   const pk = !b && isPkg(W), lp = listPrice(W.cat, PKG_MIN);
   const body = `${b ? '' : wzCrumbs(W)}<h1 class="wz-h">To‘lov</h1><p class="wz-sub">Tekshiring — kerak bo‘lsa istalgan qatorni bosib o‘zgartiring.</p>
@@ -2869,7 +2869,7 @@ function payBind(W){
 }
 /** «5 ta chek × 220 000» yoki «2 ta chek: 660 000 + 440 000» */
 function sharesText(W, t){
-  const ms = coOpen(W) ? W.split.m : W.sess.map(x => x.m), parts = shares(t, ms);
+  const ms = coOpen(W) ? W.split.m : coTri(W) ? [60, 60, 60] : W.sess.map(x => x.m), parts = shares(t, ms);
   return parts.every(x => x === parts[0]) ? `${parts.length} ta chek × ${nf(parts[0])} so‘m` : `${parts.length} ta chek: ${parts.map(nf).join(' + ')}`;
 }
 function paintTotal(W){
@@ -2961,6 +2961,8 @@ ACT.wzissue = async el => {
       course_id: course.id, start_at: at[0].toISOString() });
     /* Paket — 5 ta ochiq chek: kun va instruktor server tomonida ham yo'q */
     if (coOpen(W)) { body.duration_minutes = PKG_MIN; body.instructor_id = null; }
+    /* 3 soat — 3 ta ochiq chek: instruktor chek urilganda biriktiriladi */
+    else if (coTri(W)) { body.duration_minutes = TRI_MIN; body.instructor_id = null; }
     else if (isPkg(W)) { body.duration_minutes = PKG_MIN; body.sessions = W.sess.map((x, i) => ({ start_at: at[i].toISOString(), minutes: x.m })); }
     if (W.krug) { body.krug = true; body.duration_minutes = W.min; }
   }
@@ -3085,7 +3087,7 @@ function coDurs(W){
   const c = W.cat || 'B', out = [];
   if (krugPrice() > 0) out.push({ k: 'krug', lt: I('refresh', 20, 2.2), t: '1 krug', s: `bir aylana · ${krugMin()} daq`, p: krugPrice() });
   [[30, '½', '30 daqiqa'], [60, '1', '1 soat'], [90, '1½', '1,5 soat'], [120, '2', '2 soat'], [180, '3', '3 soat']].forEach(([m, lt, t]) =>
-    out.push({ k: String(m), lt, t, s: m === 180 && tariffFor(c).h3 > 0 ? '3 soatlik tarif' : '', p: priceOf(c, m) }));
+    out.push({ k: String(m), lt, t, s: m === 180 ? `3 ta 1 soatlik chek${tariffFor(c).h3 > 0 ? ' · tarif' : ''} · istalgan kun` : '', p: priceOf(c, m) }));
   if (pkgPrice(c) > 0) out.push({ k: 'pkg', lt: '5', t: '5 soatlik paket', s: '5 ta 1 soatlik chek · istalgan kun', p: pkgPrice(c), lp: listPrice(c, PKG_MIN), pkg: true });
   return out;
 }
@@ -3093,9 +3095,14 @@ function coDurs(W){
    tanlanmaydi. Mijoz istalgan kuni keladi, istalgan instruktor uradi. */
 const OPEN_SPLIT = { k: 'ochiq', t: '5 ta ochiq chek', m: [60, 60, 60, 60, 60], open: true };
 const coOpen = W => !W.booking && isPkg(W) && !!W.split?.open;
-const coChecks = W => coOpen(W) ? W.split.m.length : 1;
+/* 3 SOAT (bronsiz) — paketdek 3 ta OCHIQ 1 soatlik chek: har biri alohida
+   raqamli, istalgan kun, istalgan instruktor uradi. Kun ham, instruktor ham tanlanmaydi. */
+const TRI_MIN = 180;
+const coTri = W => !W.booking && !W.krug && !isPkg(W) && Number(W.min) === TRI_MIN;
+const coAnyOpen = W => coOpen(W) || coTri(W);
+const coChecks = W => coOpen(W) ? W.split.m.length : coTri(W) ? 3 : 1;
 const coDurKey = W => W.krug ? 'krug' : isPkg(W) ? 'pkg' : String(W.min);
-const coDurLabel = W => W.krug ? '1 krug' : coOpen(W) ? '5 soatlik paket · 5 ta chek' : isPkg(W) ? `5 soatlik paket · ${W.split.k}` : W.min === 90 ? '1,5 soat' : fmtDur(W.min);
+const coDurLabel = W => W.krug ? '1 krug' : coOpen(W) ? '5 soatlik paket · 5 ta chek' : isPkg(W) ? `5 soatlik paket · ${W.split.k}` : coTri(W) ? '3 soat · 3 ta chek' : W.min === 90 ? '1,5 soat' : fmtDur(W.min);
 
 /* ---------- ochiladigan tanlov qatori ---------- */
 function coSel(id, n, label, value, done, bodyFn, warn = false){
@@ -3175,12 +3182,14 @@ function coDurSec(W){
       act: 'codur', v: d.k, lt: d.lt, t: d.t, s: esc(d.s), cls: d.pkg ? 'pkg' : d.k === 'krug' ? 'krug' : '',
       rt: d.lp ? `<s>${nf(d.lp)}</s> ${nf(d.p)}` : nf(d.p), rs: 'so‘m', on: key === d.k, dis: d.dis })).join('')}</div>
     ${coOpen(W) ? `<div class="pkg-note">${I('receipt', 18)}<div><b>5 ta alohida chek chiqadi — har biri 1 soat</b>
-      <span>Kun tanlanmaydi: mijoz istalgan kuni keladi, istalgan instruktor chekni uradi va dars o‘sha paytdan boshlanadi. Muddati yo‘q.</span></div></div>` : ''}`);
+      <span>Kun tanlanmaydi: mijoz istalgan kuni keladi, istalgan instruktor chekni uradi va dars o‘sha paytdan boshlanadi. Muddati yo‘q.</span></div></div>`
+    : coTri(W) ? `<div class="pkg-note">${I('receipt', 18)}<div><b>3 ta alohida chek chiqadi — har biri 1 soat</b>
+      <span>Har chekning o‘z 4 xonali raqami bor. Bugun ketma-ket 3 soat yoki boshqa kunlari — istalgan instruktor chekni uradi, dars o‘sha paytdan boshlanadi.</span></div></div>` : ''}`);
 }
 /* VAQT — o'zgarmaydi: hozir. Tanlash yo'q. */
 function coNowSec(W){
   if (tdOn(W)) return '';
-  if (coOpen(W)) return `<section class="co-sec co-sel co-fixed" id="co-now"><div class="co-selh">
+  if (coAnyOpen(W)) return `<section class="co-sec co-sel co-fixed" id="co-now"><div class="co-selh">
       <span class="lb">Vaqt</span><b class="vl">Istalgan kun</b></div>
     <div class="co-fixed-note">Har bir chek urilgan paytdan 1 soat. Instruktor ham chek urilganda biriktiriladi.</div></section>`;
   const pk = W.sess.length > 1;
@@ -3228,7 +3237,7 @@ function coInsBody(W){
 }
 function coInsSec(W){
   /* Ochiq chekda instruktor tanlanmaydi — kim ursa, o'shaniki */
-  if (coOpen(W)) return '';
+  if (coAnyOpen(W)) return '';
   /* Hech kim bo'sh bo'lmasa ro'yxat o'zi OCHILMAYDI — qatorda sariq yozuv; bosilsa kim qachon bo'shashi ko'rinadi */
   const val = W.ins ? W.ins.name : 'Instruktorsiz — kim ursa';
   return coSel('ins', 5, 'Instruktor (ixtiyoriy)', val, true, () => `<div id="coInsBody">${coInsBody(W)}</div>`, false);
@@ -3236,7 +3245,7 @@ function coInsSec(W){
 function coPaySec(W){
   const b = W.booking, auto = autoPrice(W), total = totalOf(W), un = pkgUnpaid(W);
   const pkOn = !b && isPkg(W), lp = listPrice(W.cat, PKG_MIN);
-  const n = b ? (W.payPkg && un.length > 1 ? un.length : 1) : pkOn ? (coOpen(W) ? coChecks(W) : W.sess.length) : 1;
+  const n = b ? (W.payPkg && un.length > 1 ? un.length : 1) : pkOn ? (coOpen(W) ? coChecks(W) : W.sess.length) : coTri(W) ? 3 : 1;
   return `<section class="co-sec" id="co-pay">${coHead(b ? 2 : 6, 'To‘lov', { cash: 'Naqd', card: 'Karta', mixed: 'Naqd + karta' }[W.pay], true)}
     ${b && b.package && un.length > 1 ? `<button class="co-booked" data-act="wzpaypkg" style="width:100%;align-items:center;margin-bottom:12px;text-align:left;background:var(--card-2)">
       <span style="flex:1;min-width:0"><b style="display:block;font-size:15px">Butun paketni to‘lash</b><small class="muted">${un.length} ta to‘lanmagan mashg‘ulot · har biriga alohida chek</small></span><span class="sw ${W.payPkg ? 'on' : ''}"></span></button>` : ''}
@@ -3249,7 +3258,7 @@ function coPaySec(W){
     <div class="co-total"><div><div class="muted" style="font-size:12.5px;font-weight:800;letter-spacing:.3px;text-transform:uppercase">To‘lanadi${n > 1 ? ` · ${n} ta chek` : ''}</div>
         ${pkOn && W.manual == null ? `<div style="margin-top:4px"><s class="muted">${nf(lp)}</s> <span style="display:inline-block;padding:2px 8px;border-radius:99px;background:#dcfce7;color:#15803d;font-weight:800;font-size:12.5px">${nf(lp - auto)} tejaldi</span></div>` : ''}
         ${W.manual != null ? `<div class="muted" style="font-size:12.5px">avtomatik: ${nf(auto)}</div>` : ''}
-        ${pkOn && (coOpen(W) || W.sess.length > 1) ? `<div class="muted" style="font-size:12.5px;margin-top:2px" id="wzShares">${sharesText(W, total)}</div>` : ''}
+        ${(pkOn && (coOpen(W) || W.sess.length > 1)) || coTri(W) ? `<div class="muted" style="font-size:12.5px;margin-top:2px" id="wzShares">${sharesText(W, total)}</div>` : ''}
         ${tdAddOf(W) && W.manual == null ? `<div class="muted" style="font-size:12.5px;margin-top:3px">1 krug ${nf(auto - tdAddOf(W))} + test drive ${nf(tdAddOf(W))}</div>` : ''}</div>
       <b class="big" id="wzTotal">${nf(total)} so‘m</b></div>
     <div id="wzPriceBox" class="${W.priceEdit ? '' : 'hidden'}" style="margin-top:10px"><input class="input" id="wzPrice" inputmode="numeric" value="${W.manual ?? ''}" placeholder="Yangi summa, so‘m"></div>
@@ -3263,9 +3272,9 @@ function coSide(W){
     ? [row('Mijoz', esc(W.name), 'cust'), row('Bron', esc(b.pickup_code || '—'), 'cust'), row('Vaqt', esc(whenText(b.start_at)), 'cust'), row('Instruktor', esc(b.instructor?.profile?.full_name || '—'), 'cust')]
     : [row('Mijoz', esc(W.name.trim()), 'cust'), row('Toifa', W.cat ? esc(W.cat + ' toifa') : '', 'cat'),
       row('Davomiylik', W.min ? esc(coDurLabel(W)) : '', 'dur'),
-      coOpen(W) ? row('Vaqt', 'Istalgan kun', 'now') : row('Vaqt', `Hozir, <span class="co-now-t">${esc(nowHM())}</span>`, 'now'),
+      coAnyOpen(W) ? row('Vaqt', 'Istalgan kun', 'now') : row('Vaqt', `Hozir, <span class="co-now-t">${esc(nowHM())}</span>`, 'now'),
       ...(!coOpen(W) && W.sess.length > 1 ? [row('Keyingi', W.sess.slice(1).every(x => x.t) ? W.sess.slice(1).map(x => esc(sessText(x))).join('<br>') : '', 'time')] : []),
-      coOpen(W) ? row('Instruktor', 'kim ursa', 'now') : row('Instruktor', esc(W.ins?.name || 'kim ursa'), 'ins')];
+      coAnyOpen(W) ? row('Instruktor', 'kim ursa', 'now') : row('Instruktor', esc(W.ins?.name || 'kim ursa'), 'ins')];
   return `<aside class="wz-side" id="coSide"><div class="side-card"><h3>${b ? 'Bron bo‘yicha to‘lov' : 'Chek'}</h3>
     <div class="side-rows">${rows.join('')}${tdAddOf(W) ? row('Test drive', '+' + nf(tdAddOf(W)) + ' so‘m', 'td') : ''}${row('To‘lov', { cash: 'Naqd', card: 'Karta', mixed: 'Naqd + karta' }[W.pay], 'pay')}</div>
     <div class="side-total"><span>To‘lanadi</span><b id="sideTotal">${nf(totalOf(W))} so‘m</b></div>
@@ -3337,7 +3346,7 @@ function coRender(){
   if (!b) {
     if (W.open === 'time' && W.sess.length > 1) ensureTimes(W, W.day);
     /* Bo'sh instruktorlar ro'yxati faqat bo'lim ochilganda yuklanadi (tezroq) */
-    if (coReady(W) && !coOpen(W) && (W.open === 'ins' || W.ins) && !W.insRes && !W.insLoading) coLoadIns(W);
+    if (coReady(W) && !coAnyOpen(W) && (W.open === 'ins' || W.ins) && !W.insRes && !W.insLoading) coLoadIns(W);
   }
 }
 /* Soat yuradi: «Hozir 11:02» har daqiqada yangilanadi, bo'sh instruktorlar
@@ -3348,7 +3357,7 @@ setInterval(() => {
   const t = nowHM(); if (t === coMinute) return;
   coMinute = t; coNowSync(CO);
   document.querySelectorAll('.co-now-t').forEach(e => { e.textContent = t; });
-  if (coReady(CO) && !coOpen(CO) && (CO.open === 'ins' || CO.ins) && !CO.insLoading && !sheetOpen()) coLoadIns(CO);
+  if (coReady(CO) && !coAnyOpen(CO) && (CO.open === 'ins' || CO.ins) && !CO.insLoading && !sheetOpen()) coLoadIns(CO);
 }, 10000);
 function coLoadIns(W){
   W.insLoading = true;
@@ -3424,7 +3433,7 @@ function coDone(W, from, keys, open = null){ W.open = open; coPatch(from, [from,
 ACT.coopen = el => {
   const W = CO, s = el.dataset.s, prev = W.open;
   W.open = prev === s ? null : s;
-  if (W.open === 'ins' && coReady(W) && !coOpen(W) && !W.insLoading) { W.insRes = null; coLoadIns(W); }
+  if (W.open === 'ins' && coReady(W) && !coAnyOpen(W) && !W.insLoading) { W.insRes = null; coLoadIns(W); }
   const side = !!el.closest?.('.wz-side');
   coPatch(side ? null : s, [prev, s].filter(Boolean));
   /* o'ng paneldan bosilsa — bo'lim ko'rinmayotgan bo'lsa, unga olib boradi */
@@ -4054,14 +4063,20 @@ ACT.rcopen = el => {
     <button class="btn btn-primary" style="margin-top:14px" data-act="rcprint" data-code="${esc(r.code)}">${I('print', 20)} Qayta chop etish</button>
     ${r.own === false ? `<div class="note" style="margin-top:10px">${esc(r.register || 'Boshqa')} kassa cheki — ko‘rish va qayta chop etish mumkin. Bekor qilish yoki bo‘lish — o‘sha kassada.</div>` : ''}
     ${r.own !== false && (r.state === 'active' || r.state === 'no_show') && r.payment_id ? `<button class="btn btn-danger" style="margin-top:10px" data-act="rccancel" data-code="${esc(r.code)}">${I('x', 18, 2.4)} Chekni bekor qilish</button>` : ''}
-    ${r.own !== false && r.state === 'active' && Number(r.duration_minutes) === PKG_MIN && !isOpenIso(r.start_at) ? `<button class="btn btn-soft" style="margin-top:10px" data-act="rcsplit" data-code="${esc(r.code)}">${I('lock', 18, 2.2)} 5 ta 1 soatlik chekka bo‘lish</button>
-      <div class="muted" style="font-size:12.5px;margin-top:6px">Maxsus parol bilan. Summa o‘zgarmaydi — 5 ta ochiq chek (istalgan kun, istalgan instruktor), har biri ${esc(money(Math.round(r.amount / 5)))}.</div>` : ''}`);
+    ${(() => { const n = splitN(r); return n ? `<button class="btn btn-soft" style="margin-top:10px" data-act="rcsplit" data-code="${esc(r.code)}" data-n="${n}">${I('lock', 18, 2.2)} ${n} ta 1 soatlik chekka bo‘lish</button>
+      <div class="muted" style="font-size:12.5px;margin-top:6px">Maxsus parol bilan. Summa o‘zgarmaydi — ${n} ta ochiq chek (istalgan kun, istalgan instruktor), har biri ${esc(money(Math.round(r.amount / n)))}.</div>` : ''; })()}`);
 };
-/* 5 SOATLIK BITTA CHEK → 5 TA 1 SOATLIK OCHIQ CHEK (maxsus parol bilan) */
+/* Bitta 3 yoki 5 soatlik, hali urilmagan o'z kassasidagi chek — nechta 1 soatlik chekka bo'linadi (0 — bo'linmaydi) */
+function splitN(r){
+  const m = Number(r.duration_minutes);
+  if (r.own === false || r.state !== 'active' || isOpenIso(r.start_at) || r.krug) return 0;
+  return m === PKG_MIN ? 5 : m === TRI_MIN ? 3 : 0;
+}
+/* 3 yoki 5 SOATLIK BITTA CHEK → 3 / 5 TA 1 SOATLIK OCHIQ CHEK (maxsus parol bilan) */
 ACT.rcsplit = el => {
-  const code = el.dataset.code;
-  openSheet(`<h3 style="display:flex;align-items:center;gap:8px">${I('lock', 20, 2.2)}<span>5 ta chekka bo‘lish</span></h3>
-    <p class="lead">${esc(code)} — 5 soatlik chek 5 ta alohida 1 soatlik ochiq chekka bo‘linadi. Summa va to‘lov kuni o‘zgarmaydi. Maxsus parolni kiriting.</p>
+  const code = el.dataset.code, n = Number(el.dataset.n) || 5;
+  openSheet(`<h3 style="display:flex;align-items:center;gap:8px">${I('lock', 20, 2.2)}<span>${n} ta chekka bo‘lish</span></h3>
+    <p class="lead">${esc(code)} — ${n} soatlik chek ${n} ta alohida 1 soatlik ochiq chekka bo‘linadi (har birining o‘z raqami). Summa va to‘lov kuni o‘zgarmaydi. Maxsus parolni kiriting.</p>
     <input class="input" id="spIn" type="password" inputmode="numeric" autocomplete="off" maxlength="8" placeholder="••••" style="text-align:center;font-size:24px;letter-spacing:8px">
     <div id="spErr" class="note err hidden" style="margin-top:10px;font-size:13.5px"></div>
     <div class="btn-row" style="margin-top:14px"><button class="btn btn-soft" data-act="sheetx">Bekor</button><button class="btn btn-primary" id="spOk">Bo‘lish</button></div>`);
@@ -4073,8 +4088,8 @@ ACT.rcsplit = el => {
     try{
       if (!priceTokOk()) { const t = await post('/api/admin/price-unlock', { pin }); setPriceTok(t); }
       const d = await post('/api/admin/cashier/split-package', { code, price_token: S.priceTok.t });
-      closeSheet(); toast('5 ta chek tayyor');
-      showReceipts(d.receipts, { autoPrint: true, title: '5 ta chek' });
+      closeSheet(); toast(`${d.receipts.length} ta chek tayyor`);
+      showReceipts(d.receipts, { autoPrint: true, title: `${d.receipts.length} ta chek` });
       RC.d = null; if (S.routeName === 'receipts') loadReceipts(true);
     }catch(e){
       busyBtn(ok, false);
