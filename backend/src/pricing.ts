@@ -125,6 +125,23 @@ export async function loadTestDrive(): Promise<number> {
     return Number.isFinite(n) && n > 0 ? Math.round(n) : 0;
   } catch { return TEST_DRIVE_DEFAULT; }
 }
+/**
+ * TEST DRIVE · 1 SOAT — QAT'IY TARIF (standart 300 000). Kassada «Test drive»
+ * bosilganda shu summa chiqadi: 1 soatlik dars + test drive. Soat narxi yoki
+ * test drive qo'shimchasi o'zgarsa ham bu narx o'zgarmaydi.
+ * Sozlama: test_drive_hour_price (0 — o'chiq, unda eski «1 krug + test drive»).
+ */
+export const TEST_DRIVE_HOUR_DEFAULT = 300000;
+export async function loadTestDriveHour(): Promise<number> {
+  try {
+    const rows = await supabaseRest<any[]>('admin_settings', { query: '?key=eq.test_drive_hour_price&select=value&limit=1' });
+    if (!rows.length) return TEST_DRIVE_HOUR_DEFAULT;
+    const v = rows[0]?.value?.value ?? rows[0]?.value;
+    if (v === null || v === undefined || v === '') return TEST_DRIVE_HOUR_DEFAULT;
+    const n = Number(v);
+    return Number.isFinite(n) && n > 0 ? Math.round(n) : 0;
+  } catch { return TEST_DRIVE_HOUR_DEFAULT; }
+}
 /** To'lov izohidan test drive summasi: «… · Test drive 50000» → 50000 */
 export function testDriveOf(note: unknown): number {
   const m = /Test drive\s+(\d+)/i.exec(String(note || ''));

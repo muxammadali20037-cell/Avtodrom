@@ -256,10 +256,24 @@ describe('Test drive + 1 soat — 300 000', () => {
     expect(h.db.bookings[0].duration_minutes).toBe(60);
   });
 
-  it('test drive soatlik tarifga qarab: soat narxi o‘zgarsa — 1 soat + test drive ham o‘zgaradi', async () => {
+  it('narx qat’iy 300 000: soat narxi yoki test drive qo‘shimchasi o‘zgarsa ham o‘zgarmaydi', async () => {
     h.db.admin_settings.find((x: any) => x.key === 'rate_b').value = 270000;
-    const r = await issue({ test_drive: true, test_drive_hour: true, amount: 300000 });
-    expect(r.body.expected).toBe(320000);
+    h.db.admin_settings.push({ key: 'test_drive_price', value: 70000 });
+    const r = await issue({ test_drive: true, test_drive_hour: true, amount: 320000 });
+    expect(r.body.needs_price_pin).toBe(true);
+    expect(r.body.expected).toBe(300000);
+    const ok = await issue({ test_drive: true, test_drive_hour: true, amount: 300000 });
+    expect(ok.status).toBe(201);
+    expect(h.db.payments[0]).toMatchObject({ amount: 300000, note: '1 soat · Test drive 30000' });   // 300 000 − 270 000
+  });
+
+  it('sozlama: test_drive_hour_price — boshqa narx; 0 — o‘chiq', async () => {
+    h.db.admin_settings.push({ key: 'test_drive_hour_price', value: { value: 350000 } });
+    expect((await issue({ test_drive: true, test_drive_hour: true, amount: 300000 })).body.expected).toBe(350000);
+    h.db.admin_settings.find((x: any) => x.key === 'test_drive_hour_price').value = { value: 0 };
+    const off = await issue({ test_drive: true, test_drive_hour: true, amount: 300000 });
+    expect(off.status).toBe(400);
+    expect(off.body.error).toMatch(/1 soat o‘chirilgan/);
   });
 
   it('eski «1 krug» test drive o‘zgarmadi', async () => {

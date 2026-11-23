@@ -103,7 +103,7 @@ export const SETTING_LABEL: Record<string, string> = {
   half_a: 'Narx · A toifa (30 daqiqa)', half_b: 'Narx · B toifa (30 daqiqa)', half_c: 'Narx · C toifa (30 daqiqa)',
   paket5_a: '5 soatlik paket · A', paket5_b: '5 soatlik paket · B', paket5_c: '5 soatlik paket · C',
   tarif3_a: '3 soatlik tarif · A', tarif3_b: '3 soatlik tarif · B', tarif3_c: '3 soatlik tarif · C',
-  krug_price: 'Krug narxi', krug_min: 'Krug daqiqasi', test_drive_price: 'Test drive narxi',
+  krug_price: 'Krug narxi', krug_min: 'Krug daqiqasi', test_drive_price: 'Test drive narxi', test_drive_hour_price: 'Test drive · 1 soat narxi',
   reminder_minutes: 'Eslatma vaqtlari (daqiqa)', work_start: 'Ish boshlanishi', work_end: 'Ish tugashi',
   slot_step_min: 'Bron qadami (daqiqa)', late_cancel_min: 'Kech bekor qilish chegarasi', booking_enabled: 'Onlayn bron',
   location: 'Manzil va xarita', address: 'Manzil', contact_phone: 'Telefon raqamlar', system_name: 'Avtodrom nomi',

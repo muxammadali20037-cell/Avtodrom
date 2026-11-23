@@ -4,7 +4,7 @@ import type { FastifyInstance } from 'fastify';
 import { supabaseRest } from './supabase.js';
 import { testInstructorIds } from './test-instructors.js';
 import { selectIn } from './rest-chunks.js';
-import { loadTariffs, computePrice, loadKrug, loadTestDrive, testDriveOf, testDriveNote } from './pricing.js';
+import { loadTariffs, computePrice, loadKrug, loadTestDrive, loadTestDriveHour, testDriveOf, testDriveNote } from './pricing.js';
 import { approvalGate, TINY_LIMIT } from './price-approval.js';
 import { q, findUserByTelegram, toProfile } from './identity.js';
 import { fmtWhen, fmtMoney } from './notify.js';
@@ -1520,7 +1520,7 @@ export async function registerCashierRoutes(
          (80 000 + 50 000 = 130 000). Soat/vaqt tanlanmaydi — dars hozirdan,
          instruktor hisobotiga krug daqiqasi (15) yoziladi. */
       const td = b.test_drive === true || b.test_drive === 'true';
-      /* TEST DRIVE + 1 SOAT — soatlik tarif + test drive (250 000 + 50 000 = 300 000).
+      /* TEST DRIVE · 1 SOAT — qat'iy tarif (test_drive_hour_price, standart 300 000).
          Dars hozirdan, 60 daqiqa (instruktor hisobotiga 1 soat). Soat/vaqt tanlanmaydi. */
       const tdHour = td && (b.test_drive_hour === true || b.test_drive_hour === 'true' || String(b.test_drive_mode || '') === 'hour');
       if (td && mode !== 'walk_in') return reply.code(400).send({ ok: false, error: 'Test drive faqat bronsiz chekda — bron uchun emas' });
@@ -1537,7 +1537,7 @@ export async function registerCashierRoutes(
       /* TEZLIK: kerakli hamma narsa BIR VAQTDA so'raladi (ilgari ketma-ket
          10–20 ta so'rov edi — chek 3–5 soniya kutilardi). 4 xonali
          raqamlar ham shu yerda oldindan tayyorlanadi (paketda 5 ta). */
-      const [admin, tariffs, pkgPrices, krugCfg, register, shiftId, booking0, bookedPays, customer0, course0, ins0, shortsAll, tdPrice] = await Promise.all([
+      const [admin, tariffs, pkgPrices, krugCfg, register, shiftId, booking0, bookedPays, customer0, course0, ins0, shortsAll, tdPrice, tdHourCfg] = await Promise.all([
         adminUser(),
         loadTariffs(),
         loadPackagePrices(),
@@ -1556,20 +1556,25 @@ export async function registerCashierRoutes(
           : Promise.resolve(null),
         mode === 'walk_in' && instructorId ? instructorWithUser(instructorId) : Promise.resolve(null),
         newShortCodes(MAX_SESSIONS),
-        td ? loadTestDrive() : Promise.resolve(0),
+        td && !tdHour ? loadTestDrive() : Promise.resolve(0),
+        tdHour ? loadTestDriveHour() : Promise.resolve(0),
       ]);
 
-      if (td && !(tdPrice > 0)) return reply.code(400).send({ ok: false, error: 'Test drive o‘chirilgan (Narxlar bo‘limida narxini kiriting)' });
-      const tdAdd = td ? tdPrice : 0;
+      if (td && !tdHour && !(tdPrice > 0)) return reply.code(400).send({ ok: false, error: 'Test drive o‘chirilgan (Narxlar bo‘limida narxini kiriting)' });
+      if (tdHour && !(tdHourCfg > 0)) return reply.code(400).send({ ok: false, error: 'Test drive · 1 soat o‘chirilgan (Narxlar bo‘limida narxini kiriting)' });
+      /* Kutilgan narxga qo'shiladigan test drive — faqat «1 krug» turida (1 soatda narx qat'iy) */
+      const tdAdd = td && !tdHour ? tdPrice : 0;
+      /* Hisobot uchun test drive ulushi: 1 soatda — qat'iy tarif minus 1 soatlik dars narxi */
+      const tdShare = tdHour ? Math.max(0, tdHourCfg - priceWithPackage(String(b.category || 'B'), 60, tariffs, pkgPrices)) : tdAdd;
       /* Narx qo'lda kamaytirilgan bo'lsa ham test drive qismi summadan oshmasin (har chekka kamida 1 so'm) */
-      const tdPartOf = (sum: number, n: number) => (td ? Math.max(0, Math.min(tdAdd, sum - n)) : 0);
+      const tdPartOf = (sum: number, n: number) => (td ? Math.max(0, Math.min(tdShare, sum - n)) : 0);
       if (krug && !(krugCfg!.price > 0)) return reply.code(400).send({ ok: false, error: '«1 krug» o‘chirilgan (Narxlar bo‘limida narxini kiriting)' });
       if (krug && Array.isArray(b.sessions) && b.sessions.length) return reply.code(400).send({ ok: false, error: '1 krug paket bo‘la olmaydi' });
       const minutes = krug ? krugCfg!.minutes : tdHour ? 60 : Math.max(15, Math.min(600, Math.round(Number(b.duration_minutes || 60))));
       /* Server narxni O'ZI hisoblaydi. Kassir summani o'zgartirishi
          mumkin (chegirma, qo'shimcha), lekin faqat maxsus parol bilan.
          5 soat — paket narxi (standart 1 100 000). */
-      const suggested = krug ? krugCfg!.price : priceWithPackage(String(b.category || 'B'), minutes, tariffs, pkgPrices);
+      const suggested = krug ? krugCfg!.price : tdHour ? tdHourCfg : priceWithPackage(String(b.category || 'B'), minutes, tariffs, pkgPrices);
       const total = Math.round(Number(b.amount ?? suggested));
 
       /* 0 so'm ham mumkin — lekin faqat maxsus parol + admin ruxsati bilan (so'mlik chek) */
