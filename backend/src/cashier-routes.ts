@@ -5,6 +5,7 @@ import { supabaseRest } from './supabase.js';
 import { testInstructorIds } from './test-instructors.js';
 import { selectIn } from './rest-chunks.js';
 import { loadTariffs, computePrice, loadKrug, loadTestDrive, testDriveOf, testDriveNote } from './pricing.js';
+import { approvalGate, TINY_LIMIT } from './price-approval.js';
 import { q, findUserByTelegram, toProfile } from './identity.js';
 import { fmtWhen, fmtMoney } from './notify.js';
 import { readRegisterToken, ownRegisterFromToken, reportScope, openShiftId, priceGuard, reportUnlocked } from './shift-routes.js';
@@ -1174,6 +1175,9 @@ export async function registerCashierRoutes(
       const due = bookingDue(booking, tariffs, pkgPrices, Number(course?.price ?? 0) * bookedHours);
       const amount = Math.round(Number(amountRaw ?? due));
       if (!Number.isFinite(amount) || amount <= 0) return reply.code(400).send({ ok: false, error: 'Summa noto‘g‘ri' });
+      if (amount < TINY_LIMIT && amount !== Math.round(due)) {
+        return reply.code(403).send({ ok: false, error: 'So‘mlik chek faqat Kassa → Chek chiqarish orqali, admin ruxsati bilan chiqariladi.' });
+      }
       const pg = await priceGuard(req, req.body?.price_token, amount, due);
       if (pg) return reply.code(pg.code).send({ ok: false, error: pg.error, needs_price_pin: true, expected: due });
 
@@ -1516,9 +1520,13 @@ export async function registerCashierRoutes(
          (80 000 + 50 000 = 130 000). Soat/vaqt tanlanmaydi — dars hozirdan,
          instruktor hisobotiga krug daqiqasi (15) yoziladi. */
       const td = b.test_drive === true || b.test_drive === 'true';
-      if (td && mode !== 'walk_in') return reply.code(400).send({ ok: false, error: 'Test drive faqat bronsiz chekda (1 krug) — bron uchun emas' });
+      /* TEST DRIVE + 1 SOAT — soatlik tarif + test drive (250 000 + 50 000 = 300 000).
+         Dars hozirdan, 60 daqiqa (instruktor hisobotiga 1 soat). Soat/vaqt tanlanmaydi. */
+      const tdHour = td && (b.test_drive_hour === true || b.test_drive_hour === 'true' || String(b.test_drive_mode || '') === 'hour');
+      if (td && mode !== 'walk_in') return reply.code(400).send({ ok: false, error: 'Test drive faqat bronsiz chekda — bron uchun emas' });
+      if (tdHour && Array.isArray(b.sessions) && b.sessions.length) return reply.code(400).send({ ok: false, error: 'Test drive paket bo‘la olmaydi' });
       /* 1 KRUG — bronsiz, bitta aylana: narxi va vaqti sozlamadan */
-      const krug = mode === 'walk_in' && (b.krug === true || b.krug === 'true' || td);
+      const krug = mode === 'walk_in' && !tdHour && (b.krug === true || b.krug === 'true' || td);
       const fullName = String(b.full_name || '').trim();
       const phone = String(b.phone || '').trim();
       const instructorId = String(b.instructor_id || '').trim();
@@ -1557,19 +1565,32 @@ export async function registerCashierRoutes(
       const tdPartOf = (sum: number, n: number) => (td ? Math.max(0, Math.min(tdAdd, sum - n)) : 0);
       if (krug && !(krugCfg!.price > 0)) return reply.code(400).send({ ok: false, error: '«1 krug» o‘chirilgan (Narxlar bo‘limida narxini kiriting)' });
       if (krug && Array.isArray(b.sessions) && b.sessions.length) return reply.code(400).send({ ok: false, error: '1 krug paket bo‘la olmaydi' });
-      const minutes = krug ? krugCfg!.minutes : Math.max(15, Math.min(600, Math.round(Number(b.duration_minutes || 60))));
+      const minutes = krug ? krugCfg!.minutes : tdHour ? 60 : Math.max(15, Math.min(600, Math.round(Number(b.duration_minutes || 60))));
       /* Server narxni O'ZI hisoblaydi. Kassir summani o'zgartirishi
          mumkin (chegirma, qo'shimcha), lekin faqat maxsus parol bilan.
          5 soat — paket narxi (standart 1 100 000). */
       const suggested = krug ? krugCfg!.price : priceWithPackage(String(b.category || 'B'), minutes, tariffs, pkgPrices);
       const total = Math.round(Number(b.amount ?? suggested));
 
-      if (!(total > 0)) return reply.code(400).send({ ok: false, error: 'Summani kiriting' });
+      /* 0 so'm ham mumkin — lekin faqat maxsus parol + admin ruxsati bilan (so'mlik chek) */
+      if (!Number.isFinite(total) || total < 0) return reply.code(400).send({ ok: false, error: 'Summani kiriting' });
       if (cash + card !== total) {
         return reply.code(400).send({ ok: false, error: `Naqd (${cash}) + terminal (${card}) = ${cash + card}, jami esa ${total}. Mos kelmadi.` });
       }
       let expected = Math.round(suggested);
       if (!register) return reply.code(404).send({ ok: false, error: 'Kassa topilmadi' });
+
+      /* SO'MLIK CHEK (1 000 so'mdan kam) — maxsus paroldan tashqari admin
+         ruxsati: Telegram'ga so'rov ketadi, ruxsat berilgach shu chek o'tadi. */
+      const { peekStaff } = await import('./admin-password-routes.js');
+      const me0: any = peekStaff(req);
+      const minutesText = krug ? '1 krug' : minutes % 60 === 0 ? `${minutes / 60} soat` : `${minutes} daqiqa`;
+      const tinyGate = (exp: number, who: string, what: string) => approvalGate({
+        registerId: String(register.id), registerCode: String(register.code || register.name || ''),
+        staffKey: String(me0?.id || me0?.login || me0?.role || 'staff'), staffName: String(me0?.login || ''),
+        total, expected: exp, minutes, body: b, customer: who, what,
+      });
+      const tdText = td ? ' · test drive' : '';
 
       /* Chek chiqadigan bronlar. Odatda bitta; paketda — har mashg'ulotga
          alohida chek (instruktor har darsda o'z chekini skanerlaydi). */
@@ -1604,12 +1625,16 @@ export async function registerCashierRoutes(
           expected = targets.reduce((a, t) => a + bookingDue(t, tariffs, pkgPrices), 0);
           const g = await priceGuard(req, b.price_token, total, expected);
           if (g) return reply.code(g.code).send({ ok: false, error: g.error, needs_price_pin: true, expected });
+          const ap = await tinyGate(expected, '', `Bron ${booking.pickup_code || ''} · paket, ${targets.length} ta mashg‘ulot`);
+          if (!ap.ok) return reply.code(ap.code).send({ ...ap.body, expected });
         } else {
           /* Kassada davomiylik o'zgartirilsa — yangi davomiylik tarifi; aks holda bron narxi */
           const sameLen = Number(booking.duration_minutes || 0) === minutes;
           expected = (sameLen ? bookingDue(booking, tariffs, pkgPrices) : priceWithPackage(String(b.category || booking.category || 'B').toUpperCase(), minutes, tariffs, pkgPrices)) + tdAdd;
           const g = await priceGuard(req, b.price_token, total, expected);
           if (g) return reply.code(g.code).send({ ok: false, error: g.error, needs_price_pin: true, expected });
+          const ap = await tinyGate(expected, '', `Bron ${booking.pickup_code || ''} · ${String(b.category || booking.category || 'B').toUpperCase()} toifa · ${minutesText}`);
+          if (!ap.ok) return reply.code(ap.code).send({ ...ap.body, expected });
           targets = [booking];
           existingPays = bookedPays;
           // Bronli holatda ham davomiylik/kategoriya kassada aniqlanishi mumkin
@@ -1659,6 +1684,9 @@ export async function registerCashierRoutes(
         {
           const g = await priceGuard(req, b.price_token, total, expected);
           if (g) return reply.code(g.code).send({ ok: false, error: g.error, needs_price_pin: true, expected });
+          const ap = await tinyGate(expected, [fullName, phone].filter(Boolean).join(' · '),
+            `${cat || 'B'} toifa · ${isTriple ? '3 soat (3 ta chek)' : isPackage ? '5 soatlik paket' : minutesText}${tdText}`);
+          if (!ap.ok) return reply.code(ap.code).send({ ...ap.body, expected });
         }
 
         customer = customer0;
@@ -1696,7 +1724,7 @@ export async function registerCashierRoutes(
               end_at: new Date(start.getTime() + minutes * 60000).toISOString(),
               duration_minutes: minutes, category: b.category || null,
               status: 'confirmed', source: 'walk_in', confirmed_at: now, confirmed_by: admin.id,
-              ...(krug ? { customer_note: td ? 'Test drive · 1 krug' : '1 krug' } : {}),
+              ...(krug ? { customer_note: td ? 'Test drive · 1 krug' : '1 krug' } : tdHour ? { customer_note: 'Test drive · 1 soat' } : {}),
             }),
           }))[0]];
         }
@@ -1752,7 +1780,7 @@ export async function registerCashierRoutes(
           status: 'paid', method, cash_amount: c, card_amount: k,
           paid_at: stamp, receipt_code: receiptCodes[i], short_code: shorts[i],
           cashier_id: admin.id, register_id: register.id, shift_id: shiftId,
-          note: [krug ? '1 krug' : (String(b.note || '').trim() || (packageInfo ? `${bundleText(packageInfo.minutes ?? PACKAGE_MINUTES)} · ${i + 1}/${targets.length}` : null)),
+          note: [krug ? '1 krug' : tdHour ? '1 soat' : (String(b.note || '').trim() || (packageInfo ? `${bundleText(packageInfo.minutes ?? PACKAGE_MINUTES)} · ${i + 1}/${targets.length}` : null)),
             td && i === 0 && tdPart > 0 ? testDriveNote(tdPart) : null].filter(Boolean).join(' · ') || null,
         };
       });
@@ -1773,7 +1801,7 @@ export async function registerCashierRoutes(
           id: ids[i],
           data: { amount: p.amount, suggested: expected, price_override: total !== expected ? { expected, total } : undefined,
             method: p.method, cash: p.cash_amount, card: p.card_amount, receipt_code: p.receipt_code, short_code: p.short_code,
-            booking_id: p.booking_id, mode, krug, test_drive: testDriveOf(p.note) || undefined, register: register.code, package: packageInfo?.id || null },
+            booking_id: p.booking_id, mode, krug, test_drive: testDriveOf(p.note) || undefined, td_hour: tdHour || undefined, register: register.code, package: packageInfo?.id || null },
         }))),
         /* Bronsiz kelgan mijoz — instruktorga darhol xabar (ochiq chekda instruktor yo'q) */
         mode === 'walk_in' && !packageInfo?.open

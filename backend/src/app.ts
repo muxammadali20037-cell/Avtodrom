@@ -22,6 +22,7 @@ import { registerShiftRoutes } from './shift-routes.js';
 import { registerReportRoutes } from './report-routes.js';
 import { registerMediaRoutes } from './media-routes.js';
 import { registerAdminBotRoutes, sendAdminChatInfo } from './admin-bot-routes.js';
+import { registerPriceApprovalRoutes } from './price-approval.js';
 import { registerScheduleRoutes } from './schedule-routes.js';
 import { registerBookingSheetRoutes } from './booking-sheet-routes.js';
 import { registerSheetShareRoutes, handleGroupMessage } from './sheet-share.js';
@@ -168,6 +169,8 @@ await registerFeedbackRoutes(app, { authenticateCustomer, guardAdmin, currentSta
 await registerBossRoutes(app, { guardAdmin, currentStaff, adminUser, audit });
 await registerBossEditsRoutes(app);
 await registerAdminBotRoutes(app);
+/* So'mlik chek uchun admin ruxsati (Telegram → /ruxsat sahifasi) */
+await registerPriceApprovalRoutes(app);
 
 // IMPORTANT: admin-password-routes.ts is the single owner of the canonical
 // /api/admin/* endpoints. Do not register admin-routes.ts or

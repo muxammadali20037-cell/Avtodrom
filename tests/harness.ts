@@ -124,7 +124,9 @@ function applyFilters(rows: any[], query: string): any[] {
     }
     const [op, ...rest] = String(raw).split('.');
     const val = decodeURIComponent(rest.join('.'));
-    out = out.filter((r) => testCond(r[field], op, val));
+    /* PostgREST JSON yo'li: value->>status */
+    const jp = /^([a-z_]+)->>([a-z_]+)$/.exec(field);
+    out = out.filter((r) => testCond(jp ? r[jp[1]]?.[jp[2]] : r[field], op, val));
   }
   /* PostgREST kabi tartiblash: order=col.desc[.nullslast],col2.asc */
   const order = qs.get('order');

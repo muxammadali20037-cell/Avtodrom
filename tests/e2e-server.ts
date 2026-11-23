@@ -9,12 +9,16 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { makeHarness } from './harness.js';
 import { hashPassword } from '../backend/src/staff-auth.js';
+import { pricePinHash } from '../backend/src/shift-routes.js';
 
 const PORT = Number(process.env.PORT || 8770);
 const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..');
 
+if (!process.env.ADMIN_BOT_TOKEN) process.env.ADMIN_BOT_TOKEN = '1:admin';
 const h = await makeHarness();
 const db = h.db;
+/* Telegram javobi: xabar raqami (so'mlik chek so'rovi xabarlarini keyin yangilash uchun) */
+h.tgResults.set('sendMessage', { message_id: 1 });
 const TZ_DAY = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Tashkent' }).format(new Date());
 const at = (hm: string, day = TZ_DAY) => new Date(`${day}T${hm}:00+05:00`).toISOString();
 
@@ -95,7 +99,7 @@ db.courses.push({ id: 'c-b', name: 'B toifa — yengil', category: 'B', price: 2
 db.courses.push({ id: 'c-c', name: 'C toifa — yuk', category: 'C', price: 400000, duration_minutes: 60, is_active: true });
 for (const [key, value] of Object.entries({ half_b: 150000, rate_b: 250000, half_c: 250000, rate_c: 400000, half_a: 200000, rate_a: 350000,
   work_start: '08:00', work_end: '18:00', slot_step_min: 60, address: 'Toshkent, Yangihayot tumani', mgmt_pin: { hash: 'maxfiy' },
-  contact_phone: '+998507525555 +998703084888' })) {
+  contact_phone: '+998507525555 +998703084888', krug_price: 100000, price_pin: { hash: pricePinHash('1234') } })) {
   db.admin_settings.push({ key, value });
 }
 

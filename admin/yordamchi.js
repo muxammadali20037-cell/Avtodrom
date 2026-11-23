@@ -58,12 +58,12 @@ Mijoz bugun kelmasa — chek ertaga ham, keyin ham ishlaydi.` },
 
   { id: 'test-drive', r: KASSA, go: 'issue', w: 'Kassa → Chek chiqarish → tepada «Test drive»',
     t: 'Test drive',
-    k: ['test drive', 'testdrive', 'test drayv', 'тест драйв', 'sinov haydash', '130000', '130 000'],
+    k: ['test drive', 'testdrive', 'test drayv', 'тест драйв', 'sinov haydash', '130000', '130 000', '300000', '300 000', 'test drive 1 soat', 'test drive soat'],
     a: `1. Chek chiqarish sahifasining eng tepasidagi «Test drive» tugmasini bosing.
-2. Chek faqat «1 krug» bo‘ladi: Davomiylik va Vaqt yo‘qoladi, narx — 1 krug + test drive (80 000 + 50 000 = 130 000 so‘m).
+2. Ikki xil tanlanadi: «1 krug» (1 krug + test drive) yoki «1 soat» (soatlik narx + test drive, masalan 250 000 + 50 000 = 300 000 so‘m). Davomiylik va Vaqt yo‘qoladi — dars hozirdan.
 3. Mijoz ismi, to‘lov → «Chek chiqarish».
-• Instruktor hisobotiga 15 daqiqa yoziladi.
-• Chekda «1 krug» va «Test drive» alohida qatorda.
+• Instruktor hisobotiga 1 krugda 15 daqiqa, 1 soatda 1 soat yoziladi.
+• Chekda «1 krug» (yoki «1 soat») va «Test drive» alohida qatorda.
 • Kassa hisobotida test drive soni va summasi alohida.
 • Bron to‘lovida test drive yo‘q. Narxini admin «Narxlar va ish vaqti»da o‘zgartiradi.` },
 
@@ -75,12 +75,13 @@ Narx va daqiqani admin «Narxlar va ish vaqti → 1 krug»da sozlaydi (0 — o�
 
   { id: 'narx-ozgartirish', r: KASSA, go: 'issue', w: 'Chek chiqarish → To‘lov → «Narxni o‘zgartirish (maxsus parol)»',
     t: 'Chekda narxni o‘zgartirish (chegirma)',
-    k: ['narx o‘zgartir', 'narxni o‘zgartir', 'summa o‘zgartir', 'chegirma', 'skidka', 'скидка', 'arzon', 'boshqa summa', 'narxni tushir', 'kam pul', 'maxsus parol kirit', 'narx parol'],
+    k: ['narx o‘zgartir', 'narxni o‘zgartir', 'summa o‘zgartir', 'chegirma', 'skidka', 'скидка', 'arzon', 'boshqa summa', 'narxni tushir', 'kam pul', 'maxsus parol kirit', 'narx parol', '0 so‘m', 'nol so‘m', 'bepul', '1 so‘m', 'so‘mlik chek', 'admin ruxsati'],
     a: `1. To‘lov bo‘limida «Narxni o‘zgartirish (maxsus parol)» ni bosing.
-2. Maxsus parolni kiriting → yangi summani yozing.
+2. Maxsus parolni kiriting → yangi summani yozing (0 ham bo‘ladi).
 3. «Chek chiqarish».
 • Ruxsat 15 daqiqa ochiq turadi, keyin narx avtomatik narxga qaytadi.
 • Kim o‘zgartirgani tarixga yoziladi.
+• So‘mlik chek (1 000 so‘mdan kam: 0, 1, 2 so‘m…) — admin botiga «Ruxsat berish / Rad etish» so‘rovi ketadi. Admin ruxsat berishi bilan chek o‘zi chiqadi, sahifani yangilash shart emas. Rad etilsa — oynada ko‘rinadi.
 Maxsus parolni bilmasangiz — adminga qo‘ng‘iroq qiling.` },
 
   { id: 'aralash', r: KASSA, go: 'issue', w: 'Chek chiqarish → To‘lov',
