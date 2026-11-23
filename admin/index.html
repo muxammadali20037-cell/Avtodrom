@@ -3191,11 +3191,12 @@ function coTdSec(W){
   const p = tdPrice(), k = krugPrice(), h = tdHourPrice(W);
   if (!(p > 0) || !(k > 0 || h > 0) || W.booking) return '';
   const on = tdOn(W);
-  const hint = k > 0 && h > 0 ? `Bosing — 1 krug ${nf(k + p)} yoki 1 soat ${nf(h + p)} so‘m` : k > 0 ? `Bosing — 1 krug (${krugMin()} daq) + test drive = ${nf(k + p)} so‘m` : `Bosing — 1 soat + test drive = ${nf(h + p)} so‘m`;
-  const cur = on ? (W.tdHour ? h + p : k + p) : (k > 0 ? k + p : h + p);
+  /* Standart — 1 SOAT (soatlik narx + test drive = 300 000); 1 krug — ikkinchi tanlov */
+  const hint = h > 0 && k > 0 ? `Bosing — 1 soat + test drive = ${nf(h + p)} so‘m (yoki 1 krug ${nf(k + p)})` : h > 0 ? `Bosing — 1 soat + test drive = ${nf(h + p)} so‘m` : `Bosing — 1 krug (${krugMin()} daq) + test drive = ${nf(k + p)} so‘m`;
+  const cur = on ? (W.tdHour ? h + p : k + p) : (h > 0 ? h + p : k + p);
   const modes = on && k > 0 && h > 0 ? `<div class="co-opts one-row td-modes" style="--n:2;margin-top:10px">${[
-      { v: 'krug', lt: I('refresh', 20, 2.2), t: '1 krug', s: `${krugMin()} daqiqa`, rt: nf(k + p), on: !W.tdHour },
       { v: 'hour', lt: '1', t: '1 soat', s: `${nf(h)} + test drive ${nf(p)}`, rt: nf(h + p), on: !!W.tdHour },
+      { v: 'krug', lt: I('refresh', 20, 2.2), t: '1 krug', s: `${krugMin()} daqiqa`, rt: nf(k + p), on: !W.tdHour },
     ].map(o => coOpt({ act: 'cotdm', v: o.v, lt: o.lt, t: o.t, s: o.s, rt: o.rt, rs: 'so‘m', on: o.on })).join('')}</div>` : '';
   return `<section class="co-sec co-td ${on ? 'on' : ''}" id="co-td"><button class="co-td-b" data-act="cotd" aria-pressed="${on ? 'true' : 'false'}">
       <span class="ic">${I('steer', 22, 2.2)}</span>
@@ -3215,8 +3216,8 @@ ACT.cotd = () => {
   const k = krugPrice() > 0, h = tdHourPrice(W) > 0;
   if (!(tdPrice() > 0) || !(k || h) || W.booking) return;
   W.td = !tdOn(W);
-  /* hozirdan; standart — 1 krug (krug o'chiq bo'lsa — 1 soat) */
-  if (W.td) tdApply(W, !k);
+  /* hozirdan; standart — 1 SOAT (soat narxi bo'lmasa — 1 krug) */
+  if (W.td) tdApply(W, h);
   else W.tdHour = false;
   W.manual = null; W.priceEdit = false;
   coPatch('td', ['td', 'dur', 'now', 'time', 'ins', 'pay']);
