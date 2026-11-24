@@ -35,8 +35,57 @@ export function adminPanelUrl(open?: string): string {
   }
 }
 
-/** Xabar oladigan chatlar: telegram_admins (faqat faollari) + ixtiyoriy ADMIN_TELEGRAM_CHAT_IDS. */
-export async function adminChatIds(): Promise<number[]> {
+/* ======================================================================
+   XABAR TURLARI — har bir ulangan chat (akkaunt/qurilma) qaysi xabarlarni
+   olishini admin panelda tanlaydi. Masalan, boshliq — faqat «so'mlik chek
+   ruxsati». Saqlash: admin_settings.admin_notify_prefs = { "<chat_id>": [...] }.
+   Yozuv yo'q chat — HAMMA turdagi xabarlarni oladi (avvalgidek).
+   ====================================================================== */
+export const NOTIFY_KINDS = ['booking_new', 'booking_closed', 'cancel_request', 'support', 'price_ok'] as const;
+export type NotifyKind = typeof NOTIFY_KINDS[number];
+export const NOTIFY_LABELS: Record<NotifyKind, string> = {
+  booking_new: '🆕 Yangi bronlar',
+  booking_closed: '🚫 Bekor qilingan / kelmagan bronlar',
+  cancel_request: '↩️ Bekor qilish so‘rovlari',
+  support: '💬 Mijoz savollari',
+  price_ok: '🔐 So‘mlik chek ruxsati (0, 1, 2 so‘m)',
+};
+export const NOTIFY_PREFS_KEY = 'admin_notify_prefs';
+export const isNotifyKind = (k: unknown): k is NotifyKind => (NOTIFY_KINDS as readonly string[]).includes(String(k));
+
+export async function loadNotifyPrefs(): Promise<Record<string, NotifyKind[]>> {
+  try {
+    const rows = await supabaseRest<any[]>('admin_settings', { query: `?key=eq.${NOTIFY_PREFS_KEY}&select=value&limit=1` });
+    const v = rows?.[0]?.value;
+    if (!v || typeof v !== 'object' || Array.isArray(v)) return {};
+    const out: Record<string, NotifyKind[]> = {};
+    for (const [chat, list] of Object.entries(v)) if (Array.isArray(list)) out[chat] = list.filter(isNotifyKind);
+    return out;
+  } catch (e) {
+    console.error('admin_notify_prefs o‘qilmadi:', e);
+    return {};
+  }
+}
+/** Chat uchun tanlangan turlar (yozuv yo'q bo'lsa — hammasi) */
+export const kindsFor = (prefs: Record<string, NotifyKind[]>, chatId: number | string): NotifyKind[] =>
+  prefs[String(chatId)] ?? [...NOTIFY_KINDS];
+/** null — yozuvni o'chiradi (chat yana hamma xabarni oladi) */
+export async function saveNotifyPref(chatId: number | string, kinds: NotifyKind[] | null) {
+  const prefs = await loadNotifyPrefs();
+  if (kinds === null) delete prefs[String(chatId)];
+  else prefs[String(chatId)] = NOTIFY_KINDS.filter((k) => kinds.includes(k));
+  const now = new Date().toISOString();
+  const exists = (await supabaseRest<any[]>('admin_settings', { query: `?key=eq.${NOTIFY_PREFS_KEY}&select=key&limit=1` }))[0];
+  if (exists) await supabaseRest('admin_settings', { method: 'PATCH', query: `?key=eq.${NOTIFY_PREFS_KEY}`, body: JSON.stringify({ value: prefs, updated_at: now }) });
+  else await supabaseRest('admin_settings', { method: 'POST', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ key: NOTIFY_PREFS_KEY, value: prefs, updated_at: now }) });
+  return prefs;
+}
+
+/**
+ * Xabar oladigan chatlar: telegram_admins (faqat faollari) + ixtiyoriy ADMIN_TELEGRAM_CHAT_IDS.
+ * `kind` berilsa — faqat shu turdagi xabarni tanlagan chatlar.
+ */
+export async function adminChatIds(kind?: NotifyKind): Promise<number[]> {
   const out = new Set<number>();
   try {
     const rows = await supabaseRest<any[]>('telegram_admins', { query: '?is_active=eq.true&select=telegram_chat_id' });
@@ -51,7 +100,9 @@ export async function adminChatIds(): Promise<number[]> {
     const n = Number(s);
     if (s && Number.isSafeInteger(n) && n !== 0) out.add(n);
   }
-  return [...out];
+  if (!kind) return [...out];
+  const prefs = await loadNotifyPrefs();
+  return [...out].filter((id) => kindsFor(prefs, id).includes(kind));
 }
 
 export const escHtml = (v: unknown) =>
@@ -78,13 +129,13 @@ export async function sendToAdminChat(token: string, chatId: number, text: strin
 }
 
 /** Barcha faol admin chatlarga xabar. Hech qachon xato otmaydi — natijani qaytaradi. */
-export async function notifyAdmins(text: string, opts: { html?: boolean; open?: string; button?: string } = {}): Promise<AdminSendResult> {
+export async function notifyAdmins(text: string, opts: { html?: boolean; open?: string; button?: string; kind?: NotifyKind } = {}): Promise<AdminSendResult> {
   const res: AdminSendResult = { chats: 0, sent: 0, failed: 0, errors: [] };
   const token = adminBotToken();
   if (!token) return { ...res, skipped: 'ADMIN_BOT_TOKEN sozlanmagan' };
-  const ids = await adminChatIds();
+  const ids = await adminChatIds(opts.kind);
   res.chats = ids.length;
-  if (!ids.length) return { ...res, skipped: 'Admin chat qo‘shilmagan' };
+  if (!ids.length) return { ...res, skipped: opts.kind ? 'Bu turdagi xabarni oladigan chat yo‘q' : 'Admin chat qo‘shilmagan' };
   await Promise.all(ids.map(async (chatId) => {
     try {
       await sendToAdminChat(token, chatId, text, opts);
@@ -268,7 +319,7 @@ export async function notifyAdminsNewBooking(
     if (!adminBotToken()) return { chats: 0, sent: 0, failed: 0, errors: [], skipped: 'ADMIN_BOT_TOKEN sozlanmagan' };
     const ctx = await loadAdminContext(list[0], list.map((b) => String(b.id)));
     const text = adminNewBookingText(list, ctx, opts);
-    return await notifyAdmins(text, { html: true, open: 'bookings/new', button: '🛡️ Admin panelda ochish' });
+    return await notifyAdmins(text, { html: true, open: 'bookings/new', button: '🛡️ Admin panelda ochish', kind: 'booking_new' });
   } catch (e: any) {
     console.error('Yangi bron — admin xabari ketmadi:', e);
     return { chats: 0, sent: 0, failed: 1, errors: [String(e?.message || e)] };
@@ -317,7 +368,7 @@ export async function notifyAdminsBookingClosed(booking: any, kind: BookingClose
     if (!booking) return { chats: 0, sent: 0, failed: 0, errors: [], skipped: 'bron yo‘q' };
     if (!adminBotToken()) return { chats: 0, sent: 0, failed: 0, errors: [], skipped: 'ADMIN_BOT_TOKEN sozlanmagan' };
     const ctx = await loadAdminContext(booking);
-    return await notifyAdmins(adminBookingClosedText(booking, ctx, kind, reason), { html: true, open: 'bookings/all', button: '🛡️ Admin panelda ochish' });
+    return await notifyAdmins(adminBookingClosedText(booking, ctx, kind, reason), { html: true, open: 'bookings/all', button: '🛡️ Admin panelda ochish', kind: 'booking_closed' });
   } catch (e: any) {
     console.error('Bron yopildi — admin xabari ketmadi:', e);
     return { chats: 0, sent: 0, failed: 1, errors: [String(e?.message || e)] };

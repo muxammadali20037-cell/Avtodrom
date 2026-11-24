@@ -143,8 +143,11 @@ function requestText(r: Pick<ApprovalRecord, 'register' | 'staff' | 'customer' |
 async function sendToAdmins(id: string, text: string) {
   const token = adminBotToken();
   if (!token) return { sent: 0, msgs: [] as ApprovalRecord['msgs'], reason: 'no_token' };
-  const chats = await adminChatIds();
-  if (!chats.length) return { sent: 0, msgs: [] as ApprovalRecord['msgs'], reason: 'no_admins' };
+  const chats = await adminChatIds('price_ok');
+  if (!chats.length) {
+    const any = (await adminChatIds()).length > 0;
+    return { sent: 0, msgs: [] as ApprovalRecord['msgs'], reason: any ? 'no_price_ok' : 'no_admins' };
+  }
   const res = await Promise.allSettled(chats.map((chat) => telegramApi<any>(token, 'sendMessage', {
     chat_id: chat, text, parse_mode: 'HTML', disable_web_page_preview: true, reply_markup: keyboard(id, chat),
   })));
@@ -211,6 +214,7 @@ export async function approvalGate(ctx: {
     await transition(id, 'pending', { ...value, status: 'cancelled' }).catch(() => false);
     const why = s.reason === 'no_token' ? 'Admin bot sozlanmagan (ADMIN_BOT_TOKEN yo‘q)'
       : s.reason === 'no_admins' ? 'Admin botda faol admin yo‘q'
+      : s.reason === 'no_price_ok' ? 'Hech bir admin chatda «So‘mlik chek ruxsati» yoqilmagan (Narxlar va ish vaqti → Admin bot)'
       : 'Admin botga xabar yuborilmadi';
     return { ok: false, code: 503, body: { ok: false, error: `${why} — so‘mlik chekka ruxsat so‘rab bo‘lmadi.` } };
   }

@@ -62,7 +62,7 @@ export async function handleCustomerQuestion(user: any, body: string, channel: '
 ${who}:
 ${body.slice(0, 500)}
 
-🤖 Mijozga «adminga yubordim» deb javob berildi.`, { open: 'chat', button: '💬 Javob berish' }); }
+🤖 Mijozga «adminga yubordim» deb javob berildi.`, { open: 'chat', button: '💬 Javob berish', kind: 'support' }); }
       catch (e) { console.error('Support: admin ping failed', e); }
     }
   } else if (msg?.id) {
@@ -91,7 +91,7 @@ function clean(v: unknown) {
 /** Adminga Telegram orqali xabar beradi. Yiqilsa asosiy oqim to'xtamaydi. */
 async function pingAdmins(fromName: string, body: string) {
   try {
-    await notifyAdmins(`💬 AVTODROM — yangi savol\n\n${fromName}:\n${body.slice(0, 500)}`, { open: 'chat', button: '💬 Chatni ochish' });
+    await notifyAdmins(`💬 AVTODROM — yangi savol\n\n${fromName}:\n${body.slice(0, 500)}`, { open: 'chat', button: '💬 Chatni ochish', kind: 'support' });
   } catch (e) {
     console.error('Support: admin ping failed', e);
   }

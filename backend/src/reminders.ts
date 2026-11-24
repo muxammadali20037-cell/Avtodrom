@@ -545,7 +545,7 @@ export async function handleReminderCallback(cb: any): Promise<boolean> {
     // Adminlarga xabar
     try {
       await notifyAdmins(`🚫 Bekor qilish so‘rovi (eslatma orqali)\n\n👤 ${owner.full_name || 'Mijoz'}\nBron: ${shortCode(bookingId)}\n\nAdmin panelda ko‘rib chiqing.`,
-        { open: 'bookings/cancels', button: '🛡️ So‘rovni ochish' });
+        { open: 'bookings/cancels', button: '🛡️ So‘rovni ochish', kind: 'cancel_request' });
     } catch { /* xabar ketmasa ham so'rov saqlangan */ }
 
     return true;

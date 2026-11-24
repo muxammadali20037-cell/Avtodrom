@@ -758,7 +758,7 @@ export async function registerBookingRoutes(
           (when ? `📅 ${escHtml(when)}\n` : '') +
           (updated.pickup_code ? `🎫 <code>${escHtml(updated.pickup_code)}</code>\n` : '') +
           `\n💬 Sabab: ${escHtml(reason)}\n\nAdmin panelda tasdiqlang yoki rad eting.`;
-        await notifyAdmins(text, { html: true, open: 'bookings/cancels', button: '🛡️ So‘rovni ochish' });
+        await notifyAdmins(text, { html: true, open: 'bookings/cancels', button: '🛡️ So‘rovni ochish', kind: 'cancel_request' });
       } catch (e) { console.error('Cancel-request admin notify failed:', e); }
 
       return {

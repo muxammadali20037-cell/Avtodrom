@@ -558,7 +558,13 @@ button.row:active,a.row:active{background:var(--card-2)}
 .rem-c i{font-style:normal;width:20px;height:20px;border-radius:50%;display:grid;place-items:center;flex:none;font-weight:800;font-size:12px;margin-top:1px}
 .rem-c i.ok{background:var(--ok-soft);color:var(--ok)}.rem-c i.bad{background:var(--warn-soft);color:var(--warn)}
 .tg-add{display:flex;gap:8px;margin-top:10px}.tg-add .input{flex:1;min-width:0}.tg-add .btn{flex:none}
-.tg-row{min-height:60px}.tg-row .sw{margin-left:4px}.tg-del{width:38px;height:38px;border-radius:11px;box-shadow:none;background:var(--card-2);color:var(--hint)}
+.tg-row{min-height:60px}.tg-row .sw{margin-left:4px}
+.tg-kinds{display:flex;flex-wrap:wrap;gap:6px;padding:0 14px 12px 64px}
+.tg-kinds .chip{min-height:32px;font-size:12.5px;padding:0 10px;box-shadow:none;border:1px solid var(--line,#e2e8f0);background:var(--card-2)}
+.tg-kinds .chip.on{background:var(--accent);border-color:var(--accent);color:#fff}
+.tg-kinds .tg-q{background:transparent;border-style:dashed;color:var(--hint)}
+.tg-kinds.off{opacity:.45}
+@media (max-width:520px){.tg-kinds{padding-left:14px}}.tg-del{width:38px;height:38px;border-radius:11px;box-shadow:none;background:var(--card-2);color:var(--hint)}
 .rem-c span{min-width:0}.rem-c b{display:block;font-size:13px}.rem-c small{display:block;font-size:12px;color:var(--hint);line-height:1.35}
 .co-selh .cv{color:var(--hint);transition:transform .2s;flex:none;display:grid}
 .co-sel.open .co-selh .cv{transform:rotate(90deg);color:var(--accent)}
@@ -7171,8 +7177,8 @@ function vPrices(){
       <label class="field" style="margin-top:0"><span>Kechikish, daqiqa (0 — o‘chiq)</span><input class="input" inputmode="numeric" id="pr-late" value="${esc(late)}"></label></div>
       <p class="muted" style="font-size:12.5px;margin:8px 2px 0">Bron qilgan mijozga Telegram bot shu vaqtlarda eslatma yuboradi. Dars vaqtidan shuncha daqiqa o‘tib mijoz kelmasa — bron avtomatik yopiladi (tasdiqlangan → «Kelmagan», tasdiqlanmagan → «Bekor»), mijoz va instruktorga xabar boradi. Kassada «hozir» chiqarilgan chekka bu qoida tegmaydi.</p>
       <div id="remStat" style="margin-top:12px"></div></div>
-    <div class="card" style="margin-top:12px;background:linear-gradient(135deg,#ecfdf5,#fff)"><div class="sec-h"><h2>Admin bot — yangi bron xabarlari</h2><button class="link" data-act="tgtest" style="white-space:nowrap">Sinov</button></div>
-      <p class="muted" style="font-size:12.5px;margin:0 2px 10px">Mijoz Mini App orqali bron qilsa, shu chatlarga darhol xabar boradi: mijoz, telefon, instruktor, mashina, sana va vaqt, narx, bron kodi — va «Admin panelda ochish» tugmasi. Bekor qilish so‘rovlari va mijoz savollari ham shu yerga keladi.</p>
+    <div class="card" style="margin-top:12px;background:linear-gradient(135deg,#ecfdf5,#fff)"><div class="sec-h"><h2>Admin bot — ulangan akkauntlar va xabarlar</h2><button class="link" data-act="tgtest" style="white-space:nowrap">Sinov</button></div>
+      <p class="muted" style="font-size:12.5px;margin:0 2px 10px">Har bir ulangan akkaunt (telefon, guruh) qaysi xabarlarni olishini pastda belgilang: yangi bronlar, bekor qilingan/kelmagan bronlar, bekor qilish so‘rovlari, mijoz savollari, so‘mlik chek ruxsati. Masalan, boshliqqa — <b>«Faqat so‘mlik chek»</b>: unga faqat 0, 1, 2 so‘mlik chekka ruxsat so‘rovi keladi.</p>
       <div id="tgBox"><div class="sk" style="min-height:62px"></div></div>
       <div class="tg-add"><input class="input" id="tg-new" inputmode="numeric" autocomplete="off" placeholder="Chat ID (raqam)"><button class="btn btn-soft btn-sm" data-act="tgadd">${I('plus', 18, 2.4)} Qo‘shish</button></div>
       <p class="muted" style="font-size:12.5px;margin:8px 2px 0">Chat ID — Telegramdagi raqamli ID. Uni bilish uchun Telegramda <b>@userinfobot</b> ga /start yozing (u ID raqamini ko‘rsatadi). Guruh uchun botni guruhga qo‘shing va guruh ID sini (minus bilan boshlanadi) yozing. Qo‘shishdan oldin o‘sha odam admin botga /start yozgan bo‘lishi kerak.</p></div>
@@ -7207,6 +7213,7 @@ ACT.ppset = async el => {
 /* =========================================================================
    ADMIN BOT — qaysi Telegram chatlar yangi bron xabarini oladi
    ========================================================================= */
+let TG_ROWS = {};
 async function loadTg(){
   if (!$('tgBox')) return;
   try{
@@ -7215,12 +7222,25 @@ async function loadTg(){
     const warn = d.bot && !d.bot.configured ? '<div class="note warn" style="font-size:13.5px;margin-bottom:10px">ADMIN_BOT_TOKEN Vercel sozlamalarida yo‘q — xabarlar ketmaydi.</div>' : '';
     const bot = d.bot?.username ? `<div class="muted" style="font-size:12.5px;margin:0 2px 8px">Bot: <b>@${esc(d.bot.username)}</b> · faol chatlar: <b>${nf((d.chats || []).filter(c => c.is_active).length)}</b></div>` : '';
     const rows = d.chats || [];
-    box.innerHTML = warn + bot + (rows.length ? `<div class="list">${rows.map(c => `<div class="row tg-row">
+    const kinds = d.kinds || [];
+    TG_ROWS = Object.fromEntries(rows.map(c => [String(c.id), c]));
+    const kindName = k => (kinds.find(x => x.key === k)?.label || k).replace(/^\S+\s/, '');
+    /* Muhim turni hech kim olmasa — ogohlantirish (masalan, so'mlik chekka ruxsat beradigan odam yo'q) */
+    const nobody = kinds.filter(k => rows.length && !rows.some(c => c.is_active && (c.notify || []).includes(k.key)));
+    const gap = nobody.length ? `<div class="note warn" style="font-size:13px;margin-bottom:10px">Hech kimga bormaydi: <b>${nobody.map(k => esc(kindName(k.key))).join(', ')}</b>${nobody.some(k => k.key === 'price_ok') ? ' — so‘mlik chek chiqarib bo‘lmaydi.' : ''}</div>` : '';
+    box.innerHTML = warn + bot + gap + (rows.length ? `<div class="list">${rows.map(c => {
+      const sel = c.notify || [];
+      const chips = kinds.length ? `<div class="tg-kinds ${c.is_active ? '' : 'off'}">${kinds.map(k => {
+          const on = sel.includes(k.key);
+          return `<button class="chip ${on ? 'on' : ''}" data-act="tgkind" data-id="${esc(c.id)}" data-k="${esc(k.key)}" aria-pressed="${on}">${esc(k.label)}</button>`;
+        }).join('')}<button class="chip tg-q" data-act="tgonly" data-id="${esc(c.id)}">Faqat so‘mlik chek</button><button class="chip tg-q" data-act="tgall" data-id="${esc(c.id)}">Hammasi</button></div>` : '';
+      return `<div class="row tg-row">
         <span class="ava" style="${c.is_active ? '' : 'opacity:.45'}">${c.group ? '👥' : esc(ini(c.title || 'T'))}</span>
-        <span class="tx"><b>${esc(c.title || (c.group ? 'Guruh' : 'Telegram chat'))}</b><small>ID ${esc(c.chat_id)}${c.is_active ? '' : ' · xabar olmaydi'}</small></span>
+        <span class="tx"><b>${esc(c.title || (c.group ? 'Guruh' : 'Telegram chat'))}</b><small>ID ${esc(c.chat_id)}${c.is_active ? (sel.length ? ` · ${nf(sel.length)}/${nf(kinds.length)} tur xabar` : ' · hech qanday xabar olmaydi') : ' · xabar olmaydi'}</small></span>
         <button class="sw ${c.is_active ? 'on' : ''}" data-act="tgtoggle" data-id="${esc(c.id)}" data-on="${c.is_active ? 1 : 0}" aria-label="${c.is_active ? 'O‘chirish' : 'Yoqish'}"></button>
-        <button class="icon-btn tg-del" data-act="tgdel" data-id="${esc(c.id)}" aria-label="Ro‘yxatdan olib tashlash">${I('x', 18, 2.4)}</button></div>`).join('')}</div>`
-      : '<div class="note warn" style="font-size:13.5px">Hali chat qo‘shilmagan — yangi bron xabarlari hech kimga bormaydi.</div>');
+        <button class="icon-btn tg-del" data-act="tgdel" data-id="${esc(c.id)}" aria-label="Ro‘yxatdan olib tashlash">${I('x', 18, 2.4)}</button></div>${chips}`;
+    }).join('')}</div>`
+      : '<div class="note warn" style="font-size:13.5px">Hali chat qo‘shilmagan — admin xabarlari hech kimga bormaydi.</div>');
   }catch(e){ if ($('tgBox')) $('tgBox').innerHTML = `<div class="note err">${esc(e.message)}</div>`; }
 }
 ACT.tgadd = async el => {
@@ -7230,6 +7250,28 @@ ACT.tgadd = async el => {
   try { await post('/api/admin/telegram-admins', { chat_id: v }); inp.value = ''; toast('Qo‘shildi — o‘sha chatga tasdiq xabari yuborildi'); loadTg(); }
   catch (e) { fail(e); }
   finally { busyBtn(el, false); }
+};
+/* Chat qaysi xabarlarni oladi — tanlash */
+async function tgSetKinds(id, list, msg){
+  const c = TG_ROWS[String(id)]; if (!c) return;
+  const prev = c.notify || [];
+  c.notify = list;
+  try { await post(`/api/admin/telegram-admins/${encodeURIComponent(id)}`, { notify: list }, 'PATCH'); toast(msg || 'Saqlandi'); }
+  catch (e) { c.notify = prev; fail(e); }
+  loadTg();
+}
+ACT.tgkind = el => {
+  const c = TG_ROWS[String(el.dataset.id)]; if (!c) return;
+  const k = el.dataset.k, cur = c.notify || [];
+  const on = !cur.includes(k);
+  el.classList.toggle('on', on);
+  tgSetKinds(el.dataset.id, on ? [...cur, k] : cur.filter(x => x !== k), on ? 'Yoqildi — bu xabarlar keladi' : 'O‘chirildi — bu xabarlar kelmaydi');
+};
+ACT.tgonly = el => tgSetKinds(el.dataset.id, ['price_ok'], 'Endi faqat so‘mlik chek ruxsati keladi');
+ACT.tgall = el => {
+  const c = TG_ROWS[String(el.dataset.id)];
+  const all = [...document.querySelectorAll(`[data-act="tgkind"][data-id="${CSS.escape(String(el.dataset.id))}"]`)].map(b => b.dataset.k);
+  if (c) tgSetKinds(el.dataset.id, all, 'Hamma xabarlar keladi');
 };
 ACT.tgtoggle = async el => {
   const on = el.dataset.on !== '1';

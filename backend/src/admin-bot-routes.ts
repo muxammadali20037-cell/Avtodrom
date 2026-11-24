@@ -6,7 +6,7 @@
  *
  *   GET    /api/admin/telegram-admins           — ro'yxat (+ chat nomi Telegramdan)
  *   POST   /api/admin/telegram-admins           — { chat_id } qo'shish (avval sinov xabari)
- *   PATCH  /api/admin/telegram-admins/:id       — { is_active }
+ *   PATCH  /api/admin/telegram-admins/:id       — { is_active } va/yoki { notify: [turlar] }
  *   DELETE /api/admin/telegram-admins/:id
  *   POST   /api/admin/telegram-admins/test      — hamma faol chatga sinov xabari
  */
@@ -17,6 +17,7 @@ import { guardAdmin, adminUser, audit } from './admin-password-routes.js';
 import {
   adminBotToken, adminPanelUrl, adminChatIds, sendToAdminChat, notifyAdmins,
   loadAdminContext, adminNewBookingText,
+  NOTIFY_KINDS, NOTIFY_LABELS, loadNotifyPrefs, saveNotifyPref, kindsFor, isNotifyKind,
 } from './admin-notify.js';
 
 const enc = encodeURIComponent;
@@ -65,7 +66,10 @@ export async function registerAdminBotRoutes(app: FastifyInstance) {
     try {
       await guardAdmin(req);
       const token = adminBotToken();
-      const rows = await supabaseRest<any[]>('telegram_admins', { query: '?select=id,telegram_chat_id,is_active,created_at&order=id.asc' });
+      const [rows, prefs] = await Promise.all([
+        supabaseRest<any[]>('telegram_admins', { query: '?select=id,telegram_chat_id,is_active,created_at&order=id.asc' }),
+        loadNotifyPrefs(),
+      ]);
       const titles = token
         ? await Promise.all(rows.map((r) => chatTitle(token, Number(r.telegram_chat_id))))
         : rows.map(() => '');
@@ -73,9 +77,11 @@ export async function registerAdminBotRoutes(app: FastifyInstance) {
         ok: true,
         bot: { configured: !!token, username: token ? await botUsername(token) : '' },
         panel_url: adminPanelUrl('bookings/new'),
+        kinds: NOTIFY_KINDS.map((k) => ({ key: k, label: NOTIFY_LABELS[k] })),
         chats: rows.map((r, i) => ({
           id: r.id, chat_id: String(r.telegram_chat_id), is_active: r.is_active !== false,
           created_at: r.created_at, title: titles[i] || '', group: Number(r.telegram_chat_id) < 0,
+          notify: kindsFor(prefs, r.telegram_chat_id),
         })),
       };
     } catch (e) { return fail(reply, e, 'Ro‘yxat olinmadi'); }
@@ -127,6 +133,17 @@ export async function registerAdminBotRoutes(app: FastifyInstance) {
       await guardAdmin(req);
       const id = String(req.params.id);
       const on = (req.body ?? {}).is_active;
+      const notify = (req.body ?? {}).notify;
+      /* Qaysi xabarlarni oladi — faqat ro'yxatdagi turlar */
+      if (notify !== undefined) {
+        if (!Array.isArray(notify) || !notify.every(isNotifyKind)) return reply.code(400).send({ ok: false, error: 'Xabar turlari noto‘g‘ri' });
+        const row = (await supabaseRest<any[]>('telegram_admins', { query: `?id=eq.${enc(id)}&select=id,telegram_chat_id&limit=1` }))[0];
+        if (!row) return reply.code(404).send({ ok: false, error: 'Chat topilmadi' });
+        const prefs = await saveNotifyPref(row.telegram_chat_id, notify);
+        const admin = await adminUser().catch(() => null);
+        await audit(admin?.id ?? null, 'TELEGRAM_ADMIN_NOTIFY', 'telegram_admins', id, null, { chat_id: row.telegram_chat_id, notify: prefs[String(row.telegram_chat_id)] });
+        if (typeof on !== 'boolean') return { ok: true, notify: prefs[String(row.telegram_chat_id)] };
+      }
       if (typeof on !== 'boolean') return reply.code(400).send({ ok: false, error: 'is_active true yoki false bo‘lishi kerak' });
       const rows = await supabaseRest<any[]>('telegram_admins', {
         method: 'PATCH', headers: { Prefer: 'return=representation' },
@@ -148,6 +165,7 @@ export async function registerAdminBotRoutes(app: FastifyInstance) {
         method: 'DELETE', headers: { Prefer: 'return=representation' }, query: `?id=eq.${enc(id)}`,
       });
       if (!rows[0]) return reply.code(404).send({ ok: false, error: 'Chat topilmadi' });
+      await saveNotifyPref(rows[0].telegram_chat_id, null).catch(() => null);
       const admin = await adminUser().catch(() => null);
       await audit(admin?.id ?? null, 'TELEGRAM_ADMIN_DELETE', 'telegram_admins', id, { chat_id: rows[0].telegram_chat_id }, null);
       return { ok: true };
@@ -178,12 +196,14 @@ export async function registerAdminBotRoutes(app: FastifyInstance) {
 /** Admin botga /start yoki /id yozilganda — chat ID va holatni aytadi. */
 export async function sendAdminChatInfo(token: string, chatId: number) {
   let active = false;
+  let kinds: string[] = [];
   try {
     active = (await adminChatIds()).includes(chatId);
+    if (active) kinds = kindsFor(await loadNotifyPrefs(), chatId).map((k) => NOTIFY_LABELS[k]);
   } catch { /* baribir ID ni aytamiz */ }
   const text = active
-    ? `✅ Bu chat yangi bron xabarlarini oladi.\n\nChat ID: <code>${chatId}</code>`
-    : `ℹ️ Yangi bron xabarlarini shu yerda olish uchun administrator panelda ushbu raqamni qo‘shsin:\n\n<code>${chatId}</code>\n\nAdmin panel → Narxlar va ish vaqti → «Admin bot — yangi bron xabarlari».`;
+    ? `✅ Bu chat admin xabarlarini oladi:\n${kinds.length ? kinds.map((k) => '• ' + k).join('\n') : '• (hech qaysi tur tanlanmagan)'}\n\nChat ID: <code>${chatId}</code>`
+    : `ℹ️ Yangi bron xabarlarini shu yerda olish uchun administrator panelda ushbu raqamni qo‘shsin:\n\n<code>${chatId}</code>\n\nAdmin panel → Narxlar va ish vaqti → «Admin bot — ulangan akkauntlar va xabarlar».`;
   return telegramApi(token, 'sendMessage', { chat_id: chatId, text, parse_mode: 'HTML' }).catch((e) => console.error('admin chat info', e));
 }
 

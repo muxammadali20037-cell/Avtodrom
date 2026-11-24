@@ -1565,7 +1565,7 @@ async function notifyInstructorDecision(
     'paket5_a', 'paket5_b', 'paket5_c', 'krug_price', 'krug_min', 'tarif3_a', 'tarif3_b', 'tarif3_c', 'test_drive_price', 'test_drive_hour_price'];
   /* Tizim yozuvlari (paketlar, instruktor yopgan soatlar) sozlamalar
      ro'yxatiga kirmaydi — ular yuzlab bo'lishi mumkin. */
-  const HIDE_SYSTEM_KEYS = '&key=not.like.pack*&key=not.like.instructor_busy*&key=not.like.instructor_schedule*&key=not.like.booking_sheet*&key=not.like.instructor_digest*&key=not.like.instructor_bot_log*&key=not.like.sheet_group*&key=not.like.support_kb*&key=not.like.customer_bot*&key=not.like.price_ok*&key=not.in.(mgmt_pin,price_pin,control_link,boss_link)';
+  const HIDE_SYSTEM_KEYS = '&key=not.like.pack*&key=not.like.instructor_busy*&key=not.like.instructor_schedule*&key=not.like.booking_sheet*&key=not.like.instructor_digest*&key=not.like.instructor_bot_log*&key=not.like.sheet_group*&key=not.like.support_kb*&key=not.like.customer_bot*&key=not.like.price_ok*&key=not.in.(mgmt_pin,price_pin,control_link,boss_link,admin_notify_prefs)';
   app.get('/api/admin/settings', async (req: any, reply: any) => {
     try {
       const me = await currentStaff(req);

@@ -262,12 +262,12 @@ describe('Admin bot: /start va /id', () => {
     expect(r.statusCode).toBe(200);
     const m = toAdmin(ADMIN2);
     expect(m.some((x) => /Admin panelini ochish/.test(JSON.stringify(x.markup || {})))).toBe(true);
-    expect(m.some((x) => x.text.includes(String(ADMIN2)) && /Admin bot — yangi bron xabarlari/.test(x.text))).toBe(true);
+    expect(m.some((x) => x.text.includes(String(ADMIN2)) && /Admin bot — ulangan akkauntlar/.test(x.text))).toBe(true);
   });
 
   it('ro‘yxatdagi admin — «xabarlarni oladi»; guruhda /id ishlaydi', async () => {
     await hook(ADMIN_CHAT, '/start');
-    expect(toAdmin().some((x) => /Bu chat yangi bron xabarlarini oladi/.test(x.text))).toBe(true);
+    expect(toAdmin().some((x) => /Bu chat admin xabarlarini oladi/.test(x.text) && /Yangi bronlar/.test(x.text))).toBe(true);
     await hook(GROUP, '/id');
     expect(toAdmin(GROUP)[0].text).toContain(String(GROUP));
   });
