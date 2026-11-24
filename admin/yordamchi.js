@@ -58,12 +58,12 @@ Mijoz bugun kelmasa — chek ertaga ham, keyin ham ishlaydi.` },
 
   { id: 'test-drive', r: KASSA, go: 'issue', w: 'Kassa → Chek chiqarish → tepada «Test drive»',
     t: 'Test drive',
-    k: ['test drive', 'testdrive', 'test drayv', 'тест драйв', 'sinov haydash', '130000', '130 000', '300000', '300 000', 'test drive 1 soat', 'test drive soat'],
+    k: ['test drive', 'testdrive', 'test drayv', 'тест драйв', 'sinov haydash', '130000', '130 000', '300000', '300 000', 'test drive 1 soat', 'test drive soat', 'test drive krug', '150000', '150 000'],
     a: `1. Chek chiqarish sahifasining eng tepasidagi «Test drive» tugmasini bosing.
-2. Chek darhol «1 soat · 300 000 so‘m» bo‘ladi (qat’iy narx — admin «Narxlar va ish vaqti → Test drive»da o‘zgartiradi). Davomiylik va Vaqt yo‘qoladi — dars hozirdan.
+2. Chek darhol «1 soat · 300 000 so‘m» bo‘ladi (qat’iy narx — admin «Narxlar va ish vaqti → Test drive»da o‘zgartiradi). Tugma ostida ikki variant: «1 soat · 300 000» yoki «1 krug · 150 000» — keraklisini bosing. Davomiylik va Vaqt yo‘qoladi — dars hozirdan.
 3. Mijoz ismi, to‘lov → «Chek chiqarish».
-• Instruktor hisobotiga 1 soat yoziladi.
-• Chekda faqat jami summa (300 000) va «Test drive» yozuvi — alohida narx qatorlari yo‘q.
+• Instruktor hisobotiga 1 soat (yoki 1 krug) yoziladi.
+• Chekda faqat jami summa (300 000 yoki 150 000) va «Test drive» yozuvi — alohida narx qatorlari yo‘q.
 • Kassa hisobotida test drive soni va summasi alohida.
 • Bron to‘lovida test drive yo‘q. Narxini admin «Narxlar va ish vaqti»da o‘zgartiradi.` },
 
